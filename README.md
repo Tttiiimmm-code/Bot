@@ -141,5 +141,5 @@ tests/                 Unit-Tests (kein API-Zugriff nötig)
 - Neue Strategie: eigene Funktion nach dem Muster von `generate_signal` in `strategy.py` schreiben
   und in `bot.py` einhängen.
 - Anderer Broker/Markt (z.B. Krypto via ccxt): `broker.py` durch eine passende Implementierung
-  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `has_open_order`, `buy`,
-  `sell`) ersetzen.
+  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `has_open_buy_order`,
+  `has_open_sell_order`, `buy`, `sell`) ersetzen.
