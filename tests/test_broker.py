@@ -1,0 +1,107 @@
+"""Unit-Tests für Broker-Logik, die ohne echten Netzwerkzugriff testbar ist.
+
+Die Alpaca-Clients selbst validieren Zugangsdaten nicht bei der Konstruktion
+(kein Netzwerkaufruf), daher können wir mit Dummy-Keys einen echten Broker
+bauen und nur die eine Methode faken, deren Verhalten wir testen wollen.
+"""
+
+from __future__ import annotations
+
+import pytest
+from alpaca.common.exceptions import APIError
+
+from tradingbot.broker import Broker, Position
+from tradingbot.config import Config
+
+
+def make_config() -> Config:
+    return Config(
+        api_key="dummy",
+        secret_key="dummy",
+        paper=True,
+        symbol="TEST",
+        qty=1.0,
+        short_window=2,
+        long_window=4,
+        poll_interval_seconds=60,
+        stop_loss_pct=0.08,
+    )
+
+
+def make_broker() -> Broker:
+    return Broker(make_config())
+
+
+class FakeAlpacaPosition:
+    def __init__(self, qty, avg_entry_price):
+        self.qty = qty
+        self.avg_entry_price = avg_entry_price
+
+
+def api_error(status_code: int) -> APIError:
+    err = APIError('{"code": 1, "message": "boom"}')
+    err._http_error = type("R", (), {"response": type("Resp", (), {"status_code": status_code})()})()
+    return err
+
+
+def test_get_position_returns_none_on_404(monkeypatch):
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: (_ for _ in ()).throw(api_error(404)),
+    )
+
+    assert broker.get_position() is None
+    assert broker.get_position_qty() == 0.0
+
+
+def test_get_position_reraises_non_404_api_error(monkeypatch):
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: (_ for _ in ()).throw(api_error(500)),
+    )
+
+    with pytest.raises(APIError):
+        broker.get_position()
+
+
+def test_get_position_does_not_swallow_non_api_errors(monkeypatch):
+    """Ein Netzwerkfehler o.ä. (kein APIError) darf nicht als 'keine
+    Position' fehlinterpretiert werden -- sonst könnte ein aktiver
+    Stop-Loss unbemerkt ausgesetzt werden."""
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: (_ for _ in ()).throw(ConnectionError("network down")),
+    )
+
+    with pytest.raises(ConnectionError):
+        broker.get_position()
+
+
+def test_get_position_returns_position_on_success(monkeypatch):
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: FakeAlpacaPosition(qty="10", avg_entry_price="123.45"),
+    )
+
+    position = broker.get_position()
+
+    assert position == Position(qty=10.0, avg_entry_price=123.45)
+    assert broker.get_position_qty() == 10.0
+
+
+def test_has_open_order_true_and_false(monkeypatch):
+    broker = make_broker()
+
+    monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [])
+    assert broker.has_open_order() is False
+
+    monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [object()])
+    assert broker.has_open_order() is True
