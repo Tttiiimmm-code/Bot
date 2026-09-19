@@ -102,6 +102,12 @@ class TradingBot:
                 position.qty,
                 symbol,
             )
+            # Die alte Long-Position ist definitiv nicht mehr offen (sonst
+            # stünde hier keine negative qty) -- ein zurückgelassener Peak
+            # aus ihr wäre für eine spätere, komplett neue Long-Position
+            # falsch und könnte dort einen sofortigen Stop-Loss auf Basis
+            # eines fremden, zu hohen Höchststands auslösen.
+            self._peak_price_by_symbol.pop(symbol, None)
             return Signal.HOLD
 
         if position and position.qty > 0:

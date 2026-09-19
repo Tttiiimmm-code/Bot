@@ -529,6 +529,38 @@ def test_short_position_skips_cycle_instead_of_being_treated_as_no_position():
     assert broker.sell_calls == []
 
 
+def test_short_position_guard_clears_stale_peak_price():
+    """Regressionstest: die alte Long-Position ist bei einer beobachteten
+    Short-qty definitiv nicht mehr offen -- ein zurückgelassener Peak aus
+    ihr darf nicht in eine spätere, komplett neue Long-Position auf
+    demselben Symbol durchsickern und dort einen Stop-Loss auf Basis eines
+    fremden, zu hohen Höchststands auslösen."""
+    config = make_config(stop_loss_pct=0.08)
+
+    # Zyklus 1: Long-Position, Kurs steigt auf 150 -> Peak wird 150.
+    long_position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(150.0), long_position)
+    bot = TradingBot(config, broker=broker)
+    bot.run_once()
+    assert bot._peak_price_by_symbol["TEST"] == 150.0
+
+    # Zyklus 2: extern (z.B. anderer Prozess) auf eine Short-Position
+    # gewechselt, ohne dass der Bot je einen flachen Zwischenzustand sieht.
+    broker._position = Position(qty=-5.0, avg_entry_price=145.0)
+    signal = bot.run_once()
+    assert signal == Signal.HOLD
+    assert "TEST" not in bot._peak_price_by_symbol
+
+    # Zyklus 3: eine brandneue Long-Position zu einem deutlich niedrigeren
+    # Einstieg. Ohne den Fix würde der alte Peak (150) einen sofortigen,
+    # unbegründeten Stop-Loss-Verkauf auslösen (150*0.92=138 >= Kurs 62).
+    broker._position = Position(qty=8.0, avg_entry_price=60.0)
+    broker._closes = flat_closes(62.0)
+    signal = bot.run_once()
+    assert signal != Signal.SELL
+    assert broker.sell_calls == []
+
+
 def test_zero_qty_buy_guard_skips_order_when_no_cash_available():
     """Regressionstest für den 0-Stück-Order-Guard: wenn risikobasierte
     Größenberechnung wegen aufgebrauchtem freiem Cash (available_cash=0)
