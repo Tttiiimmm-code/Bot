@@ -83,12 +83,23 @@ class Broker:
         position = self.get_position()
         return position.qty if position else 0.0
 
-    def has_open_order(self) -> bool:
-        """Prüft, ob für das konfigurierte Symbol bereits eine unausgeführte
-        Order offen ist -- verhindert, dass der Bot eine zweite Order
-        auslöst, bevor die erste gefüllt wurde (z.B. bei langsamer Füllung
-        relativ zum Poll-Intervall)."""
-        request = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[self.config.symbol])
+    def has_open_buy_order(self) -> bool:
+        """Prüft, ob für das Symbol bereits eine unausgeführte Kauf-Order
+        offen ist -- verhindert, dass der Bot eine zweite Kauf-Order
+        auslöst, bevor die erste gefüllt wurde."""
+        return self._has_open_order(OrderSide.BUY)
+
+    def has_open_sell_order(self) -> bool:
+        """Wie `has_open_buy_order`, aber für Verkaufs-Orders (inkl.
+        Stop-Loss-Ausstiege)."""
+        return self._has_open_order(OrderSide.SELL)
+
+    def _has_open_order(self, side: OrderSide) -> bool:
+        """Nach Richtung gefiltert, damit eine offene Kauf-Order einen
+        dringenden Stop-Loss-Verkauf nicht blockiert (und umgekehrt) --
+        sonst könnte eine einzelne unausgeführte Order in eine Richtung den
+        Stop-Loss für den Rest des Handelstags außer Kraft setzen."""
+        request = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[self.config.symbol], side=side)
         open_orders = self.trading_client.get_orders(filter=request)
         return len(open_orders) > 0
 

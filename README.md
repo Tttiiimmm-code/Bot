@@ -35,11 +35,13 @@ bestimmter Stop-Loss-Wert für ein Symbol/Parameter-Set tatsächlich hilft oder 
 
 ## Robustheit & bekannte Grenzen
 
-- **Keine doppelten Orders**: Vor jeder Kauf-/Verkaufsentscheidung prüft der Bot, ob für das
-  Symbol bereits eine offene (unausgeführte) Order existiert, und überspringt den Zyklus in dem
-  Fall. Das verhindert, dass bei langsamer Order-Füllung (z.B. sehr kurzes
-  `POLL_INTERVAL_SECONDS` oder illiquide Symbole) eine zweite Order ausgelöst wird, bevor die
-  erste gefüllt ist.
+- **Keine doppelten Orders, aber Stop-Loss wird nie blockiert**: Vor jeder Kauf-/Verkaufs-
+  entscheidung prüft der Bot *richtungsspezifisch*, ob für das Symbol bereits eine offene
+  (unausgeführte) Order in dieselbe Richtung existiert, und überspringt den Zyklus in dem Fall.
+  Das verhindert, dass bei langsamer Order-Füllung (z.B. sehr kurzes `POLL_INTERVAL_SECONDS` oder
+  illiquide Symbole) eine zweite Order ausgelöst wird, bevor die erste gefüllt ist. Die Prüfung ist
+  bewusst nach Kauf-/Verkaufs-Richtung getrennt: eine noch offene Kauf-Order darf einen dringenden
+  Stop-Loss-Verkauf niemals blockieren (und umgekehrt).
 - **Tagesschlusskurs-Latenz**: Der Bot arbeitet mit Tages-Bars, nicht mit Echtzeit-Quotes. Der
   "aktuelle Kurs" (auch für den Stop-Loss-Check) ist der letzte verfügbare Tages-Bar, der bei
   freien Alpaca-Datenplänen bis zu ~15-20 Minuten hinter dem realen Marktgeschehen liegen kann.

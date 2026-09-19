@@ -36,43 +36,25 @@ def compute_moving_averages(
     )
 
 
-def generate_signal(close: pd.Series, short_window: int, long_window: int) -> Signal:
-    """Berechnet das aktuelle Signal aus den letzten beiden Kerzen.
-
-    Erfordert mindestens `long_window + 1` Datenpunkte, sonst HOLD.
-    """
-    ma = compute_moving_averages(close, short_window, long_window).dropna()
-    if len(ma) < 2:
-        return Signal.HOLD
-
-    prev, curr = ma.iloc[-2], ma.iloc[-1]
-
-    crossed_up = prev["short_ma"] <= prev["long_ma"] and curr["short_ma"] > curr["long_ma"]
-    crossed_down = prev["short_ma"] >= prev["long_ma"] and curr["short_ma"] < curr["long_ma"]
-
-    if crossed_up:
-        return Signal.BUY
-    if crossed_down:
-        return Signal.SELL
-    return Signal.HOLD
-
-
 def generate_signal_series(
     close: pd.Series, short_window: int, long_window: int
 ) -> pd.Series:
-    """Vektorisierte Version für Backtests: ein Signal pro Zeile.
+    """Berechnet für jeden Zeitpunkt in `close` ein Signal (BUY/SELL/HOLD).
 
-    Spiegelt exakt die Vergleichsoperatoren von `generate_signal` wider
-    (<=/>= für den vorherigen Punkt, </> für den aktuellen), inklusive der
-    Behandlung eines exakten Gleichstands (short_ma == long_ma) als
-    gültiger Vorgänger-Zustand für BEIDE Richtungen -- ein reines
-    "above"-Bool-Flag würde das für Down-Crosses verpassen, da ein
-    Gleichstand dabei fälschlich als "nicht oben" eingestuft würde.
+    BUY, wenn der kurze SMA von <= auf > den langen SMA wechselt (Golden
+    Cross); SELL bei umgekehrtem Wechsel (Death Cross); sonst HOLD. Ein
+    exakter Gleichstand (short_ma == long_ma) gilt als gültiger Vorgänger-
+    Zustand für BEIDE Richtungen -- ein reines "above"-Bool-Flag würde das
+    für Down-Crosses verpassen, da ein Gleichstand dabei fälschlich als
+    "nicht oben" eingestuft würde.
 
     Am allerersten Tag, an dem der lange SMA berechenbar wird, gibt es noch
     keinen gültigen "vorherigen" MA-Zustand, mit dem verglichen werden
     könnte -- ohne die `valid`/`prev_valid`-Prüfung würde das fälschlich
-    als BUY/SELL gewertet.
+    als BUY/SELL gewertet. Aus demselben Grund verlangt ein Wechsel direkt
+    NACH einer Datenlücke (NaN in `close`, z.B. ein fehlender Tages-Bar)
+    ebenfalls erst wieder zwei aufeinanderfolgende gültige Tage, bevor neu
+    signalisiert wird -- die Lücke wird nie stillschweigend übersprungen.
     """
     ma = compute_moving_averages(close, short_window, long_window)
     valid = ma["short_ma"].notna() & ma["long_ma"].notna()
@@ -88,3 +70,17 @@ def generate_signal_series(
     signals[crossed_up] = Signal.BUY
     signals[crossed_down] = Signal.SELL
     return signals
+
+
+def generate_signal(close: pd.Series, short_window: int, long_window: int) -> Signal:
+    """Berechnet das aktuelle Signal für den letzten Zeitpunkt in `close`.
+
+    Implementiert als letzter Wert von `generate_signal_series`, damit
+    Live-Trading (das diese Funktion pro Zyklus aufruft) und
+    Backtest/Validierung (die `generate_signal_series` direkt nutzen)
+    niemals auseinanderlaufen können.
+    """
+    series = generate_signal_series(close, short_window, long_window)
+    if series.empty:
+        return Signal.HOLD
+    return series.iloc[-1]

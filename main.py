@@ -168,6 +168,30 @@ def cmd_validate(
     print(f"  Differenz Test-Train: {gap:+.2f} Prozentpunkte {'(Overfitting-Warnsignal)' if gap < -10 else ''}")
 
 
+def _add_cost_and_risk_arguments(subparser: argparse.ArgumentParser):
+    """Fügt die für backtest und validate identischen Kosten-/Risiko-Flags
+    hinzu -- an einer Stelle definiert, damit beide Subcommands garantiert
+    dieselben Wertebereiche/Defaults akzeptieren."""
+    subparser.add_argument(
+        "--commission-pct",
+        type=_non_negative_float,
+        default=0.0,
+        help="Provision pro Order als Anteil des Ordervolumens, z.B. 0.001 = 0.1%% (Standard: 0.0, Alpaca ist provisionsfrei).",
+    )
+    subparser.add_argument(
+        "--slippage-pct",
+        type=_non_negative_float,
+        default=0.0005,
+        help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
+    )
+    subparser.add_argument(
+        "--stop-loss-pct",
+        type=_stop_loss_pct,
+        default=0.08,
+        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Moving-Average-Crossover Tradingbot (Alpaca)")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -178,24 +202,7 @@ def main():
     backtest_parser.add_argument(
         "--days", type=_positive_int, default=250, help="Anzahl historischer Handelstage (Standard: 250)."
     )
-    backtest_parser.add_argument(
-        "--commission-pct",
-        type=_non_negative_float,
-        default=0.0,
-        help="Provision pro Order als Anteil des Ordervolumens, z.B. 0.001 = 0.1%% (Standard: 0.0, Alpaca ist provisionsfrei).",
-    )
-    backtest_parser.add_argument(
-        "--slippage-pct",
-        type=_non_negative_float,
-        default=0.0005,
-        help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
-    )
-    backtest_parser.add_argument(
-        "--stop-loss-pct",
-        type=_stop_loss_pct,
-        default=0.08,
-        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
-    )
+    _add_cost_and_risk_arguments(backtest_parser)
 
     validate_parser = subparsers.add_parser(
         "validate", help="Out-of-Sample-Validierung: Parameter auf Trainingsdaten wählen, auf Testdaten prüfen."
@@ -215,14 +222,7 @@ def main():
         default=[(5, 20), (10, 30), (20, 50), (50, 200)],
         help="Zu testende SMA-Kombinationen als 'kurz:lang,kurz:lang,...' (Standard: 5:20,10:30,20:50,50:200).",
     )
-    validate_parser.add_argument("--commission-pct", type=_non_negative_float, default=0.0)
-    validate_parser.add_argument("--slippage-pct", type=_non_negative_float, default=0.0005)
-    validate_parser.add_argument(
-        "--stop-loss-pct",
-        type=_stop_loss_pct,
-        default=0.08,
-        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
-    )
+    _add_cost_and_risk_arguments(validate_parser)
 
     args = parser.parse_args()
 

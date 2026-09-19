@@ -97,11 +97,43 @@ def test_get_position_returns_position_on_success(monkeypatch):
     assert broker.get_position_qty() == 10.0
 
 
-def test_has_open_order_true_and_false(monkeypatch):
+def test_has_open_buy_order_true_and_false(monkeypatch):
     broker = make_broker()
 
     monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [])
-    assert broker.has_open_order() is False
+    assert broker.has_open_buy_order() is False
 
     monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [object()])
-    assert broker.has_open_order() is True
+    assert broker.has_open_buy_order() is True
+
+
+def test_has_open_sell_order_true_and_false(monkeypatch):
+    broker = make_broker()
+
+    monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [])
+    assert broker.has_open_sell_order() is False
+
+    monkeypatch.setattr(broker.trading_client, "get_orders", lambda filter: [object()])
+    assert broker.has_open_sell_order() is True
+
+
+def test_has_open_order_filters_by_side(monkeypatch):
+    """Stellt sicher, dass has_open_buy_order/has_open_sell_order
+    tatsächlich unterschiedliche side-Filter an die API übergeben --
+    sonst würde eine offene Order in die eine Richtung fälschlich auch
+    Entscheidungen in die andere Richtung blockieren."""
+    from alpaca.trading.enums import OrderSide
+
+    seen_sides = []
+
+    def fake_get_orders(filter):
+        seen_sides.append(filter.side)
+        return []
+
+    broker = make_broker()
+    monkeypatch.setattr(broker.trading_client, "get_orders", fake_get_orders)
+
+    broker.has_open_buy_order()
+    broker.has_open_sell_order()
+
+    assert seen_sides == [OrderSide.BUY, OrderSide.SELL]

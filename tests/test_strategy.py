@@ -108,6 +108,24 @@ def test_generate_signal_series_matches_generate_signal_randomized():
             )
 
 
+def test_generate_signal_and_series_agree_across_a_data_gap():
+    """Regressionstest: eine NaN-Lücke in close (z.B. fehlender Tages-Bar)
+    darf generate_signal (Live-Bot) und generate_signal_series
+    (Backtest/Validierung) nicht auseinanderlaufen lassen. Vor der
+    Umstellung auf eine gemeinsame Implementierung verglich generate_signal
+    über die Lücke hinweg den letzten gültigen Wert VOR der Lücke mit dem
+    ersten gültigen Wert DANACH, als wären sie benachbart -- und erzeugte
+    so ein Signal, das die Serien-Version (korrekt) nicht sah."""
+    values = [10, 9, 8, 7, 6, 7, 9, np.nan, 20, 25]
+    close = make_series(values)
+    short_window, long_window = 2, 4
+
+    single = generate_signal(close, short_window, long_window)
+    series_last = generate_signal_series(close, short_window, long_window).iloc[-1]
+
+    assert single == series_last == Signal.HOLD
+
+
 def test_first_valid_bar_never_generates_spurious_signal():
     """Regressionstest: am allerersten Tag, an dem der lange SMA berechenbar
     wird, darf kein BUY/SELL entstehen -- es gibt noch keinen vorherigen

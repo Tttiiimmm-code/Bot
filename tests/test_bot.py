@@ -11,10 +11,17 @@ from tradingbot.strategy import Signal
 class FakeBroker:
     """Minimaler Broker-Double für Bot-Tests -- kein Netzwerkzugriff."""
 
-    def __init__(self, closes: pd.Series, position: Position | None, open_order: bool = False):
+    def __init__(
+        self,
+        closes: pd.Series,
+        position: Position | None,
+        open_buy_order: bool = False,
+        open_sell_order: bool = False,
+    ):
         self._closes = closes
         self._position = position
-        self._open_order = open_order
+        self._open_buy_order = open_buy_order
+        self._open_sell_order = open_sell_order
         self.buy_calls: list[float] = []
         self.sell_calls: list[float] = []
 
@@ -24,8 +31,11 @@ class FakeBroker:
     def get_position(self) -> Position | None:
         return self._position
 
-    def has_open_order(self) -> bool:
-        return self._open_order
+    def has_open_buy_order(self) -> bool:
+        return self._open_buy_order
+
+    def has_open_sell_order(self) -> bool:
+        return self._open_sell_order
 
     def buy(self, qty: float):
         self.buy_calls.append(qty)
@@ -50,6 +60,10 @@ def make_config(stop_loss_pct: float) -> Config:
 
 def flat_closes(value: float, n: int = 20) -> pd.Series:
     return pd.Series([value] * n, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+
+
+def make_series(values: list[float]) -> pd.Series:
+    return pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
 
 
 def test_stop_loss_triggers_sell_and_skips_signal_logic():
@@ -92,18 +106,63 @@ def test_disabled_stop_loss_never_triggers():
     assert broker.sell_calls == []
 
 
-def test_open_order_skips_cycle_to_avoid_duplicate_orders():
+def test_open_sell_order_blocks_duplicate_stop_loss_sell():
     config = make_config(stop_loss_pct=0.08)
     closes = flat_closes(90.0)  # würde ohne offene Order den Stop auslösen
     position = Position(qty=10.0, avg_entry_price=100.0)
-    broker = FakeBroker(closes, position, open_order=True)
+    broker = FakeBroker(closes, position, open_sell_order=True)
     bot = TradingBot(config, broker=broker)
 
     signal = bot.run_once()
 
     assert signal == Signal.HOLD
     assert broker.sell_calls == []
+
+
+def test_open_buy_order_does_not_block_stop_loss_sell():
+    """Regressionstest: eine noch offene KAUF-Order (z.B. eine andere,
+    unabhängige, langsam gefüllte Order) darf einen dringenden Stop-Loss-
+    Verkauf nicht blockieren -- nur eine bereits offene VERKAUFS-Order
+    für dasselbe Symbol darf das (um einen doppelten Stop-Verkauf zu
+    verhindern)."""
+    config = make_config(stop_loss_pct=0.08)
+    closes = flat_closes(90.0)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(closes, position, open_buy_order=True)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.SELL
+    assert broker.sell_calls == [10.0]
+
+
+def test_open_buy_order_blocks_duplicate_buy_signal():
+    config = make_config(stop_loss_pct=0.08)
+    # Golden Cross am letzten Punkt -> würde ohne offene Order kaufen.
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])
+    broker = FakeBroker(closes, position=None, open_buy_order=True)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
     assert broker.buy_calls == []
+
+
+def test_open_sell_order_blocks_duplicate_regular_sell_signal():
+    config = make_config(stop_loss_pct=0.08)
+    # Death Cross am letzten Punkt -> würde ohne offene Order verkaufen.
+    closes = make_series([6, 7, 8, 9, 10, 9, 7])
+    # Einstieg deutlich unter dem aktuellen Kurs (7), damit NICHT der
+    # Stop-Loss, sondern der reguläre Crossover-SELL-Zweig getestet wird.
+    position = Position(qty=5.0, avg_entry_price=5.0)
+    broker = FakeBroker(closes, position, open_sell_order=True)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert broker.sell_calls == []
 
 
 def test_no_position_skips_stop_check_without_error():

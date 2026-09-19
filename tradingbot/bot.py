@@ -28,16 +28,18 @@ class TradingBot:
             )
             return Signal.HOLD
 
-        if self.broker.has_open_order():
-            logger.info("Offene Order für %s vorhanden -> überspringe Zyklus.", self.config.symbol)
-            return Signal.HOLD
-
         current_price = closes.iloc[-1]
         position = self.broker.get_position()
 
         if position and position.qty > 0 and self.config.stop_loss_pct > 0:
             stop_price = position.avg_entry_price * (1 - self.config.stop_loss_pct)
             if current_price <= stop_price:
+                if self.broker.has_open_sell_order():
+                    logger.info(
+                        "STOP-LOSS ausgelöst, aber bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.",
+                        self.config.symbol,
+                    )
+                    return Signal.HOLD
                 logger.warning(
                     "STOP-LOSS ausgelöst: Kurs %.2f <= Stop %.2f (Einstieg %.2f) -> VERKAUFE %s %s",
                     current_price,
@@ -53,9 +55,15 @@ class TradingBot:
         position_qty = position.qty if position else 0.0
 
         if signal == Signal.BUY and position_qty <= 0:
+            if self.broker.has_open_buy_order():
+                logger.info("Bereits eine offene Kauf-Order für %s -> überspringe Zyklus.", self.config.symbol)
+                return Signal.HOLD
             logger.info("Golden Cross erkannt -> KAUFE %s %s", self.config.qty, self.config.symbol)
             self.broker.buy(self.config.qty)
         elif signal == Signal.SELL and position_qty > 0:
+            if self.broker.has_open_sell_order():
+                logger.info("Bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.", self.config.symbol)
+                return Signal.HOLD
             logger.info("Death Cross erkannt -> VERKAUFE %s %s", position_qty, self.config.symbol)
             self.broker.sell(position_qty)
         else:
