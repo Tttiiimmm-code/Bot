@@ -33,8 +33,17 @@ class TradingBot:
         if self.config.risk_per_trade_pct > 0 and self.config.stop_loss_pct > 0:
             equity = self.broker.get_account_equity()
             risk_amount = equity * self.config.risk_per_trade_pct
-            per_share_risk = current_price * self.config.stop_loss_pct
-            return risk_amount / per_share_risk
+            # RISK_PER_TRADE_PCT und STOP_LOSS_PCT werden unabhängig
+            # voneinander validiert (je [0, 1)) -- ihr Verhältnis kann
+            # trotzdem > 1 ergeben (z.B. 10% Risiko bei 8% Stop = 125% des
+            # Kapitals). Wie im Backtest (dort: notional = min(cash, ...))
+            # wird die Notional-Größe hier hart auf das verfügbare Kapital
+            # gedeckelt -- sonst könnte auf einem Margin-Konto eine Order
+            # weit über das beabsichtigte "Risiko pro Trade" hinaus
+            # gehebelt werden, auf einem Cash-Konto würde sie schlicht
+            # jeden Zyklus als "insufficient buying power" abgelehnt.
+            notional = min(equity, risk_amount / self.config.stop_loss_pct)
+            return notional / current_price
         return self.config.qty
 
     def run_once(self) -> Signal:

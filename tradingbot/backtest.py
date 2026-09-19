@@ -37,7 +37,12 @@ class BacktestResult:
 def _execute_sell(
     shares: float, price: float, commission_pct: float, slippage_pct: float
 ) -> tuple[float, float, float]:
-    """Führt einen Verkauf aus und gibt (cash_zufluss, gezahlte_kosten, fill_price) zurück."""
+    """Führt einen Verkauf aus und gibt (erlös, gezahlte_kosten, fill_price) zurück.
+
+    Der Erlös MUSS beim Aufrufer zum bestehenden `cash` addiert werden, nie
+    zugewiesen -- bei risikobasierter Positionsgröße (risk_per_trade_pct)
+    kann noch nicht investiertes Kapital vorhanden sein, das sonst beim
+    Verkauf stillschweigend verloren ginge."""
     fill_price = price * (1 - slippage_pct)
     proceeds = shares * fill_price
     commission = proceeds * commission_pct
@@ -146,7 +151,8 @@ def run_backtest(
             and price_valid
             and price <= peak_price * (1 - stop_loss_pct)
         ):
-            cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            proceeds, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            cash += proceeds
             total_costs += trade_cost
             trades.append(Trade(date, "STOP", fill_price, shares, trade_cost))
             num_trades += 1
@@ -163,7 +169,8 @@ def run_backtest(
             and price_valid
             and price >= entry_price * (1 + take_profit_pct)
         ):
-            cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            proceeds, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            cash += proceeds
             total_costs += trade_cost
             trades.append(Trade(date, "TP", fill_price, shares, trade_cost))
             num_trades += 1
@@ -194,7 +201,8 @@ def run_backtest(
             trades.append(Trade(date, "BUY", fill_price, shares, trade_cost))
         elif signal == Signal.SELL and shares > 0 and price_valid:
             sold_shares = shares
-            cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            proceeds, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            cash += proceeds
             total_costs += trade_cost
             shares = 0.0
             entry_price = None

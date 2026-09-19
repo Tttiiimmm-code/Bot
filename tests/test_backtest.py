@@ -87,6 +87,33 @@ def test_risk_based_position_sizing_uses_less_than_full_capital():
     assert risked_notional == pytest.approx(2_500.0, rel=1e-3)
 
 
+def test_risk_based_sizing_does_not_lose_uninvested_cash_on_exit():
+    """Regressionstest für einen kritischen Bug: bei risikobasierter
+    Positionsgröße bleibt Kapital uninvestiert (cash > 0 während die
+    Position offen ist). Ein Exit (STOP/TP/SELL), der cash mit dem
+    Verkaufserlös ÜBERSCHREIBT statt ihn zu ADDIEREN, vernichtet dieses
+    uninvestierte Kapital stillschweigend -- verifiziert am exakten
+    Reproduktionsfall: Einstieg ~9, Ausstieg (Trailing-Stop) ~18 (also mit
+    GEWINN verkauft), aber die Equity brach vorher von ~13052 auf ~4995
+    ein, weil ~7500 uninvestiertes Kapital beim Verkauf verloren gingen."""
+    values = [10, 9, 8, 7, 6, 7, 9, 12, 16, 21, 20, 18, 15, 12, 9]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(
+        close, 2, 4, starting_cash=10_000.0, stop_loss_pct=0.08, risk_per_trade_pct=0.02
+    )
+
+    sides = [t.side for t in result.trades]
+    assert sides == ["BUY", "STOP"]
+    # Mit dem Bug wurden die ~75% nie investierten Kapitals beim Verkauf
+    # gelöscht -> final_equity wäre auf ~4995 (nur der Verkaufserlös)
+    # eingebrochen, obwohl die Position mit deutlichem Gewinn verkauft
+    # wurde (Einstieg ~9, Ausstieg ~18). Korrekt bleibt das uninvestierte
+    # Kapital (10000-2500=7500) vollständig erhalten und addiert sich zum
+    # Verkaufserlös -> Endkapital deutlich über dem Startkapital.
+    assert result.final_equity > 12_000.0
+
+
 def test_risk_based_position_sizing_caps_at_available_cash():
     """Wenn die risikobasierte Notional-Größe das verfügbare Kapital
     übersteigen würde (z.B. sehr hoher Risiko-Prozentsatz relativ zum

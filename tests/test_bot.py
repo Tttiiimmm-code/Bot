@@ -389,6 +389,25 @@ def test_risk_based_buy_qty_uses_equity_and_stop_distance():
     assert broker.buy_calls[0] == pytest.approx(expected_qty)
 
 
+def test_risk_based_buy_qty_caps_at_available_equity():
+    """Regressionstest: RISK_PER_TRADE_PCT und STOP_LOSS_PCT werden
+    unabhängig voneinander im Bereich [0, 1) validiert -- ihr Verhältnis
+    kann trotzdem > 1 ergeben (hier 0.10/0.08 = 1.25, also 125% des
+    Kapitals). Ohne Deckelung würde das auf einem Margin-Konto weit über
+    das beabsichtigte Risiko hinaus gehebelt, auf einem Cash-Konto jeden
+    Zyklus als 'insufficient buying power' abgelehnt."""
+    config = make_config(stop_loss_pct=0.08, risk_per_trade_pct=0.10)
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])  # Golden Cross, Kurs 9
+    broker = FakeBroker(closes, position=None, equity=10_000.0)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert len(broker.buy_calls) == 1
+    notional = broker.buy_calls[0] * 9  # Kurs 9
+    assert notional == pytest.approx(10_000.0, rel=1e-6)
+
+
 def test_risk_based_sizing_falls_back_to_fixed_qty_without_stop_loss():
     """Ohne Stop-Loss ist 'Risiko pro Trade' nicht definiert -- muss auf
     die feste QTY zurückfallen statt zu crashen oder eine bedeutungslose

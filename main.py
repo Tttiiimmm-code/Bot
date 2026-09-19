@@ -102,6 +102,15 @@ def cmd_backtest(
         print(f"Keine historischen Daten für {config.symbol} erhalten.")
         return
 
+    required_history = max(config.long_window, trend_window, rsi_window)
+    if len(closes) < required_history + 1:
+        print(
+            f"Hinweis: {len(closes)} Handelstage geladen, aber long_window/trend_window/"
+            f"rsi_window benötigen mindestens {required_history + 1} -- der Trendfilter/"
+            f"RSI-Filter liefert dann nie einen gültigen Wert und es werden keine BUY-Signale "
+            f"erzeugt (mehr --days verwenden oder --trend-window/--rsi-window verkleinern).\n"
+        )
+
     result = run_backtest(
         closes,
         config.short_window,
