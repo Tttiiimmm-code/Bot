@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+from alpaca.data.enums import Adjustment
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
@@ -42,6 +43,9 @@ class Broker:
             timeframe=TimeFrame.Day,
             start=start,
             end=end,
+            # Ohne Split-/Dividenden-Adjustierung erzeugt z.B. ein Aktiensplit
+            # einen künstlichen Kurssprung, der die Strategie verfälscht.
+            adjustment=Adjustment.ALL,
         )
         bars = self.data_client.get_stock_bars(request).df
         if bars.empty:
