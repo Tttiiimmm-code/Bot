@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from alpaca.data.historical import StockHistoricalDataClient
@@ -16,6 +17,12 @@ from tradingbot.config import Config
 
 logger = logging.getLogger(__name__)
 
+# Freie Alpaca-Datenpläne haben eine ~15-Minuten-Verzögerung; ein `end` ohne
+# Sicherheitsabstand zu "jetzt" liefert sonst 0 Zeilen zurück.
+_DATA_DELAY = timedelta(minutes=20)
+# Puffer an Kalendertagen pro angefragtem Handelstag (Wochenenden/Feiertage).
+_CALENDAR_DAYS_PER_TRADING_DAY = 1.6
+
 
 class Broker:
     def __init__(self, config: Config):
@@ -27,17 +34,21 @@ class Broker:
 
     def get_recent_closes(self, limit: int) -> pd.Series:
         """Holt die letzten `limit` Tages-Schlusskurse für das konfigurierte Symbol."""
+        end = datetime.now(timezone.utc) - _DATA_DELAY
+        start = end - timedelta(days=int(limit * _CALENDAR_DAYS_PER_TRADING_DAY) + 5)
+
         request = StockBarsRequest(
             symbol_or_symbols=self.config.symbol,
             timeframe=TimeFrame.Day,
-            limit=limit,
+            start=start,
+            end=end,
         )
         bars = self.data_client.get_stock_bars(request).df
         if bars.empty:
             return pd.Series(dtype=float)
 
         symbol_bars = bars.xs(self.config.symbol, level="symbol")
-        return symbol_bars["close"]
+        return symbol_bars["close"].tail(limit)
 
     def get_position_qty(self) -> float:
         try:
