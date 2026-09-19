@@ -34,6 +34,13 @@ cp .env.example .env
 python main.py backtest --days 250
 ```
 
+Der Backtest berücksichtigt standardmäßig Slippage von 0,05% pro Order (Näherung an den
+Bid-Ask-Spread bei liquiden Aktien; Alpaca selbst ist für US-Aktien provisionsfrei). Anpassbar:
+
+```bash
+python main.py backtest --days 250 --commission-pct 0.001 --slippage-pct 0.001
+```
+
 **Live-/Paper-Trading-Loop starten** (fragt im konfigurierten Intervall neue Kurse ab und
 platziert Market-Orders bei Crossover-Signalen):
 

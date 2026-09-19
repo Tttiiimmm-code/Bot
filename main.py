@@ -27,7 +27,7 @@ def cmd_run(config: Config):
     bot.run_forever()
 
 
-def cmd_backtest(config: Config, days: int):
+def cmd_backtest(config: Config, days: int, commission_pct: float, slippage_pct: float):
     from tradingbot.backtest import run_backtest
 
     broker = Broker(config)
@@ -36,10 +36,17 @@ def cmd_backtest(config: Config, days: int):
         print(f"Keine historischen Daten für {config.symbol} erhalten.")
         return
 
-    result = run_backtest(closes, config.short_window, config.long_window)
+    result = run_backtest(
+        closes,
+        config.short_window,
+        config.long_window,
+        commission_pct=commission_pct,
+        slippage_pct=slippage_pct,
+    )
     print(f"Symbol:          {config.symbol}")
     print(f"Zeitraum:        {closes.index[0].date()} - {closes.index[-1].date()} ({len(closes)} Tage)")
     print(f"Trades:          {result.num_trades}")
+    print(f"Kosten (Provision+Slippage): {result.total_costs:,.2f} ({commission_pct:.2%} + {slippage_pct:.2%}/Order)")
     print(f"Endkapital:      {result.final_equity:,.2f}")
     print(f"Gesamtrendite:   {result.total_return_pct:+.2f}%")
 
@@ -54,6 +61,18 @@ def main():
     backtest_parser.add_argument(
         "--days", type=int, default=250, help="Anzahl historischer Handelstage (Standard: 250)."
     )
+    backtest_parser.add_argument(
+        "--commission-pct",
+        type=float,
+        default=0.0,
+        help="Provision pro Order als Anteil des Ordervolumens, z.B. 0.001 = 0.1%% (Standard: 0.0, Alpaca ist provisionsfrei).",
+    )
+    backtest_parser.add_argument(
+        "--slippage-pct",
+        type=float,
+        default=0.0005,
+        help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
+    )
 
     args = parser.parse_args()
 
@@ -63,7 +82,7 @@ def main():
     if args.command == "run":
         cmd_run(config)
     elif args.command == "backtest":
-        cmd_backtest(config, args.days)
+        cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct)
 
 
 if __name__ == "__main__":
