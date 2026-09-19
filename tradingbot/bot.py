@@ -86,6 +86,24 @@ class TradingBot:
         position = self.broker.get_position()
         symbol = self.config.symbol
 
+        # Dieser Bot ist rein long-only (kauft/verkauft nie leer). Eine
+        # negative qty käme nur von einer extern (manuell oder durch einen
+        # anderen Prozess auf demselben Konto) eröffneten Short-Position auf
+        # demselben Symbol -- dafür gilt keine der Long-Annahmen unten
+        # (Stop-Loss/Take-Profit-Richtung, "qty <= 0" als Kaufsignal). Statt
+        # sie stillschweigend wie "keine Position" zu behandeln (kein
+        # Schutz für den Short, plus ein möglicher Fehl-Kauf beim nächsten
+        # Golden Cross), wird der Zyklus für dieses Symbol komplett
+        # übersprungen.
+        if position and position.qty < 0:
+            logger.warning(
+                "Unerwartete Short-Position (qty=%s) für %s erkannt -- dieser Bot ist long-only, "
+                "überspringe Zyklus statt sie zu verwalten.",
+                position.qty,
+                symbol,
+            )
+            return Signal.HOLD
+
         if position and position.qty > 0:
             peak = max(self._peak_price_by_symbol.get(symbol, position.avg_entry_price), current_price)
             self._peak_price_by_symbol[symbol] = peak

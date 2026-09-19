@@ -508,6 +508,27 @@ def test_buy_signal_suppressed_with_insufficient_history_for_trend_filter():
     assert broker.buy_calls == []
 
 
+def test_short_position_skips_cycle_instead_of_being_treated_as_no_position():
+    """Regressionstest: eine negative qty (extern eröffnete Short-Position
+    auf demselben Symbol) darf nicht wie 'keine Position' behandelt werden
+    -- sonst bekäme der Short weder Stop-Loss/Take-Profit-Schutz, noch
+    würde ein nachfolgender Golden Cross fälschlich einen (falsch bemessenen)
+    Kauf auslösen. Der Bot ist long-only und überspringt den Zyklus
+    stattdessen komplett."""
+    config = make_config(stop_loss_pct=0.08)
+    # Golden Cross am letzten Punkt -> würde bei position=None kaufen.
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])
+    position = Position(qty=-5.0, avg_entry_price=8.0)
+    broker = FakeBroker(closes, position)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.buy_calls == []
+    assert broker.sell_calls == []
+
+
 def test_zero_qty_buy_guard_skips_order_when_no_cash_available():
     """Regressionstest für den 0-Stück-Order-Guard: wenn risikobasierte
     Größenberechnung wegen aufgebrauchtem freiem Cash (available_cash=0)
