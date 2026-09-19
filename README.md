@@ -168,6 +168,40 @@ python main.py run
 
 Mit `Strg+C` sauber beenden.
 
+## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
+
+Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
+`deploy/tradingbot.service` eine fertige systemd-Unit, die den Bot automatisch startet, bei
+einem Absturz neu startet und beim Server-Reboot mit hochfährt.
+
+```bash
+# 1) Eigenen, nicht-root User für den Bot anlegen (einmalig, als root/mit sudo)
+sudo useradd --system --create-home --shell /usr/sbin/nologin tradingbot
+
+# 2) Repo als dieser User klonen und einrichten
+sudo -u tradingbot -H bash -c '
+  cd ~ && git clone https://github.com/Tttiiimmm-code/Bot.git Bot && cd Bot
+  python3 -m venv .venv
+  .venv/bin/pip install -r requirements.txt
+  cp .env.example .env
+'
+# .env mit den echten Alpaca-Paper-API-Keys befüllen (ALPACA_PAPER=true lassen!):
+sudo -u tradingbot nano /home/tradingbot/Bot/.env
+
+# 3) Service installieren, aktivieren, starten
+sudo cp /home/tradingbot/Bot/deploy/tradingbot.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now tradingbot
+
+# 4) Status prüfen / Logs live verfolgen
+sudo systemctl status tradingbot
+sudo journalctl -u tradingbot -f
+```
+
+Passe in `deploy/tradingbot.service` `User=`/`WorkingDirectory=`/`ExecStart=` an, falls du einen
+anderen User oder Pfad verwendest. Neu starten nach einer `.env`-Änderung:
+`sudo systemctl restart tradingbot`. Dauerhaft stoppen: `sudo systemctl disable --now tradingbot`.
+
 ## Konfiguration (`.env`)
 
 | Variable                | Beschreibung                                             | Default |
