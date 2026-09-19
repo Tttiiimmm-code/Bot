@@ -21,6 +21,14 @@ class Signal(str, Enum):
     HOLD = "HOLD"
 
 
+# Gemeinsame Obergrenze für SMA-Fenstergrößen, verwendet von config.py,
+# main.py (_parse_grid) und hier -- ein größerer Wert würde in
+# close.rolling() bzw. bei der Kursdaten-Zeitraumberechnung einen
+# OverflowError auslösen; 100000 ist bereits absurd weit über jedem
+# sinnvollen Fenster.
+MAX_WINDOW = 100_000
+
+
 def compute_moving_averages(
     close: pd.Series, short_window: int, long_window: int
 ) -> pd.DataFrame:
@@ -28,10 +36,8 @@ def compute_moving_averages(
         raise ValueError("short_window muss mindestens 1 sein.")
     if short_window >= long_window:
         raise ValueError("short_window muss kleiner als long_window sein.")
-    if long_window > 100_000:
-        # Verhindert einen OverflowError in close.rolling() bei einer (z.B.
-        # um ein paar Nullen zu langen) Fenstergröße.
-        raise ValueError("long_window darf höchstens 100000 sein.")
+    if long_window > MAX_WINDOW:
+        raise ValueError(f"long_window darf höchstens {MAX_WINDOW} sein.")
 
     return pd.DataFrame(
         {

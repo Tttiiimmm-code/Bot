@@ -81,6 +81,23 @@ def test_stop_loss_triggers_sell_and_skips_signal_logic():
     assert broker.buy_calls == []
 
 
+def test_invalid_current_price_does_not_trigger_spurious_stop_sell():
+    """Regressionstest: ein Kurs von 0 (Datenmüll/Delisting) wäre <= jede
+    positive Stop-Schwelle und hätte einen spontanen Verkauf auf Basis
+    kaputter Daten ausgelöst, statt den Stop-Check für diesen Zyklus
+    schlicht zu überspringen."""
+    config = make_config(stop_loss_pct=0.08)
+    closes = flat_closes(0.0)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(closes, position)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal != Signal.SELL
+    assert broker.sell_calls == []
+
+
 def test_price_above_stop_does_not_trigger_stop_sell():
     config = make_config(stop_loss_pct=0.08)
     closes = flat_closes(95.0)  # über dem Stop von 92

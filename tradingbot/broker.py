@@ -80,11 +80,13 @@ class Broker:
             raise
         qty = float(position.qty)
         avg_entry_price = float(position.avg_entry_price)
-        if not (math.isfinite(qty) and math.isfinite(avg_entry_price)):
-            # Lieber laut scheitern (Zyklus wird oben geloggt übersprungen)
-            # als mit kaputten Positionsdaten weiterzumachen: NaN würde
-            # z.B. den Stop-Loss-Vergleich in bot.py unbemerkt immer False
-            # werden lassen und den Stop damit wirkungslos machen.
+        # Lieber laut scheitern (Zyklus wird oben geloggt übersprungen) als
+        # mit kaputten Positionsdaten weiterzumachen: NaN würde den
+        # Stop-Loss-Vergleich in bot.py unbemerkt immer False werden lassen,
+        # und ein avg_entry_price <= 0 würde die Stop-Schwelle auf <= 0
+        # setzen (nie erreichbar durch einen echten Kurs) -- in beiden
+        # Fällen wäre der Stop-Loss lautlos wirkungslos.
+        if not (math.isfinite(qty) and math.isfinite(avg_entry_price) and avg_entry_price > 0):
             raise ValueError(
                 f"Ungültige Positionsdaten von Alpaca erhalten für {self.config.symbol}: "
                 f"qty={qty}, avg_entry_price={avg_entry_price}"

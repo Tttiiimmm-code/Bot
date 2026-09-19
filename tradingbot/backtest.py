@@ -141,8 +141,11 @@ def run_backtest(
             # Fehlt heute ein gültiger Kurs, auf den letzten bekannten
             # zurückfallen statt die Equity-Kurve zu vergiften (0 * NaN
             # wäre ebenfalls NaN, daher zusätzlich der shares==0-Fall
-            # unten).
+            # unten). last_valid_price ist hier nie None: shares>0 setzt
+            # voraus, dass zuvor ein BUY mit price_valid ausgeführt wurde,
+            # was last_valid_price bereits gesetzt hat.
             mark_price = price if price_valid else last_valid_price
+            assert mark_price is not None
             equity_curve.append(cash + shares * mark_price)
         else:
             equity_curve.append(cash)

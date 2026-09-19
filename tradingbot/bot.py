@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 
 from tradingbot.broker import Broker
@@ -29,9 +30,24 @@ class TradingBot:
             return Signal.HOLD
 
         current_price = closes.iloc[-1]
+        # Ein kaputter letzter Datenpunkt (NaN oder <= 0, z.B. ein
+        # Delisting/Datenfehler beim Broker) darf weder einen spontanen
+        # Verkauf auf Basis von Datenmüll auslösen (<=0 wäre <= jeder
+        # positiven Stop-Schwelle) noch den Stop-Check unbemerkt
+        # überspringen (NaN-Vergleiche sind immer False) -- ohne
+        # ausdrückliche Warnung wäre der Stop-Loss für diesen Zyklus
+        # lautlos wirkungslos.
+        current_price_valid = math.isfinite(current_price) and current_price > 0
+        if not current_price_valid:
+            logger.warning(
+                "Ungültiger aktueller Kurs (%s) für %s erhalten -> Stop-Loss-Prüfung übersprungen.",
+                current_price,
+                self.config.symbol,
+            )
+
         position = self.broker.get_position()
 
-        if position and position.qty > 0 and self.config.stop_loss_pct > 0:
+        if position and position.qty > 0 and self.config.stop_loss_pct > 0 and current_price_valid:
             stop_price = position.avg_entry_price * (1 - self.config.stop_loss_pct)
             if current_price <= stop_price:
                 if self.broker.has_open_sell_order():

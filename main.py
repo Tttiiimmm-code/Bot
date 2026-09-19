@@ -16,6 +16,7 @@ from alpaca.common.exceptions import APIError
 from tradingbot.bot import TradingBot
 from tradingbot.broker import Broker
 from tradingbot.config import Config
+from tradingbot.strategy import MAX_WINDOW
 
 
 def _positive_int(value: str) -> int:
@@ -100,8 +101,8 @@ def _parse_grid(grid_str: str) -> list[tuple[int, int]]:
                 raise ValueError(f"{short_w}:{long_w} -- kurzes Fenster muss mindestens 1 sein")
             if short_w >= long_w:
                 raise ValueError(f"{short_w}:{long_w} -- kurzes Fenster muss kleiner als langes sein")
-            if long_w > 100_000:
-                raise ValueError(f"{short_w}:{long_w} -- langes Fenster darf höchstens 100000 sein")
+            if long_w > MAX_WINDOW:
+                raise ValueError(f"{short_w}:{long_w} -- langes Fenster darf höchstens {MAX_WINDOW} sein")
             combos.append((short_w, long_w))
     except ValueError as e:
         raise argparse.ArgumentTypeError(

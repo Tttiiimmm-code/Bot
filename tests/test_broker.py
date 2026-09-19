@@ -118,6 +118,23 @@ def test_get_position_rejects_non_finite_values(monkeypatch, qty, avg_entry_pric
         broker.get_position()
 
 
+@pytest.mark.parametrize("avg_entry_price", ["0", "-5"])
+def test_get_position_rejects_non_positive_avg_entry_price(monkeypatch, avg_entry_price):
+    """Regressionstest: avg_entry_price <= 0 ist zwar 'endlich' (isfinite),
+    würde aber die Stop-Schwelle auf <= 0 setzen -- unerreichbar durch
+    jeden echten Kurs, der Stop-Loss wäre für diese Position lautlos
+    dauerhaft wirkungslos."""
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: FakeAlpacaPosition(qty="10", avg_entry_price=avg_entry_price),
+    )
+
+    with pytest.raises(ValueError):
+        broker.get_position()
+
+
 class FakeBarSet:
     def __init__(self, df: pd.DataFrame):
         self.df = df
