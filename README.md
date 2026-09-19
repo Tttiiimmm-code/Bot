@@ -33,6 +33,23 @@ enger Stop dazu führen, dass Positionen durch normale Schwankungen vorzeitig au
 bevor sich der eigentliche Trend fortsetzt ("Whipsaw"). Mit `validate` lässt sich prüfen, ob ein
 bestimmter Stop-Loss-Wert für ein Symbol/Parameter-Set tatsächlich hilft oder eher schadet.
 
+## Robustheit & bekannte Grenzen
+
+- **Keine doppelten Orders**: Vor jeder Kauf-/Verkaufsentscheidung prüft der Bot, ob für das
+  Symbol bereits eine offene (unausgeführte) Order existiert, und überspringt den Zyklus in dem
+  Fall. Das verhindert, dass bei langsamer Order-Füllung (z.B. sehr kurzes
+  `POLL_INTERVAL_SECONDS` oder illiquide Symbole) eine zweite Order ausgelöst wird, bevor die
+  erste gefüllt ist.
+- **Tagesschlusskurs-Latenz**: Der Bot arbeitet mit Tages-Bars, nicht mit Echtzeit-Quotes. Der
+  "aktuelle Kurs" (auch für den Stop-Loss-Check) ist der letzte verfügbare Tages-Bar, der bei
+  freien Alpaca-Datenplänen bis zu ~15-20 Minuten hinter dem realen Marktgeschehen liegen kann.
+  Für einen auf Tagesbasis handelnden Swing-Bot ist das ausreichend, für sehr schnelle
+  Kursbewegungen (Flash Crash o.ä.) reagiert der Stop-Loss entsprechend verzögert.
+- **API-Fehler werden nicht als "keine Position" verschluckt**: Nur ein tatsächliches 404 ("keine
+  Position offen") wird von `Broker.get_position()` als `None` interpretiert. Alle anderen Fehler
+  (Netzwerk, Auth, Rate-Limit) werden weitergereicht und lösen im Live-Loop einen geloggten,
+  übersprungenen Zyklus aus, statt fälschlich anzunehmen, es sei keine Position offen.
+
 ## Setup
 
 ```bash
@@ -122,4 +139,5 @@ tests/                 Unit-Tests (kein API-Zugriff nötig)
 - Neue Strategie: eigene Funktion nach dem Muster von `generate_signal` in `strategy.py` schreiben
   und in `bot.py` einhängen.
 - Anderer Broker/Markt (z.B. Krypto via ccxt): `broker.py` durch eine passende Implementierung
-  mit gleicher Schnittstelle (`get_recent_closes`, `get_position_qty`, `buy`, `sell`) ersetzen.
+  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `has_open_order`, `buy`,
+  `sell`) ersetzen.

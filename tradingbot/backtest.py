@@ -73,7 +73,12 @@ def run_backtest(
     trades: list[Trade] = []
 
     for date, price, signal in zip(close.index, close, signals):
-        if shares > 0 and stop_loss_pct > 0 and price <= entry_price * (1 - stop_loss_pct):
+        if (
+            shares > 0
+            and stop_loss_pct > 0
+            and entry_price is not None
+            and price <= entry_price * (1 - stop_loss_pct)
+        ):
             cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
             total_costs += trade_cost
             trades.append(Trade(date, "STOP", fill_price, shares, trade_cost))
@@ -85,10 +90,9 @@ def run_backtest(
 
         if signal == Signal.BUY and shares == 0:
             fill_price = price * (1 + slippage_pct)
-            gross_shares = cash / fill_price
             commission = cash * commission_pct
             shares = (cash - commission) / fill_price
-            trade_cost = commission + (fill_price - price) * gross_shares
+            trade_cost = cash - shares * price
             total_costs += trade_cost
             cash = 0.0
             entry_price = fill_price

@@ -60,14 +60,31 @@ def generate_signal(close: pd.Series, short_window: int, long_window: int) -> Si
 def generate_signal_series(
     close: pd.Series, short_window: int, long_window: int
 ) -> pd.Series:
-    """Vektorisierte Version für Backtests: ein Signal pro Zeile."""
+    """Vektorisierte Version für Backtests: ein Signal pro Zeile.
+
+    Spiegelt exakt die Vergleichsoperatoren von `generate_signal` wider
+    (<=/>= für den vorherigen Punkt, </> für den aktuellen), inklusive der
+    Behandlung eines exakten Gleichstands (short_ma == long_ma) als
+    gültiger Vorgänger-Zustand für BEIDE Richtungen -- ein reines
+    "above"-Bool-Flag würde das für Down-Crosses verpassen, da ein
+    Gleichstand dabei fälschlich als "nicht oben" eingestuft würde.
+
+    Am allerersten Tag, an dem der lange SMA berechenbar wird, gibt es noch
+    keinen gültigen "vorherigen" MA-Zustand, mit dem verglichen werden
+    könnte -- ohne die `valid`/`prev_valid`-Prüfung würde das fälschlich
+    als BUY/SELL gewertet.
+    """
     ma = compute_moving_averages(close, short_window, long_window)
-    above = ma["short_ma"] > ma["long_ma"]
-    crossed_up = above & ~above.shift(1, fill_value=False)
-    crossed_down = ~above & above.shift(1, fill_value=False)
+    valid = ma["short_ma"].notna() & ma["long_ma"].notna()
+    diff = ma["short_ma"] - ma["long_ma"]
+
+    prev_valid = valid.shift(1, fill_value=False)
+    prev_diff = diff.shift(1)
+
+    crossed_up = valid & prev_valid & (prev_diff <= 0) & (diff > 0)
+    crossed_down = valid & prev_valid & (prev_diff >= 0) & (diff < 0)
 
     signals = pd.Series(Signal.HOLD, index=ma.index, dtype=object)
     signals[crossed_up] = Signal.BUY
     signals[crossed_down] = Signal.SELL
-    signals[ma["short_ma"].isna() | ma["long_ma"].isna()] = Signal.HOLD
     return signals

@@ -7,13 +7,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+from alpaca.common.exceptions import APIError
 from alpaca.data.enums import Adjustment
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce
-from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from tradingbot.config import Config
 
@@ -62,15 +63,34 @@ class Broker:
         return symbol_bars["close"].tail(limit)
 
     def get_position(self) -> Position | None:
+        """Gibt die offene Position zurück, oder None, wenn keine existiert.
+
+        Nur ein 404 ("keine Position offen") wird als None interpretiert.
+        Jeder andere Fehler (Netzwerk, Auth, Rate-Limit, ...) wird
+        weitergereicht -- sonst könnte z.B. ein API-Ausfall fälschlich als
+        "keine Position" interpretiert werden und einen aktiven Stop-Loss
+        unbemerkt außer Kraft setzen.
+        """
         try:
             position = self.trading_client.get_open_position(self.config.symbol)
-            return Position(qty=float(position.qty), avg_entry_price=float(position.avg_entry_price))
-        except Exception:
-            return None
+        except APIError as e:
+            if e.status_code == 404:
+                return None
+            raise
+        return Position(qty=float(position.qty), avg_entry_price=float(position.avg_entry_price))
 
     def get_position_qty(self) -> float:
         position = self.get_position()
         return position.qty if position else 0.0
+
+    def has_open_order(self) -> bool:
+        """Prüft, ob für das konfigurierte Symbol bereits eine unausgeführte
+        Order offen ist -- verhindert, dass der Bot eine zweite Order
+        auslöst, bevor die erste gefüllt wurde (z.B. bei langsamer Füllung
+        relativ zum Poll-Intervall)."""
+        request = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[self.config.symbol])
+        open_orders = self.trading_client.get_orders(filter=request)
+        return len(open_orders) > 0
 
     def submit_market_order(self, side: OrderSide, qty: float):
         order_request = MarketOrderRequest(

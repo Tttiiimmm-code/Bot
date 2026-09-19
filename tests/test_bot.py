@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 
 from tradingbot.bot import TradingBot
@@ -9,9 +11,10 @@ from tradingbot.strategy import Signal
 class FakeBroker:
     """Minimaler Broker-Double für Bot-Tests -- kein Netzwerkzugriff."""
 
-    def __init__(self, closes: pd.Series, position: Position | None):
+    def __init__(self, closes: pd.Series, position: Position | None, open_order: bool = False):
         self._closes = closes
         self._position = position
+        self._open_order = open_order
         self.buy_calls: list[float] = []
         self.sell_calls: list[float] = []
 
@@ -20,6 +23,9 @@ class FakeBroker:
 
     def get_position(self) -> Position | None:
         return self._position
+
+    def has_open_order(self) -> bool:
+        return self._open_order
 
     def buy(self, qty: float):
         self.buy_calls.append(qty)
@@ -84,6 +90,20 @@ def test_disabled_stop_loss_never_triggers():
     bot.run_once()
 
     assert broker.sell_calls == []
+
+
+def test_open_order_skips_cycle_to_avoid_duplicate_orders():
+    config = make_config(stop_loss_pct=0.08)
+    closes = flat_closes(90.0)  # würde ohne offene Order den Stop auslösen
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(closes, position, open_order=True)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.sell_calls == []
+    assert broker.buy_calls == []
 
 
 def test_no_position_skips_stop_check_without_error():

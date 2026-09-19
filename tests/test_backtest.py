@@ -1,6 +1,41 @@
 import pandas as pd
+import pytest
 
 from tradingbot.backtest import run_backtest
+
+
+def test_buy_cost_matches_shares_times_price_shortfall():
+    """trade.cost muss exakt der Differenz zwischen eingesetztem Kapital und
+    dem fairen Wert (Anzahl Aktien * unbeeinflusster Kurs) entsprechen --
+    das deckt sowohl Provision als auch Slippage in einer Formel ab."""
+    values = [10, 9, 8, 7, 6, 7, 9]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(
+        close, short_window=2, long_window=4, starting_cash=1000.0,
+        commission_pct=0.01, slippage_pct=0.01, stop_loss_pct=0.0,
+    )
+
+    buy = result.trades[0]
+    assert buy.side == "BUY"
+    raw_price = close.loc[buy.date]
+    expected_cost = 1000.0 - buy.shares * raw_price
+    assert buy.cost == pytest.approx(expected_cost)
+
+
+def test_sell_cost_matches_shares_times_price_shortfall():
+    values = [10, 9, 8, 7, 6, 7, 9, 8, 6, 4]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(
+        close, short_window=2, long_window=4, starting_cash=1000.0,
+        commission_pct=0.01, slippage_pct=0.01, stop_loss_pct=0.0,
+    )
+
+    sell = next(t for t in result.trades if t.side in ("SELL", "STOP"))
+    raw_price = close.loc[sell.date]
+    expected_cost = sell.shares * raw_price - (sell.shares * sell.price * (1 - 0.01))
+    assert sell.cost == pytest.approx(expected_cost)
 
 
 def test_backtest_profits_on_clean_uptrend_with_dip():

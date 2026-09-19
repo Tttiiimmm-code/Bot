@@ -15,6 +15,34 @@ from tradingbot.broker import Broker
 from tradingbot.config import Config
 
 
+def _positive_int(value: str) -> int:
+    n = int(value)
+    if n <= 0:
+        raise argparse.ArgumentTypeError(f"muss positiv sein, nicht {n}")
+    return n
+
+
+def _train_ratio(value: str) -> float:
+    ratio = float(value)
+    if not 0 < ratio < 1:
+        raise argparse.ArgumentTypeError(f"muss zwischen 0 und 1 liegen (exklusiv), nicht {ratio}")
+    return ratio
+
+
+def _non_negative_float(value: str) -> float:
+    x = float(value)
+    if x < 0:
+        raise argparse.ArgumentTypeError(f"darf nicht negativ sein, nicht {x}")
+    return x
+
+
+def _stop_loss_pct(value: str) -> float:
+    x = float(value)
+    if not 0 <= x < 1:
+        raise argparse.ArgumentTypeError(f"muss zwischen 0 (aus) und kleiner 1 liegen, nicht {x}")
+    return x
+
+
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
@@ -59,9 +87,20 @@ def cmd_backtest(
 
 def _parse_grid(grid_str: str) -> list[tuple[int, int]]:
     combos = []
-    for pair in grid_str.split(","):
-        short_str, long_str = pair.split(":")
-        combos.append((int(short_str), int(long_str)))
+    try:
+        for pair in grid_str.split(","):
+            short_str, long_str = pair.split(":")
+            short_w, long_w = int(short_str), int(long_str)
+            if short_w < 1:
+                raise ValueError(f"{short_w}:{long_w} -- kurzes Fenster muss mindestens 1 sein")
+            if short_w >= long_w:
+                raise ValueError(f"{short_w}:{long_w} -- kurzes Fenster muss kleiner als langes sein")
+            combos.append((short_w, long_w))
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(
+            f"Ungültiges --grid-Format {grid_str!r}, erwartet 'kurz:lang,kurz:lang,...' "
+            f"(z.B. '5:20,10:30'): {e}"
+        )
     return combos
 
 
@@ -69,14 +108,12 @@ def cmd_validate(
     config: Config,
     days: int,
     train_ratio: float,
-    grid_str: str,
+    grid: list[tuple[int, int]],
     commission_pct: float,
     slippage_pct: float,
     stop_loss_pct: float,
 ):
     from tradingbot.validation import validate
-
-    grid = _parse_grid(grid_str)
 
     broker = Broker(config)
     closes = broker.get_recent_closes(limit=days)
@@ -92,6 +129,16 @@ def cmd_validate(
         slippage_pct=slippage_pct,
         stop_loss_pct=stop_loss_pct,
     )
+
+    evaluated = {(c.short_window, c.long_window) for c in result.all_candidates}
+    skipped = [combo for combo in grid if combo not in evaluated]
+    if skipped:
+        skipped_str = ", ".join(f"{s}/{l}" for s, l in skipped)
+        print(
+            f"Hinweis: {skipped_str} übersprungen -- zu wenig Handelstage im "
+            f"Trainingsabschnitt für diese Fenstergröße (mehr --days oder kleineres "
+            f"--train-ratio verwenden).\n"
+        )
 
     print(f"Symbol:          {config.symbol}")
     print(
@@ -126,23 +173,23 @@ def main():
 
     backtest_parser = subparsers.add_parser("backtest", help="Backtest gegen historische Kurse.")
     backtest_parser.add_argument(
-        "--days", type=int, default=250, help="Anzahl historischer Handelstage (Standard: 250)."
+        "--days", type=_positive_int, default=250, help="Anzahl historischer Handelstage (Standard: 250)."
     )
     backtest_parser.add_argument(
         "--commission-pct",
-        type=float,
+        type=_non_negative_float,
         default=0.0,
         help="Provision pro Order als Anteil des Ordervolumens, z.B. 0.001 = 0.1%% (Standard: 0.0, Alpaca ist provisionsfrei).",
     )
     backtest_parser.add_argument(
         "--slippage-pct",
-        type=float,
+        type=_non_negative_float,
         default=0.0005,
         help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
     )
     backtest_parser.add_argument(
         "--stop-loss-pct",
-        type=float,
+        type=_stop_loss_pct,
         default=0.08,
         help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
     )
@@ -151,25 +198,25 @@ def main():
         "validate", help="Out-of-Sample-Validierung: Parameter auf Trainingsdaten wählen, auf Testdaten prüfen."
     )
     validate_parser.add_argument(
-        "--days", type=int, default=600, help="Anzahl historischer Handelstage (Standard: 600)."
+        "--days", type=_positive_int, default=600, help="Anzahl historischer Handelstage (Standard: 600)."
     )
     validate_parser.add_argument(
         "--train-ratio",
-        type=float,
+        type=_train_ratio,
         default=0.7,
         help="Anteil der Daten für die Parametersuche, Rest ist Out-of-Sample-Test (Standard: 0.7).",
     )
     validate_parser.add_argument(
         "--grid",
-        type=str,
-        default="5:20,10:30,20:50,50:200",
+        type=_parse_grid,
+        default=[(5, 20), (10, 30), (20, 50), (50, 200)],
         help="Zu testende SMA-Kombinationen als 'kurz:lang,kurz:lang,...' (Standard: 5:20,10:30,20:50,50:200).",
     )
-    validate_parser.add_argument("--commission-pct", type=float, default=0.0)
-    validate_parser.add_argument("--slippage-pct", type=float, default=0.0005)
+    validate_parser.add_argument("--commission-pct", type=_non_negative_float, default=0.0)
+    validate_parser.add_argument("--slippage-pct", type=_non_negative_float, default=0.0005)
     validate_parser.add_argument(
         "--stop-loss-pct",
-        type=float,
+        type=_stop_loss_pct,
         default=0.08,
         help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
     )

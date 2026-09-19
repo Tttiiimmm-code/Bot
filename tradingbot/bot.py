@@ -28,6 +28,10 @@ class TradingBot:
             )
             return Signal.HOLD
 
+        if self.broker.has_open_order():
+            logger.info("Offene Order für %s vorhanden -> überspringe Zyklus.", self.config.symbol)
+            return Signal.HOLD
+
         current_price = closes.iloc[-1]
         position = self.broker.get_position()
 
