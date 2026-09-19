@@ -20,6 +20,7 @@ class Config:
     short_window: int
     long_window: int
     poll_interval_seconds: int
+    stop_loss_pct: float
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -36,6 +37,10 @@ class Config:
         if short_window >= long_window:
             raise ValueError("SHORT_WINDOW muss kleiner als LONG_WINDOW sein.")
 
+        stop_loss_pct = float(os.getenv("STOP_LOSS_PCT", "0.08"))
+        if stop_loss_pct < 0:
+            raise ValueError("STOP_LOSS_PCT darf nicht negativ sein (0 = deaktiviert).")
+
         return cls(
             api_key=api_key,
             secret_key=secret_key,
@@ -45,4 +50,5 @@ class Config:
             short_window=short_window,
             long_window=long_window,
             poll_interval_seconds=int(os.getenv("POLL_INTERVAL_SECONDS", "60")),
+            stop_loss_pct=stop_loss_pct,
         )

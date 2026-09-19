@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -23,6 +24,12 @@ logger = logging.getLogger(__name__)
 _DATA_DELAY = timedelta(minutes=20)
 # Puffer an Kalendertagen pro angefragtem Handelstag (Wochenenden/Feiertage).
 _CALENDAR_DAYS_PER_TRADING_DAY = 1.6
+
+
+@dataclass
+class Position:
+    qty: float
+    avg_entry_price: float
 
 
 class Broker:
@@ -54,12 +61,16 @@ class Broker:
         symbol_bars = bars.xs(self.config.symbol, level="symbol")
         return symbol_bars["close"].tail(limit)
 
-    def get_position_qty(self) -> float:
+    def get_position(self) -> Position | None:
         try:
             position = self.trading_client.get_open_position(self.config.symbol)
-            return float(position.qty)
+            return Position(qty=float(position.qty), avg_entry_price=float(position.avg_entry_price))
         except Exception:
-            return 0.0
+            return None
+
+    def get_position_qty(self) -> float:
+        position = self.get_position()
+        return position.qty if position else 0.0
 
     def submit_market_order(self, side: OrderSide, qty: float):
         order_request = MarketOrderRequest(

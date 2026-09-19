@@ -28,8 +28,25 @@ class TradingBot:
             )
             return Signal.HOLD
 
+        current_price = closes.iloc[-1]
+        position = self.broker.get_position()
+
+        if position and position.qty > 0 and self.config.stop_loss_pct > 0:
+            stop_price = position.avg_entry_price * (1 - self.config.stop_loss_pct)
+            if current_price <= stop_price:
+                logger.warning(
+                    "STOP-LOSS ausgelöst: Kurs %.2f <= Stop %.2f (Einstieg %.2f) -> VERKAUFE %s %s",
+                    current_price,
+                    stop_price,
+                    position.avg_entry_price,
+                    position.qty,
+                    self.config.symbol,
+                )
+                self.broker.sell(position.qty)
+                return Signal.SELL
+
         signal = generate_signal(closes, self.config.short_window, self.config.long_window)
-        position_qty = self.broker.get_position_qty()
+        position_qty = position.qty if position else 0.0
 
         if signal == Signal.BUY and position_qty <= 0:
             logger.info("Golden Cross erkannt -> KAUFE %s %s", self.config.qty, self.config.symbol)

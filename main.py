@@ -27,7 +27,9 @@ def cmd_run(config: Config):
     bot.run_forever()
 
 
-def cmd_backtest(config: Config, days: int, commission_pct: float, slippage_pct: float):
+def cmd_backtest(
+    config: Config, days: int, commission_pct: float, slippage_pct: float, stop_loss_pct: float
+):
     from tradingbot.backtest import run_backtest
 
     broker = Broker(config)
@@ -42,10 +44,14 @@ def cmd_backtest(config: Config, days: int, commission_pct: float, slippage_pct:
         config.long_window,
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
+        stop_loss_pct=stop_loss_pct,
     )
+    num_stops = sum(1 for t in result.trades if t.side == "STOP")
+
     print(f"Symbol:          {config.symbol}")
     print(f"Zeitraum:        {closes.index[0].date()} - {closes.index[-1].date()} ({len(closes)} Tage)")
-    print(f"Trades:          {result.num_trades}")
+    print(f"Trades:          {result.num_trades} (davon {num_stops} Stop-Loss-Ausstiege)")
+    print(f"Stop-Loss:       {stop_loss_pct:.1%} unter Einstiegspreis" if stop_loss_pct > 0 else "Stop-Loss:       deaktiviert")
     print(f"Kosten (Provision+Slippage): {result.total_costs:,.2f} ({commission_pct:.2%} + {slippage_pct:.2%}/Order)")
     print(f"Endkapital:      {result.final_equity:,.2f}")
     print(f"Gesamtrendite:   {result.total_return_pct:+.2f}%")
@@ -66,6 +72,7 @@ def cmd_validate(
     grid_str: str,
     commission_pct: float,
     slippage_pct: float,
+    stop_loss_pct: float,
 ):
     from tradingbot.validation import validate
 
@@ -83,6 +90,7 @@ def cmd_validate(
         train_ratio=train_ratio,
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
+        stop_loss_pct=stop_loss_pct,
     )
 
     print(f"Symbol:          {config.symbol}")
@@ -132,6 +140,12 @@ def main():
         default=0.0005,
         help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
     )
+    backtest_parser.add_argument(
+        "--stop-loss-pct",
+        type=float,
+        default=0.08,
+        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
+    )
 
     validate_parser = subparsers.add_parser(
         "validate", help="Out-of-Sample-Validierung: Parameter auf Trainingsdaten wählen, auf Testdaten prüfen."
@@ -153,6 +167,12 @@ def main():
     )
     validate_parser.add_argument("--commission-pct", type=float, default=0.0)
     validate_parser.add_argument("--slippage-pct", type=float, default=0.0005)
+    validate_parser.add_argument(
+        "--stop-loss-pct",
+        type=float,
+        default=0.08,
+        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
+    )
 
     args = parser.parse_args()
 
@@ -162,10 +182,16 @@ def main():
     if args.command == "run":
         cmd_run(config)
     elif args.command == "backtest":
-        cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct)
+        cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct, args.stop_loss_pct)
     elif args.command == "validate":
         cmd_validate(
-            config, args.days, args.train_ratio, args.grid, args.commission_pct, args.slippage_pct
+            config,
+            args.days,
+            args.train_ratio,
+            args.grid,
+            args.commission_pct,
+            args.slippage_pct,
+            args.stop_loss_pct,
         )
 
 

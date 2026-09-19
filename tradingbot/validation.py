@@ -80,6 +80,7 @@ def validate(
     train_ratio: float = 0.7,
     commission_pct: float = 0.0,
     slippage_pct: float = 0.0005,
+    stop_loss_pct: float = 0.08,
     starting_cash: float = 10_000.0,
 ) -> ValidationResult:
     if not 0 < train_ratio < 1:
@@ -103,6 +104,7 @@ def validate(
             starting_cash=starting_cash,
             commission_pct=commission_pct,
             slippage_pct=slippage_pct,
+            stop_loss_pct=stop_loss_pct,
         )
 
         train_metrics = _segment_metrics(result, close, starting_cash, 0, split_idx)

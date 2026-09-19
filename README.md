@@ -15,6 +15,24 @@ Moving-Average-Crossover:
 
 Fenstergrößen sind über `SHORT_WINDOW` / `LONG_WINDOW` konfigurierbar.
 
+## Risikomanagement: Stop-Loss
+
+Sobald eine Position offen ist, wird bei jedem Zyklus geprüft, ob der aktuelle Kurs um mehr als
+`STOP_LOSS_PCT` unter den Einstiegspreis gefallen ist. Falls ja, wird sofort verkauft –
+unabhängig vom Crossover-Signal. Das begrenzt den Verlust pro Trade, unabhängig davon, wie lange
+das nächste Death-Cross-Signal noch auf sich warten lässt.
+
+- Live-/Paper-Trading: der Bot fragt den tatsächlichen Einstiegspreis der offenen Position direkt
+  bei Alpaca ab (`avg_entry_price`), kein eigener Zustand nötig.
+- Backtest/Validierung: der Stop wird auf Basis des Tagesschlusskurses geprüft (keine Intraday-
+  Daten verfügbar), ausgelöste Stop-Exits erscheinen im Ergebnis als eigener Trade-Typ `STOP`.
+- `STOP_LOSS_PCT=0` deaktiviert den Stop vollständig.
+
+⚠️ Ein fixer prozentualer Stop ist kein Allheilmittel: Bei volatilen Trendmärkten kann ein zu
+enger Stop dazu führen, dass Positionen durch normale Schwankungen vorzeitig ausgestoppt werden,
+bevor sich der eigentliche Trend fortsetzt ("Whipsaw"). Mit `validate` lässt sich prüfen, ob ein
+bestimmter Stop-Loss-Wert für ein Symbol/Parameter-Set tatsächlich hilft oder eher schadet.
+
 ## Setup
 
 ```bash
@@ -38,7 +56,7 @@ Der Backtest berücksichtigt standardmäßig Slippage von 0,05% pro Order (Nähe
 Bid-Ask-Spread bei liquiden Aktien; Alpaca selbst ist für US-Aktien provisionsfrei). Anpassbar:
 
 ```bash
-python main.py backtest --days 250 --commission-pct 0.001 --slippage-pct 0.001
+python main.py backtest --days 250 --commission-pct 0.001 --slippage-pct 0.001 --stop-loss-pct 0.08
 ```
 
 **Out-of-Sample-Validierung** (Parameter werden nur auf dem ersten Teil der Daten gesucht,
@@ -75,6 +93,7 @@ Mit `Strg+C` sauber beenden.
 | `SHORT_WINDOW`           | Fenstergröße kurzer SMA                                    | `20`    |
 | `LONG_WINDOW`            | Fenstergröße langer SMA                                    | `50`    |
 | `POLL_INTERVAL_SECONDS`  | Abfrageintervall im Live-Loop (Sekunden)                   | `60`    |
+| `STOP_LOSS_PCT`          | Stop-Loss als Anteil unter dem Einstiegspreis, `0` = aus   | `0.08`  |
 
 ## Tests
 
