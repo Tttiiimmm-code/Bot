@@ -5,6 +5,26 @@ import pytest
 from tradingbot.backtest import run_backtest
 
 
+def test_cost_and_risk_params_must_be_below_one():
+    """Regressionstest: commission_pct/slippage_pct >= 1 (100%) lässt
+    Vorzeichen kippen (z.B. negative shares) und korrumpiert den
+    Backtest-Zustand dauerhaft -- muss abgelehnt werden statt still
+    falsche Ergebnisse zu produzieren."""
+    close = pd.Series(
+        [10, 9, 8, 7, 6, 7, 9, 12, 16],
+        index=pd.date_range("2024-01-01", periods=9, freq="D"),
+    )
+
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, commission_pct=1.5)
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, slippage_pct=1.0)
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, stop_loss_pct=1.0)
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, commission_pct=-0.01)
+
+
 def test_nan_gap_while_holding_position_does_not_poison_equity_curve():
     """Regressionstest: 0 * NaN und x * NaN sind beide NaN -- ein fehlender
     Kurs (Datenlücke) darf die Equity-Kurve nicht mit NaN verunreinigen,

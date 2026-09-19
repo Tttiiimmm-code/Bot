@@ -2,7 +2,7 @@ import argparse
 
 import pytest
 
-from main import _non_negative_float, _parse_grid, _positive_int, _stop_loss_pct, _train_ratio
+from main import _fraction_below_one, _parse_grid, _positive_int, _train_ratio
 
 
 def test_parses_valid_grid():
@@ -70,26 +70,16 @@ def test_train_ratio_rejects_boundaries_and_outside():
             _train_ratio(value)
 
 
-def test_non_negative_float_accepts_zero_and_positive():
-    assert _non_negative_float("0") == 0.0
-    assert _non_negative_float("0.001") == 0.001
+def test_fraction_below_one_accepts_zero_and_fractions_below_one():
+    assert _fraction_below_one("0") == 0.0
+    assert _fraction_below_one("0.001") == 0.001
+    assert _fraction_below_one("0.99") == 0.99
 
 
-def test_non_negative_float_rejects_negative():
+def test_fraction_below_one_rejects_negative_and_one_or_more():
     with pytest.raises(argparse.ArgumentTypeError):
-        _non_negative_float("-0.001")
-
-
-def test_stop_loss_pct_accepts_zero_and_fractions_below_one():
-    assert _stop_loss_pct("0") == 0.0
-    assert _stop_loss_pct("0.08") == 0.08
-    assert _stop_loss_pct("0.99") == 0.99
-
-
-def test_stop_loss_pct_rejects_negative_and_one_or_more():
+        _fraction_below_one("-0.001")
     with pytest.raises(argparse.ArgumentTypeError):
-        _stop_loss_pct("-0.01")
+        _fraction_below_one("1")
     with pytest.raises(argparse.ArgumentTypeError):
-        _stop_loss_pct("1")
-    with pytest.raises(argparse.ArgumentTypeError):
-        _stop_loss_pct("1.5")
+        _fraction_below_one("1.5")

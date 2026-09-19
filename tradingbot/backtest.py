@@ -62,6 +62,18 @@ def run_backtest(
       Da nur Tagesschlusskurse vorliegen, wird der Stop nur einmal pro Tag
       auf Basis des Schlusskurses geprüft, nicht intraday.
     """
+    for name, value in (
+        ("commission_pct", commission_pct),
+        ("slippage_pct", slippage_pct),
+        ("stop_loss_pct", stop_loss_pct),
+    ):
+        if not 0 <= value < 1:
+            # Ab 1 (100%) kippen die Vorzeichen: z.B. negative shares bei
+            # commission_pct>=1 ((cash-commission) wird negativ) oder ein
+            # negativer Verkaufspreis bei slippage_pct>=1 -- das würde den
+            # Backtest-Zustand dauerhaft korrumpieren.
+            raise ValueError(f"{name} muss zwischen 0 und kleiner 1 (100%) liegen, war {value}.")
+
     signals = generate_signal_series(close, short_window, long_window)
 
     cash = starting_cash

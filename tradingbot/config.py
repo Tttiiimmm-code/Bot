@@ -32,6 +32,19 @@ class Config:
                 "(siehe .env.example)."
             )
 
+        paper_raw = os.getenv("ALPACA_PAPER", "true").strip().lower()
+        if paper_raw in ("1", "true", "yes"):
+            paper = True
+        elif paper_raw in ("0", "false", "no"):
+            paper = False
+        else:
+            # Bewusst kein stillschweigender Fallback: ein Tippfehler wie
+            # "flase" soll niemals unbemerkt zu Live-Trading mit echtem
+            # Geld führen.
+            raise ValueError(
+                f"ALPACA_PAPER muss true/false (oder 1/0, yes/no) sein, nicht {paper_raw!r}."
+            )
+
         symbol = os.getenv("SYMBOL", "AAPL").strip().upper()
         if not symbol:
             raise ValueError("SYMBOL darf nicht leer sein.")
@@ -60,7 +73,7 @@ class Config:
         return cls(
             api_key=api_key,
             secret_key=secret_key,
-            paper=os.getenv("ALPACA_PAPER", "true").lower() in ("1", "true", "yes"),
+            paper=paper,
             symbol=symbol,
             qty=qty,
             short_window=short_window,

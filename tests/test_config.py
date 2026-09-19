@@ -103,3 +103,28 @@ def test_symbol_is_normalized_to_uppercase_and_trimmed(monkeypatch):
     config = Config.from_env()
 
     assert config.symbol == "AAPL"
+
+
+@pytest.mark.parametrize("value", ["true", "True", "1", "yes", " true "])
+def test_alpaca_paper_accepts_known_true_values(monkeypatch, value):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("ALPACA_PAPER", value)
+    assert Config.from_env().paper is True
+
+
+@pytest.mark.parametrize("value", ["false", "False", "0", "no", " false "])
+def test_alpaca_paper_accepts_known_false_values(monkeypatch, value):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("ALPACA_PAPER", value)
+    assert Config.from_env().paper is False
+
+
+@pytest.mark.parametrize("value", ["flase", "paper", "on", "maybe", ""])
+def test_alpaca_paper_rejects_unrecognized_values(monkeypatch, value):
+    """Regressionstest: ein Tippfehler wie 'flase' darf niemals
+    stillschweigend als Live-Trading (paper=False) interpretiert werden --
+    das wäre ein Fail-Unsafe-Default mit echtem Geld im Spiel."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("ALPACA_PAPER", value)
+    with pytest.raises(ValueError):
+        Config.from_env()

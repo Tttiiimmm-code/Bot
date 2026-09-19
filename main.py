@@ -32,17 +32,16 @@ def _train_ratio(value: str) -> float:
     return ratio
 
 
-def _non_negative_float(value: str) -> float:
-    x = float(value)
-    if x < 0:
-        raise argparse.ArgumentTypeError(f"darf nicht negativ sein, nicht {x}")
-    return x
-
-
-def _stop_loss_pct(value: str) -> float:
+def _fraction_below_one(value: str) -> float:
+    """Für commission-pct/slippage-pct/stop-loss-pct: alle drei fließen in
+    run_backtest als Multiplikator auf einen Preis/Kapitalbetrag ein.
+    Ab 1 (100%) kippen die Vorzeichen (z.B. negative shares bei
+    commission_pct>=1, negativer Verkaufspreis bei slippage_pct>=1) und
+    korrumpieren den Backtest-Zustand dauerhaft -- daher hier hart auf
+    [0, 1) begrenzt statt nur "nicht negativ"."""
     x = float(value)
     if not 0 <= x < 1:
-        raise argparse.ArgumentTypeError(f"muss zwischen 0 (aus) und kleiner 1 liegen, nicht {x}")
+        raise argparse.ArgumentTypeError(f"muss zwischen 0 und kleiner 1 (100%) liegen, nicht {x}")
     return x
 
 
@@ -174,19 +173,19 @@ def _add_cost_and_risk_arguments(subparser: argparse.ArgumentParser):
     dieselben Wertebereiche/Defaults akzeptieren."""
     subparser.add_argument(
         "--commission-pct",
-        type=_non_negative_float,
+        type=_fraction_below_one,
         default=0.0,
         help="Provision pro Order als Anteil des Ordervolumens, z.B. 0.001 = 0.1%% (Standard: 0.0, Alpaca ist provisionsfrei).",
     )
     subparser.add_argument(
         "--slippage-pct",
-        type=_non_negative_float,
+        type=_fraction_below_one,
         default=0.0005,
         help="Erwartete Slippage pro Order gegenüber dem Schlusskurs, z.B. 0.0005 = 0.05%% (Standard: 0.05%%).",
     )
     subparser.add_argument(
         "--stop-loss-pct",
-        type=_stop_loss_pct,
+        type=_fraction_below_one,
         default=0.08,
         help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
     )
