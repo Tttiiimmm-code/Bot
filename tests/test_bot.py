@@ -20,12 +20,17 @@ class FakeBroker:
         open_buy_order: bool = False,
         open_sell_order: bool = False,
         equity: float = 10_000.0,
+        available_cash: float | None = None,
     ):
         self._closes = closes
         self._position = position
         self._open_buy_order = open_buy_order
         self._open_sell_order = open_sell_order
         self._equity = equity
+        # Standardmäßig kein zusätzlicher Cash-Engpass -- Tests, die nur
+        # `equity` setzen, sollen sich weiterhin so verhalten, als sei
+        # das gesamte Equity auch als freies Cash verfügbar.
+        self._available_cash = equity if available_cash is None else available_cash
         self.buy_calls: list[float] = []
         self.sell_calls: list[float] = []
 
@@ -43,6 +48,9 @@ class FakeBroker:
 
     def get_account_equity(self) -> float:
         return self._equity
+
+    def get_available_cash(self) -> float:
+        return self._available_cash
 
     def buy(self, qty: float):
         self.buy_calls.append(qty)
@@ -406,6 +414,27 @@ def test_risk_based_buy_qty_caps_at_available_equity():
     assert len(broker.buy_calls) == 1
     notional = broker.buy_calls[0] * 9  # Kurs 9
     assert notional == pytest.approx(10_000.0, rel=1e-6)
+
+
+def test_risk_based_buy_qty_caps_at_available_cash_not_just_equity():
+    """Regressionstest: die Risiko-Prozentsatz-Berechnung basiert korrekt
+    auf dem Gesamt-Equity (Standard-Definition von 'Risiko pro Trade'),
+    die tatsächliche Ordergröße darf aber nie das freie Cash übersteigen
+    -- auf einem Konto mit anderen offenen Positionen kann das deutlich
+    unter dem Gesamt-Equity liegen."""
+    config = make_config(stop_loss_pct=0.08, risk_per_trade_pct=0.02)
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])  # Golden Cross, Kurs 9
+    # Equity 10000 (anderswo gebunden), aber nur 500 tatsaechlich frei.
+    broker = FakeBroker(closes, position=None, equity=10_000.0, available_cash=500.0)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert len(broker.buy_calls) == 1
+    notional = broker.buy_calls[0] * 9
+    # Ohne Cash-Deckelung waere notional = (10000*0.02)/0.08 = 2500 --
+    # weit ueber dem verfuegbaren Cash von 500.
+    assert notional == pytest.approx(500.0, rel=1e-6)
 
 
 def test_risk_based_sizing_falls_back_to_fixed_qty_without_stop_loss():

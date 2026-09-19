@@ -137,10 +137,15 @@ def cmd_backtest(
         f"Take-Profit:     {take_profit_pct:.1%} über Einstiegspreis"
         if take_profit_pct > 0 else "Take-Profit:     deaktiviert"
     )
-    print(
-        f"Positionsgröße:  {risk_per_trade_pct:.1%} Kapitalrisiko pro Trade"
-        if risk_per_trade_pct > 0 else "Positionsgröße:  volles Kapital pro Trade"
-    )
+    if risk_per_trade_pct > 0 and stop_loss_pct > 0:
+        print(f"Positionsgröße:  {risk_per_trade_pct:.1%} Kapitalrisiko pro Trade")
+    elif risk_per_trade_pct > 0:
+        # risk_per_trade_pct ohne stop_loss_pct ist nicht definiert
+        # (kein Bezugspunkt für "Risiko") -- run_backtest fällt dann
+        # still auf volles Kapital zurück, das muss hier auch so stehen.
+        print("Positionsgröße:  volles Kapital pro Trade (RISK_PER_TRADE_PCT ohne STOP_LOSS_PCT ist wirkungslos)")
+    else:
+        print("Positionsgröße:  volles Kapital pro Trade")
     print(f"Trendfilter:     {trend_window}-Tage-SMA" if trend_window > 0 else "Trendfilter:     deaktiviert")
     print(f"RSI-Filter:      {rsi_window}-Tage-RSI > 50" if rsi_window > 0 else "RSI-Filter:      deaktiviert")
     print(f"Kosten (Provision+Slippage): {result.total_costs:,.2f} ({commission_pct:.2%} + {slippage_pct:.2%}/Order)")

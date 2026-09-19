@@ -50,6 +50,39 @@ def _execute_sell(
     return proceeds - commission, trade_cost, fill_price
 
 
+def compute_risk_based_notional(
+    risk_basis_capital: float,
+    available_capital: float,
+    risk_per_trade_pct: float,
+    stop_loss_pct: float,
+) -> float:
+    """Notional-Betrag (Kapitaleinsatz) für eine risikobasierte Position.
+
+    So gewählt, dass beim Erreichen des initialen Stops (Einstiegspreis *
+    stop_loss_pct) höchstens risk_per_trade_pct von `risk_basis_capital`
+    verloren geht: Kapitaleinsatz * stop_loss_pct == risk_basis_capital *
+    risk_per_trade_pct. Auf `available_capital` gedeckelt, damit nie mehr
+    eingesetzt wird, als tatsächlich zur Verfügung steht (kein Hebel).
+
+    Backtest und Live-Bot rufen dies mit unterschiedlichen Kapitalbasen
+    auf: im Backtest sind risk_basis_capital und available_capital
+    identisch (= cash, da bei flacher Position cash == Gesamtkapital
+    ist); im Live-Bot ist risk_basis_capital das Gesamt-Konto-Equity
+    (Standard-Definition von "Risiko pro Trade"), available_capital
+    dagegen das tatsächlich freie Cash -- ein Konto mit anderen offenen
+    Positionen hat unter Umständen deutlich weniger freies Cash als
+    Gesamt-Equity.
+
+    Ohne aktivierte risikobasierte Größe (risk_per_trade_pct oder
+    stop_loss_pct == 0, "Risiko pro Trade" ist dann nicht definiert) wird
+    das gesamte verfügbare Kapital eingesetzt.
+    """
+    if risk_per_trade_pct <= 0 or stop_loss_pct <= 0:
+        return available_capital
+    risk_amount = risk_basis_capital * risk_per_trade_pct
+    return min(available_capital, risk_amount / stop_loss_pct)
+
+
 def run_backtest(
     close: pd.Series,
     short_window: int,
@@ -182,14 +215,7 @@ def run_backtest(
 
         if signal == Signal.BUY and shares == 0 and price_valid:
             fill_price = price * (1 + slippage_pct)
-            if risk_per_trade_pct > 0 and stop_loss_pct > 0:
-                # Positionsgröße so wählen, dass beim Erreichen des
-                # initialen Stops höchstens risk_per_trade_pct des
-                # aktuellen Kapitals verloren geht: Kapitaleinsatz *
-                # stop_loss_pct == cash * risk_per_trade_pct.
-                notional = min(cash, (cash * risk_per_trade_pct) / stop_loss_pct)
-            else:
-                notional = cash
+            notional = compute_risk_based_notional(cash, cash, risk_per_trade_pct, stop_loss_pct)
             commission = notional * commission_pct
             shares = (notional - commission) / fill_price
             trade_cost = notional - shares * price

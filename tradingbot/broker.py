@@ -99,12 +99,28 @@ class Broker:
 
     def get_account_equity(self) -> float:
         """Gesamtwert des Portfolios (Cash + offene Positionen) -- Basis für
-        risikobasierte Positionsgrößen (RISK_PER_TRADE_PCT)."""
+        die Risikoberechnung bei risikobasierten Positionsgrößen
+        (RISK_PER_TRADE_PCT): "Risiko pro Trade" bezieht sich standardmäßig
+        auf das Gesamtkapital, nicht nur auf freies Cash."""
         account = self.trading_client.get_account()
         equity = float(account.equity)
         if not (math.isfinite(equity) and equity > 0):
             raise ValueError(f"Ungültiger Equity-Wert von Alpaca erhalten: {equity}")
         return equity
+
+    def get_available_cash(self) -> float:
+        """Tatsächlich freies, nicht bereits investiertes Kapital --
+        Obergrenze für risikobasierte Positionsgrößen. Auf einem Konto mit
+        anderen offenen Positionen kann das deutlich unter dem
+        Gesamt-Equity liegen; die berechnete Ordergröße darf das nie
+        überschreiten (kein Hebel). Ein negativer Wert (Margin-Konto im
+        Soll) wird auf 0 gedeckelt statt eine negative Notional-Größe zu
+        erzeugen."""
+        account = self.trading_client.get_account()
+        cash = float(account.cash)
+        if not math.isfinite(cash):
+            raise ValueError(f"Ungültiger Cash-Wert von Alpaca erhalten: {cash}")
+        return max(cash, 0.0)
 
     def has_open_buy_order(self) -> bool:
         """Prüft, ob für das Symbol bereits eine unausgeführte Kauf-Order

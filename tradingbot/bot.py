@@ -6,6 +6,7 @@ import logging
 import math
 import time
 
+from tradingbot.backtest import compute_risk_based_notional
 from tradingbot.broker import Broker
 from tradingbot.config import Config
 from tradingbot.strategy import Signal, generate_signal
@@ -32,17 +33,16 @@ class TradingBot:
         die feste Stückzahl aus QTY."""
         if self.config.risk_per_trade_pct > 0 and self.config.stop_loss_pct > 0:
             equity = self.broker.get_account_equity()
-            risk_amount = equity * self.config.risk_per_trade_pct
-            # RISK_PER_TRADE_PCT und STOP_LOSS_PCT werden unabhängig
-            # voneinander validiert (je [0, 1)) -- ihr Verhältnis kann
-            # trotzdem > 1 ergeben (z.B. 10% Risiko bei 8% Stop = 125% des
-            # Kapitals). Wie im Backtest (dort: notional = min(cash, ...))
-            # wird die Notional-Größe hier hart auf das verfügbare Kapital
-            # gedeckelt -- sonst könnte auf einem Margin-Konto eine Order
-            # weit über das beabsichtigte "Risiko pro Trade" hinaus
-            # gehebelt werden, auf einem Cash-Konto würde sie schlicht
-            # jeden Zyklus als "insufficient buying power" abgelehnt.
-            notional = min(equity, risk_amount / self.config.stop_loss_pct)
+            # Gedeckelt auf das tatsächlich freie Cash, nicht nur auf das
+            # Gesamt-Equity: ein Konto mit anderen offenen Positionen hat
+            # ggf. deutlich weniger freies Kapital als Gesamt-Equity, und
+            # ohne diese Deckelung könnte eine Order über das beabsichtigte
+            # "Risiko pro Trade" hinaus gehebelt werden (Margin) oder
+            # jeden Zyklus als "insufficient buying power" scheitern (Cash).
+            available_cash = self.broker.get_available_cash()
+            notional = compute_risk_based_notional(
+                equity, available_cash, self.config.risk_per_trade_pct, self.config.stop_loss_pct
+            )
             return notional / current_price
         return self.config.qty
 
