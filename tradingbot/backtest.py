@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
 from tradingbot.strategy import Signal, generate_signal_series
+
+
+@dataclass
+class Trade:
+    date: pd.Timestamp
+    side: str  # "BUY" oder "SELL"
+    price: float
+    shares: float
+    cost: float
 
 
 @dataclass
@@ -16,6 +25,7 @@ class BacktestResult:
     num_trades: int
     total_costs: float
     equity_curve: pd.Series
+    trades: list[Trade] = field(default_factory=list)
 
 
 def run_backtest(
@@ -42,24 +52,30 @@ def run_backtest(
     num_trades = 0
     total_costs = 0.0
     equity_curve = []
+    trades: list[Trade] = []
 
-    for price, signal in zip(close, signals):
+    for date, price, signal in zip(close.index, close, signals):
         if signal == Signal.BUY and shares == 0:
             fill_price = price * (1 + slippage_pct)
             gross_shares = cash / fill_price
             commission = cash * commission_pct
             shares = (cash - commission) / fill_price
-            total_costs += commission + (fill_price - price) * gross_shares
+            trade_cost = commission + (fill_price - price) * gross_shares
+            total_costs += trade_cost
             cash = 0.0
             num_trades += 1
+            trades.append(Trade(date, "BUY", fill_price, shares, trade_cost))
         elif signal == Signal.SELL and shares > 0:
             fill_price = price * (1 - slippage_pct)
             proceeds = shares * fill_price
             commission = proceeds * commission_pct
-            total_costs += commission + (price - fill_price) * shares
+            trade_cost = commission + (price - fill_price) * shares
+            total_costs += trade_cost
             cash = proceeds - commission
+            sold_shares = shares
             shares = 0.0
             num_trades += 1
+            trades.append(Trade(date, "SELL", fill_price, sold_shares, trade_cost))
 
         equity_curve.append(cash + shares * price)
 
@@ -73,4 +89,5 @@ def run_backtest(
         num_trades=num_trades,
         total_costs=total_costs,
         equity_curve=equity_series,
+        trades=trades,
     )

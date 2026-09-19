@@ -41,6 +41,19 @@ Bid-Ask-Spread bei liquiden Aktien; Alpaca selbst ist für US-Aktien provisionsf
 python main.py backtest --days 250 --commission-pct 0.001 --slippage-pct 0.001
 ```
 
+**Out-of-Sample-Validierung** (Parameter werden nur auf dem ersten Teil der Daten gesucht,
+danach unverändert auf dem noch "ungesehenen" restlichen Zeitraum geprüft – so lässt sich
+erkennen, ob eine Parameterkombination nur zufällig auf die Trainingsdaten überangepasst ist):
+
+```bash
+python main.py validate --days 600 --train-ratio 0.7 --grid "5:20,10:30,20:50,50:200"
+```
+
+Wichtig: Eine große negative Differenz zwischen Test- und Trainingsrendite ("Overfitting-
+Warnsignal") bedeutet, dass die auf den Trainingsdaten beste Kombination auf neuen Daten
+deutlich schlechter abschneidet – ein Hinweis, der Strategie/den Parametern nicht blind zu
+vertrauen.
+
 **Live-/Paper-Trading-Loop starten** (fragt im konfigurierten Intervall neue Kurse ab und
 platziert Market-Orders bei Crossover-Signalen):
 
@@ -74,13 +87,14 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest)
+main.py               CLI-Einstiegspunkt (run / backtest / validate)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
   strategy.py           Moving-Average-Crossover-Signal-Logik
   bot.py               Live-/Paper-Trading-Loop
-  backtest.py          Einfacher Vektor-Backtest
+  backtest.py          Vektor-Backtest inkl. Transaktionskosten
+  validation.py         Out-of-Sample-Validierung (Train-/Test-Split)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 
