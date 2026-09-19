@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -57,18 +58,23 @@ class Config:
             raise ValueError("SHORT_WINDOW muss kleiner als LONG_WINDOW sein.")
 
         qty = float(os.getenv("QTY", "1"))
-        if qty <= 0:
-            raise ValueError("QTY muss größer als 0 sein.")
+        # math.isfinite() ist hier zwingend: `qty <= 0` allein lässt NaN
+        # (Vergleich immer False) und +inf durch, was als Order-Menge an
+        # die Broker-API durchgereicht würde.
+        if not math.isfinite(qty) or qty <= 0:
+            raise ValueError("QTY muss eine positive, endliche Zahl sein.")
 
         poll_interval_seconds = int(os.getenv("POLL_INTERVAL_SECONDS", "60"))
         if poll_interval_seconds <= 0:
             raise ValueError("POLL_INTERVAL_SECONDS muss größer als 0 sein.")
 
         stop_loss_pct = float(os.getenv("STOP_LOSS_PCT", "0.08"))
-        if stop_loss_pct < 0:
-            raise ValueError("STOP_LOSS_PCT darf nicht negativ sein (0 = deaktiviert).")
-        if stop_loss_pct >= 1:
-            raise ValueError("STOP_LOSS_PCT muss kleiner als 1 (100%) sein.")
+        # Verkettete Prüfung statt zweier separater Vergleiche: NaN
+        # erfüllt weder "< 0" noch ">= 1" und würde sonst durchrutschen --
+        # der Stop-Loss-Check in bot.py (`stop_loss_pct > 0`) wäre dann für
+        # NaN ebenfalls immer False und der Stop liefe unbemerkt ins Leere.
+        if not 0 <= stop_loss_pct < 1:
+            raise ValueError("STOP_LOSS_PCT muss im Bereich [0, 1) liegen (0 = deaktiviert).")
 
         return cls(
             api_key=api_key,

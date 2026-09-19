@@ -61,6 +61,17 @@ def test_qty_must_be_positive(monkeypatch):
         Config.from_env()
 
 
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_qty_rejects_nan_and_infinite(monkeypatch, value):
+    """Regressionstest: `qty <= 0` allein lässt NaN (Vergleich immer False)
+    und +inf durch -- eine solche Menge würde unvalidiert an die
+    Broker-API weitergereicht."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("QTY", value)
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
 def test_poll_interval_must_be_positive(monkeypatch):
     set_required_env(monkeypatch)
     monkeypatch.setenv("POLL_INTERVAL_SECONDS", "0")
@@ -76,6 +87,17 @@ def test_stop_loss_pct_must_be_in_valid_range(monkeypatch):
         Config.from_env()
 
     monkeypatch.setenv("STOP_LOSS_PCT", "1.0")
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
+def test_stop_loss_pct_rejects_nan(monkeypatch):
+    """Regressionstest: zwei separate Vergleiche (`< 0` und `>= 1`) lassen
+    NaN durch, da beide für NaN False ergeben. Der spätere Live-Check
+    `stop_loss_pct > 0` in bot.py wäre für NaN ebenfalls immer False,
+    sodass der Stop-Loss unbemerkt nie greifen würde."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("STOP_LOSS_PCT", "nan")
     with pytest.raises(ValueError):
         Config.from_env()
 
