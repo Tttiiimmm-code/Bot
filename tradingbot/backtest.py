@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -62,6 +63,12 @@ def run_backtest(
       Da nur Tagesschlusskurse vorliegen, wird der Stop nur einmal pro Tag
       auf Basis des Schlusskurses geprüft, nicht intraday.
     """
+    if not (math.isfinite(starting_cash) and starting_cash > 0):
+        # starting_cash ist Divisor bei der Renditeberechnung (final_equity
+        # / starting_cash) -- 0 würde einen ZeroDivisionError auslösen
+        # (leere close-Serie) oder still NaN/Inf erzeugen (nicht-leere).
+        raise ValueError(f"starting_cash muss eine positive, endliche Zahl sein, war {starting_cash}.")
+
     for name, value in (
         ("commission_pct", commission_pct),
         ("slippage_pct", slippage_pct),

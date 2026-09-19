@@ -56,6 +56,12 @@ class Config:
             raise ValueError("SHORT_WINDOW muss mindestens 1 sein.")
         if short_window >= long_window:
             raise ValueError("SHORT_WINDOW muss kleiner als LONG_WINDOW sein.")
+        # Obergrenze verhindert einen OverflowError in pandas' rolling()
+        # bzw. in der Zeitraum-Berechnung für Kursdaten bei einem (z.B. um
+        # ein paar Nullen zu langen) Tippfehler; 100000 Tage sind bereits
+        # absurd weit über jedem sinnvollen Fenster.
+        if long_window > 100_000:
+            raise ValueError("LONG_WINDOW darf höchstens 100000 sein.")
 
         qty = float(os.getenv("QTY", "1"))
         # math.isfinite() ist hier zwingend: `qty <= 0` allein lässt NaN

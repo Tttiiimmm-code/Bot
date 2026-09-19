@@ -36,6 +36,13 @@ def test_rejects_short_window_below_one():
         _parse_grid("0:20")
 
 
+def test_rejects_oversized_long_window():
+    """Regressionstest: ohne Obergrenze würde ein zu großes langes Fenster
+    später einen OverflowError auslösen."""
+    with pytest.raises(argparse.ArgumentTypeError):
+        _parse_grid("5:200000000000")
+
+
 def test_rejects_empty_string():
     with pytest.raises(argparse.ArgumentTypeError):
         _parse_grid("")

@@ -7,6 +7,7 @@ bauen und nur die eine Methode faken, deren Verhalten wir testen wollen.
 
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 from alpaca.common.exceptions import APIError
 
@@ -115,6 +116,40 @@ def test_get_position_rejects_non_finite_values(monkeypatch, qty, avg_entry_pric
 
     with pytest.raises(ValueError):
         broker.get_position()
+
+
+class FakeBarSet:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+
+
+def make_bars_df(symbol: str, closes: list[float]) -> pd.DataFrame:
+    """Baut eine Alpaca-ähnliche Bars-DataFrame mit MultiIndex
+    (symbol, timestamp), wie sie StockHistoricalDataClient.get_stock_bars
+    tatsächlich zurückgibt (empirisch gegen die echte API geprüft)."""
+    timestamps = pd.date_range("2024-01-01", periods=len(closes), freq="D", tz="UTC")
+    index = pd.MultiIndex.from_arrays([[symbol] * len(closes), timestamps], names=["symbol", "timestamp"])
+    return pd.DataFrame({"close": closes}, index=index)
+
+
+def test_get_recent_closes_returns_last_n_closes(monkeypatch):
+    broker = make_broker()  # config.symbol == "TEST"
+    bars = make_bars_df("TEST", [1.0, 2.0, 3.0, 4.0, 5.0])
+    monkeypatch.setattr(broker.data_client, "get_stock_bars", lambda request: FakeBarSet(bars))
+
+    closes = broker.get_recent_closes(limit=3)
+
+    assert list(closes) == [3.0, 4.0, 5.0]
+
+
+def test_get_recent_closes_returns_empty_series_when_no_bars(monkeypatch):
+    broker = make_broker()
+    empty_bars = pd.DataFrame()
+    monkeypatch.setattr(broker.data_client, "get_stock_bars", lambda request: FakeBarSet(empty_bars))
+
+    closes = broker.get_recent_closes(limit=10)
+
+    assert closes.empty
 
 
 def test_has_open_buy_order_true_and_false(monkeypatch):

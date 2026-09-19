@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from tradingbot import bot as bot_module
 from tradingbot.bot import TradingBot
 from tradingbot.broker import Position
 from tradingbot.config import Config
@@ -176,3 +177,57 @@ def test_no_position_skips_stop_check_without_error():
     assert signal == Signal.HOLD
     assert broker.sell_calls == []
     assert broker.buy_calls == []
+
+
+class BrokenBroker(FakeBroker):
+    """Broker-Double, dessen get_recent_closes immer eine Exception wirft
+    -- simuliert z.B. einen Netzwerkfehler oder den in Runde 6/7 gefundenen
+    OverflowError bei einer zu großen Fenstergröße."""
+
+    def __init__(self):
+        super().__init__(flat_closes(50.0), position=None)
+        self.calls = 0
+
+    def get_recent_closes(self, limit: int) -> pd.Series:
+        self.calls += 1
+        raise RuntimeError("boom")
+
+
+def test_run_forever_catches_exceptions_and_keeps_looping(monkeypatch):
+    """Regressionstest für den zentralen Sicherheitsmechanismus: eine
+    Exception in run_once() darf run_forever() nicht abstürzen lassen --
+    der Zyklus wird geloggt übersprungen und die Schleife läuft mit
+    time.sleep(poll_interval_seconds) weiter, bis KeyboardInterrupt
+    kommt."""
+    config = make_config(stop_loss_pct=0.08)
+    broker = BrokenBroker()
+    bot = TradingBot(config, broker=broker)
+
+    sleep_calls: list[float] = []
+
+    def fake_sleep(seconds):
+        sleep_calls.append(seconds)
+        if len(sleep_calls) >= 3:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(bot_module.time, "sleep", fake_sleep)
+
+    bot.run_forever()  # darf nicht raisen
+
+    assert broker.calls == 3
+    assert sleep_calls == [config.poll_interval_seconds] * 3
+
+
+def test_run_forever_exits_cleanly_on_keyboard_interrupt_during_run_once(monkeypatch):
+    config = make_config(stop_loss_pct=0.08)
+    closes = flat_closes(50.0)
+    broker = FakeBroker(closes, position=None)
+    bot = TradingBot(config, broker=broker)
+
+    def raise_interrupt(limit):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(broker, "get_recent_closes", raise_interrupt)
+    monkeypatch.setattr(bot_module.time, "sleep", lambda seconds: None)
+
+    bot.run_forever()  # darf nicht raisen

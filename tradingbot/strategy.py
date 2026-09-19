@@ -24,8 +24,14 @@ class Signal(str, Enum):
 def compute_moving_averages(
     close: pd.Series, short_window: int, long_window: int
 ) -> pd.DataFrame:
+    if short_window < 1:
+        raise ValueError("short_window muss mindestens 1 sein.")
     if short_window >= long_window:
         raise ValueError("short_window muss kleiner als long_window sein.")
+    if long_window > 100_000:
+        # Verhindert einen OverflowError in close.rolling() bei einer (z.B.
+        # um ein paar Nullen zu langen) Fenstergröße.
+        raise ValueError("long_window darf höchstens 100000 sein.")
 
     return pd.DataFrame(
         {

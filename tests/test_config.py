@@ -50,6 +50,17 @@ def test_short_window_must_be_at_least_one(monkeypatch):
         Config.from_env()
 
 
+def test_long_window_rejects_oversized_value(monkeypatch):
+    """Regressionstest: ohne Obergrenze würde ein zu großer LONG_WINDOW
+    später in close.rolling() bzw. bei der Kursdaten-Zeitraumberechnung
+    einen OverflowError auslösen statt einer sauberen Fehlermeldung."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("SHORT_WINDOW", "5")
+    monkeypatch.setenv("LONG_WINDOW", "10000000000000000000")
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
 def test_qty_must_be_positive(monkeypatch):
     set_required_env(monkeypatch)
     monkeypatch.setenv("QTY", "0")

@@ -48,6 +48,23 @@ def test_cost_and_risk_params_must_be_below_one():
         run_backtest(close, 2, 4, commission_pct=-0.01)
 
 
+def test_starting_cash_must_be_positive_and_finite():
+    """Regressionstest: starting_cash ist Divisor bei der Rendite-
+    berechnung -- 0 hätte einen ZeroDivisionError (leere Serie) oder
+    still NaN (nicht-leere Serie) erzeugt statt eines klaren Fehlers."""
+    close = pd.Series(
+        [10, 9, 8, 7, 6, 7, 9, 12, 16],
+        index=pd.date_range("2024-01-01", periods=9, freq="D"),
+    )
+
+    for bad_value in (0.0, -100.0, np.nan, np.inf):
+        try:
+            run_backtest(close, 2, 4, starting_cash=bad_value)
+            raise AssertionError(f"starting_cash={bad_value} hätte ValueError auslösen müssen")
+        except ValueError:
+            pass
+
+
 def test_nan_gap_while_holding_position_does_not_poison_equity_curve():
     """Regressionstest: 0 * NaN und x * NaN sind beide NaN -- ein fehlender
     Kurs (Datenlücke) darf die Equity-Kurve nicht mit NaN verunreinigen,

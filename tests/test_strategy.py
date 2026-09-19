@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from tradingbot.strategy import Signal, generate_signal, generate_signal_series
 
@@ -34,6 +35,15 @@ def test_not_enough_data_generates_hold():
     close = make_series([1, 2, 3])
     signal = generate_signal(close, short_window=5, long_window=10)
     assert signal == Signal.HOLD
+
+
+def test_rejects_oversized_long_window():
+    """Regressionstest: ohne Obergrenze würde ein zu großes long_window
+    einen OverflowError in close.rolling() auslösen statt einer sauberen
+    Fehlermeldung."""
+    close = make_series(list(range(20)))
+    with pytest.raises(ValueError):
+        generate_signal(close, short_window=5, long_window=10**19)
 
 
 def test_generate_signal_series_matches_generate_signal_at_each_point():
