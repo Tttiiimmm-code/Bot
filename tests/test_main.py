@@ -58,6 +58,13 @@ def test_positive_int_rejects_zero_and_negative():
         _positive_int("-5")
 
 
+def test_positive_int_rejects_oversized_value():
+    """Regressionstest: ohne Obergrenze würde ein extrem großes --days
+    später in timedelta(days=...) einen OverflowError auslösen."""
+    with pytest.raises(argparse.ArgumentTypeError):
+        _positive_int("999999999999999999")
+
+
 def test_train_ratio_accepts_open_interval():
     assert _train_ratio("0.7") == 0.7
     assert _train_ratio("0.01") == 0.01

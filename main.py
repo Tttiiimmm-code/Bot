@@ -19,9 +19,12 @@ from tradingbot.config import Config
 
 
 def _positive_int(value: str) -> int:
+    """Für --days: eine großzügige Obergrenze verhindert einen
+    OverflowError beim Aufbau des Anfragezeitraums (timedelta) bei einem
+    zu langen Tippfehler -- 50000 Tage sind bereits ~200 Jahre."""
     n = int(value)
-    if n <= 0:
-        raise argparse.ArgumentTypeError(f"muss positiv sein, nicht {n}")
+    if not 0 < n <= 50_000:
+        raise argparse.ArgumentTypeError(f"muss zwischen 1 und 50000 liegen, nicht {n}")
     return n
 
 

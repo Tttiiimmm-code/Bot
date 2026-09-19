@@ -86,14 +86,20 @@ def run_backtest(
     trades: list[Trade] = []
 
     for date, price, signal in zip(close.index, close, signals):
-        if pd.notna(price):
+        # Ein Kurs von NaN (Datenlücke) oder <= 0 (z.B. Delisting, defekter
+        # Datenpunkt) ist nicht handelbar -- 0/negative Kurse würden bei
+        # der Division für fill_price zu ZeroDivisionError/Vorzeichenfehlern
+        # führen. An solchen Tagen wird nicht gehandelt und für die
+        # Bewertung der letzte bekannte gültige Kurs verwendet.
+        price_valid = pd.notna(price) and price > 0
+        if price_valid:
             last_valid_price = price
 
         if (
             shares > 0
             and stop_loss_pct > 0
             and entry_price is not None
-            and pd.notna(price)
+            and price_valid
             and price <= entry_price * (1 - stop_loss_pct)
         ):
             cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
@@ -105,7 +111,7 @@ def run_backtest(
             equity_curve.append(cash)
             continue
 
-        if signal == Signal.BUY and shares == 0:
+        if signal == Signal.BUY and shares == 0 and price_valid:
             fill_price = price * (1 + slippage_pct)
             commission = cash * commission_pct
             shares = (cash - commission) / fill_price
@@ -115,7 +121,7 @@ def run_backtest(
             entry_price = fill_price
             num_trades += 1
             trades.append(Trade(date, "BUY", fill_price, shares, trade_cost))
-        elif signal == Signal.SELL and shares > 0:
+        elif signal == Signal.SELL and shares > 0 and price_valid:
             sold_shares = shares
             cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
             total_costs += trade_cost
@@ -125,11 +131,11 @@ def run_backtest(
             trades.append(Trade(date, "SELL", fill_price, sold_shares, trade_cost))
 
         if shares > 0:
-            # Fehlt der Kurs an diesem Tag (NaN, z.B. eine Datenlücke), auf
-            # den letzten bekannten Kurs zurückfallen statt die
-            # Equity-Kurve mit NaN zu vergiften (0 * NaN wäre ebenfalls
-            # NaN, daher hier zusätzlich der shares==0-Fall unten).
-            mark_price = price if pd.notna(price) else last_valid_price
+            # Fehlt heute ein gültiger Kurs, auf den letzten bekannten
+            # zurückfallen statt die Equity-Kurve zu vergiften (0 * NaN
+            # wäre ebenfalls NaN, daher zusätzlich der shares==0-Fall
+            # unten).
+            mark_price = price if price_valid else last_valid_price
             equity_curve.append(cash + shares * mark_price)
         else:
             equity_curve.append(cash)

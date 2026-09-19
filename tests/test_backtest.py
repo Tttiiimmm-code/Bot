@@ -5,6 +5,29 @@ import pytest
 from tradingbot.backtest import run_backtest
 
 
+def test_zero_price_day_does_not_crash_and_skips_trade():
+    """Regressionstest: ein Kurs von exakt 0 (z.B. Delisting, defekter
+    Datenpunkt) an einem Golden-Cross-Tag würde beim Teilen durch
+    fill_price einen ZeroDivisionError auslösen. Solche Tage werden jetzt
+    als nicht handelbar übersprungen statt zu crashen."""
+    values = [41.78, 48.87, 31.91, 35.06, 23.09, 26.67, 2.5, 34.07, 0.0, 33.33]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.0)
+
+    assert not result.equity_curve.isna().any()
+    assert not pd.isna(result.final_equity)
+
+
+def test_negative_price_day_does_not_crash():
+    values = [10, 9, 8, 7, 6, 7, 9, -5, 12, 16]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.0)
+
+    assert not result.equity_curve.isna().any()
+
+
 def test_cost_and_risk_params_must_be_below_one():
     """Regressionstest: commission_pct/slippage_pct >= 1 (100%) lässt
     Vorzeichen kippen (z.B. negative shares) und korrumpiert den

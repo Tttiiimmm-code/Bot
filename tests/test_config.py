@@ -79,6 +79,17 @@ def test_poll_interval_must_be_positive(monkeypatch):
         Config.from_env()
 
 
+def test_poll_interval_rejects_oversized_value(monkeypatch):
+    """Regressionstest: ohne Obergrenze würde ein zu großer Wert (z.B. ein
+    Tippfehler mit zu vielen Nullen) später in time.sleep() einen
+    OverflowError auslösen, der außerhalb des try/except in
+    run_forever liegt und den Live-Loop komplett abstürzen lässt."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("POLL_INTERVAL_SECONDS", "999999999999999999999")
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
 def test_stop_loss_pct_must_be_in_valid_range(monkeypatch):
     set_required_env(monkeypatch)
 

@@ -65,8 +65,12 @@ class Config:
             raise ValueError("QTY muss eine positive, endliche Zahl sein.")
 
         poll_interval_seconds = int(os.getenv("POLL_INTERVAL_SECONDS", "60"))
-        if poll_interval_seconds <= 0:
-            raise ValueError("POLL_INTERVAL_SECONDS muss größer als 0 sein.")
+        # Obergrenze verhindert einen OverflowError in time.sleep() bei
+        # einem (z.B. um ein paar Nullen zu langen) Tippfehler; 1 Woche ist
+        # für ein tagesbasiertes Polling bereits weit über jedem sinnvollen
+        # Wert und liegt sicher unterhalb der C-time_t-Grenze.
+        if not 0 < poll_interval_seconds <= 604_800:
+            raise ValueError("POLL_INTERVAL_SECONDS muss zwischen 1 und 604800 (1 Woche) liegen.")
 
         stop_loss_pct = float(os.getenv("STOP_LOSS_PCT", "0.08"))
         # Verkettete Prüfung statt zweier separater Vergleiche: NaN

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -77,7 +78,18 @@ class Broker:
             if e.status_code == 404:
                 return None
             raise
-        return Position(qty=float(position.qty), avg_entry_price=float(position.avg_entry_price))
+        qty = float(position.qty)
+        avg_entry_price = float(position.avg_entry_price)
+        if not (math.isfinite(qty) and math.isfinite(avg_entry_price)):
+            # Lieber laut scheitern (Zyklus wird oben geloggt übersprungen)
+            # als mit kaputten Positionsdaten weiterzumachen: NaN würde
+            # z.B. den Stop-Loss-Vergleich in bot.py unbemerkt immer False
+            # werden lassen und den Stop damit wirkungslos machen.
+            raise ValueError(
+                f"Ungültige Positionsdaten von Alpaca erhalten für {self.config.symbol}: "
+                f"qty={qty}, avg_entry_price={avg_entry_price}"
+            )
+        return Position(qty=qty, avg_entry_price=avg_entry_price)
 
     def get_position_qty(self) -> float:
         position = self.get_position()

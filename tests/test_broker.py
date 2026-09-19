@@ -97,6 +97,26 @@ def test_get_position_returns_position_on_success(monkeypatch):
     assert broker.get_position_qty() == 10.0
 
 
+@pytest.mark.parametrize(
+    "qty,avg_entry_price",
+    [("nan", "100"), ("10", "nan"), ("inf", "100"), ("10", "inf")],
+)
+def test_get_position_rejects_non_finite_values(monkeypatch, qty, avg_entry_price):
+    """Regressionstest: NaN/Inf in den von Alpaca gelieferten Positions-
+    daten dürfen nicht stillschweigend durchgereicht werden -- ein NaN
+    avg_entry_price würde den Stop-Loss-Vergleich in bot.py unbemerkt
+    immer False werden lassen und den Stop damit wirkungslos machen."""
+    broker = make_broker()
+    monkeypatch.setattr(
+        broker.trading_client,
+        "get_open_position",
+        lambda symbol: FakeAlpacaPosition(qty=qty, avg_entry_price=avg_entry_price),
+    )
+
+    with pytest.raises(ValueError):
+        broker.get_position()
+
+
 def test_has_open_buy_order_true_and_false(monkeypatch):
     broker = make_broker()
 
