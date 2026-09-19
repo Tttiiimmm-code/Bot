@@ -216,23 +216,51 @@ def test_has_open_order_filters_by_side(monkeypatch):
 
 
 class FakeAccount:
-    def __init__(self, equity):
+    def __init__(self, equity, cash="0"):
         self.equity = equity
+        self.cash = cash
 
 
-def test_get_account_equity_returns_positive_float(monkeypatch):
+def test_get_account_info_returns_equity_and_cash(monkeypatch):
     broker = make_broker()
-    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount("12345.67"))
-    assert broker.get_account_equity() == pytest.approx(12345.67)
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount("12345.67", "543.21"))
+
+    info = broker.get_account_info()
+
+    assert info.equity == pytest.approx(12345.67)
+    assert info.available_cash == pytest.approx(543.21)
+
+
+def test_get_account_info_clamps_negative_cash_to_zero(monkeypatch):
+    """Regressionstest: ein negativer Cash-Saldo (Margin-Konto im Soll)
+    darf keine negative Notional-Größe erzeugen -- stattdessen auf 0
+    gedeckelt (kein freies Kapital für eine neue Position)."""
+    broker = make_broker()
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount("12345.67", "-100"))
+
+    info = broker.get_account_info()
+
+    assert info.available_cash == 0.0
 
 
 @pytest.mark.parametrize("equity", ["0", "-100", "nan", "inf"])
-def test_get_account_equity_rejects_invalid_values(monkeypatch, equity):
+def test_get_account_info_rejects_invalid_equity(monkeypatch, equity):
     """Regressionstest: ein kaputter/nicht-positiver Equity-Wert von der
     API würde bei risikobasierter Positionsgrößen-Berechnung eine
     bedeutungslose oder negative Ordergröße erzeugen -- lieber laut
     scheitern (Zyklus wird oben geloggt übersprungen)."""
     broker = make_broker()
-    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount(equity))
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount(equity, "100"))
     with pytest.raises(ValueError):
-        broker.get_account_equity()
+        broker.get_account_info()
+
+
+@pytest.mark.parametrize("cash", ["nan", "-inf", "inf"])
+def test_get_account_info_rejects_non_finite_cash(monkeypatch, cash):
+    """Regressionstest: NaN/Inf im Cash-Wert darf nicht stillschweigend
+    durchgereicht werden -- ein NaN würde den min()-Vergleich in
+    compute_risk_based_notional unbemerkt kaputt machen."""
+    broker = make_broker()
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount("12345.67", cash))
+    with pytest.raises(ValueError):
+        broker.get_account_info()

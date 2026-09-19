@@ -34,6 +34,12 @@ class Position:
     avg_entry_price: float
 
 
+@dataclass
+class AccountInfo:
+    equity: float
+    available_cash: float
+
+
 class Broker:
     def __init__(self, config: Config):
         self.config = config
@@ -97,30 +103,30 @@ class Broker:
         position = self.get_position()
         return position.qty if position else 0.0
 
-    def get_account_equity(self) -> float:
-        """Gesamtwert des Portfolios (Cash + offene Positionen) -- Basis für
-        die Risikoberechnung bei risikobasierten Positionsgrößen
-        (RISK_PER_TRADE_PCT): "Risiko pro Trade" bezieht sich standardmäßig
-        auf das Gesamtkapital, nicht nur auf freies Cash."""
+    def get_account_info(self) -> AccountInfo:
+        """Gesamt-Equity und tatsächlich freies Cash -- Basis für
+        risikobasierte Positionsgrößen (RISK_PER_TRADE_PCT). Ein einziger
+        Alpaca-Aufruf statt zwei separater, da beide Werte in derselben
+        Account-Antwort enthalten sind.
+
+        - `equity`: Cash + offene Positionen. "Risiko pro Trade" bezieht
+          sich standardmäßig auf dieses Gesamtkapital, nicht nur auf freies
+          Cash.
+        - `available_cash`: tatsächlich freies, nicht bereits investiertes
+          Kapital -- Obergrenze für die berechnete Ordergröße (kein Hebel).
+          Auf einem Konto mit anderen offenen Positionen kann das deutlich
+          unter dem Gesamt-Equity liegen. Ein negativer Wert (Margin-Konto
+          im Soll) wird auf 0 gedeckelt statt eine negative Notional-Größe
+          zu erzeugen.
+        """
         account = self.trading_client.get_account()
         equity = float(account.equity)
+        cash = float(account.cash)
         if not (math.isfinite(equity) and equity > 0):
             raise ValueError(f"Ungültiger Equity-Wert von Alpaca erhalten: {equity}")
-        return equity
-
-    def get_available_cash(self) -> float:
-        """Tatsächlich freies, nicht bereits investiertes Kapital --
-        Obergrenze für risikobasierte Positionsgrößen. Auf einem Konto mit
-        anderen offenen Positionen kann das deutlich unter dem
-        Gesamt-Equity liegen; die berechnete Ordergröße darf das nie
-        überschreiten (kein Hebel). Ein negativer Wert (Margin-Konto im
-        Soll) wird auf 0 gedeckelt statt eine negative Notional-Größe zu
-        erzeugen."""
-        account = self.trading_client.get_account()
-        cash = float(account.cash)
         if not math.isfinite(cash):
             raise ValueError(f"Ungültiger Cash-Wert von Alpaca erhalten: {cash}")
-        return max(cash, 0.0)
+        return AccountInfo(equity=equity, available_cash=max(cash, 0.0))
 
     def has_open_buy_order(self) -> bool:
         """Prüft, ob für das Symbol bereits eine unausgeführte Kauf-Order

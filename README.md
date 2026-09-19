@@ -213,5 +213,7 @@ tests/                 Unit-Tests (kein API-Zugriff nötig)
 - Neue Strategie: eigene Funktion nach dem Muster von `generate_signal` in `strategy.py` schreiben
   und in `bot.py` einhängen.
 - Anderer Broker/Markt (z.B. Krypto via ccxt): `broker.py` durch eine passende Implementierung
-  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `get_account_equity`,
-  `has_open_buy_order`, `has_open_sell_order`, `buy`, `sell`) ersetzen.
+  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `get_account_info`,
+  `has_open_buy_order`, `has_open_sell_order`, `buy`, `sell`) ersetzen. `get_account_info()`
+  gibt ein `AccountInfo`-Objekt mit `equity` (Gesamtkapital) und `available_cash` (tatsächlich
+  freies Kapital) zurück -- Basis für die risikobasierte Positionsgröße (`RISK_PER_TRADE_PCT`).

@@ -32,16 +32,16 @@ class TradingBot:
         aktiviert ist (und ein Stop-Loss als Risikobezug existiert), sonst
         die feste Stückzahl aus QTY."""
         if self.config.risk_per_trade_pct > 0 and self.config.stop_loss_pct > 0:
-            equity = self.broker.get_account_equity()
-            # Gedeckelt auf das tatsächlich freie Cash, nicht nur auf das
-            # Gesamt-Equity: ein Konto mit anderen offenen Positionen hat
-            # ggf. deutlich weniger freies Kapital als Gesamt-Equity, und
-            # ohne diese Deckelung könnte eine Order über das beabsichtigte
-            # "Risiko pro Trade" hinaus gehebelt werden (Margin) oder
-            # jeden Zyklus als "insufficient buying power" scheitern (Cash).
-            available_cash = self.broker.get_available_cash()
+            account = self.broker.get_account_info()
+            # notional auf das tatsächlich freie Cash gedeckelt, nicht nur
+            # auf das Gesamt-Equity: ein Konto mit anderen offenen
+            # Positionen hat ggf. deutlich weniger freies Kapital als
+            # Gesamt-Equity, und ohne diese Deckelung könnte eine Order
+            # über das beabsichtigte "Risiko pro Trade" hinaus gehebelt
+            # werden (Margin) oder jeden Zyklus als "insufficient buying
+            # power" scheitern (Cash).
             notional = compute_risk_based_notional(
-                equity, available_cash, self.config.risk_per_trade_pct, self.config.stop_loss_pct
+                account.equity, account.available_cash, self.config.risk_per_trade_pct, self.config.stop_loss_pct
             )
             return notional / current_price
         return self.config.qty
@@ -142,6 +142,17 @@ class TradingBot:
                 logger.info("Bereits eine offene Kauf-Order für %s -> überspringe Zyklus.", symbol)
                 return Signal.HOLD
             qty = self._compute_buy_qty(current_price)
+            if qty <= 0:
+                # Kann bei risikobasierter Größe auftreten, wenn kein
+                # freies Cash mehr verfügbar ist (get_available_cash()
+                # deckelt einen negativen Saldo auf 0). Eine 0-Stück-Order
+                # wäre sinnlos und würde nur jeden Zyklus erneut fehlschlagen.
+                logger.info(
+                    "Golden Cross erkannt, aber kein Kapital für eine Order verfügbar (qty=%s) für %s -> überspringe.",
+                    qty,
+                    symbol,
+                )
+                return Signal.HOLD
             logger.info("Golden Cross erkannt -> KAUFE %s %s", qty, symbol)
             self.broker.buy(qty)
         elif signal == Signal.SELL and position_qty > 0:

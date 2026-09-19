@@ -5,7 +5,7 @@ import pytest
 
 from tradingbot import bot as bot_module
 from tradingbot.bot import TradingBot
-from tradingbot.broker import Position
+from tradingbot.broker import AccountInfo, Position
 from tradingbot.config import Config
 from tradingbot.strategy import Signal
 
@@ -46,11 +46,8 @@ class FakeBroker:
     def has_open_sell_order(self) -> bool:
         return self._open_sell_order
 
-    def get_account_equity(self) -> float:
-        return self._equity
-
-    def get_available_cash(self) -> float:
-        return self._available_cash
+    def get_account_info(self) -> AccountInfo:
+        return AccountInfo(equity=self._equity, available_cash=self._available_cash)
 
     def buy(self, qty: float):
         self.buy_calls.append(qty)
