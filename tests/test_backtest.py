@@ -1,7 +1,36 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 from tradingbot.backtest import run_backtest
+
+
+def test_nan_gap_while_holding_position_does_not_poison_equity_curve():
+    """Regressionstest: 0 * NaN und x * NaN sind beide NaN -- ein fehlender
+    Kurs (Datenlücke) darf die Equity-Kurve nicht mit NaN verunreinigen,
+    weder für den Lücken-Tag selbst noch (über final_equity) für alle
+    folgenden Tage."""
+    values = [10, 9, 8, 7, 6, 7, 9, 12, 16, np.nan, 21, 27]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, starting_cash=1000.0, stop_loss_pct=0.0)
+
+    assert not result.equity_curve.isna().any()
+    assert not pd.isna(result.final_equity)
+    assert not pd.isna(result.total_return_pct)
+
+
+def test_nan_gap_before_any_position_does_not_poison_equity_curve():
+    """0 * NaN ist ebenfalls NaN -- auch ohne offene Position (shares=0)
+    darf ein fehlender Kurs am Anfang der Serie die Equity-Kurve nicht
+    verunreinigen."""
+    values = [np.nan, 10, 9, 8, 7, 6, 7, 9, 12, 16]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, starting_cash=1000.0, stop_loss_pct=0.0)
+
+    assert not result.equity_curve.isna().any()
+    assert result.equity_curve.iloc[0] == 1000.0
 
 
 def test_buy_cost_matches_shares_times_price_shortfall():

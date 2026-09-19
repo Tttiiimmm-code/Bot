@@ -86,7 +86,10 @@ def validate(
     if not 0 < train_ratio < 1:
         raise ValueError("train_ratio muss zwischen 0 und 1 liegen.")
 
-    split_idx = int(len(close) * train_ratio)
+    # round() statt int(): int() würde bei Gleitkomma-Ungenauigkeiten
+    # (z.B. 650*0.7 == 454.99999999999994 statt 455) den Split fälschlich
+    # einen Tag zu früh setzen.
+    split_idx = round(len(close) * train_ratio)
     if split_idx < 2 or split_idx >= len(close):
         raise ValueError("Zu wenig Daten für den gewählten train_ratio.")
 

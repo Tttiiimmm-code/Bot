@@ -9,6 +9,19 @@ def make_series(values):
     return pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
 
 
+def test_split_index_not_off_by_one_due_to_float_imprecision():
+    """Regressionstest: 650 * 0.7 ergibt in IEEE-754 454.99999999999994
+    statt 455. Mit int() (Abschneiden) würde der Split-Tag fälschlich
+    einen Tag zu früh liegen; round() korrigiert das."""
+    close = make_series(list(range(650)))
+
+    result = validate(close, [(5, 20)], train_ratio=0.7)
+
+    expected_split_idx = round(650 * 0.7)
+    assert expected_split_idx == 455  # zur Doku: hier weicht int() ab (454)
+    assert result.split_date == close.index[expected_split_idx]
+
+
 def test_invalid_train_ratio_raises():
     close = make_series([100] * 30)
     with pytest.raises(ValueError):
@@ -66,7 +79,7 @@ def test_train_segment_matches_standalone_backtest_on_same_prefix():
     train_ratio = 0.6
 
     result = validate(close, [(short_w, long_w)], train_ratio=train_ratio)
-    split_idx = int(len(close) * train_ratio)
+    split_idx = round(len(close) * train_ratio)
 
     standalone = run_backtest(close.iloc[:split_idx], short_w, long_w)
 

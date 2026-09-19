@@ -51,6 +51,12 @@ bestimmter Stop-Loss-Wert für ein Symbol/Parameter-Set tatsächlich hilft oder 
   Position offen") wird von `Broker.get_position()` als `None` interpretiert. Alle anderen Fehler
   (Netzwerk, Auth, Rate-Limit) werden weitergereicht und lösen im Live-Loop einen geloggten,
   übersprungenen Zyklus aus, statt fälschlich anzunehmen, es sei keine Position offen.
+- **Backtest/Validierung sind NICHT 1:1 mit dem Live-Bot vergleichbar**: `backtest`/`validate`
+  investieren bei jedem BUY das gesamte verfügbare Kapital (Zinseszins-Effekt über mehrere
+  Trades). Der Live-/Paper-Bot kauft dagegen bei jedem Signal immer die feste Stückzahl `QTY`,
+  unabhängig vom restlichen Kontostand. Eine im Backtest gezeigte Rendite ist daher mit denselben
+  Parametern im Live-Bot so nicht erreichbar -- der Backtest dient der Strategie-/Parameter-
+  Bewertung, nicht als exakte Vorhersage der Live-Performance.
 
 ## Setup
 

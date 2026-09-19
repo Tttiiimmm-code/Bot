@@ -67,16 +67,21 @@ def run_backtest(
     cash = starting_cash
     shares = 0.0
     entry_price: float | None = None
+    last_valid_price: float | None = None
     num_trades = 0
     total_costs = 0.0
     equity_curve = []
     trades: list[Trade] = []
 
     for date, price, signal in zip(close.index, close, signals):
+        if pd.notna(price):
+            last_valid_price = price
+
         if (
             shares > 0
             and stop_loss_pct > 0
             and entry_price is not None
+            and pd.notna(price)
             and price <= entry_price * (1 - stop_loss_pct)
         ):
             cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
@@ -107,7 +112,15 @@ def run_backtest(
             num_trades += 1
             trades.append(Trade(date, "SELL", fill_price, sold_shares, trade_cost))
 
-        equity_curve.append(cash + shares * price)
+        if shares > 0:
+            # Fehlt der Kurs an diesem Tag (NaN, z.B. eine Datenlücke), auf
+            # den letzten bekannten Kurs zurückfallen statt die
+            # Equity-Kurve mit NaN zu vergiften (0 * NaN wäre ebenfalls
+            # NaN, daher hier zusätzlich der shares==0-Fall unten).
+            mark_price = price if pd.notna(price) else last_valid_price
+            equity_curve.append(cash + shares * mark_price)
+        else:
+            equity_curve.append(cash)
 
     equity_series = pd.Series(equity_curve, index=close.index)
     final_equity = equity_series.iloc[-1] if not equity_series.empty else starting_cash
