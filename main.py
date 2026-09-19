@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
+
+from alpaca.common.exceptions import APIError
 
 from tradingbot.bot import TradingBot
 from tradingbot.broker import Broker
@@ -224,22 +227,33 @@ def main():
     args = parser.parse_args()
 
     setup_logging()
-    config = Config.from_env()
 
-    if args.command == "run":
-        cmd_run(config)
-    elif args.command == "backtest":
-        cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct, args.stop_loss_pct)
-    elif args.command == "validate":
-        cmd_validate(
-            config,
-            args.days,
-            args.train_ratio,
-            args.grid,
-            args.commission_pct,
-            args.slippage_pct,
-            args.stop_loss_pct,
-        )
+    try:
+        config = Config.from_env()
+
+        if args.command == "run":
+            cmd_run(config)
+        elif args.command == "backtest":
+            cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct, args.stop_loss_pct)
+        elif args.command == "validate":
+            cmd_validate(
+                config,
+                args.days,
+                args.train_ratio,
+                args.grid,
+                args.commission_pct,
+                args.slippage_pct,
+                args.stop_loss_pct,
+            )
+    except (RuntimeError, ValueError) as e:
+        print(f"Fehler: {e}", file=sys.stderr)
+        sys.exit(1)
+    except APIError as e:
+        print(f"Fehler bei der Alpaca-API (Keys/Netzwerk prüfen): {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nAbgebrochen.", file=sys.stderr)
+        sys.exit(130)
 
 
 if __name__ == "__main__":
