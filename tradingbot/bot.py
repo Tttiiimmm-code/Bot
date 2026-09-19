@@ -48,14 +48,21 @@ class TradingBot:
 
     def run_once(self) -> Signal:
         """Führt einen einzelnen Entscheidungszyklus aus und gibt das Signal zurück."""
+        # required_window bestimmt nur, ob GENUG HISTORIE für die
+        # Signalberechnung (Crossover + Trend-/RSI-Bestätigung) vorliegt --
+        # es darf NICHT den Stop-Loss/Take-Profit-Check für eine bereits
+        # offene Position blockieren, der nur den aktuellen Kurs und den
+        # Einstiegspreis braucht. Andernfalls würde ein hohes
+        # TREND_FILTER_WINDOW (Default 200) bei knapper Historie (z.B. ein
+        # neu gelisteter Wert, oder ein Feed, der kurzzeitig weniger Bars
+        # liefert) den Kapitalschutz genau der Features lahmlegen, die
+        # diese Phase hinzugefügt hat.
         required_window = max(self.config.long_window, self.config.trend_window, self.config.rsi_window)
         closes = self.broker.get_recent_closes(limit=required_window + 5)
-        if len(closes) < required_window + 1:
-            logger.info(
-                "Zu wenig Kursdaten (%d von %d benötigt), überspringe Zyklus.",
-                len(closes),
-                required_window + 1,
-            )
+        has_enough_history = len(closes) >= required_window + 1
+
+        if closes.empty:
+            logger.info("Keine Kursdaten erhalten, überspringe Zyklus.")
             return Signal.HOLD
 
         current_price = closes.iloc[-1]
@@ -128,6 +135,15 @@ class TradingBot:
         else:
             self._peak_price_by_symbol.pop(symbol, None)
 
+        if not has_enough_history:
+            logger.info(
+                "Zu wenig Kursdaten (%d von %d benötigt) für Signalberechnung, "
+                "überspringe restlichen Zyklus (Stop-Loss/Take-Profit oben bereits geprüft).",
+                len(closes),
+                required_window + 1,
+            )
+            return Signal.HOLD
+
         signal = generate_signal(
             closes,
             self.config.short_window,
@@ -144,7 +160,7 @@ class TradingBot:
             qty = self._compute_buy_qty(current_price)
             if qty <= 0:
                 # Kann bei risikobasierter Größe auftreten, wenn kein
-                # freies Cash mehr verfügbar ist (get_available_cash()
+                # freies Cash mehr verfügbar ist (get_account_info()
                 # deckelt einen negativen Saldo auf 0). Eine 0-Stück-Order
                 # wäre sinnlos und würde nur jeden Zyklus erneut fehlschlagen.
                 logger.info(

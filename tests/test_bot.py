@@ -472,3 +472,53 @@ def test_rsi_filter_suppresses_live_buy():
 
     assert signal == Signal.HOLD
     assert broker.buy_calls == []
+
+
+def test_stop_loss_still_triggers_with_insufficient_history_for_trend_filter():
+    """Regressionstest: Die Datenmengen-Prüfung (required_window, inkl.
+    TREND_FILTER_WINDOW) darf den Stop-Loss/Take-Profit-Check einer
+    bereits offenen Position nicht blockieren -- der braucht nur den
+    aktuellen Kurs und den Einstiegspreis, keine Trend-/RSI-Historie.
+    Vor dem Fix hätte ein hohes trend_window (hier 200) bei knapper
+    Historie (60 Bars) den Stop-Loss lautlos außer Kraft gesetzt."""
+    config = make_config(stop_loss_pct=0.08, trend_window=200)
+    closes = flat_closes(90.0, n=60)  # deutlich weniger als required_window+1=201
+    position = Position(qty=10.0, avg_entry_price=200.0)  # Stop bei 184
+    broker = FakeBroker(closes, position)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.SELL
+    assert broker.sell_calls == [10.0]
+
+
+def test_buy_signal_suppressed_with_insufficient_history_for_trend_filter():
+    """Gegenstück: ohne offene Position und mit zu wenig Historie für den
+    Trend-/RSI-Filter darf trotzdem keine Signalberechnung (und damit kein
+    Kauf) stattfinden."""
+    config = make_config(stop_loss_pct=0.08, trend_window=200)
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])  # Golden Cross, aber nur 7 Bars
+    broker = FakeBroker(closes, position=None)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.buy_calls == []
+
+
+def test_zero_qty_buy_guard_skips_order_when_no_cash_available():
+    """Regressionstest für den 0-Stück-Order-Guard: wenn risikobasierte
+    Größenberechnung wegen aufgebrauchtem freiem Cash (available_cash=0)
+    eine Menge von 0 ergibt, darf keine bedeutungslose 0-Stück-Order beim
+    Broker landen."""
+    config = make_config(stop_loss_pct=0.08, risk_per_trade_pct=0.02)
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])  # Golden Cross, Kurs 9
+    broker = FakeBroker(closes, position=None, equity=10_000.0, available_cash=0.0)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.buy_calls == []
