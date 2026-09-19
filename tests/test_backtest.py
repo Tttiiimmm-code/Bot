@@ -5,6 +5,116 @@ import pytest
 from tradingbot.backtest import run_backtest
 
 
+def test_trailing_stop_tracks_peak_not_entry_price():
+    """Regressionstest fürs Kernverhalten des Trailing-Stops: steigt der
+    Kurs nach dem Einstieg stark und fällt danach nur leicht, darf ein
+    fixer (auf Einstieg bezogener) Stop nicht mehr auslösen -- der
+    Trailing-Stop (bezogen auf den seit Einstieg höchsten Kurs) hingegen
+    schon."""
+    values = [10, 9, 8, 7, 6, 7, 9]  # BUY am Ende, Einstieg ~9
+    values += [12, 15, 20, 25, 30]  # starker Anstieg -> Peak 30
+    values += [28, 27]  # leichter Rückgang, weit über dem fixen 8%-Stop von ~8.3
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.08, take_profit_pct=0.0)
+
+    sides = [t.side for t in result.trades]
+    assert sides == ["BUY", "STOP"]
+    stop_trade = result.trades[1]
+    # Stop-Schwelle bezogen auf Peak (30): 30*0.92=27.6 -> löst bei Kurs 27 aus.
+    # Bezogen auf Einstieg (~9): 9*0.92=8.28 -> hätte hier nie ausgelöst.
+    assert stop_trade.price == pytest.approx(27 * 0.9995)
+
+
+def test_trailing_stop_behaves_like_fixed_stop_without_prior_rise():
+    """Steigt der Kurs nach dem Einstieg nie, ist Peak == Einstiegspreis
+    und der Trailing-Stop verhält sich identisch zu einem fixen (auf den
+    Einstieg bezogenen) Stop -- stellt sicher, dass die Umstellung
+    bestehendes Verhalten nicht verändert hat."""
+    values = [10, 9, 8, 7, 6, 7, 9, 8, 7, 6, 5]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.08, take_profit_pct=0.0)
+
+    stop = result.trades[1]
+    assert stop.side == "STOP"
+    # Erster Tag nach dem Einstieg, an dem der rohe Kurs (8) die auf den
+    # Einstiegspreis bezogene Schwelle (9.0045*0.92≈8.28) unterschreitet.
+    assert stop.price == pytest.approx(8 * (1 - 0.0005))
+
+
+def test_take_profit_exits_when_target_reached():
+    values = [10, 9, 8, 7, 6, 7, 9, 10, 11, 12]  # BUY ~9, dann +33%
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.0, take_profit_pct=0.15)
+
+    sides = [t.side for t in result.trades]
+    assert sides == ["BUY", "TP"]
+    buy, tp = result.trades
+    assert tp.price >= buy.price * 1.15 * (1 - 0.0005) - 1e-9
+
+
+def test_take_profit_disabled_by_default():
+    values = [10, 9, 8, 7, 6, 7, 9, 20, 30, 40]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, short_window=2, long_window=4, stop_loss_pct=0.0)
+
+    assert "TP" not in [t.side for t in result.trades]
+
+
+def test_take_profit_rejects_negative_and_non_finite():
+    close = pd.Series([10, 9, 8, 7, 6, 7, 9], index=pd.date_range("2024-01-01", periods=7, freq="D"))
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, take_profit_pct=-0.1)
+    with pytest.raises(ValueError):
+        run_backtest(close, 2, 4, take_profit_pct=float("nan"))
+
+
+def test_risk_based_position_sizing_uses_less_than_full_capital():
+    values = [10, 9, 8, 7, 6, 7, 9, 12, 16]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    full = run_backtest(close, 2, 4, starting_cash=10_000.0, stop_loss_pct=0.08, risk_per_trade_pct=0.0)
+    risked = run_backtest(close, 2, 4, starting_cash=10_000.0, stop_loss_pct=0.08, risk_per_trade_pct=0.02)
+
+    full_notional = full.trades[0].shares * full.trades[0].price
+    risked_notional = risked.trades[0].shares * risked.trades[0].price
+
+    assert full_notional == pytest.approx(10_000.0, rel=1e-3)
+    # notional = (equity * risk_pct) / stop_loss_pct = (10000*0.02)/0.08 = 2500
+    assert risked_notional == pytest.approx(2_500.0, rel=1e-3)
+
+
+def test_risk_based_position_sizing_caps_at_available_cash():
+    """Wenn die risikobasierte Notional-Größe das verfügbare Kapital
+    übersteigen würde (z.B. sehr hoher Risiko-Prozentsatz relativ zum
+    Stop), darf trotzdem nicht mehr als das vorhandene Kapital investiert
+    werden -- kein Hebel."""
+    values = [10, 9, 8, 7, 6, 7, 9]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, 2, 4, starting_cash=10_000.0, stop_loss_pct=0.01, risk_per_trade_pct=0.5)
+
+    notional = result.trades[0].shares * result.trades[0].price
+    assert notional <= 10_000.0 * 1.0005  # kleine Toleranz für Slippage-Aufschlag im BUY-Preis
+
+
+def test_risk_based_position_sizing_disabled_without_stop_loss():
+    """risk_per_trade_pct ist ohne stop_loss_pct nicht definiert (kein
+    Bezugspunkt für 'Risiko pro Trade') -- muss dann auf volles Kapital
+    zurückfallen statt zu crashen oder eine Bedeutungslose Größe zu
+    berechnen."""
+    values = [10, 9, 8, 7, 6, 7, 9]
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=len(values), freq="D"))
+
+    result = run_backtest(close, 2, 4, starting_cash=10_000.0, stop_loss_pct=0.0, risk_per_trade_pct=0.02)
+
+    notional = result.trades[0].shares * result.trades[0].price
+    assert notional == pytest.approx(10_000.0, rel=1e-3)
+
+
 def test_zero_price_day_does_not_crash_and_skips_trade():
     """Regressionstest: ein Kurs von exakt 0 (z.B. Delisting, defekter
     Datenpunkt) an einem Golden-Cross-Tag würde beim Teilen durch

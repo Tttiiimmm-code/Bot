@@ -20,6 +20,7 @@ def test_defaults_are_valid(monkeypatch):
     for var in [
         "SYMBOL", "QTY", "SHORT_WINDOW", "LONG_WINDOW",
         "POLL_INTERVAL_SECONDS", "STOP_LOSS_PCT", "ALPACA_PAPER",
+        "TAKE_PROFIT_PCT", "RISK_PER_TRADE_PCT", "TREND_FILTER_WINDOW", "RSI_WINDOW",
     ]:
         monkeypatch.delenv(var, raising=False)
 
@@ -32,6 +33,10 @@ def test_defaults_are_valid(monkeypatch):
     assert config.poll_interval_seconds == 60
     assert config.stop_loss_pct == 0.08
     assert config.paper is True
+    assert config.take_profit_pct == 0.15
+    assert config.risk_per_trade_pct == 0.0
+    assert config.trend_window == 200
+    assert config.rsi_window == 14
 
 
 def test_short_window_must_be_smaller_than_long_window(monkeypatch):
@@ -172,3 +177,60 @@ def test_alpaca_paper_rejects_unrecognized_values(monkeypatch, value):
     monkeypatch.setenv("ALPACA_PAPER", value)
     with pytest.raises(ValueError):
         Config.from_env()
+
+
+def test_take_profit_pct_zero_disables(monkeypatch):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("TAKE_PROFIT_PCT", "0")
+    assert Config.from_env().take_profit_pct == 0.0
+
+
+@pytest.mark.parametrize("value", ["-0.1", "nan", "inf", "-inf"])
+def test_take_profit_pct_rejects_negative_and_non_finite(monkeypatch, value):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("TAKE_PROFIT_PCT", value)
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
+def test_take_profit_pct_allows_values_of_one_or_more(monkeypatch):
+    """Anders als STOP_LOSS_PCT ist TAKE_PROFIT_PCT nicht auf <1 begrenzt
+    -- ein Kursziel von 100%+ über dem Einstieg ist sinnvoll und kippt bei
+    (entry_price * (1 + x)) kein Vorzeichen."""
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("TAKE_PROFIT_PCT", "1.5")
+    assert Config.from_env().take_profit_pct == 1.5
+
+
+@pytest.mark.parametrize("value", ["-0.1", "1.0", "1.5", "nan"])
+def test_risk_per_trade_pct_rejects_out_of_range(monkeypatch, value):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("RISK_PER_TRADE_PCT", value)
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
+def test_risk_per_trade_pct_zero_disables(monkeypatch):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv("RISK_PER_TRADE_PCT", "0")
+    assert Config.from_env().risk_per_trade_pct == 0.0
+
+
+@pytest.mark.parametrize("var", ["TREND_FILTER_WINDOW", "RSI_WINDOW"])
+def test_filter_windows_reject_negative_and_oversized(monkeypatch, var):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv(var, "-1")
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+    monkeypatch.setenv(var, "10000000000000000000")
+    with pytest.raises(ValueError):
+        Config.from_env()
+
+
+@pytest.mark.parametrize("var", ["TREND_FILTER_WINDOW", "RSI_WINDOW"])
+def test_filter_windows_zero_disables(monkeypatch, var):
+    set_required_env(monkeypatch)
+    monkeypatch.setenv(var, "0")
+    config = Config.from_env()
+    assert getattr(config, "trend_window" if var == "TREND_FILTER_WINDOW" else "rsi_window") == 0

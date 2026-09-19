@@ -22,6 +22,45 @@ def test_split_index_not_off_by_one_due_to_float_imprecision():
     assert result.split_date == close.index[expected_split_idx]
 
 
+def test_trend_window_larger_than_long_window_requires_more_history():
+    """Ein aktivierter Trendfilter mit größerem Fenster als long_window
+    muss ebenfalls genug Trainingsdaten verlangen -- sonst würde der
+    Filter im Trainingsabschnitt nie einen gültigen Wert liefern und die
+    Kombination fälschlich bewertet statt korrekt übersprungen werden."""
+    close = make_series(list(range(1, 60)))
+    # long_window=10 waere allein ausreichend, trend_window=100 aber nicht
+    # -> keine Kombination im Grid hat genug Trainingsdaten.
+    with pytest.raises(ValueError):
+        validate(close, [(5, 10)], train_ratio=0.7, trend_window=100)
+
+
+def test_validate_forwards_take_profit_and_risk_per_trade(monkeypatch):
+    """Stellt sicher, dass take_profit_pct/risk_per_trade_pct/trend_window/
+    rsi_window tatsächlich bis zu run_backtest durchgereicht werden."""
+    import tradingbot.validation as validation_module
+
+    captured_kwargs = []
+    original_run_backtest = validation_module.run_backtest
+
+    def spy_run_backtest(*args, **kwargs):
+        captured_kwargs.append(kwargs)
+        return original_run_backtest(*args, **kwargs)
+
+    monkeypatch.setattr(validation_module, "run_backtest", spy_run_backtest)
+
+    close = make_series(list(range(1, 60)))
+    validate(
+        close, [(5, 10)], train_ratio=0.7,
+        take_profit_pct=0.2, risk_per_trade_pct=0.03, trend_window=5, rsi_window=7,
+    )
+
+    assert len(captured_kwargs) == 1
+    assert captured_kwargs[0]["take_profit_pct"] == 0.2
+    assert captured_kwargs[0]["risk_per_trade_pct"] == 0.03
+    assert captured_kwargs[0]["trend_window"] == 5
+    assert captured_kwargs[0]["rsi_window"] == 7
+
+
 def test_invalid_train_ratio_raises():
     close = make_series([100] * 30)
     with pytest.raises(ValueError):

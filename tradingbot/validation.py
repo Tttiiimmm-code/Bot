@@ -81,6 +81,10 @@ def validate(
     commission_pct: float = 0.0,
     slippage_pct: float = 0.0005,
     stop_loss_pct: float = 0.08,
+    take_profit_pct: float = 0.0,
+    risk_per_trade_pct: float = 0.0,
+    trend_window: int = 0,
+    rsi_window: int = 0,
     starting_cash: float = 10_000.0,
 ) -> ValidationResult:
     if not 0 < train_ratio < 1:
@@ -95,9 +99,11 @@ def validate(
 
     candidates: list[ParamCandidate] = []
     for short_w, long_w in param_grid:
-        if len(close) < long_w + 1 or split_idx < long_w + 1:
+        required_history = max(long_w, trend_window, rsi_window)
+        if len(close) < required_history + 1 or split_idx < required_history + 1:
             # Zu wenig Historie im Trainingsabschnitt, um diese Fenstergröße
-            # fair zu bewerten -> überspringen statt verzerrte Ergebnisse.
+            # (bzw. Trend-/RSI-Filter) fair zu bewerten -> überspringen
+            # statt verzerrte Ergebnisse.
             continue
 
         result = run_backtest(
@@ -108,6 +114,10 @@ def validate(
             commission_pct=commission_pct,
             slippage_pct=slippage_pct,
             stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+            risk_per_trade_pct=risk_per_trade_pct,
+            trend_window=trend_window,
+            rsi_window=rsi_window,
         )
 
         train_metrics = _segment_metrics(result, close, starting_cash, 0, split_idx)

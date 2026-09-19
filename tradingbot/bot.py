@@ -17,15 +17,35 @@ class TradingBot:
     def __init__(self, config: Config, broker: Broker | None = None):
         self.config = config
         self.broker = broker or Broker(config)
+        # Höchster seit Einstieg beobachteter Kurs je Symbol, für den
+        # Trailing-Stop. Rein im Prozessspeicher: überlebt einen Neustart
+        # des Bots nicht. Nach einem Neustart mit noch offener Position
+        # startet die Nachverfolgung konservativ wieder beim Einstiegspreis
+        # (siehe run_once) -- der Stop fällt dabei höchstens auf das
+        # ursprüngliche, weitere Niveau zurück, nie auf ein gefährlich
+        # engeres.
+        self._peak_price_by_symbol: dict[str, float] = {}
+
+    def _compute_buy_qty(self, current_price: float) -> float:
+        """Stückzahl für einen Kauf: risikobasiert, wenn RISK_PER_TRADE_PCT
+        aktiviert ist (und ein Stop-Loss als Risikobezug existiert), sonst
+        die feste Stückzahl aus QTY."""
+        if self.config.risk_per_trade_pct > 0 and self.config.stop_loss_pct > 0:
+            equity = self.broker.get_account_equity()
+            risk_amount = equity * self.config.risk_per_trade_pct
+            per_share_risk = current_price * self.config.stop_loss_pct
+            return risk_amount / per_share_risk
+        return self.config.qty
 
     def run_once(self) -> Signal:
         """Führt einen einzelnen Entscheidungszyklus aus und gibt das Signal zurück."""
-        closes = self.broker.get_recent_closes(limit=self.config.long_window + 5)
-        if len(closes) < self.config.long_window + 1:
+        required_window = max(self.config.long_window, self.config.trend_window, self.config.rsi_window)
+        closes = self.broker.get_recent_closes(limit=required_window + 5)
+        if len(closes) < required_window + 1:
             logger.info(
                 "Zu wenig Kursdaten (%d von %d benötigt), überspringe Zyklus.",
                 len(closes),
-                self.config.long_window + 1,
+                required_window + 1,
             )
             return Signal.HOLD
 
@@ -48,42 +68,80 @@ class TradingBot:
             return Signal.HOLD
 
         position = self.broker.get_position()
+        symbol = self.config.symbol
 
-        if position and position.qty > 0 and self.config.stop_loss_pct > 0:
-            stop_price = position.avg_entry_price * (1 - self.config.stop_loss_pct)
-            if current_price <= stop_price:
-                if self.broker.has_open_sell_order():
-                    logger.info(
-                        "STOP-LOSS ausgelöst, aber bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.",
-                        self.config.symbol,
+        if position and position.qty > 0:
+            peak = max(self._peak_price_by_symbol.get(symbol, position.avg_entry_price), current_price)
+            self._peak_price_by_symbol[symbol] = peak
+
+            if self.config.stop_loss_pct > 0:
+                stop_price = peak * (1 - self.config.stop_loss_pct)
+                if current_price <= stop_price:
+                    if self.broker.has_open_sell_order():
+                        logger.info(
+                            "STOP-LOSS ausgelöst, aber bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.",
+                            symbol,
+                        )
+                        return Signal.HOLD
+                    logger.warning(
+                        "STOP-LOSS (Trailing) ausgelöst: Kurs %.2f <= Stop %.2f (Höchststand %.2f, Einstieg %.2f) -> VERKAUFE %s %s",
+                        current_price,
+                        stop_price,
+                        peak,
+                        position.avg_entry_price,
+                        position.qty,
+                        symbol,
                     )
-                    return Signal.HOLD
-                logger.warning(
-                    "STOP-LOSS ausgelöst: Kurs %.2f <= Stop %.2f (Einstieg %.2f) -> VERKAUFE %s %s",
-                    current_price,
-                    stop_price,
-                    position.avg_entry_price,
-                    position.qty,
-                    self.config.symbol,
-                )
-                self.broker.sell(position.qty)
-                return Signal.SELL
+                    self.broker.sell(position.qty)
+                    self._peak_price_by_symbol.pop(symbol, None)
+                    return Signal.SELL
 
-        signal = generate_signal(closes, self.config.short_window, self.config.long_window)
+            if self.config.take_profit_pct > 0:
+                target_price = position.avg_entry_price * (1 + self.config.take_profit_pct)
+                if current_price >= target_price:
+                    if self.broker.has_open_sell_order():
+                        logger.info(
+                            "TAKE-PROFIT erreicht, aber bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.",
+                            symbol,
+                        )
+                        return Signal.HOLD
+                    logger.warning(
+                        "TAKE-PROFIT erreicht: Kurs %.2f >= Ziel %.2f (Einstieg %.2f) -> VERKAUFE %s %s",
+                        current_price,
+                        target_price,
+                        position.avg_entry_price,
+                        position.qty,
+                        symbol,
+                    )
+                    self.broker.sell(position.qty)
+                    self._peak_price_by_symbol.pop(symbol, None)
+                    return Signal.SELL
+        else:
+            self._peak_price_by_symbol.pop(symbol, None)
+
+        signal = generate_signal(
+            closes,
+            self.config.short_window,
+            self.config.long_window,
+            self.config.trend_window,
+            self.config.rsi_window,
+        )
         position_qty = position.qty if position else 0.0
 
         if signal == Signal.BUY and position_qty <= 0:
             if self.broker.has_open_buy_order():
-                logger.info("Bereits eine offene Kauf-Order für %s -> überspringe Zyklus.", self.config.symbol)
+                logger.info("Bereits eine offene Kauf-Order für %s -> überspringe Zyklus.", symbol)
                 return Signal.HOLD
-            logger.info("Golden Cross erkannt -> KAUFE %s %s", self.config.qty, self.config.symbol)
-            self.broker.buy(self.config.qty)
+            qty = self._compute_buy_qty(current_price)
+            logger.info("Golden Cross erkannt -> KAUFE %s %s", qty, symbol)
+            self.broker.buy(qty)
         elif signal == Signal.SELL and position_qty > 0:
             if self.broker.has_open_sell_order():
-                logger.info("Bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.", self.config.symbol)
+                logger.info("Bereits eine offene Verkaufs-Order für %s -> überspringe Zyklus.", symbol)
                 return Signal.HOLD
-            logger.info("Death Cross erkannt -> VERKAUFE %s %s", position_qty, self.config.symbol)
+            logger.info("Death Cross erkannt -> VERKAUFE %s %s", position_qty, symbol)
             self.broker.sell(position_qty)
+            self._peak_price_by_symbol.pop(symbol, None)
         else:
             logger.info("Signal=%s, Position=%s -> keine Aktion", signal, position_qty)
 
@@ -91,11 +149,17 @@ class TradingBot:
 
     def run_forever(self):
         logger.info(
-            "Starte Tradingbot für %s (paper=%s, short=%d, long=%d, intervall=%ds)",
+            "Starte Tradingbot für %s (paper=%s, short=%d, long=%d, trend=%d, rsi=%d, "
+            "stop=%.2f%%, take_profit=%.2f%%, risk_per_trade=%.2f%%, intervall=%ds)",
             self.config.symbol,
             self.config.paper,
             self.config.short_window,
             self.config.long_window,
+            self.config.trend_window,
+            self.config.rsi_window,
+            self.config.stop_loss_pct * 100,
+            self.config.take_profit_pct * 100,
+            self.config.risk_per_trade_pct * 100,
             self.config.poll_interval_seconds,
         )
         try:

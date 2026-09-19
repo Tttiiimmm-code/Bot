@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import sys
 
 from alpaca.common.exceptions import APIError
@@ -37,16 +38,37 @@ def _train_ratio(value: str) -> float:
 
 
 def _fraction_below_one(value: str) -> float:
-    """Für commission-pct/slippage-pct/stop-loss-pct: alle drei fließen in
-    run_backtest als Multiplikator auf einen Preis/Kapitalbetrag ein.
-    Ab 1 (100%) kippen die Vorzeichen (z.B. negative shares bei
-    commission_pct>=1, negativer Verkaufspreis bei slippage_pct>=1) und
-    korrumpieren den Backtest-Zustand dauerhaft -- daher hier hart auf
-    [0, 1) begrenzt statt nur "nicht negativ"."""
+    """Für commission-pct/slippage-pct/stop-loss-pct/risk-per-trade-pct:
+    alle fließen in run_backtest als Multiplikator auf einen Preis-/
+    Kapitalbetrag ein. Ab 1 (100%) kippen die Vorzeichen (z.B. negative
+    shares bei commission_pct>=1, negativer Verkaufspreis bei
+    slippage_pct>=1) und korrumpieren den Backtest-Zustand dauerhaft --
+    daher hier hart auf [0, 1) begrenzt statt nur "nicht negativ"."""
     x = float(value)
     if not 0 <= x < 1:
         raise argparse.ArgumentTypeError(f"muss zwischen 0 und kleiner 1 (100%) liegen, nicht {x}")
     return x
+
+
+def _non_negative_finite(value: str) -> float:
+    """Für take-profit-pct: anders als die obigen Prozentsätze kein
+    Divisor/Multiplikator, der bei >=1 das Vorzeichen kippt (ein
+    Kursziel von 100%+ über dem Einstieg ist sinnvoll) -- nur negative
+    und nicht-endliche Werte (NaN/Inf) sind unsinnig."""
+    x = float(value)
+    if not (math.isfinite(x) and x >= 0):
+        raise argparse.ArgumentTypeError(f"muss eine nicht-negative, endliche Zahl sein, nicht {x}")
+    return x
+
+
+def _window_or_disabled(value: str) -> int:
+    """Für trend-window/rsi-window: 0 deaktiviert den Filter, sonst wie
+    bei --days/long_window durch MAX_WINDOW vor einem OverflowError in
+    close.rolling() geschützt."""
+    n = int(value)
+    if not 0 <= n <= MAX_WINDOW:
+        raise argparse.ArgumentTypeError(f"muss zwischen 0 (aus) und {MAX_WINDOW} liegen, nicht {n}")
+    return n
 
 
 def setup_logging():
@@ -62,7 +84,15 @@ def cmd_run(config: Config):
 
 
 def cmd_backtest(
-    config: Config, days: int, commission_pct: float, slippage_pct: float, stop_loss_pct: float
+    config: Config,
+    days: int,
+    commission_pct: float,
+    slippage_pct: float,
+    stop_loss_pct: float,
+    take_profit_pct: float,
+    risk_per_trade_pct: float,
+    trend_window: int,
+    rsi_window: int,
 ):
     from tradingbot.backtest import run_backtest
 
@@ -79,13 +109,31 @@ def cmd_backtest(
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
         stop_loss_pct=stop_loss_pct,
+        take_profit_pct=take_profit_pct,
+        risk_per_trade_pct=risk_per_trade_pct,
+        trend_window=trend_window,
+        rsi_window=rsi_window,
     )
     num_stops = sum(1 for t in result.trades if t.side == "STOP")
+    num_tp = sum(1 for t in result.trades if t.side == "TP")
 
     print(f"Symbol:          {config.symbol}")
     print(f"Zeitraum:        {closes.index[0].date()} - {closes.index[-1].date()} ({len(closes)} Tage)")
-    print(f"Trades:          {result.num_trades} (davon {num_stops} Stop-Loss-Ausstiege)")
-    print(f"Stop-Loss:       {stop_loss_pct:.1%} unter Einstiegspreis" if stop_loss_pct > 0 else "Stop-Loss:       deaktiviert")
+    print(f"Trades:          {result.num_trades} (davon {num_stops} Trailing-Stop, {num_tp} Take-Profit)")
+    print(
+        f"Stop-Loss:       {stop_loss_pct:.1%} unter Höchststand seit Einstieg (Trailing)"
+        if stop_loss_pct > 0 else "Stop-Loss:       deaktiviert"
+    )
+    print(
+        f"Take-Profit:     {take_profit_pct:.1%} über Einstiegspreis"
+        if take_profit_pct > 0 else "Take-Profit:     deaktiviert"
+    )
+    print(
+        f"Positionsgröße:  {risk_per_trade_pct:.1%} Kapitalrisiko pro Trade"
+        if risk_per_trade_pct > 0 else "Positionsgröße:  volles Kapital pro Trade"
+    )
+    print(f"Trendfilter:     {trend_window}-Tage-SMA" if trend_window > 0 else "Trendfilter:     deaktiviert")
+    print(f"RSI-Filter:      {rsi_window}-Tage-RSI > 50" if rsi_window > 0 else "RSI-Filter:      deaktiviert")
     print(f"Kosten (Provision+Slippage): {result.total_costs:,.2f} ({commission_pct:.2%} + {slippage_pct:.2%}/Order)")
     print(f"Endkapital:      {result.final_equity:,.2f}")
     print(f"Gesamtrendite:   {result.total_return_pct:+.2f}%")
@@ -120,6 +168,10 @@ def cmd_validate(
     commission_pct: float,
     slippage_pct: float,
     stop_loss_pct: float,
+    take_profit_pct: float,
+    risk_per_trade_pct: float,
+    trend_window: int,
+    rsi_window: int,
 ):
     from tradingbot.validation import validate
 
@@ -136,6 +188,10 @@ def cmd_validate(
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
         stop_loss_pct=stop_loss_pct,
+        take_profit_pct=take_profit_pct,
+        risk_per_trade_pct=risk_per_trade_pct,
+        trend_window=trend_window,
+        rsi_window=rsi_window,
     )
 
     evaluated = {(c.short_window, c.long_window) for c in result.all_candidates}
@@ -144,14 +200,20 @@ def cmd_validate(
         skipped_str = ", ".join(f"{s}/{l}" for s, l in skipped)
         print(
             f"Hinweis: {skipped_str} übersprungen -- zu wenig Handelstage im "
-            f"Trainingsabschnitt für diese Fenstergröße (mehr --days oder kleineres "
-            f"--train-ratio verwenden).\n"
+            f"Trainingsabschnitt für diese Fenstergröße bzw. den Trend-/RSI-Filter "
+            f"(mehr --days oder kleineres --train-ratio verwenden).\n"
         )
 
     print(f"Symbol:          {config.symbol}")
     print(
         f"Zeitraum:        {closes.index[0].date()} - {closes.index[-1].date()} "
         f"({len(closes)} Tage, Split am {result.split_date.date()}, train_ratio={train_ratio})"
+    )
+    print(
+        f"Filter/Exits:    Trend={trend_window if trend_window else 'aus'}, "
+        f"RSI={rsi_window if rsi_window else 'aus'}, "
+        f"Stop={stop_loss_pct:.1%}, Take-Profit={take_profit_pct:.1%}, "
+        f"Risiko/Trade={risk_per_trade_pct:.1%}"
     )
     print()
     print(f"{'SMA':<8} {'Train Rendite':>14} {'Train Trades':>13} {'Test Rendite':>13} {'Test Trades':>12}")
@@ -173,10 +235,18 @@ def cmd_validate(
     print(f"  Differenz Test-Train: {gap:+.2f} Prozentpunkte {'(Overfitting-Warnsignal)' if gap < -10 else ''}")
 
 
-def _add_cost_and_risk_arguments(subparser: argparse.ArgumentParser):
-    """Fügt die für backtest und validate identischen Kosten-/Risiko-Flags
-    hinzu -- an einer Stelle definiert, damit beide Subcommands garantiert
-    dieselben Wertebereiche/Defaults akzeptieren."""
+def _add_strategy_arguments(subparser: argparse.ArgumentParser):
+    """Fügt die für backtest und validate identischen Kosten-/Risiko-/
+    Filter-Flags hinzu -- an einer Stelle definiert, damit beide
+    Subcommands garantiert dieselben Wertebereiche/Defaults akzeptieren.
+
+    Die Defaults hier sind bewusst NICHT dieselben wie die konservativen
+    (deaktivierten) Bibliotheks-Defaults von run_backtest()/validate():
+    die CLI soll die im Chat als sinnvoll ausgewählten Verbesserungen
+    (Trendfilter, RSI-Filter, Take-Profit) standardmäßig aktiv zeigen,
+    während die Kernfunktionen für programmatische Aufrufer/Tests
+    rückwärtskompatibel abgeschaltet bleiben.
+    """
     subparser.add_argument(
         "--commission-pct",
         type=_fraction_below_one,
@@ -193,7 +263,32 @@ def _add_cost_and_risk_arguments(subparser: argparse.ArgumentParser):
         "--stop-loss-pct",
         type=_fraction_below_one,
         default=0.08,
-        help="Stop-Loss als Anteil unter dem Einstiegspreis, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
+        help="Trailing-Stop als Anteil unter dem Höchststand seit Einstieg, z.B. 0.08 = 8%%. 0 deaktiviert den Stop (Standard: 0.08).",
+    )
+    subparser.add_argument(
+        "--take-profit-pct",
+        type=_non_negative_finite,
+        default=0.15,
+        help="Take-Profit als Anteil über dem Einstiegspreis, z.B. 0.15 = 15%%. 0 deaktiviert (Standard: 0.15).",
+    )
+    subparser.add_argument(
+        "--risk-per-trade-pct",
+        type=_fraction_below_one,
+        default=0.0,
+        help="Positionsgröße so wählen, dass beim initialen Stop höchstens dieser Anteil des Kapitals "
+        "verloren geht (nur wirksam mit --stop-loss-pct > 0). 0 = volles Kapital pro Trade (Standard: 0.0).",
+    )
+    subparser.add_argument(
+        "--trend-window",
+        type=_window_or_disabled,
+        default=200,
+        help="Trendfilter: BUY nur, wenn der Kurs über dieser SMA liegt. 0 deaktiviert (Standard: 200).",
+    )
+    subparser.add_argument(
+        "--rsi-window",
+        type=_window_or_disabled,
+        default=14,
+        help="RSI-Filter: BUY nur, wenn der RSI über 50 liegt. 0 deaktiviert (Standard: 14).",
     )
 
 
@@ -207,7 +302,7 @@ def main():
     backtest_parser.add_argument(
         "--days", type=_positive_int, default=250, help="Anzahl historischer Handelstage (Standard: 250)."
     )
-    _add_cost_and_risk_arguments(backtest_parser)
+    _add_strategy_arguments(backtest_parser)
 
     validate_parser = subparsers.add_parser(
         "validate", help="Out-of-Sample-Validierung: Parameter auf Trainingsdaten wählen, auf Testdaten prüfen."
@@ -227,7 +322,7 @@ def main():
         default=[(5, 20), (10, 30), (20, 50), (50, 200)],
         help="Zu testende SMA-Kombinationen als 'kurz:lang,kurz:lang,...' (Standard: 5:20,10:30,20:50,50:200).",
     )
-    _add_cost_and_risk_arguments(validate_parser)
+    _add_strategy_arguments(validate_parser)
 
     args = parser.parse_args()
 
@@ -239,7 +334,17 @@ def main():
         if args.command == "run":
             cmd_run(config)
         elif args.command == "backtest":
-            cmd_backtest(config, args.days, args.commission_pct, args.slippage_pct, args.stop_loss_pct)
+            cmd_backtest(
+                config,
+                args.days,
+                args.commission_pct,
+                args.slippage_pct,
+                args.stop_loss_pct,
+                args.take_profit_pct,
+                args.risk_per_trade_pct,
+                args.trend_window,
+                args.rsi_window,
+            )
         elif args.command == "validate":
             cmd_validate(
                 config,
@@ -249,6 +354,10 @@ def main():
                 args.commission_pct,
                 args.slippage_pct,
                 args.stop_loss_pct,
+                args.take_profit_pct,
+                args.risk_per_trade_pct,
+                args.trend_window,
+                args.rsi_window,
             )
     except (RuntimeError, ValueError) as e:
         print(f"Fehler: {e}", file=sys.stderr)

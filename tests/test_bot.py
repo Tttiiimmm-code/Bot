@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from tradingbot import bot as bot_module
 from tradingbot.bot import TradingBot
@@ -18,11 +19,13 @@ class FakeBroker:
         position: Position | None,
         open_buy_order: bool = False,
         open_sell_order: bool = False,
+        equity: float = 10_000.0,
     ):
         self._closes = closes
         self._position = position
         self._open_buy_order = open_buy_order
         self._open_sell_order = open_sell_order
+        self._equity = equity
         self.buy_calls: list[float] = []
         self.sell_calls: list[float] = []
 
@@ -38,6 +41,9 @@ class FakeBroker:
     def has_open_sell_order(self) -> bool:
         return self._open_sell_order
 
+    def get_account_equity(self) -> float:
+        return self._equity
+
     def buy(self, qty: float):
         self.buy_calls.append(qty)
 
@@ -45,7 +51,13 @@ class FakeBroker:
         self.sell_calls.append(qty)
 
 
-def make_config(stop_loss_pct: float) -> Config:
+def make_config(
+    stop_loss_pct: float,
+    take_profit_pct: float = 0.0,
+    risk_per_trade_pct: float = 0.0,
+    trend_window: int = 0,
+    rsi_window: int = 0,
+) -> Config:
     return Config(
         api_key="test",
         secret_key="test",
@@ -56,6 +68,10 @@ def make_config(stop_loss_pct: float) -> Config:
         long_window=4,
         poll_interval_seconds=60,
         stop_loss_pct=stop_loss_pct,
+        take_profit_pct=take_profit_pct,
+        risk_per_trade_pct=risk_per_trade_pct,
+        trend_window=trend_window,
+        rsi_window=rsi_window,
     )
 
 
@@ -270,3 +286,144 @@ def test_run_forever_exits_cleanly_on_keyboard_interrupt_during_run_once(monkeyp
     monkeypatch.setattr(bot_module.time, "sleep", lambda seconds: None)
 
     bot.run_forever()  # darf nicht raisen
+
+
+def test_trailing_stop_uses_peak_price_across_cycles():
+    """Regressionstest fürs Kernverhalten des Trailing-Stops im Live-Bot:
+    steigt der Kurs über mehrere Zyklen hinweg und fällt danach nur leicht
+    zurück, muss der Stop auf Basis des zwischenzeitlichen Höchststands
+    auslösen -- ein rein auf den Einstiegspreis bezogener (fixer) Stop
+    hätte hier nicht ausgelöst."""
+    config = make_config(stop_loss_pct=0.08)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+
+    # Zyklus 1: Kurs steigt auf 110 -> Peak wird 110, kein Trigger
+    # (Trailing-Schwelle 110*0.92=101.2, Kurs 110 liegt darüber).
+    broker = FakeBroker(flat_closes(110.0), position)
+    bot = TradingBot(config, broker=broker)
+    signal1 = bot.run_once()
+    assert signal1 != Signal.SELL
+    assert broker.sell_calls == []
+
+    # Zyklus 2 (gleiche Bot-Instanz -> Peak bleibt im Speicher): Kurs
+    # fällt auf 100 zurück. Fixer Stop (Einstieg*0.92=92) würde NICHT
+    # auslösen, Trailing-Stop (Peak*0.92=101.2) hingegen schon.
+    broker._closes = flat_closes(100.0)
+    signal2 = bot.run_once()
+    assert signal2 == Signal.SELL
+    assert broker.sell_calls == [10.0]
+
+
+def test_peak_price_resets_after_position_closes():
+    config = make_config(stop_loss_pct=0.08)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(150.0), position)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()  # Peak wird auf 150 gesetzt
+    assert bot._peak_price_by_symbol["TEST"] == 150.0
+
+    broker._position = None  # Position extern geschlossen (z.B. Order gefüllt)
+    bot.run_once()
+    assert "TEST" not in bot._peak_price_by_symbol
+
+
+def test_take_profit_triggers_sell():
+    config = make_config(stop_loss_pct=0.0, take_profit_pct=0.15)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(116.0), position)  # +16%, über 15%-Ziel
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.SELL
+    assert broker.sell_calls == [10.0]
+
+
+def test_take_profit_does_not_trigger_below_target():
+    config = make_config(stop_loss_pct=0.0, take_profit_pct=0.15)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(110.0), position)  # +10%, unter 15%-Ziel
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert broker.sell_calls == []
+
+
+def test_take_profit_disabled_by_default():
+    config = make_config(stop_loss_pct=0.0, take_profit_pct=0.0)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(1000.0), position)  # +900%
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert broker.sell_calls == []
+
+
+def test_take_profit_open_sell_order_blocks_duplicate():
+    config = make_config(stop_loss_pct=0.0, take_profit_pct=0.15)
+    position = Position(qty=10.0, avg_entry_price=100.0)
+    broker = FakeBroker(flat_closes(116.0), position, open_sell_order=True)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.sell_calls == []
+
+
+def test_risk_based_buy_qty_uses_equity_and_stop_distance():
+    """qty = (equity * risk_per_trade_pct) / (current_price * stop_loss_pct)."""
+    config = make_config(stop_loss_pct=0.08, risk_per_trade_pct=0.02)
+    # Golden Cross am letzten Punkt, aktueller Kurs 9.
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])
+    broker = FakeBroker(closes, position=None, equity=10_000.0)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert len(broker.buy_calls) == 1
+    expected_qty = (10_000.0 * 0.02) / (9 * 0.08)
+    assert broker.buy_calls[0] == pytest.approx(expected_qty)
+
+
+def test_risk_based_sizing_falls_back_to_fixed_qty_without_stop_loss():
+    """Ohne Stop-Loss ist 'Risiko pro Trade' nicht definiert -- muss auf
+    die feste QTY zurückfallen statt zu crashen oder eine bedeutungslose
+    Größe zu berechnen."""
+    config = make_config(stop_loss_pct=0.0, risk_per_trade_pct=0.02)
+    closes = make_series([10, 9, 8, 7, 6, 7, 9])
+    broker = FakeBroker(closes, position=None, equity=10_000.0)
+    bot = TradingBot(config, broker=broker)
+
+    bot.run_once()
+
+    assert broker.buy_calls == [config.qty]
+
+
+def test_trend_filter_suppresses_live_buy():
+    config = make_config(stop_loss_pct=0.08, trend_window=30)
+    # Golden Cross weit unter dem 30er-Trend-Durchschnitt.
+    closes = make_series([50] * 30 + [10, 9, 8, 7, 6, 7, 9])
+    broker = FakeBroker(closes, position=None)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.buy_calls == []
+
+
+def test_rsi_filter_suppresses_live_buy():
+    config = make_config(stop_loss_pct=0.08, rsi_window=8)
+    values = [100, 80, 60, 45, 35, 30, 28, 27, 26.5, 26, 27, 29]
+    closes = make_series(values)
+    broker = FakeBroker(closes, position=None)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.buy_calls == []

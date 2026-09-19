@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tradingbot.strategy import Signal, generate_signal, generate_signal_series
+from tradingbot.strategy import Signal, compute_rsi, generate_signal, generate_signal_series
 
 
 def make_series(values):
@@ -134,6 +134,113 @@ def test_generate_signal_and_series_agree_across_a_data_gap():
     series_last = generate_signal_series(close, short_window, long_window).iloc[-1]
 
     assert single == series_last == Signal.HOLD
+
+
+def test_trend_filter_suppresses_buy_below_trend_ma():
+    """Golden Cross weit unter dem langfristigen Trend-Durchschnitt (z.B.
+    ein Rebound in einem Abwärtstrend) darf mit aktiviertem Trendfilter
+    nicht als BUY durchgehen."""
+    values = [50] * 30 + [10, 9, 8, 7, 6, 7, 9]
+    close = make_series(values)
+
+    assert generate_signal(close, short_window=2, long_window=4) == Signal.BUY
+    assert generate_signal(close, short_window=2, long_window=4, trend_window=30) == Signal.HOLD
+
+
+def test_trend_filter_allows_buy_above_trend_ma():
+    """Golden Cross deutlich über dem Trend-Durchschnitt bleibt BUY."""
+    values = [10] * 30 + [50, 49, 48, 47, 46, 47, 49]
+    close = make_series(values)
+
+    assert generate_signal(close, short_window=2, long_window=4, trend_window=30) == Signal.BUY
+
+
+def test_trend_filter_never_suppresses_sell():
+    """Filter dürfen niemals einen Ausstieg (Death Cross) blockieren."""
+    values = [10] * 30 + [46, 47, 48, 49, 50, 49, 47]
+    close = make_series(values)
+
+    signal = generate_signal(close, short_window=2, long_window=4, trend_window=30)
+    assert signal == Signal.SELL
+
+
+def test_trend_filter_disabled_by_default_matches_unfiltered():
+    values = [10, 9, 8, 7, 6, 7, 9, 12, 16, 21, 27, 34, 30, 25, 18, 10]
+    close = make_series(values)
+    unfiltered = generate_signal_series(close, short_window=2, long_window=4)
+    explicit_zero = generate_signal_series(close, short_window=2, long_window=4, trend_window=0)
+    assert (unfiltered == explicit_zero).all()
+
+
+def test_rsi_range_is_zero_to_hundred():
+    rng = np.random.default_rng(1)
+    values = 100 + np.cumsum(rng.normal(0, 1, 60))
+    close = pd.Series(values, index=pd.date_range("2024-01-01", periods=60, freq="D"))
+
+    rsi = compute_rsi(close, window=14)
+
+    assert rsi.dropna().between(0, 100).all()
+
+
+def test_rsi_is_high_after_only_gains():
+    close = make_series(list(range(1, 20)))  # streng monoton steigend
+    rsi = compute_rsi(close, window=5)
+    assert rsi.iloc[-1] == pytest.approx(100.0)
+
+
+def test_rsi_is_low_after_only_losses():
+    close = make_series(list(range(20, 1, -1)))  # streng monoton fallend
+    rsi = compute_rsi(close, window=5)
+    assert rsi.iloc[-1] == pytest.approx(0.0)
+
+
+def test_rsi_is_neutral_on_flat_prices():
+    close = make_series([100] * 20)
+    rsi = compute_rsi(close, window=5)
+    assert rsi.iloc[-1] == pytest.approx(50.0)
+
+
+def test_rsi_filter_suppresses_buy_without_bullish_momentum():
+    """Konstruiert eine Serie, bei der der Golden Cross zwar auftritt, der
+    RSI aber (durch vorangegangene stärkere Verluste im RSI-Fenster) unter
+    50 liegt -- der RSI-Filter muss das BUY dann unterdrücken."""
+    # Starker Einbruch, dann ein kleiner Rebound, der gerade so einen
+    # Golden Cross auslöst, aber im RSI-Fenster überwiegen die Verluste.
+    values = [100, 80, 60, 45, 35, 30, 28, 27, 26.5, 26, 27, 29]
+    close = make_series(values)
+
+    signal_unfiltered = generate_signal(close, short_window=2, long_window=4)
+    signal_rsi_filtered = generate_signal(close, short_window=2, long_window=4, rsi_window=8)
+
+    assert signal_unfiltered == Signal.BUY
+    assert signal_rsi_filtered == Signal.HOLD
+
+
+def test_rsi_filter_never_suppresses_sell():
+    values = [10] * 10 + [20, 30, 40, 50, 40, 20]
+    close = make_series(values)
+
+    unfiltered = generate_signal(close, short_window=2, long_window=4)
+    rsi_filtered = generate_signal(close, short_window=2, long_window=4, rsi_window=8)
+
+    assert unfiltered == Signal.SELL
+    assert rsi_filtered == Signal.SELL
+
+
+def test_rsi_filter_disabled_by_default_matches_unfiltered():
+    values = [10, 9, 8, 7, 6, 7, 9, 12, 16, 21, 27, 34, 30, 25, 18, 10]
+    close = make_series(values)
+    unfiltered = generate_signal_series(close, short_window=2, long_window=4)
+    explicit_zero = generate_signal_series(close, short_window=2, long_window=4, rsi_window=0)
+    assert (unfiltered == explicit_zero).all()
+
+
+def test_rejects_negative_trend_and_rsi_window():
+    close = make_series(list(range(20)))
+    with pytest.raises(ValueError):
+        generate_signal(close, short_window=2, long_window=4, trend_window=-1)
+    with pytest.raises(ValueError):
+        generate_signal(close, short_window=2, long_window=4, rsi_window=-1)
 
 
 def test_first_valid_bar_never_generates_spurious_signal():

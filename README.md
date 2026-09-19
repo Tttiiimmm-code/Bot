@@ -9,29 +9,76 @@ testen und nur Kapital einsetzen, dessen Verlust du dir leisten kannst.
 
 ## Strategie
 
-Moving-Average-Crossover:
-- **BUY**, wenn der kurze gleitende Durchschnitt (SMA) den langen von unten nach oben kreuzt (Golden Cross).
-- **SELL**, wenn der kurze SMA den langen von oben nach unten kreuzt (Death Cross).
+Moving-Average-Crossover mit optionalen Bestätigungsfiltern:
+- **BUY**, wenn der kurze gleitende Durchschnitt (SMA) den langen von unten nach oben kreuzt
+  (Golden Cross) -- UND, falls aktiviert, Trendfilter und RSI-Filter zustimmen.
+- **SELL**, wenn der kurze SMA den langen von oben nach unten kreuzt (Death Cross). SELL wird
+  NIE gefiltert -- die Filter sollen einen ungünstigen Einstieg verhindern, aber niemals einen
+  Ausstieg blockieren.
 
 Fenstergrößen sind über `SHORT_WINDOW` / `LONG_WINDOW` konfigurierbar.
 
-## Risikomanagement: Stop-Loss
+### Trendfilter (`TREND_FILTER_WINDOW`)
+
+BUY nur, wenn der Kurs über dem gleitenden Durchschnitt dieses (längeren) Fensters liegt, z.B.
+der 200-Tage-SMA. Soll verhindern, in einem übergeordneten Abwärtstrend zu kaufen, nur weil
+kurzfristig ein Rebound einen Golden Cross auslöst. `0` deaktiviert den Filter.
+
+### RSI-Filter (`RSI_WINDOW`)
+
+BUY nur, wenn der RSI (Relative Strength Index) über 50 liegt, also aufwärts gerichtetes
+Momentum den Crossover bestätigt. `0` deaktiviert den Filter.
+
+## Risikomanagement
+
+### Trailing-Stop-Loss (`STOP_LOSS_PCT`)
 
 Sobald eine Position offen ist, wird bei jedem Zyklus geprüft, ob der aktuelle Kurs um mehr als
-`STOP_LOSS_PCT` unter den Einstiegspreis gefallen ist. Falls ja, wird sofort verkauft –
-unabhängig vom Crossover-Signal. Das begrenzt den Verlust pro Trade, unabhängig davon, wie lange
-das nächste Death-Cross-Signal noch auf sich warten lässt.
+`STOP_LOSS_PCT` unter den **höchsten seit dem Einstieg beobachteten Kurs** gefallen ist (nicht
+nur unter den Einstiegspreis). Falls ja, wird sofort verkauft – unabhängig vom Crossover-Signal.
+Direkt nach dem Einstieg verhält sich das wie ein fixer Stop; steigt der Kurs danach, zieht die
+Schwelle mit nach oben und sichert so einen Teil des bereits erzielten Gewinns.
 
 - Live-/Paper-Trading: der Bot fragt den tatsächlichen Einstiegspreis der offenen Position direkt
-  bei Alpaca ab (`avg_entry_price`), kein eigener Zustand nötig.
+  bei Alpaca ab (`avg_entry_price`) und verfolgt den seither höchsten Kurs im Prozessspeicher
+  (`TradingBot._peak_price_by_symbol`). Das überlebt einen Neustart des Bots nicht -- nach einem
+  Neustart mit noch offener Position startet die Nachverfolgung konservativ wieder beim
+  Einstiegspreis, der Stop fällt dabei höchstens auf das ursprüngliche, weitere Niveau zurück,
+  nie auf ein gefährlich engeres.
 - Backtest/Validierung: der Stop wird auf Basis des Tagesschlusskurses geprüft (keine Intraday-
   Daten verfügbar), ausgelöste Stop-Exits erscheinen im Ergebnis als eigener Trade-Typ `STOP`.
 - `STOP_LOSS_PCT=0` deaktiviert den Stop vollständig.
 
-⚠️ Ein fixer prozentualer Stop ist kein Allheilmittel: Bei volatilen Trendmärkten kann ein zu
-enger Stop dazu führen, dass Positionen durch normale Schwankungen vorzeitig ausgestoppt werden,
-bevor sich der eigentliche Trend fortsetzt ("Whipsaw"). Mit `validate` lässt sich prüfen, ob ein
-bestimmter Stop-Loss-Wert für ein Symbol/Parameter-Set tatsächlich hilft oder eher schadet.
+### Take-Profit (`TAKE_PROFIT_PCT`)
+
+Überschreitet der Kurs den Einstiegspreis um mehr als `TAKE_PROFIT_PCT`, wird der Gewinn sofort
+mitgenommen -- unabhängig vom Crossover-Signal. Anders als der Trailing-Stop bezieht sich das
+Ziel immer auf den Einstiegspreis, nicht auf einen laufenden Höchststand. Erscheint im
+Backtest-Ergebnis als Trade-Typ `TP`. `TAKE_PROFIT_PCT=0` deaktiviert Take-Profit.
+
+### Risikobasierte Positionsgröße (`RISK_PER_TRADE_PCT`)
+
+Standardmäßig setzt jeder Trade das volle verfügbare Kapital ein (Backtest) bzw. die feste
+Stückzahl `QTY` (Live-Bot). Mit `RISK_PER_TRADE_PCT > 0` wird die Positionsgröße stattdessen so
+gewählt, dass beim Erreichen des initialen Stops (Einstiegspreis · `STOP_LOSS_PCT`) höchstens
+dieser Anteil des aktuellen Kapitals verloren geht -- klassisches Money-Management ("nie mehr als
+X% pro Trade riskieren"). Nur wirksam, wenn `STOP_LOSS_PCT > 0` ist (sonst gibt es keinen
+Bezugspunkt für "Risiko"). `RISK_PER_TRADE_PCT=0` deaktiviert die Berechnung.
+
+⚠️ **Diese Funktionen sind kein Allheilmittel und keine garantierte Profitsteigerung** -- sie
+verschieben das Verhältnis von Risiko zu Ertrag, verbessern es nicht automatisch:
+
+- Ein fixer/trailender Stop kann bei volatilen Trendmärkten dazu führen, dass Positionen durch
+  normale Schwankungen vorzeitig ausgestoppt werden, bevor sich der eigentliche Trend fortsetzt
+  ("Whipsaw").
+- Ein Take-Profit-Ziel **deckelt Gewinne in starken Trends**: in einem Backtest über 600
+  Handelstage (Stand dieser Implementierung) verbesserten Trendfilter+RSI+Take-Profit das
+  Ergebnis bei AAPL (+1,8% → +14,1%) und MSFT (+4,5% → +10,5%), verschlechterten es aber bei
+  GOOGL (+93,5% → +15,7%), NVDA (+47,3% → +10,0%) und TSLA (+24,1% → +3,0%) deutlich -- weil die
+  Filter zu vorsichtig in die Rallye eingestiegen sind und Take-Profit den Rest abgeschnitten hat.
+  Es gibt hier keinen Parametersatz, der auf allen Symbolen/Marktphasen überlegen ist.
+- Mit `validate` lässt sich prüfen, ob eine bestimmte Kombination für ein konkretes Symbol
+  tatsächlich hilft oder eher schadet -- und ob sie out-of-sample überhaupt stabil ist.
 
 ## Robustheit & bekannte Grenzen
 
@@ -77,12 +124,27 @@ cp .env.example .env
 python main.py backtest --days 250
 ```
 
-Der Backtest berücksichtigt standardmäßig Slippage von 0,05% pro Order (Näherung an den
-Bid-Ask-Spread bei liquiden Aktien; Alpaca selbst ist für US-Aktien provisionsfrei). Anpassbar:
+Die CLI (`backtest`/`validate`) aktiviert standardmäßig alle Verbesserungen: Trendfilter
+(200-Tage-SMA), RSI-Filter, Trailing-Stop (8%), Take-Profit (15%), Slippage (0,05%). Volle
+Kontrolle über alle Flags:
 
 ```bash
-python main.py backtest --days 250 --commission-pct 0.001 --slippage-pct 0.001 --stop-loss-pct 0.08
+python main.py backtest --days 600 \
+  --commission-pct 0.001 --slippage-pct 0.001 \
+  --stop-loss-pct 0.08 --take-profit-pct 0.15 --risk-per-trade-pct 0.02 \
+  --trend-window 200 --rsi-window 14
 ```
+
+Einzelne Filter/Exits deaktivieren (z.B. um die reine Crossover-Strategie ohne die neuen
+Filter zu sehen, jeweils mit `0`):
+
+```bash
+python main.py backtest --days 600 --trend-window 0 --rsi-window 0 --take-profit-pct 0
+```
+
+Hinweis: `run_backtest()`/`validate()` selbst (die Python-Funktionen, z.B. für eigene Skripte)
+haben davon abweichende, konservative Defaults (alle neuen Filter aus) -- nur die CLI aktiviert
+sie standardmäßig. Das hält bestehenden Code, der diese Funktionen direkt aufruft, unverändert.
 
 **Out-of-Sample-Validierung** (Parameter werden nur auf dem ersten Teil der Daten gesucht,
 danach unverändert auf dem noch "ungesehenen" restlichen Zeitraum geprüft – so lässt sich
@@ -118,7 +180,11 @@ Mit `Strg+C` sauber beenden.
 | `SHORT_WINDOW`           | Fenstergröße kurzer SMA                                    | `20`    |
 | `LONG_WINDOW`            | Fenstergröße langer SMA                                    | `50`    |
 | `POLL_INTERVAL_SECONDS`  | Abfrageintervall im Live-Loop (Sekunden)                   | `60`    |
-| `STOP_LOSS_PCT`          | Stop-Loss als Anteil unter dem Einstiegspreis, `0` = aus   | `0.08`  |
+| `STOP_LOSS_PCT`          | Trailing-Stop als Anteil unter dem Höchststand, `0` = aus  | `0.08`  |
+| `TAKE_PROFIT_PCT`        | Take-Profit als Anteil über dem Einstieg, `0` = aus        | `0.15`  |
+| `RISK_PER_TRADE_PCT`     | Kapitalrisiko pro Trade (nur mit Stop-Loss), `0` = volles Kapital/feste QTY | `0.0` |
+| `TREND_FILTER_WINDOW`    | Trendfilter-SMA, BUY nur über diesem Wert, `0` = aus       | `200`   |
+| `RSI_WINDOW`             | RSI-Filter, BUY nur wenn RSI > 50, `0` = aus                | `14`    |
 
 ## Tests
 
@@ -135,7 +201,7 @@ main.py               CLI-Einstiegspunkt (run / backtest / validate)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
-  strategy.py           Moving-Average-Crossover-Signal-Logik
+  strategy.py           Signal-Logik: Crossover + Trendfilter + RSI-Filter
   bot.py               Live-/Paper-Trading-Loop
   backtest.py          Vektor-Backtest inkl. Transaktionskosten
   validation.py         Out-of-Sample-Validierung (Train-/Test-Split)
@@ -147,5 +213,5 @@ tests/                 Unit-Tests (kein API-Zugriff nötig)
 - Neue Strategie: eigene Funktion nach dem Muster von `generate_signal` in `strategy.py` schreiben
   und in `bot.py` einhängen.
 - Anderer Broker/Markt (z.B. Krypto via ccxt): `broker.py` durch eine passende Implementierung
-  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `has_open_buy_order`,
-  `has_open_sell_order`, `buy`, `sell`) ersetzen.
+  mit gleicher Schnittstelle (`get_recent_closes`, `get_position`, `get_account_equity`,
+  `has_open_buy_order`, `has_open_sell_order`, `buy`, `sell`) ersetzen.

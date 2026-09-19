@@ -1,10 +1,13 @@
-"""Moving-Average-Crossover-Strategie.
+"""Moving-Average-Crossover-Strategie mit optionalen Bestätigungsfiltern.
 
 Signal-Logik:
 - BUY, sobald der kurze SMA von unten nach oben durch den langen SMA kreuzt
-  (Golden Cross).
+  (Golden Cross) -- UND, falls aktiviert, Trendfilter und RSI-Filter
+  zustimmen.
 - SELL, sobald der kurze SMA von oben nach unten durch den langen SMA kreuzt
-  (Death Cross).
+  (Death Cross). SELL wird NIE gefiltert: die Filter sollen verhindern, in
+  einem ungünstigen Umfeld neu einzusteigen, dürfen aber niemals einen
+  Ausstieg blockieren.
 - HOLD sonst.
 """
 
@@ -21,12 +24,20 @@ class Signal(str, Enum):
     HOLD = "HOLD"
 
 
-# Gemeinsame Obergrenze für SMA-Fenstergrößen, verwendet von config.py,
-# main.py (_parse_grid) und hier -- ein größerer Wert würde in
-# close.rolling() bzw. bei der Kursdaten-Zeitraumberechnung einen
-# OverflowError auslösen; 100000 ist bereits absurd weit über jedem
+# Gemeinsame Obergrenze für alle Fenstergrößen (SMA, Trendfilter, RSI),
+# verwendet von config.py, main.py (_parse_grid) und hier -- ein größerer
+# Wert würde in close.rolling() bzw. bei der Kursdaten-Zeitraumberechnung
+# einen OverflowError auslösen; 100000 ist bereits absurd weit über jedem
 # sinnvollen Fenster.
 MAX_WINDOW = 100_000
+
+
+def _validate_window(name: str, window: int, *, allow_zero: bool) -> None:
+    minimum = 0 if allow_zero else 1
+    if window < minimum:
+        raise ValueError(f"{name} muss mindestens {minimum} sein.")
+    if window > MAX_WINDOW:
+        raise ValueError(f"{name} darf höchstens {MAX_WINDOW} sein.")
 
 
 def compute_moving_averages(
@@ -48,8 +59,37 @@ def compute_moving_averages(
     )
 
 
+def compute_rsi(close: pd.Series, window: int) -> pd.Series:
+    """Relative Strength Index (Cutler's RSI: einfacher gleitender
+    Durchschnitt von Gewinnen/Verlusten statt Wilder-Glättung -- deterministisch
+    und konsistent mit den einfachen SMAs, die der Rest der Strategie nutzt).
+
+    Werte 0-100. Ein komplett flacher Kursverlauf im Fenster (weder Gewinn
+    noch Verlust) ergibt rechnerisch 0/0 -- wird explizit auf den neutralen
+    Wert 50 gesetzt statt NaN, da "kein Momentum" hier die korrekte Aussage
+    ist (nicht "nicht berechenbar", das bleibt für echte Warmup-Phasen
+    reserviert).
+    """
+    _validate_window("rsi_window", window, allow_zero=False)
+
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=window).mean()
+    avg_loss = loss.rolling(window=window).mean()
+
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    rsi = rsi.mask((avg_gain == 0) & (avg_loss == 0), 50.0)
+    return rsi
+
+
 def generate_signal_series(
-    close: pd.Series, short_window: int, long_window: int
+    close: pd.Series,
+    short_window: int,
+    long_window: int,
+    trend_window: int = 0,
+    rsi_window: int = 0,
 ) -> pd.Series:
     """Berechnet für jeden Zeitpunkt in `close` ein Signal (BUY/SELL/HOLD).
 
@@ -67,7 +107,18 @@ def generate_signal_series(
     NACH einer Datenlücke (NaN in `close`, z.B. ein fehlender Tages-Bar)
     ebenfalls erst wieder zwei aufeinanderfolgende gültige Tage, bevor neu
     signalisiert wird -- die Lücke wird nie stillschweigend übersprungen.
+
+    Optionale Bestätigungsfilter (wirken NUR auf BUY, nie auf SELL -- ein
+    Ausstieg darf nie durch einen Filter blockiert werden):
+    - `trend_window` > 0: BUY nur, wenn der Kurs über dem gleitenden
+      Durchschnitt dieses Fensters liegt (z.B. 200-Tage-SMA als
+      Trendfilter). Reduziert Fehlsignale in Seitwärts-/Abwärtsmärkten.
+    - `rsi_window` > 0: BUY nur, wenn der RSI über 50 liegt (aufwärts
+      gerichtetes Momentum bestätigt den Crossover).
     """
+    _validate_window("trend_window", trend_window, allow_zero=True)
+    _validate_window("rsi_window", rsi_window, allow_zero=True)
+
     ma = compute_moving_averages(close, short_window, long_window)
     valid = ma["short_ma"].notna() & ma["long_ma"].notna()
     diff = ma["short_ma"] - ma["long_ma"]
@@ -78,13 +129,29 @@ def generate_signal_series(
     crossed_up = valid & prev_valid & (prev_diff <= 0) & (diff > 0)
     crossed_down = valid & prev_valid & (prev_diff >= 0) & (diff < 0)
 
+    if trend_window > 0:
+        trend_ma = close.rolling(window=trend_window).mean()
+        in_uptrend = close > trend_ma  # NaN-Vergleiche sind False -> Warmup korrekt unterdrückt
+        crossed_up = crossed_up & in_uptrend
+
+    if rsi_window > 0:
+        rsi = compute_rsi(close, rsi_window)
+        bullish_momentum = rsi > 50  # NaN-Vergleich ebenfalls False während Warmup
+        crossed_up = crossed_up & bullish_momentum
+
     signals = pd.Series(Signal.HOLD, index=ma.index, dtype=object)
     signals[crossed_up] = Signal.BUY
     signals[crossed_down] = Signal.SELL
     return signals
 
 
-def generate_signal(close: pd.Series, short_window: int, long_window: int) -> Signal:
+def generate_signal(
+    close: pd.Series,
+    short_window: int,
+    long_window: int,
+    trend_window: int = 0,
+    rsi_window: int = 0,
+) -> Signal:
     """Berechnet das aktuelle Signal für den letzten Zeitpunkt in `close`.
 
     Implementiert als letzter Wert von `generate_signal_series`, damit
@@ -92,7 +159,7 @@ def generate_signal(close: pd.Series, short_window: int, long_window: int) -> Si
     Backtest/Validierung (die `generate_signal_series` direkt nutzen)
     niemals auseinanderlaufen können.
     """
-    series = generate_signal_series(close, short_window, long_window)
+    series = generate_signal_series(close, short_window, long_window, trend_window, rsi_window)
     if series.empty:
         return Signal.HOLD
     return series.iloc[-1]

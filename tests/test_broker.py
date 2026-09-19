@@ -26,6 +26,10 @@ def make_config() -> Config:
         long_window=4,
         poll_interval_seconds=60,
         stop_loss_pct=0.08,
+        take_profit_pct=0.0,
+        risk_per_trade_pct=0.0,
+        trend_window=0,
+        rsi_window=0,
     )
 
 
@@ -209,3 +213,26 @@ def test_has_open_order_filters_by_side(monkeypatch):
     broker.has_open_sell_order()
 
     assert seen_sides == [OrderSide.BUY, OrderSide.SELL]
+
+
+class FakeAccount:
+    def __init__(self, equity):
+        self.equity = equity
+
+
+def test_get_account_equity_returns_positive_float(monkeypatch):
+    broker = make_broker()
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount("12345.67"))
+    assert broker.get_account_equity() == pytest.approx(12345.67)
+
+
+@pytest.mark.parametrize("equity", ["0", "-100", "nan", "inf"])
+def test_get_account_equity_rejects_invalid_values(monkeypatch, equity):
+    """Regressionstest: ein kaputter/nicht-positiver Equity-Wert von der
+    API würde bei risikobasierter Positionsgrößen-Berechnung eine
+    bedeutungslose oder negative Ordergröße erzeugen -- lieber laut
+    scheitern (Zyklus wird oben geloggt übersprungen)."""
+    broker = make_broker()
+    monkeypatch.setattr(broker.trading_client, "get_account", lambda: FakeAccount(equity))
+    with pytest.raises(ValueError):
+        broker.get_account_equity()

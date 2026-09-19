@@ -97,6 +97,15 @@ class Broker:
         position = self.get_position()
         return position.qty if position else 0.0
 
+    def get_account_equity(self) -> float:
+        """Gesamtwert des Portfolios (Cash + offene Positionen) -- Basis für
+        risikobasierte Positionsgrößen (RISK_PER_TRADE_PCT)."""
+        account = self.trading_client.get_account()
+        equity = float(account.equity)
+        if not (math.isfinite(equity) and equity > 0):
+            raise ValueError(f"Ungültiger Equity-Wert von Alpaca erhalten: {equity}")
+        return equity
+
     def has_open_buy_order(self) -> bool:
         """Prüft, ob für das Symbol bereits eine unausgeführte Kauf-Order
         offen ist -- verhindert, dass der Bot eine zweite Kauf-Order

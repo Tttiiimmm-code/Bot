@@ -24,6 +24,10 @@ class Config:
     long_window: int
     poll_interval_seconds: int
     stop_loss_pct: float
+    take_profit_pct: float
+    risk_per_trade_pct: float
+    trend_window: int
+    rsi_window: int
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -84,6 +88,22 @@ class Config:
         if not 0 <= stop_loss_pct < 1:
             raise ValueError("STOP_LOSS_PCT muss im Bereich [0, 1) liegen (0 = deaktiviert).")
 
+        take_profit_pct = float(os.getenv("TAKE_PROFIT_PCT", "0.15"))
+        if not (math.isfinite(take_profit_pct) and take_profit_pct >= 0):
+            raise ValueError("TAKE_PROFIT_PCT muss eine nicht-negative, endliche Zahl sein (0 = deaktiviert).")
+
+        risk_per_trade_pct = float(os.getenv("RISK_PER_TRADE_PCT", "0.0"))
+        if not 0 <= risk_per_trade_pct < 1:
+            raise ValueError("RISK_PER_TRADE_PCT muss im Bereich [0, 1) liegen (0 = deaktiviert).")
+
+        trend_window = int(os.getenv("TREND_FILTER_WINDOW", "200"))
+        if not 0 <= trend_window <= MAX_WINDOW:
+            raise ValueError(f"TREND_FILTER_WINDOW muss zwischen 0 und {MAX_WINDOW} liegen (0 = deaktiviert).")
+
+        rsi_window = int(os.getenv("RSI_WINDOW", "14"))
+        if not 0 <= rsi_window <= MAX_WINDOW:
+            raise ValueError(f"RSI_WINDOW muss zwischen 0 und {MAX_WINDOW} liegen (0 = deaktiviert).")
+
         return cls(
             api_key=api_key,
             secret_key=secret_key,
@@ -94,4 +114,8 @@ class Config:
             long_window=long_window,
             poll_interval_seconds=poll_interval_seconds,
             stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+            risk_per_trade_pct=risk_per_trade_pct,
+            trend_window=trend_window,
+            rsi_window=rsi_window,
         )

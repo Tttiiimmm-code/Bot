@@ -1,4 +1,9 @@
-"""Einfacher Vektor-Backtest für die Moving-Average-Crossover-Strategie."""
+"""Vektor-Backtest für die Moving-Average-Crossover-Strategie.
+
+Enthält Transaktionskosten, einen Trailing-Stop-Loss, Take-Profit,
+optionale risikobasierte Positionsgrößen sowie die Trendfilter/RSI-
+Bestätigung aus strategy.generate_signal_series.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +18,7 @@ from tradingbot.strategy import Signal, generate_signal_series
 @dataclass
 class Trade:
     date: pd.Timestamp
-    side: str  # "BUY", "SELL" oder "STOP" (durch Stop-Loss ausgelöster Verkauf)
+    side: str  # "BUY", "SELL", "STOP" (Trailing-Stop) oder "TP" (Take-Profit)
     price: float
     shares: float
     cost: float
@@ -48,8 +53,12 @@ def run_backtest(
     commission_pct: float = 0.0,
     slippage_pct: float = 0.0005,
     stop_loss_pct: float = 0.08,
+    take_profit_pct: float = 0.0,
+    risk_per_trade_pct: float = 0.0,
+    trend_window: int = 0,
+    rsi_window: int = 0,
 ) -> BacktestResult:
-    """Backtest mit Transaktionskosten und Stop-Loss.
+    """Backtest mit Transaktionskosten, Trailing-Stop-Loss und Take-Profit.
 
     - `commission_pct`: Provision pro Order als Anteil des Ordervolumens
       (z.B. 0.001 = 0.1%). Alpaca ist für US-Aktien provisionsfrei, daher
@@ -57,11 +66,32 @@ def run_backtest(
     - `slippage_pct`: Erwartete Ausführung schlechter als der Schlusskurs
       (Market-Order trifft Geld-/Briefkurs statt Mittelkurs). Default 0.05%
       pro Order als grobe Annäherung an den Bid-Ask-Spread liquider Aktien.
-    - `stop_loss_pct`: Fällt der Schlusskurs nach dem Einstieg um mehr als
-      diesen Anteil unter den Einstiegspreis, wird die Position sofort
-      verkauft -- unabhängig vom Crossover-Signal. 0 deaktiviert den Stop.
-      Da nur Tagesschlusskurse vorliegen, wird der Stop nur einmal pro Tag
-      auf Basis des Schlusskurses geprüft, nicht intraday.
+    - `stop_loss_pct`: TRAILING Stop -- fällt der Schlusskurs um mehr als
+      diesen Anteil unter den HÖCHSTEN seit dem Einstieg gesehenen Kurs
+      (nicht nur unter den Einstiegspreis), wird sofort verkauft,
+      unabhängig vom Crossover-Signal. Direkt nach dem Einstieg (höchster
+      Kurs == Einstiegspreis) verhält er sich wie ein fixer Stop; steigt
+      der Kurs danach, zieht die Schwelle mit nach oben und sichert so
+      Gewinne. 0 deaktiviert den Stop.
+    - `take_profit_pct`: wird der Einstiegspreis um mehr als diesen Anteil
+      überschritten, wird der Gewinn sofort mitgenommen -- unabhängig vom
+      Crossover-Signal. Im Gegensatz zum Stop bezieht sich das Ziel immer
+      auf den Einstiegspreis, nicht auf einen laufenden Höchststand.
+      0 deaktiviert Take-Profit.
+    - `risk_per_trade_pct`: statt bei jedem BUY das gesamte verfügbare
+      Kapital einzusetzen, wird die Positionsgröße so gewählt, dass beim
+      Erreichen des initialen Stops (Einstiegspreis * stop_loss_pct)
+      höchstens dieser Anteil des aktuellen Kapitals verloren geht. Nur
+      wirksam, wenn stop_loss_pct > 0 ist (sonst ist "Risiko pro Trade"
+      nicht definiert und es wird wie 0 behandelt, d.h. volles Kapital
+      eingesetzt). 0 deaktiviert die Größenberechnung (volles Kapital pro
+      Trade, Zinseszins-Effekt über mehrere Trades).
+    - `trend_window`/`rsi_window`: siehe
+      strategy.generate_signal_series -- Bestätigungsfilter, die nur BUY
+      betreffen, nie SELL/STOP/TP.
+
+    Da nur Tagesschlusskurse vorliegen, werden Stop/Take-Profit nur einmal
+    pro Tag auf Basis des Schlusskurses geprüft, nicht intraday.
     """
     if not (math.isfinite(starting_cash) and starting_cash > 0):
         # starting_cash ist Divisor bei der Renditeberechnung (final_equity
@@ -73,6 +103,7 @@ def run_backtest(
         ("commission_pct", commission_pct),
         ("slippage_pct", slippage_pct),
         ("stop_loss_pct", stop_loss_pct),
+        ("risk_per_trade_pct", risk_per_trade_pct),
     ):
         if not 0 <= value < 1:
             # Ab 1 (100%) kippen die Vorzeichen: z.B. negative shares bei
@@ -81,11 +112,15 @@ def run_backtest(
             # Backtest-Zustand dauerhaft korrumpieren.
             raise ValueError(f"{name} muss zwischen 0 und kleiner 1 (100%) liegen, war {value}.")
 
-    signals = generate_signal_series(close, short_window, long_window)
+    if not (math.isfinite(take_profit_pct) and take_profit_pct >= 0):
+        raise ValueError(f"take_profit_pct muss eine nicht-negative, endliche Zahl sein, war {take_profit_pct}.")
+
+    signals = generate_signal_series(close, short_window, long_window, trend_window, rsi_window)
 
     cash = starting_cash
     shares = 0.0
     entry_price: float | None = None
+    peak_price: float | None = None  # höchster Kurs seit Einstieg, für den Trailing-Stop
     last_valid_price: float | None = None
     num_trades = 0
     total_costs = 0.0
@@ -101,13 +136,15 @@ def run_backtest(
         price_valid = pd.notna(price) and price > 0
         if price_valid:
             last_valid_price = price
+            if shares > 0:
+                peak_price = price if peak_price is None else max(peak_price, price)
 
         if (
             shares > 0
             and stop_loss_pct > 0
-            and entry_price is not None
+            and peak_price is not None
             and price_valid
-            and price <= entry_price * (1 - stop_loss_pct)
+            and price <= peak_price * (1 - stop_loss_pct)
         ):
             cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
             total_costs += trade_cost
@@ -115,17 +152,44 @@ def run_backtest(
             num_trades += 1
             shares = 0.0
             entry_price = None
+            peak_price = None
+            equity_curve.append(cash)
+            continue
+
+        if (
+            shares > 0
+            and take_profit_pct > 0
+            and entry_price is not None
+            and price_valid
+            and price >= entry_price * (1 + take_profit_pct)
+        ):
+            cash, trade_cost, fill_price = _execute_sell(shares, price, commission_pct, slippage_pct)
+            total_costs += trade_cost
+            trades.append(Trade(date, "TP", fill_price, shares, trade_cost))
+            num_trades += 1
+            shares = 0.0
+            entry_price = None
+            peak_price = None
             equity_curve.append(cash)
             continue
 
         if signal == Signal.BUY and shares == 0 and price_valid:
             fill_price = price * (1 + slippage_pct)
-            commission = cash * commission_pct
-            shares = (cash - commission) / fill_price
-            trade_cost = cash - shares * price
+            if risk_per_trade_pct > 0 and stop_loss_pct > 0:
+                # Positionsgröße so wählen, dass beim Erreichen des
+                # initialen Stops höchstens risk_per_trade_pct des
+                # aktuellen Kapitals verloren geht: Kapitaleinsatz *
+                # stop_loss_pct == cash * risk_per_trade_pct.
+                notional = min(cash, (cash * risk_per_trade_pct) / stop_loss_pct)
+            else:
+                notional = cash
+            commission = notional * commission_pct
+            shares = (notional - commission) / fill_price
+            trade_cost = notional - shares * price
             total_costs += trade_cost
-            cash = 0.0
+            cash -= notional
             entry_price = fill_price
+            peak_price = fill_price
             num_trades += 1
             trades.append(Trade(date, "BUY", fill_price, shares, trade_cost))
         elif signal == Signal.SELL and shares > 0 and price_valid:
@@ -134,6 +198,7 @@ def run_backtest(
             total_costs += trade_cost
             shares = 0.0
             entry_price = None
+            peak_price = None
             num_trades += 1
             trades.append(Trade(date, "SELL", fill_price, sold_shares, trade_cost))
 
