@@ -31,23 +31,25 @@ class TradingBot:
 
         current_price = closes.iloc[-1]
         # Ein kaputter letzter Datenpunkt (NaN oder <= 0, z.B. ein
-        # Delisting/Datenfehler beim Broker) darf weder einen spontanen
-        # Verkauf auf Basis von Datenmüll auslösen (<=0 wäre <= jeder
-        # positiven Stop-Schwelle) noch den Stop-Check unbemerkt
-        # überspringen (NaN-Vergleiche sind immer False) -- ohne
-        # ausdrückliche Warnung wäre der Stop-Loss für diesen Zyklus
-        # lautlos wirkungslos.
-        current_price_valid = math.isfinite(current_price) and current_price > 0
-        if not current_price_valid:
+        # Delisting/Datenfehler beim Broker) darf keinerlei Handelsaktion
+        # auslösen: <=0 wäre <= jeder positiven Stop-Schwelle (spontaner
+        # Verkauf auf Basis von Datenmüll), und dieselbe Kerze fließt auch
+        # in generate_signal() ein und könnte dort ein Crossover-Signal aus
+        # dem Datenmüll erzeugen. Deshalb wird der GESAMTE Zyklus
+        # übersprungen, nicht nur der Stop-Loss-Zweig -- ein einzelner
+        # gezielter Check pro Aktionspfad ist leicht zu vergessen, wenn ein
+        # neuer Aktionspfad hinzukommt.
+        if not (math.isfinite(current_price) and current_price > 0):
             logger.warning(
-                "Ungültiger aktueller Kurs (%s) für %s erhalten -> Stop-Loss-Prüfung übersprungen.",
+                "Ungültiger aktueller Kurs (%s) für %s erhalten -> überspringe Zyklus.",
                 current_price,
                 self.config.symbol,
             )
+            return Signal.HOLD
 
         position = self.broker.get_position()
 
-        if position and position.qty > 0 and self.config.stop_loss_pct > 0 and current_price_valid:
+        if position and position.qty > 0 and self.config.stop_loss_pct > 0:
             stop_price = position.avg_entry_price * (1 - self.config.stop_loss_pct)
             if current_price <= stop_price:
                 if self.broker.has_open_sell_order():

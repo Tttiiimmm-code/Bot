@@ -98,6 +98,28 @@ def test_invalid_current_price_does_not_trigger_spurious_stop_sell():
     assert broker.sell_calls == []
 
 
+def test_invalid_current_price_also_blocks_crossover_sell():
+    """Regressionstest: der erste Fix deckte nur den Stop-Loss-Zweig ab.
+    Ein Kurs von 0 als letzter Datenpunkt fließt aber auch in
+    generate_signal() ein und kann dort ein echtes Crossover-SELL-Signal
+    aus dem Datenmüll erzeugen (verifiziert: [100,100,100,100,100,0] mit
+    short=2/long=4 ergibt Signal.SELL). Der gesamte Zyklus muss bei
+    ungültigem Kurs übersprungen werden, nicht nur der Stop-Loss-Zweig --
+    sonst verkauft der Bot trotz erkanntem Datenmüll über den regulären
+    Crossover-Pfad."""
+    config = make_config(stop_loss_pct=0.08)
+    closes = make_series([100, 100, 100, 100, 100, 0])
+    position = Position(qty=10.0, avg_entry_price=50.0)  # kein Stop-Trigger
+    broker = FakeBroker(closes, position)
+    bot = TradingBot(config, broker=broker)
+
+    signal = bot.run_once()
+
+    assert signal == Signal.HOLD
+    assert broker.sell_calls == []
+    assert broker.buy_calls == []
+
+
 def test_price_above_stop_does_not_trigger_stop_sell():
     config = make_config(stop_loss_pct=0.08)
     closes = flat_closes(95.0)  # über dem Stop von 92
