@@ -217,10 +217,10 @@ python main.py momentum-backtest --symbol TSLA --days 200 \
 
 **Wichtige Einschränkungen -- unbedingt lesen, bevor die Ergebnisse interpretiert werden:**
 
-- **Nur für historische Analyse, nicht live handelbar.** Die Strategie beruht darauf, die erste
-  Kerze nach einem Pullback in Echtzeit zu kaufen. Alpacas kostenloser Datenplan liefert
-  Minutendaten mit demselben Sicherheitsabstand wie die Tagesdaten (`_DATA_DELAY`), das ist für
-  diese Strategie keine belastbare Live-Basis. Es gibt bewusst **keinen** `run`-Modus dafür.
+- **Reine historische Analyse.** Dieser Backtest selbst löst nie Orders aus und lädt Daten über
+  den Standard-/SIP-Feed (mit dem üblichen Sicherheitsabstand `_DATA_DELAY`) -- für den
+  tatsächlichen Live-Handel dieser Strategie siehe `python main.py momentum-run` weiter unten
+  (nutzt stattdessen den echtzeitfähigen IEX-Feed).
 - **Kein Float-Filter.** Die Original-Strategie filtert u.a. nach Float (<100 Mio., ideal
   <20 Mio. Aktien). Alpacas Marktdaten-API liefert keinen Aktien-Float -- der separate
   `python main.py scan`-Befehl (siehe unten) deckt Tagesgewinn/Preisspanne/Relativvolumen/News
@@ -266,6 +266,64 @@ und die News-API für die Katalysator-Prüfung.
   inhaltliche Bewertung, ob die News tatsächlich ein plausibler Kursgrund ist) und über alle
   Kandidaten hinweg auf eine Gesamtzahl Artikel gedeckelt (`_NEWS_FETCH_LIMIT`), nicht
   erschöpfend.
+
+## Live-Momentum-Bot (experimentell, nur Paper-Trading)
+
+Kombiniert den Scanner (periodische Kandidatensuche) mit der Bull-Flag/Flat-Top-Engine aus dem
+Momentum-Backtest zu einem eigenständigen Live-Trading-Loop: sucht selbst Kandidaten, erkennt
+Muster balkenweise in Echtzeit und platziert echte (Paper-)Orders.
+
+```bash
+python main.py momentum-run
+python main.py momentum-run --max-risk-dollars 200 --max-concurrent-positions 2 --daily-max-loss-pct 0.05
+```
+
+Mit `Strg+C` sauber beenden.
+
+**Warum live überhaupt möglich, obwohl `momentum-backtest` das explizit ausschließt:** Alpacas
+"~15 Minuten Verzögerung" gilt nur für den Standard-/SIP-Feed ohne kostenpflichtiges
+Zusatzabo ("Algo Trader Plus"). Der ebenfalls kostenlose **IEX-Feed ist echtzeitfähig** (sowohl
+per REST-Abfrage als auch per WebSocket) -- empirisch verifiziert, siehe `tradingbot/momentum_live.py`.
+Dieser Bot fragt deshalb konsequent mit `feed=DataFeed.IEX` ab statt mit dem Standard-Feed.
+
+**Funktionsweise:** alle `--scan-interval-seconds` (Standard 300s) wird der Scanner erneut
+ausgeführt und neue Kandidaten-Symbole (bis `--max-tracked-symbols`) aufgenommen; für jedes
+beobachtete Symbol werden alle `--poll-interval-seconds` (Standard 60s) neue Minuten-Bars
+abgefragt und balkenweise durch dieselbe `MomentumEngine` wie im Backtest verarbeitet -- ein
+Fund (Bull Flag/Flat Top) löst eine echte Market-Buy-Order aus (Stückzahl risiko- und
+kapitalbasiert wie im Backtest), Ausstiegssignale (Ziel/Stop/rote Kerze/Extension Bar) echte
+Market-Sell-Orders.
+
+**Sicherheitsmechanismen:**
+
+- `--max-concurrent-positions` (Standard 3): Obergrenze gleichzeitig offener Positionen.
+- `--daily-max-loss-pct` (Standard 10%): fällt das Eigenkapital seit Tagesbeginn um diesen Anteil,
+  schließt der Bot sofort alle offenen Positionen und pausiert für den Rest des Handelstags
+  (Sample-Trading-Plan-PDF: "Daily Max loss: 10% of my account").
+- `--flatten-minutes-before-close` (Standard 5): erzwungenes Glattstellen aller offenen
+  Positionen vor Sitzungsende (kein Overnight-Halten, wie im Artikel beschrieben).
+- Order-Ausführung wird aktiv überwacht: eine Kauf-Order, die nicht innerhalb von
+  `--order-fill-timeout-seconds` (Standard 30s) füllt, wird storniert und der Einstieg verworfen;
+  eine Verkaufs-Order wird dagegen NIE aufgegeben (reale Position bliebe sonst unbewacht) --
+  sie wird bei Bedarf über mehrere Zyklen hinweg weiterverfolgt und erneut versucht.
+
+**Wichtige Einschränkungen -- vor Einsatz unbedingt lesen:**
+
+- **NUR für Paper-Trading gedacht und getestet.** Vor echtem Kapitaleinsatz eigenverantwortlich
+  über mehrere Handelstage im Paper-Modus beobachten.
+- **IEX deckt nur einen Bruchteil (~2-3%) des gesamten Marktvolumens ab**, nicht die volle
+  konsolidierte Tape (SIP) -- Muster-/Relativvolumen-Erkennung basiert auf einem unvollständigen
+  Abbild des Marktes.
+- **Kein WebSocket-Streaming, sondern Polling** -- die Reaktionszeit auf ein Setup ist durch
+  `--poll-interval-seconds` nach unten begrenzt.
+- **Kein Zustand übersteht einen Neustart.** Bei einem Absturz mit offener(n) Position(en)
+  verliert der Bot jede Kenntnis davon (kein Persistenz-Layer) -- nach einem Absturz IMMER
+  manuell im Alpaca-Dashboard prüfen, ob noch offene Positionen/Orders existieren.
+- **Kein Float-Filter** (siehe Scanner/Backtest oben).
+- **Ein einzelner Prozess, keine Parallelisierung** -- alle beobachteten Symbole werden
+  sequentiell im selben Zyklus abgefragt; bei sehr vielen gleichzeitig beobachteten Symbolen
+  (hohes `--max-tracked-symbols`) kann ein Zyklus entsprechend länger dauern als
+  `--poll-interval-seconds`.
 
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
@@ -330,17 +388,18 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
   strategy.py           Signal-Logik: Crossover + Trendfilter + RSI-Filter
-  bot.py               Live-/Paper-Trading-Loop
+  bot.py               Live-/Paper-Trading-Loop (Moving-Average-Crossover)
   backtest.py          Vektor-Backtest inkl. Transaktionskosten
   validation.py         Out-of-Sample-Validierung (ein Train-/Test-Split)
   walkforward.py        Out-of-Sample-Validierung über mehrere Zeitfenster
-  momentum.py            Momentum-Day-Trading-Backtest auf Minutendaten (experimentell)
+  momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten (experimentell)
   scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
+  momentum_live.py       Live-Momentum-Bot: Scanner + Momentum-Engine + echte Orders (experimentell)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 

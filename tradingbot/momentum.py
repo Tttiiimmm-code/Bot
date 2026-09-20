@@ -1,6 +1,13 @@
-"""Historischer Backtest der Warrior-Trading-Momentum-Day-Trading-Strategie
-(Ross Cameron, https://www.warriortrading.com/momentum-day-trading-strategy/)
-auf Minuten-Kursdaten.
+"""Bull-Flag/Flat-Top-Momentum-Strategie (Ross Cameron/Warrior Trading,
+https://www.warriortrading.com/momentum-day-trading-strategy/) auf
+Minuten-Kursdaten.
+
+Enthält den geteilten Entscheidungs-Zustandsautomaten (MomentumEngine),
+der SOWOHL vom historischen Backtest (run_momentum_backtest, balkenweise
+über ein komplettes, im Speicher gehaltenes Tages-Array) als auch vom
+Live-Bot (tradingbot/momentum_live.py, balkenweise über live abgefragte
+Balken) verwendet wird -- eine einzige Quelle der Handelsregeln, damit
+Backtest und Live-Ausführung nicht auseinanderlaufen.
 
 WICHTIGE EINSCHRÄNKUNGEN (siehe README für Details):
 
@@ -9,15 +16,8 @@ WICHTIGE EINSCHRÄNKUNGEN (siehe README für Details):
   exakten Schwellenwerte für "starker Anstieg" oder "Extension Bar" sind
   im Original nicht numerisch definiert und wurden hier sinnvoll, aber
   notwendigerweise etwas willkürlich gewählt (siehe Parameter-Defaults).
-- Der markweite Scanner-Teil der Strategie (Float < 100 Mio., News-
-  Katalysator) ist NICHT implementiert: Alpacas Marktdaten-API liefert
-  weder Float noch ist hier eine News-Anbindung eingebaut. Dieses Modul
-  bekommt ein bereits feststehendes Symbol übergeben, es durchsucht nicht
-  den Gesamtmarkt.
-- NUR für historische Analyse gedacht. Für Live-Handel ungeeignet: die
-  Strategie beruht darauf, die erste Kerze nach einem Pullback in Echtzeit
-  zu kaufen -- mit Alpacas verzögertem kostenlosem Datenplan (siehe
-  broker.get_minute_bars) wäre das kein echtzeitnahes Signal mehr.
+- Kein Float-Filter: Alpacas Marktdaten-API liefert keinen Aktien-Float
+  (siehe tradingbot/scanner.py für die übrigen Auswahlkriterien).
 """
 
 from __future__ import annotations
@@ -44,6 +44,7 @@ class ExitReason(str, Enum):
     RED_CANDLE = "RED_CANDLE"  # erste rote Kerze (vor Teilverkauf)
     EXTENSION = "EXTENSION"  # ungewöhnlich starker Spike, Gewinn mitgenommen
     END_OF_DAY = "END_OF_DAY"  # Zwangsschluss am Sitzungsende (kein Overnight-Halten)
+    CIRCUIT_BREAKER = "CIRCUIT_BREAKER"  # Zwangsschluss durch den Tages-Maximalverlust-Schutz (nur Live-Bot)
 
 
 @dataclass
@@ -108,17 +109,32 @@ def _daily_trend_ok(day_bars: pd.DataFrame, daily_sma: float | None) -> bool:
     return day_bars["close"].iloc[0] > daily_sma
 
 
+def _build_relative_volume_reference(prior_days_cum_volumes: list[np.ndarray], max_len: int) -> np.ndarray:
+    """Baut die Referenzkurve (durchschnittliche kumulierte Lautstärke je
+    Minute seit Sitzungsbeginn, ausgerichtet über die POSITION innerhalb
+    der Sitzung statt der Uhrzeit) aus den kumulierten Tagesvolumen-Kurven
+    mehrerer Vortage. Geteilte Grundlage für den Backtest
+    (_relative_volume_reference, viele Tage auf einmal) UND den Live-Bot
+    (tradingbot/momentum_live.py, eine Referenzkurve pro Symbol und
+    Handelstag) -- eine einzige Quelle der Berechnung."""
+    sums = np.zeros(max_len)
+    counts = np.zeros(max_len)
+    for prior_cum in prior_days_cum_volumes:
+        n = min(len(prior_cum), max_len)
+        sums[:n] += prior_cum[:n]
+        counts[:n] += 1
+    with np.errstate(invalid="ignore", divide="ignore"):
+        avg = np.divide(sums, counts, out=np.full(max_len, np.nan), where=counts > 0)
+    return avg
+
+
 def _relative_volume_reference(days: list[pd.Timestamp], day_bars_by_day: dict, lookback_days: int):
     """Baut für jeden Tag (ab dem `lookback_days`-ten) eine Referenzkurve
     der durchschnittlichen kumulierten Lautstärke je Minute-seit-Sitzungs-
-    beginn über die vorangegangenen `lookback_days` Tage.
-
-    Ausrichtung erfolgt über die POSITION innerhalb der Sitzung (0., 1., 2.
-    Minute seit Open), nicht über die Uhrzeit -- bei Frühschluss-Handels-
-    tagen (Feiertage) kann das leicht verschoben sein, für die Zwecke
-    dieses Näherungs-Backtests ausreichend genau (Frühschlusstage sind
-    selten).
-    """
+    beginn über die vorangegangenen `lookback_days` Tage (siehe
+    _build_relative_volume_reference; Frühschluss-Handelstage können die
+    Ausrichtung leicht verschieben, für die Zwecke dieses Näherungs-
+    Backtests ausreichend genau)."""
     cum_vol_by_day = {
         day: day_bars_by_day[day]["volume"].cumsum().to_numpy() for day in days
     }
@@ -130,17 +146,356 @@ def _relative_volume_reference(days: list[pd.Timestamp], day_bars_by_day: dict, 
             continue
         prior_days = days[i - lookback_days : i]
         max_len = len(cum_vol_by_day[day])
-        sums = np.zeros(max_len)
-        counts = np.zeros(max_len)
-        for prior in prior_days:
-            prior_cum = cum_vol_by_day[prior]
-            n = min(len(prior_cum), max_len)
-            sums[:n] += prior_cum[:n]
-            counts[:n] += 1
-        with np.errstate(invalid="ignore", divide="ignore"):
-            avg = np.divide(sums, counts, out=np.full(max_len, np.nan), where=counts > 0)
-        reference[day] = avg
+        prior_cum_volumes = [cum_vol_by_day[prior] for prior in prior_days]
+        reference[day] = _build_relative_volume_reference(prior_cum_volumes, max_len)
     return reference
+
+
+def _relative_volume_at(cum_volume_i: float, reference: np.ndarray, i: int) -> float | None:
+    if i >= len(reference):
+        return None
+    ref = reference[i]
+    if not math.isfinite(ref) or ref <= 0:
+        return None
+    return cum_volume_i / ref
+
+
+@dataclass
+class BreakoutEvent:
+    """Von MomentumEngine.process_bar() ausgegeben, wenn ein Bull-Flag/
+    Flat-Top-Einstieg ausgelöst hat. Enthält bewusst KEINE Stückzahl --
+    die Positionsgröße hängt vom verfügbaren Kapital ab (Backtest: im
+    Voraus bekannt; Live: erfordert einen Kontostand-Abruf), das entscheidet
+    der Aufrufer. Muss mit genau einem Aufruf von record_entry() oder
+    decline_entry() beantwortet werden, bevor der nächste Balken verarbeitet
+    wird (siehe MomentumEngine-Docstring)."""
+
+    pattern: str  # "BULL_FLAG" oder "FLAT_TOP"
+    time: pd.Timestamp
+    reference_price: float  # Schlusskurs des Breakout-Balkens
+    stop_price: float  # Pullback-Tief
+    risk_per_share: float
+
+
+@dataclass
+class ExitSignal:
+    """Von MomentumEngine.process_bar() bzw. force_exit() ausgegeben, wenn
+    (ein Teil) der offenen Position verkauft werden soll. `shares` ist von
+    der Engine bereits final bestimmt (z.B. die Hälfte beim ersten
+    Zielerreichen, sonst die komplette Restposition) -- der Aufrufer führt
+    nur noch die eigentliche Ausführung durch und meldet das Ergebnis über
+    record_exit() zurück."""
+
+    reason: ExitReason
+    time: pd.Timestamp
+    reference_price: float
+    shares: int
+
+
+class MomentumEngine:
+    """Balkenweiser Zustandsautomat (SEARCHING -> PULLBACK -> IN_POSITION
+    -> SEARCHING) für EIN Symbol, der die Bull-Flag/Flat-Top-Erkennung und
+    das Positions-/Ausstiegsmanagement der Strategie kapselt.
+
+    Bewusst getrennt von Positionsgröße/Orderausführung: process_bar() gibt
+    nur Ereignisse zurück (BreakoutEvent/ExitSignal); der Aufrufer (Backtest
+    oder Live-Bot) entscheidet Stückzahl/Ausführung und meldet das Ergebnis
+    über record_entry()/record_exit() zurück, BEVOR der nächste Balken an
+    process_bar() übergeben wird. Diese Trennung ist der Grund, warum
+    dieselbe Engine unverändert sowohl im (deterministischen, sofort
+    gefüllten) Backtest als auch im Live-Bot (echte Orders, Kontostand-
+    Abruf) funktioniert.
+
+    Nutzungsvertrag (bei Missachtung wird RuntimeError geworfen, siehe
+    process_bar): auf jedes BreakoutEvent muss vor dem nächsten
+    process_bar()-Aufruf GENAU EIN record_entry() oder decline_entry()
+    folgen; auf jedes ExitSignal muss ein passendes record_exit() folgen.
+    """
+
+    def __init__(
+        self,
+        *,
+        flagpole_min_gain_pct: float,
+        flagpole_max_bars: int,
+        min_pullback_bars: int,
+        max_pullback_bars: int,
+        max_pullback_retrace_pct: float,
+        reward_risk_ratio: float,
+        extension_multiplier: float,
+        min_relative_volume: float,
+    ):
+        self._flagpole_min_gain_pct = flagpole_min_gain_pct
+        self._flagpole_max_bars = flagpole_max_bars
+        self._min_pullback_bars = min_pullback_bars
+        self._max_pullback_bars = max_pullback_bars
+        self._max_pullback_retrace_pct = max_pullback_retrace_pct
+        self._reward_risk_ratio = reward_risk_ratio
+        self._extension_multiplier = extension_multiplier
+        self._min_relative_volume = min_relative_volume
+
+        self.state = "SEARCHING"
+        self._swing_low_price = math.inf
+        self._bars_since_swing_low = 0
+        self._flagpole_peak = 0.0
+        self._flagpole_gain_abs = 0.0
+        self._pullback_low = math.inf
+        self._pullback_highs: list[float] = []
+        self._pullback_bars_count = 0
+        self._pullback_range_sum = 0.0
+
+        self._pending_breakout: BreakoutEvent | None = None
+
+        # Positionszustand (nur während state == "IN_POSITION" relevant).
+        self._entry_price = 0.0
+        self._entry_time: pd.Timestamp | None = None
+        self._pattern = ""
+        self._shares_total = 0
+        self._shares_closed = 0
+        self._stop_price = 0.0
+        self._target_price = 0.0
+        self._breakeven = False
+        self._avg_bar_range = 0.0
+
+    @property
+    def in_position(self) -> bool:
+        return self.state == "IN_POSITION"
+
+    @property
+    def shares_open(self) -> int:
+        return self._shares_total - self._shares_closed
+
+    def process_bar(
+        self,
+        time: pd.Timestamp,
+        open_: float,
+        high: float,
+        low: float,
+        close: float,
+        volume: float,
+        *,
+        in_window: bool,
+        relative_volume: float | None,
+        daily_trend_ok: bool,
+    ) -> list[BreakoutEvent | ExitSignal]:
+        """Verarbeitet genau einen neuen Balken und gibt eine Liste von
+        Ereignissen zurück: leer (nichts zu tun), ein BreakoutEvent, oder
+        ein bis zwei ExitSignal (z.B. Ziel-Teilverkauf UND anschließend --
+        auf DEMSELBEN Balken -- ein Extension-Bar-Ausstieg des Rests, siehe
+        _process_position_bar). Der Aufrufer muss jedes Ereignis der Reihe
+        nach mit record_entry()/decline_entry() bzw. record_exit()
+        beantworten, bevor der nächste Balken übergeben wird."""
+        if self._pending_breakout is not None:
+            raise RuntimeError(
+                "process_bar() aufgerufen, während ein BreakoutEvent noch unbeantwortet ist -- "
+                "vorher record_entry() oder decline_entry() aufrufen."
+            )
+
+        if self.state == "IN_POSITION":
+            return self._process_position_bar(time, open_, high, low, close)
+
+        if self.state == "SEARCHING":
+            self._process_searching_bar(time, close, in_window, relative_volume, daily_trend_ok)
+            return []
+
+        if self.state == "PULLBACK":
+            event = self._process_pullback_bar(time, high, low, close, in_window)
+            return [event] if event is not None else []
+
+        raise AssertionError(f"Unbekannter Zustand: {self.state}")
+
+    def _process_searching_bar(
+        self,
+        time: pd.Timestamp,
+        close: float,
+        in_window: bool,
+        relative_volume: float | None,
+        daily_trend_ok: bool,
+    ) -> None:
+        if close < self._swing_low_price:
+            self._swing_low_price = close
+            self._bars_since_swing_low = 0
+        else:
+            self._bars_since_swing_low += 1
+
+        if not (in_window and daily_trend_ok):
+            return
+        if self._bars_since_swing_low == 0 or self._bars_since_swing_low > self._flagpole_max_bars:
+            return
+        gain_pct = (close - self._swing_low_price) / self._swing_low_price
+        if gain_pct < self._flagpole_min_gain_pct:
+            return
+        if relative_volume is None or relative_volume < self._min_relative_volume:
+            return
+
+        # Flagpole bestätigt.
+        self.state = "PULLBACK"
+        self._flagpole_peak = close
+        self._flagpole_gain_abs = close - self._swing_low_price
+        self._pullback_low = math.inf
+        self._pullback_highs = []
+        self._pullback_bars_count = 0
+        self._pullback_range_sum = 0.0
+
+    def _process_pullback_bar(
+        self, time: pd.Timestamp, high: float, low: float, close: float, in_window: bool
+    ) -> BreakoutEvent | None:
+        self._pullback_bars_count += 1
+        self._pullback_low = min(self._pullback_low, low)
+        self._pullback_highs.append(high)
+        self._pullback_range_sum += high - low
+
+        invalidated = (
+            self._pullback_low <= self._flagpole_peak - self._max_pullback_retrace_pct * self._flagpole_gain_abs
+            or self._pullback_bars_count > self._max_pullback_bars
+        )
+        if invalidated:
+            self._reset_to_searching_after(close)
+            return None
+
+        breakout = self._pullback_bars_count >= self._min_pullback_bars and close > self._flagpole_peak
+        if not (breakout and in_window):
+            return None
+
+        risk_per_share = close - self._pullback_low
+        if risk_per_share <= 0:
+            self._reset_to_searching_after(close)
+            return None
+
+        # Die Flat-Top-Klassifizierung darf das Hoch des Breakout-Balkens
+        # selbst nicht mit einbeziehen -- der ist per Definition höher als
+        # das Pullback-Plateau (sonst wäre es kein Breakout) und würde eine
+        # echte Flat-Top-Formation fälschlich als Bull Flag einstufen.
+        # Bleiben dadurch weniger als 2 Vergleichs-Bars übrig (z.B.
+        # min_pullback_bars=1), lässt sich "flach" gar nicht beurteilen --
+        # dann Standard BULL_FLAG.
+        prior_pullback_highs = self._pullback_highs[:-1]
+        pattern = (
+            "FLAT_TOP"
+            if len(prior_pullback_highs) >= 2
+            and (max(prior_pullback_highs) - min(prior_pullback_highs)) <= 0.003 * self._flagpole_peak
+            else "BULL_FLAG"
+        )
+
+        self._pending_breakout = BreakoutEvent(
+            pattern=pattern,
+            time=time,
+            reference_price=close,
+            stop_price=self._pullback_low,
+            risk_per_share=risk_per_share,
+        )
+        # avg_bar_range wird schon hier vorbereitet (Pullback-Bars inkl.
+        # Breakout-Balken), record_entry() übernimmt ihn unverändert.
+        self._avg_bar_range = self._pullback_range_sum / self._pullback_bars_count
+        return self._pending_breakout
+
+    def _reset_to_searching_after(self, close: float) -> None:
+        self.state = "SEARCHING"
+        self._swing_low_price = close
+        self._bars_since_swing_low = 0
+
+    def decline_entry(self) -> None:
+        """Der Aufrufer verzichtet auf den Einstieg (z.B. Stückzahl nach
+        Risiko-/Kapitalprüfung <= 0) -- zurück zu SEARCHING, wie im
+        Backtest (siehe _process_pullback_bar-Fallback)."""
+        if self._pending_breakout is None:
+            raise RuntimeError("decline_entry() ohne offenes BreakoutEvent aufgerufen.")
+        self._reset_to_searching_after(self._pending_breakout.reference_price)
+        self._pending_breakout = None
+
+    def record_entry(self, shares: int, fill_price: float, time: pd.Timestamp) -> None:
+        """Bestätigt das zuletzt ausgegebene BreakoutEvent mit der
+        tatsächlichen Stückzahl/dem tatsächlichen Füllkurs (Backtest:
+        sofort simuliert; Live: nach Order-Ausführung)."""
+        if self._pending_breakout is None:
+            raise RuntimeError("record_entry() ohne offenes BreakoutEvent aufgerufen.")
+        if shares <= 0:
+            raise ValueError(f"shares muss positiv sein, war {shares}.")
+        breakout = self._pending_breakout
+        self._pending_breakout = None
+
+        self._entry_price = fill_price
+        self._entry_time = time
+        self._pattern = breakout.pattern
+        self._shares_total = shares
+        self._shares_closed = 0
+        self._stop_price = breakout.stop_price
+        self._target_price = fill_price + self._reward_risk_ratio * breakout.risk_per_share
+        self._breakeven = False
+        self.state = "IN_POSITION"
+
+    def _process_position_bar(
+        self, time: pd.Timestamp, open_: float, high: float, low: float, close: float
+    ) -> list[ExitSignal]:
+        """Kann bis zu ZWEI ExitSignal für denselben Balken liefern: einen
+        Ziel-Teilverkauf (50%) gefolgt vom sofortigen Ausstieg des Rests
+        über Extension-Bar -- beide Bedingungen können auf demselben Balken
+        zutreffen (Original-Verhalten, siehe _simulate_day-Historie). Ohne
+        persistente Zustandsänderung berechnet (Breakeven/Restmenge nur
+        lokal simuliert) -- erst record_exit() pro Ereignis übernimmt sie
+        dauerhaft, damit ein fehlgeschlagener Live-Order-Versuch beim
+        ersten Ereignis das zweite nicht fälschlich als bereits vollzogen
+        markiert."""
+        remaining = self.shares_open
+        signals: list[ExitSignal] = []
+
+        # Stop zuerst prüfen: konservative Annahme, falls Stop UND Ziel im
+        # selben 1-Min-Balken erreichbar wären (siehe backtest.py-Konvention
+        # für denselben Kompromiss auf Tagesbasis). Stop ist immer der
+        # einzige und letzte Ausstieg auf diesem Balken (volle Restmenge).
+        if low <= self._stop_price:
+            return [ExitSignal(ExitReason.STOP, time, self._stop_price, remaining)]
+
+        breakeven_after = self._breakeven
+        if not self._breakeven and high >= self._target_price:
+            half = remaining // 2 or remaining
+            signals.append(ExitSignal(ExitReason.TARGET, time, self._target_price, half))
+            remaining -= half
+            breakeven_after = True
+            if remaining <= 0:
+                return signals
+
+        bar_range = high - low
+        is_extension = (
+            self._avg_bar_range > 0
+            and bar_range >= self._extension_multiplier * self._avg_bar_range
+            and close > self._entry_price
+        )
+        if is_extension:
+            signals.append(ExitSignal(ExitReason.EXTENSION, time, close, remaining))
+        elif close < open_ and not breakeven_after:
+            signals.append(ExitSignal(ExitReason.RED_CANDLE, time, close, remaining))
+        return signals
+
+    def force_exit(self, time: pd.Timestamp, price: float, reason: ExitReason = ExitReason.END_OF_DAY) -> ExitSignal | None:
+        """Erzwingt die vollständige Schließung der offenen Position (z.B.
+        Sitzungsende, kein Overnight-Halten) -- unabhängig von den
+        regulären Ausstiegsbedingungen. None, wenn keine Position offen ist."""
+        if self.state != "IN_POSITION" or self.shares_open <= 0:
+            return None
+        return ExitSignal(reason, time, price, self.shares_open)
+
+    def record_exit(self, shares_sold: int, fill_price: float) -> bool:
+        """Meldet die tatsächliche Ausführung eines ExitSignal zurück.
+        Gibt True zurück, wenn die Position dadurch vollständig geschlossen
+        wurde (Zustand fällt zurück auf SEARCHING), sonst False (Teil-
+        verkauf, z.B. TARGET: Stop wandert auf Einstiegspreis)."""
+        if self.state != "IN_POSITION":
+            raise RuntimeError("record_exit() ohne offene Position aufgerufen.")
+        if shares_sold <= 0 or shares_sold > self.shares_open:
+            raise ValueError(f"shares_sold ({shares_sold}) muss zwischen 1 und {self.shares_open} liegen.")
+
+        self._shares_closed += shares_sold
+        if self.shares_open <= 0:
+            self.state = "SEARCHING"
+            self._swing_low_price = fill_price
+            self._bars_since_swing_low = 0
+            return True
+
+        # Teilverkauf (nur beim ersten TARGET-Treffer möglich): Stop auf
+        # den Einstiegspreis nachziehen (Breakeven), Position bleibt offen.
+        self._stop_price = self._entry_price
+        self._breakeven = True
+        return False
 
 
 def _simulate_day(
@@ -164,9 +519,10 @@ def _simulate_day(
     commission_pct: float,
     slippage_pct: float,
 ) -> tuple[list[MomentumTrade], float, float]:
-    """Simuliert einen einzelnen Handelstag und gibt (Trades, cash_delta,
-    total_costs) zurück. Höchstens EINE offene Position gleichzeitig (die
-    Strategie im Artikel handelt jeweils ein Setup nach dem anderen)."""
+    """Simuliert einen einzelnen Handelstag mit MomentumEngine und gibt
+    (Trades, cash_delta, total_costs) zurück. Höchstens EINE offene
+    Position gleichzeitig (die Strategie im Artikel handelt jeweils ein
+    Setup nach dem anderen)."""
     trades: list[MomentumTrade] = []
     cash_delta = 0.0
     total_costs = 0.0
@@ -183,234 +539,104 @@ def _simulate_day(
     n = len(day_bars)
     cum_volume = np.cumsum(volumes)
 
-    # Zustandsautomat: SEARCHING -> (Flagpole erkannt) -> PULLBACK -> IN_POSITION -> SEARCHING
-    state = "SEARCHING"
-    swing_low_idx = 0
-    pullback_start_idx: int | None = None
-    pullback_low = math.inf
-    pullback_highs: list[float] = []
-    flagpole_peak = 0.0
-    flagpole_gain_abs = 0.0
-
-    position: MomentumTrade | None = None
-    stop_price = 0.0
-    target_price = 0.0
-    breakeven = False
-    avg_bar_range = 0.0
+    engine = MomentumEngine(
+        flagpole_min_gain_pct=flagpole_min_gain_pct,
+        flagpole_max_bars=flagpole_max_bars,
+        min_pullback_bars=min_pullback_bars,
+        max_pullback_bars=max_pullback_bars,
+        max_pullback_retrace_pct=max_pullback_retrace_pct,
+        reward_risk_ratio=reward_risk_ratio,
+        extension_multiplier=extension_multiplier,
+        min_relative_volume=min_relative_volume,
+    )
+    current_trade: MomentumTrade | None = None
 
     for i in range(n):
         bar_time = times[i]
         in_window = trading_window_start <= bar_time.time() < trading_window_end
+        rel_vol = _relative_volume_at(cum_volume[i], rel_vol_reference, i)
 
-        if state == "IN_POSITION" and position is not None:
-            remaining = position.shares - position.shares_closed
-            exited_this_bar = False
+        events = engine.process_bar(
+            bar_time,
+            opens[i],
+            highs[i],
+            lows[i],
+            closes[i],
+            volumes[i],
+            in_window=in_window,
+            relative_volume=rel_vol,
+            daily_trend_ok=True,  # bereits oben für den ganzen Tag geprüft
+        )
 
-            # Stop zuerst prüfen: konservative Annahme, falls Stop UND Ziel
-            # im selben 1-Min-Balken erreichbar wären (siehe backtest.py-
-            # Konvention für denselben Kompromiss auf Tagesbasis).
-            if lows[i] <= stop_price:
-                proceeds, cost, fill_price = _execute_sell(remaining, stop_price, commission_pct, slippage_pct)
-                total_costs += cost
-                cash_delta += proceeds
-                position.exits.append(
-                    MomentumExit(bar_time, fill_price, remaining, ExitReason.STOP)
-                )
-                exited_this_bar = True
-            elif not breakeven and highs[i] >= target_price:
-                half = remaining // 2 or remaining
-                proceeds, cost, fill_price = _execute_sell(half, target_price, commission_pct, slippage_pct)
-                total_costs += cost
-                cash_delta += proceeds
-                position.exits.append(
-                    MomentumExit(bar_time, fill_price, half, ExitReason.TARGET)
-                )
-                stop_price = position.entry_price
-                breakeven = True
-                remaining -= half
-                if remaining <= 0:
-                    exited_this_bar = True
-
-            if not exited_this_bar and remaining > 0:
-                bar_range = highs[i] - lows[i]
-                is_extension = (
-                    avg_bar_range > 0
-                    and bar_range >= extension_multiplier * avg_bar_range
-                    and closes[i] > position.entry_price
-                )
-                is_red = closes[i] < opens[i]
-                if is_extension:
-                    proceeds, cost, fill_price = _execute_sell(remaining, closes[i], commission_pct, slippage_pct)
-                    total_costs += cost
-                    cash_delta += proceeds
-                    position.exits.append(
-                        MomentumExit(bar_time, fill_price, remaining, ExitReason.EXTENSION)
-                    )
-                    exited_this_bar = True
-                elif is_red and not breakeven:
-                    proceeds, cost, fill_price = _execute_sell(remaining, closes[i], commission_pct, slippage_pct)
-                    total_costs += cost
-                    cash_delta += proceeds
-                    position.exits.append(
-                        MomentumExit(bar_time, fill_price, remaining, ExitReason.RED_CANDLE)
-                    )
-                    exited_this_bar = True
-
-            if i == n - 1 and position.shares_closed < position.shares:
-                remaining = position.shares - position.shares_closed
-                proceeds, cost, fill_price = _execute_sell(remaining, closes[i], commission_pct, slippage_pct)
-                total_costs += cost
-                cash_delta += proceeds
-                position.exits.append(
-                    MomentumExit(bar_time, fill_price, remaining, ExitReason.END_OF_DAY)
-                )
-                exited_this_bar = True
-
-            if exited_this_bar and position.shares_closed >= position.shares:
-                trades.append(position)
-                position = None
-                state = "SEARCHING"
-                swing_low_idx = i
-                continue
-            continue
-
-        if state == "SEARCHING":
-            if closes[i] < closes[swing_low_idx]:
-                swing_low_idx = i
-            if not in_window:
-                continue
-            bars_since_low = i - swing_low_idx
-            if bars_since_low == 0 or bars_since_low > flagpole_max_bars:
-                continue
-            gain_pct = (closes[i] - closes[swing_low_idx]) / closes[swing_low_idx]
-            if gain_pct < flagpole_min_gain_pct:
-                continue
-            rel_vol = _relative_volume_at(cum_volume[i], rel_vol_reference, i)
-            if rel_vol is None or rel_vol < min_relative_volume:
-                continue
-            # Flagpole bestätigt.
-            state = "PULLBACK"
-            flagpole_peak = closes[i]
-            flagpole_gain_abs = closes[i] - closes[swing_low_idx]
-            pullback_start_idx = i + 1
-            pullback_low = math.inf
-            pullback_highs = []
-            continue
-
-        if state == "PULLBACK":
-            assert pullback_start_idx is not None
-            pullback_bars_so_far = i - pullback_start_idx + 1
-            pullback_low = min(pullback_low, lows[i])
-            pullback_highs.append(highs[i])
-
-            invalidated = (
-                pullback_low <= flagpole_peak - max_pullback_retrace_pct * flagpole_gain_abs
-                or pullback_bars_so_far > max_pullback_bars
-            )
-            if invalidated:
-                state = "SEARCHING"
-                swing_low_idx = i
-                continue
-
-            breakout = pullback_bars_so_far >= min_pullback_bars and closes[i] > flagpole_peak
-            if breakout and in_window:
-                risk_per_share = closes[i] - pullback_low
-                if risk_per_share <= 0:
-                    state = "SEARCHING"
-                    swing_low_idx = i
-                    continue
-
-                entry_price = closes[i] * (1 + slippage_pct)
+        # Bis zu zwei Ereignisse pro Balken möglich (z.B. Ziel-Teilverkauf
+        # gefolgt vom sofortigen Ausstieg des Rests über Extension-Bar,
+        # siehe MomentumEngine._process_position_bar) -- der Reihe nach
+        # abarbeiten, jedes einzeln bei der Engine bestätigen.
+        for event in events:
+            if isinstance(event, BreakoutEvent):
+                entry_price = event.reference_price * (1 + slippage_pct)
                 cost_per_share = entry_price * (1 + commission_pct)
-                # Risikobasierte Stückzahl: wenn schon das Risiko EINER Aktie
-                # max_risk_dollars übersteigt (z.B. sehr volatiler Pullback),
-                # ist risk_based_shares 0 -- das Setup wird dann komplett
-                # übersprungen, NICHT durch einen Rückfall auf "kaufe mit dem
-                # gesamten verfügbaren Kapital" ersetzt (das würde die
-                # Risikobegrenzung faktisch aushebeln). Bei knappem, aber
-                # positivem Kapital wird stattdessen auf das tatsächlich
-                # verfügbare Cash gedeckelt (inkl. Slippage/Provision, damit
-                # der gedeckelte Kauf das Cash nicht knapp unterschreitet).
-                risk_based_shares = int(max_risk_dollars // risk_per_share)
-                if risk_based_shares <= 0:
-                    state = "SEARCHING"
-                    swing_low_idx = i
-                    continue
+                # Risikobasierte Stückzahl: wenn schon das Risiko EINER
+                # Aktie max_risk_dollars übersteigt, wird das Setup komplett
+                # übersprungen -- NICHT durch einen Rückfall auf "kaufe mit
+                # dem gesamten verfügbaren Kapital" ersetzt (das würde die
+                # Risikobegrenzung faktisch aushebeln).
+                risk_based_shares = int(max_risk_dollars // event.risk_per_share)
                 current_cash = available_cash + cash_delta
                 cash_based_shares = int(current_cash // cost_per_share)
                 shares = min(risk_based_shares, cash_based_shares)
                 if shares <= 0:
-                    state = "SEARCHING"
-                    swing_low_idx = i
+                    engine.decline_entry()
                     continue
 
-                # Die Flat-Top-Klassifizierung darf das Hoch des Breakout-
-                # Balkens selbst nicht mit einbeziehen -- der ist per
-                # Definition höher als das Pullback-Plateau (sonst wäre es
-                # kein Breakout) und würde eine echte Flat-Top-Formation
-                # fälschlich als Bull Flag einstufen. Bleiben dadurch weniger
-                # als 2 Vergleichs-Bars übrig (z.B. min_pullback_bars=1),
-                # lässt sich "flach" gar nicht beurteilen -- dann Standard
-                # BULL_FLAG statt des alten `or pullback_highs`-Fallbacks,
-                # der in genau diesem Fall wieder das Breakout-Hoch mit sich
-                # selbst verglichen hätte (Differenz immer 0 -> immer
-                # fälschlich FLAT_TOP).
-                prior_pullback_highs = pullback_highs[:-1]
-                pattern = (
-                    "FLAT_TOP"
-                    if len(prior_pullback_highs) >= 2
-                    and (max(prior_pullback_highs) - min(prior_pullback_highs)) <= 0.003 * flagpole_peak
-                    else "BULL_FLAG"
-                )
                 commission = entry_price * shares * commission_pct
-                slippage_cost = (entry_price - closes[i]) * shares
+                slippage_cost = (entry_price - event.reference_price) * shares
                 cash_delta -= entry_price * shares + commission
                 total_costs += commission + slippage_cost
 
-                position = MomentumTrade(
+                engine.record_entry(shares, entry_price, bar_time)
+                current_trade = MomentumTrade(
                     day=day,
-                    pattern=pattern,
+                    pattern=event.pattern,
                     entry_time=bar_time,
                     entry_price=entry_price,
-                    initial_stop_price=pullback_low,
+                    initial_stop_price=event.stop_price,
                     shares=shares,
                 )
-                stop_price = pullback_low
-                target_price = entry_price + reward_risk_ratio * risk_per_share
-                breakeven = False
-                avg_bar_range = float(
-                    np.mean(highs[pullback_start_idx : i + 1] - lows[pullback_start_idx : i + 1])
-                )
-                state = "IN_POSITION"
-            continue
+                continue
+
+            proceeds, cost, fill_price = _execute_sell(
+                event.shares, event.reference_price, commission_pct, slippage_pct
+            )
+            total_costs += cost
+            cash_delta += proceeds
+            assert current_trade is not None
+            current_trade.exits.append(MomentumExit(event.time, fill_price, event.shares, event.reason))
+            fully_closed = engine.record_exit(event.shares, fill_price)
+            if fully_closed:
+                trades.append(current_trade)
+                current_trade = None
 
     # Sicherheitsnetz: ein Einstieg kann auf dem LETZTEN Balken des Tages
-    # ausgelöst werden (Breakout erst in der Schlussminute) -- dann greift
-    # die END_OF_DAY-Zwangsschließung innerhalb der Schleife nicht mehr
-    # (die läuft nur, solange der Zustand beim Betreten von Balken i bereits
-    # IN_POSITION war). Ohne dieses Sicherheitsnetz würde die Position
-    # lautlos aus dem Trade-Log verschwinden, obwohl das eingesetzte
-    # Kapital bereits abgebucht wurde ("Phantom"-Position).
-    if position is not None and position.shares_closed < position.shares:
-        remaining = position.shares - position.shares_closed
-        proceeds, cost, fill_price = _execute_sell(remaining, closes[n - 1], commission_pct, slippage_pct)
-        total_costs += cost
-        cash_delta += proceeds
-        position.exits.append(MomentumExit(times[n - 1], fill_price, remaining, ExitReason.END_OF_DAY))
-        trades.append(position)
+    # ausgelöst werden (Breakout erst in der Schlussminute), oder eine
+    # Position kann bis zum Sitzungsende offen bleiben -- in beiden Fällen
+    # wird am Ende zwangsweise zum letzten Schlusskurs glattgestellt statt
+    # die Position lautlos verschwinden zu lassen (Kapital wäre sonst
+    # abgebucht, aber kein zugehöriger Trade-Eintrag vorhanden).
+    if engine.in_position:
+        force = engine.force_exit(times[n - 1], closes[n - 1])
+        if force is not None:
+            proceeds, cost, fill_price = _execute_sell(
+                force.shares, force.reference_price, commission_pct, slippage_pct
+            )
+            total_costs += cost
+            cash_delta += proceeds
+            assert current_trade is not None
+            current_trade.exits.append(MomentumExit(force.time, fill_price, force.shares, force.reason))
+            engine.record_exit(force.shares, fill_price)
+            trades.append(current_trade)
 
     return trades, cash_delta, total_costs
-
-
-def _relative_volume_at(cum_volume_i: float, reference: np.ndarray, i: int) -> float | None:
-    if i >= len(reference):
-        return None
-    ref = reference[i]
-    if not math.isfinite(ref) or ref <= 0:
-        return None
-    return cum_volume_i / ref
-
-
 
 
 def run_momentum_backtest(
@@ -442,9 +668,8 @@ def run_momentum_backtest(
     bereits offene Positionen werden unabhängig vom Fenster bis Sitzungs-
     ende verwaltet.
 
-    Siehe Modul-Docstring für die Einschränkungen dieser Näherung
-    (kein markweiter Scanner, kein Float-/Katalysator-Filter, nicht für
-    Live-Handel geeignet).
+    Siehe Modul-Docstring für die Einschränkungen dieser Näherung (kein
+    Float-Filter).
     """
     from datetime import time as dt_time
 

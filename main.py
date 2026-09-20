@@ -7,6 +7,7 @@ Nutzung:
     python main.py walkforward        # Out-of-Sample-Validierung über mehrere Zeitfenster
     python main.py momentum-backtest  # Momentum-Day-Trading-Backtest auf Minutendaten
     python main.py scan               # Marktweiter Scanner (aktueller Marktzustand)
+    python main.py momentum-run       # Live-Momentum-Bot: Scanner + Bull-Flag/Flat-Top-Engine + echte Orders
 """
 
 from __future__ import annotations
@@ -525,6 +526,83 @@ def cmd_scan(
     )
 
 
+def cmd_momentum_run(
+    config: Config,
+    min_price: float,
+    max_price: float,
+    min_percent_change: float,
+    scan_min_relative_volume: float,
+    relative_volume_lookback_days: int,
+    require_news: bool,
+    news_lookback_hours: int,
+    top_movers: int,
+    top_actives: int,
+    max_risk_dollars: float,
+    reward_risk_ratio: float,
+    min_relative_volume: float,
+    lookback_days: int,
+    daily_trend_window: int,
+    flagpole_min_gain_pct: float,
+    flagpole_max_bars: int,
+    min_pullback_bars: int,
+    max_pullback_bars: int,
+    max_pullback_retrace_pct: float,
+    extension_multiplier: float,
+    max_concurrent_positions: int,
+    max_tracked_symbols: int,
+    daily_max_loss_pct: float,
+    scan_interval_seconds: int,
+    poll_interval_seconds: int,
+    order_fill_timeout_seconds: int,
+    flatten_minutes_before_close: int,
+):
+    from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
+    from tradingbot.scanner import ScanCriteria
+
+    criteria = ScanCriteria(
+        min_price=min_price,
+        max_price=max_price,
+        min_percent_change=min_percent_change,
+        min_relative_volume=scan_min_relative_volume,
+        relative_volume_lookback_days=relative_volume_lookback_days,
+        require_news=require_news,
+        news_lookback_hours=news_lookback_hours,
+        top_movers=top_movers,
+        top_actives=top_actives,
+    )
+    live_config = LiveMomentumConfig(
+        max_risk_dollars=max_risk_dollars,
+        reward_risk_ratio=reward_risk_ratio,
+        min_relative_volume=min_relative_volume,
+        lookback_days=lookback_days,
+        daily_trend_window=daily_trend_window,
+        flagpole_min_gain_pct=flagpole_min_gain_pct,
+        flagpole_max_bars=flagpole_max_bars,
+        min_pullback_bars=min_pullback_bars,
+        max_pullback_bars=max_pullback_bars,
+        max_pullback_retrace_pct=max_pullback_retrace_pct,
+        extension_multiplier=extension_multiplier,
+        max_concurrent_positions=max_concurrent_positions,
+        max_tracked_symbols=max_tracked_symbols,
+        daily_max_loss_pct=daily_max_loss_pct,
+        scan_interval_seconds=scan_interval_seconds,
+        poll_interval_seconds=poll_interval_seconds,
+        order_fill_timeout_seconds=order_fill_timeout_seconds,
+        flatten_minutes_before_close=flatten_minutes_before_close,
+    )
+
+    print(
+        f"Starte Live-Momentum-Bot (paper={config.paper}) -- Scanner alle {scan_interval_seconds}s, "
+        f"Balken-Polling alle {poll_interval_seconds}s, max. {max_concurrent_positions} gleichzeitige "
+        f"Positionen, Tages-Maximalverlust {daily_max_loss_pct:.1%}.\n"
+        "ACHTUNG: siehe README für die Einschränkungen (IEX-Feed statt voller Marktabdeckung, kein "
+        "Zustand übersteht einen Neustart, kein Float-Filter) -- nur für Paper-Trading gedacht. "
+        "Mit Strg+C beenden.\n"
+    )
+    bot = LiveMomentumBot(config, criteria, live_config)
+    bot.run_forever()
+
+
 def _add_strategy_arguments(subparser: argparse.ArgumentParser):
     """Fügt die für backtest und validate identischen Kosten-/Risiko-/
     Filter-Flags hinzu -- an einer Stelle definiert, damit beide
@@ -808,13 +886,131 @@ def main():
         help="Wie viele Top-Symbole nach Handelsvolumen abgefragt werden (Standard: 30).",
     )
 
+    momentum_run_parser = subparsers.add_parser(
+        "momentum-run",
+        help="Live-Momentum-Bot: kombiniert den Scanner mit der Bull-Flag/Flat-Top-Engine und platziert "
+        "echte (Paper-)Orders. Läuft bis Strg+C (siehe README für Einschränkungen).",
+    )
+    momentum_run_parser.add_argument(
+        "--min-price", type=_positive_float, default=1.0, help="Untere Preisgrenze in Dollar (Standard: 1.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-price", type=_positive_float, default=20.0, help="Obere Preisgrenze in Dollar (Standard: 20.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--min-percent-change", type=_non_negative_finite, default=10.0,
+        help="Mindest-Tagesgewinn in Prozent, den ein Scan-Kandidat haben muss (Standard: 10.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--scan-min-relative-volume", type=_positive_float, default=5.0,
+        help="Mindest-Relativvolumen, das ein Scan-Kandidat haben muss (Standard: 5.0). Getrennt von "
+        "--min-relative-volume (Schwelle für die Bull-Flag/Flat-Top-Erkennung selbst).",
+    )
+    momentum_run_parser.add_argument(
+        "--relative-volume-lookback-days", type=_positive_int, default=30,
+        help="Anzahl Vortage für den Scanner-Volumendurchschnitt (Standard: 30).",
+    )
+    momentum_run_parser.add_argument(
+        "--require-news", action="store_true",
+        help="Nur Kandidaten mit aktueller News als Symbol aufnehmen (Standard: aus).",
+    )
+    momentum_run_parser.add_argument(
+        "--news-lookback-hours", type=_positive_int, default=24,
+        help="Zeitfenster in Stunden für die News-Prüfung (Standard: 24).",
+    )
+    momentum_run_parser.add_argument(
+        "--top-movers", type=_positive_int, default=30,
+        help="Wie viele Top-Tagesgewinner pro Scan abgefragt werden (Standard: 30).",
+    )
+    momentum_run_parser.add_argument(
+        "--top-actives", type=_positive_int, default=30,
+        help="Wie viele Top-Symbole nach Handelsvolumen pro Scan abgefragt werden (Standard: 30).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-risk-dollars", type=_positive_float, default=500.0,
+        help="Maximal riskierter Betrag pro Trade in Dollar (Standard: 500).",
+    )
+    momentum_run_parser.add_argument(
+        "--reward-risk-ratio", type=_positive_float, default=2.0,
+        help="Chance-Risiko-Verhältnis für das erste Kursziel (Standard: 2.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--min-relative-volume", type=_positive_float, default=2.0,
+        help="Mindest-Relativvolumen für ein gültiges Bull-Flag/Flat-Top-Setup (Standard: 2.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--lookback-days", type=_positive_int, default=20,
+        help="Anzahl vorangehender Handelstage für den Relativvolumen-Vergleich je Symbol (Standard: 20).",
+    )
+    momentum_run_parser.add_argument(
+        "--daily-trend-window", type=_positive_int, default=50,
+        help="Fenster (Handelstage) für den Tages-SMA-Trendfilter (Standard: 50).",
+    )
+    momentum_run_parser.add_argument(
+        "--flagpole-min-gain-pct", type=_positive_float, default=0.03,
+        help="Mindestanstieg für eine gültige Flagpole (Standard: 0.03).",
+    )
+    momentum_run_parser.add_argument(
+        "--flagpole-max-bars", type=_positive_int, default=15,
+        help="Maximale Anzahl 1-Min-Bars für den Flagpole-Anstieg (Standard: 15).",
+    )
+    momentum_run_parser.add_argument(
+        "--min-pullback-bars", type=_positive_int, default=2,
+        help="Mindestanzahl Pullback-Bars vor einem gültigen Breakout (Standard: 2).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-pullback-bars", type=_positive_int, default=5,
+        help="Nach so vielen Pullback-Bars ohne Breakout gilt das Setup als ungültig (Standard: 5).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-pullback-retrace-pct", type=_fraction_below_one, default=0.5,
+        help="Maximaler Rückzug des Pullbacks relativ zum Flagpole-Anstieg (Standard: 0.5).",
+    )
+    momentum_run_parser.add_argument(
+        "--extension-multiplier", type=_positive_float, default=4.0,
+        help="Vielfaches der durchschnittlichen Pullback-Balkenspanne für einen 'Extension Bar'-Ausstieg "
+        "(Standard: 4.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-concurrent-positions", type=_positive_int, default=3,
+        help="Obergrenze gleichzeitig offener Positionen (Standard: 3).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-tracked-symbols", type=_positive_int, default=20,
+        help="Obergrenze gleichzeitig beobachteter Symbole (Standard: 20).",
+    )
+    momentum_run_parser.add_argument(
+        "--daily-max-loss-pct", type=_fraction_below_one, default=0.10,
+        help="Anteil des Tages-Start-Eigenkapitals, bei dessen Verlust der Bot für den Rest des Tages "
+        "pausiert und alle Positionen schließt (Standard: 0.10 = 10%%, muss > 0 sein).",
+    )
+    momentum_run_parser.add_argument(
+        "--scan-interval-seconds", type=_positive_int, default=300,
+        help="Wie oft (Sekunden) erneut nach neuen Kandidaten-Symbolen gescannt wird (Standard: 300).",
+    )
+    momentum_run_parser.add_argument(
+        "--poll-interval-seconds", type=_positive_int, default=60,
+        help="Wie oft (Sekunden) neue Kursdaten für bereits beobachtete Symbole abgerufen werden "
+        "(Standard: 60).",
+    )
+    momentum_run_parser.add_argument(
+        "--order-fill-timeout-seconds", type=_positive_int, default=30,
+        help="Wie lange (Sekunden) auf die Ausführung einer Order gewartet wird, bevor reagiert wird "
+        "(Kauf: stornieren; Verkauf: erneut versuchen). Standard: 30.",
+    )
+    momentum_run_parser.add_argument(
+        "--flatten-minutes-before-close", type=_positive_int, default=5,
+        help="Wie viele Minuten vor Sitzungsende alle offenen Positionen zwangsweise geschlossen werden "
+        "(Standard: 5).",
+    )
+
     args = parser.parse_args()
 
     setup_logging()
 
     try:
         config = Config.from_env()
-        if args.command not in ("run", "scan") and args.symbol is not None:
+        if args.command not in ("run", "scan", "momentum-run") and args.symbol is not None:
             # Nur die Analyse-Subcommands mit fest EINEM Symbol (backtest/
             # validate/walkforward/momentum-backtest) erlauben ein Ad-hoc-
             # Symbol. run kennt --symbol gar nicht und bleibt bewusst strikt
@@ -899,6 +1095,37 @@ def main():
                 args.news_lookback_hours,
                 args.top_movers,
                 args.top_actives,
+            )
+        elif args.command == "momentum-run":
+            cmd_momentum_run(
+                config,
+                args.min_price,
+                args.max_price,
+                args.min_percent_change,
+                args.scan_min_relative_volume,
+                args.relative_volume_lookback_days,
+                args.require_news,
+                args.news_lookback_hours,
+                args.top_movers,
+                args.top_actives,
+                args.max_risk_dollars,
+                args.reward_risk_ratio,
+                args.min_relative_volume,
+                args.lookback_days,
+                args.daily_trend_window,
+                args.flagpole_min_gain_pct,
+                args.flagpole_max_bars,
+                args.min_pullback_bars,
+                args.max_pullback_bars,
+                args.max_pullback_retrace_pct,
+                args.extension_multiplier,
+                args.max_concurrent_positions,
+                args.max_tracked_symbols,
+                args.daily_max_loss_pct,
+                args.scan_interval_seconds,
+                args.poll_interval_seconds,
+                args.order_fill_timeout_seconds,
+                args.flatten_minutes_before_close,
             )
     except (RuntimeError, ValueError) as e:
         print(f"Fehler: {e}", file=sys.stderr)

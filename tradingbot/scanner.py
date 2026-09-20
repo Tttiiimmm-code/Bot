@@ -53,6 +53,64 @@ from tradingbot.config import Config
 _NEWS_FETCH_LIMIT = 200
 
 
+def latest_trading_session(trading_client: TradingClient, now: datetime):
+    """Der letzte Handelstag, dessen Tages-Bar bei `now` bereits
+    existieren SOLLTE, laut Alpacas echtem Handelskalender -- im
+    Gegensatz zu einer geratenen Kalendertage-Toleranz behandelt das
+    Wochenenden UND Feiertage (auch mehrtägige, z.B. Frühschluss vor
+    Feiertagen) exakt, ohne dass diese Logik bei jedem neuen Feiertag
+    erneut bricht.
+
+    `GetCalendarRequest(end=...)` filtert nur nach Kalendertag, nicht
+    Uhrzeit -- ist `now` VOR der Marktöffnung eines regulären
+    Handelstags (z.B. Montag 7 Uhr vorbörslich), liefert die Anfrage
+    trotzdem diesen Tag als letzten Eintrag, obwohl dessen Bar noch gar
+    nicht existiert (der letzte tatsächlich verfügbare Bar ist der vom
+    Vorhandelstag, z.B. Freitag). In diesem Fall auf den vorletzten
+    Kalendereintrag zurückfallen.
+    """
+    end_date = now.astimezone(ZoneInfo("America/New_York")).date()
+    request = GetCalendarRequest(start=end_date - timedelta(days=10), end=end_date)
+    calendar = trading_client.get_calendar(request)
+    if not calendar:
+        raise ValueError(
+            f"Alpacas Handelskalender lieferte keine Handelstage im Zeitraum bis {end_date} "
+            "zurück -- unerwartet, evtl. API-Problem."
+        )
+    session = calendar[-1]
+    if session.date == end_date:
+        now_et = now.astimezone(ZoneInfo("America/New_York"))
+        session_open = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
+        if now_et < session_open and len(calendar) >= 2:
+            session = calendar[-2]
+    return session
+
+
+def elapsed_session_fraction(now: datetime, session) -> float:
+    """Anteil der Handelssitzung `session` (inkl. evtl. Frühschluss),
+    der bei `now` bereits verstrichen ist -- 1.0, wenn `now` nicht
+    innerhalb dieser Sitzung liegt (z.B. `session` ist ein bereits
+    abgeschlossener, vergangener Handelstag: dessen Tagesvolumen ist
+    dann bereits vollständig, keine Projektion nötig/sinnvoll). Dank
+    `latest_trading_session` ist `now` hier praktisch nie VOR `session.open`
+    (dann wäre bereits die vorherige Sitzung gewählt worden) -- der
+    Fall wird trotzdem defensiv wie "Sitzung noch nicht begonnen"
+    behandelt (Projektions-Untergrenze), nicht wie "abgeschlossen"."""
+    now_et = now.astimezone(ZoneInfo("America/New_York"))
+    session_open = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
+    session_close = session.close.replace(tzinfo=ZoneInfo("America/New_York"))
+    if now_et.date() != session.date or now_et >= session_close:
+        return 1.0
+    if now_et <= session_open:
+        return 0.01
+    elapsed_minutes = (now_et - session_open).total_seconds() / 60
+    total_minutes = (session_close - session_open).total_seconds() / 60
+    # Untergrenze verhindert eine Division durch (fast) 0 kurz nach
+    # Handelsbeginn, die das projizierte Volumen sonst ins Absurde
+    # treiben würde.
+    return max(elapsed_minutes / total_minutes, 0.01)
+
+
 @dataclass
 class ScanCandidate:
     symbol: str
@@ -115,7 +173,7 @@ class Scanner:
         Volumensprojektions- und Aktualitätsprüfung deterministisch zu
         machen -- welcher Kalendertag der zuletzt abgeschlossene bzw.
         laufende Handelstag ist, wird über Alpacas echten Handelskalender
-        bestimmt (siehe `_latest_session`), nicht geraten.
+        bestimmt (siehe `latest_trading_session`), nicht geraten.
         """
         _validate_criteria(criteria)
 
@@ -128,9 +186,9 @@ class Scanner:
         # Zeitstempel -- der spätere ist die aktuellere bekannte Information
         # über den Marktzustand.
         now = reference_time if reference_time is not None else max(movers.last_updated, actives.last_updated)
-        session = self._latest_session(now)
+        session = latest_trading_session(self.trading_client, now)
         last_trading_day_et = session.date
-        session_fraction = self._elapsed_session_fraction(now, session)
+        session_fraction = elapsed_session_fraction(now, session)
 
         gainer_by_symbol = {g.symbol: g for g in movers.gainers}
         active_symbols = {a.symbol for a in actives.most_actives}
@@ -228,63 +286,6 @@ class Scanner:
 
         candidates.sort(key=lambda c: c.percent_change, reverse=True)
         return candidates
-
-    def _latest_session(self, now: datetime):
-        """Der letzte Handelstag, dessen Tages-Bar bei `now` bereits
-        existieren SOLLTE, laut Alpacas echtem Handelskalender -- im
-        Gegensatz zu einer geratenen Kalendertage-Toleranz behandelt das
-        Wochenenden UND Feiertage (auch mehrtägige, z.B. Frühschluss vor
-        Feiertagen) exakt, ohne dass diese Logik bei jedem neuen Feiertag
-        erneut bricht.
-
-        `GetCalendarRequest(end=...)` filtert nur nach Kalendertag, nicht
-        Uhrzeit -- ist `now` VOR der Marktöffnung eines reguläreN
-        Handelstags (z.B. Montag 7 Uhr vorbörslich), liefert die Anfrage
-        trotzdem diesen Tag als letzten Eintrag, obwohl dessen Bar noch gar
-        nicht existiert (der letzte tatsächlich verfügbare Bar ist der vom
-        Vorhandelstag, z.B. Freitag). In diesem Fall auf den vorletzten
-        Kalendereintrag zurückfallen.
-        """
-        end_date = now.astimezone(ZoneInfo("America/New_York")).date()
-        request = GetCalendarRequest(start=end_date - timedelta(days=10), end=end_date)
-        calendar = self.trading_client.get_calendar(request)
-        if not calendar:
-            raise ValueError(
-                f"Alpacas Handelskalender lieferte keine Handelstage im Zeitraum bis {end_date} "
-                "zurück -- unerwartet, evtl. API-Problem."
-            )
-        session = calendar[-1]
-        if session.date == end_date:
-            now_et = now.astimezone(ZoneInfo("America/New_York"))
-            session_open = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
-            if now_et < session_open and len(calendar) >= 2:
-                session = calendar[-2]
-        return session
-
-    @staticmethod
-    def _elapsed_session_fraction(now: datetime, session) -> float:
-        """Anteil der Handelssitzung `session` (inkl. evtl. Frühschluss),
-        der bei `now` bereits verstrichen ist -- 1.0, wenn `now` nicht
-        innerhalb dieser Sitzung liegt (z.B. `session` ist ein bereits
-        abgeschlossener, vergangener Handelstag: dessen Tagesvolumen ist
-        dann bereits vollständig, keine Projektion nötig/sinnvoll). Dank
-        `_latest_session` ist `now` hier praktisch nie VOR `session.open`
-        (dann wäre bereits die vorherige Sitzung gewählt worden) -- der
-        Fall wird trotzdem defensiv wie "Sitzung noch nicht begonnen"
-        behandelt (Projektions-Untergrenze), nicht wie "abgeschlossen"."""
-        now_et = now.astimezone(ZoneInfo("America/New_York"))
-        session_open = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
-        session_close = session.close.replace(tzinfo=ZoneInfo("America/New_York"))
-        if now_et.date() != session.date or now_et >= session_close:
-            return 1.0
-        if now_et <= session_open:
-            return 0.01
-        elapsed_minutes = (now_et - session_open).total_seconds() / 60
-        total_minutes = (session_close - session_open).total_seconds() / 60
-        # Untergrenze verhindert eine Division durch (fast) 0 kurz nach
-        # Handelsbeginn, die das projizierte Volumen sonst ins Absurde
-        # treiben würde.
-        return max(elapsed_minutes / total_minutes, 0.01)
 
     def _fetch_daily_bars(self, symbols: list[str], lookback_days: int, now: datetime) -> dict[str, pd.DataFrame]:
         # `now` statt roher Wanduhrzeit: hält das Bar-Fenster konsistent mit

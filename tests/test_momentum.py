@@ -214,6 +214,34 @@ def test_target_hit_sells_half_and_moves_stop_to_breakeven():
     assert eod_exits[0].shares == trade.shares - trade.shares // 2
 
 
+def test_target_and_extension_can_both_fire_on_the_same_bar():
+    """Regressionstest (beim Umbau auf MomentumEngine gefunden): Ziel-
+    Teilverkauf UND ein Extension-Bar-Ausstieg des Rests können auf
+    DEMSELBEN Balken zutreffen (ein extrem starker Balken kann sowohl das
+    Ziel reißen als auch selbst als Extension Bar gelten). avg_bar_range
+    der 3 Pullback-Bars (0.40, 0.45, 0.90) ist 0.5833; mit
+    extension_multiplier=4.0 braucht es eine Balkenspanne >= 2.333.
+    Konstruiert: high=14.60 (Ziel 14.00 klar erreicht), low=12.20
+    (Spanne 2.40 >= 2.333), close=14.50 (> Einstieg 12.20)."""
+    bars = _entered_trade_bars([
+        {"open": 12.20, "high": 14.60, "low": 12.20, "close": 14.50, "volume": 500},
+    ])
+
+    result = run_momentum_backtest(bars, starting_cash=100_000.0, **COMMON_KWARGS)
+
+    assert result.num_trades == 1
+    trade = result.trades[0]
+    assert len(trade.exits) == 2
+    target_exit, extension_exit = trade.exits
+    assert target_exit.reason == ExitReason.TARGET
+    assert target_exit.price == pytest.approx(14.00)
+    assert target_exit.shares == trade.shares // 2
+    assert extension_exit.reason == ExitReason.EXTENSION
+    assert extension_exit.price == pytest.approx(14.50)
+    assert extension_exit.shares == trade.shares - trade.shares // 2
+    assert trade.shares_closed == trade.shares
+
+
 def test_holds_through_red_candle_after_breakeven_stop_set():
     """Nach Teilverkauf (Breakeven-Stop gesetzt) hält die Position durch
     rote Kerzen hindurch, solange der Breakeven-Stop nicht ausgelöst wird

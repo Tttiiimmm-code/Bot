@@ -162,3 +162,40 @@ def test_run_command_rejects_symbol_flag(monkeypatch):
     with pytest.raises(SystemExit):
         main_module.main()
 
+
+def test_momentum_run_command_rejects_symbol_flag(monkeypatch):
+    """Wie test_run_command_rejects_symbol_flag: momentum-run durchsucht den
+    ganzen Markt (wie scan) und kennt --symbol daher bewusst nicht."""
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", "--symbol", "MSFT"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    monkeypatch.setattr(
+        main_module,
+        "cmd_momentum_run",
+        lambda *a, **k: pytest.fail("cmd_momentum_run darf nicht aufgerufen werden"),
+    )
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+
+
+def test_momentum_run_dispatches_with_parsed_arguments(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["main.py", "momentum-run", "--max-risk-dollars", "250", "--max-concurrent-positions", "2"],
+    )
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_args = []
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda config, *a: seen_args.append(a))
+
+    main_module.main()
+
+    args = seen_args[0]
+    # Reihenfolge wie in cmd_momentum_run()/main(): ... max_risk_dollars,
+    # reward_risk_ratio, ... max_concurrent_positions, ...
+    assert args[9] == pytest.approx(250.0)  # max_risk_dollars
+    assert args[20] == 2  # max_concurrent_positions
+
