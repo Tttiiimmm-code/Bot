@@ -199,3 +199,61 @@ def test_momentum_run_dispatches_with_parsed_arguments(monkeypatch):
     assert args[9] == pytest.approx(250.0)  # max_risk_dollars
     assert args[20] == 2  # max_concurrent_positions
 
+
+def test_momentum_backtest_rejects_symbol_and_symbols_together(monkeypatch, capsys):
+    """--symbol und --symbols schließen sich gegenseitig aus -- sonst wäre
+    unklar, ob der Einzel- oder der Mehrfach-Backtest gemeint ist."""
+    import main as main_module
+
+    monkeypatch.setattr(
+        "sys.argv", ["main.py", "momentum-backtest", "--symbol", "AAPL", "--symbols", "MSFT,TSLA"]
+    )
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    monkeypatch.setattr(
+        main_module, "cmd_momentum_backtest", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
+    )
+    monkeypatch.setattr(
+        main_module, "cmd_momentum_backtest_multi", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
+    )
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+
+    assert "schließen sich gegenseitig aus" in capsys.readouterr().err
+
+
+def test_momentum_backtest_dispatches_to_multi_when_symbols_given(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr(
+        "sys.argv", ["main.py", "momentum-backtest", "--symbols", "aapl,msft", "--starting-cash", "5000"]
+    )
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_args = []
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda config, *a: seen_args.append((config, a)))
+    monkeypatch.setattr(
+        main_module, "cmd_momentum_backtest", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
+    )
+
+    main_module.main()
+
+    config, args = seen_args[0]
+    assert args[0] == ["AAPL", "MSFT"]  # symbols, normalisiert
+    assert args[3] == pytest.approx(5000.0)  # starting_cash (nach calendar_days, feed)
+
+
+def test_momentum_backtest_dispatches_to_single_without_symbols(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-backtest", "--symbol", "MSFT"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_configs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest", lambda config, *a, **k: seen_configs.append(config))
+    monkeypatch.setattr(
+        main_module, "cmd_momentum_backtest_multi", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
+    )
+
+    main_module.main()
+
+    assert seen_configs[0].symbol == "MSFT"
+

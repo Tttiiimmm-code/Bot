@@ -11,6 +11,7 @@ from tradingbot.momentum import (
     ExitReason,
     MomentumEngine,
     run_momentum_backtest,
+    run_momentum_backtest_multi,
 )
 
 
@@ -607,3 +608,78 @@ def test_record_exit_reseeds_swing_low_with_bar_close_not_fill_price():
 
     assert engine.state == "SEARCHING"
     assert engine._swing_low_price == pytest.approx(11.55)
+
+
+# ---------------------------------------------------------------------------
+# run_momentum_backtest_multi
+# ---------------------------------------------------------------------------
+
+
+def _quiet_bars(day: date) -> pd.DataFrame:
+    """Ein Tag, an dem garantiert kein Setup ausgelöst wird (flacher Kurs,
+    kein Anstieg -> keine Flagpole)."""
+    return flat_day(day, 10, 10.00, 50)
+
+
+def test_run_momentum_backtest_multi_aggregates_across_symbols():
+    triggering_days = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+        TODAY: make_day(TODAY, bull_flag_setup_bars()),
+    }
+    quiet_days = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+        TODAY: _quiet_bars(TODAY),
+    }
+    bars_by_symbol = {
+        "AAA": build_bars(triggering_days),
+        "BBB": build_bars(quiet_days),
+    }
+
+    result = run_momentum_backtest_multi(bars_by_symbol, starting_cash_per_symbol=100_000.0, **COMMON_KWARGS)
+
+    assert [s.symbol for s in result.per_symbol] == ["AAA", "BBB"]
+    aaa_result = result.per_symbol[0].result
+    bbb_result = result.per_symbol[1].result
+    assert aaa_result.num_trades == 1
+    assert bbb_result.num_trades == 0
+
+    assert result.total_trades == aaa_result.num_trades + bbb_result.num_trades
+    assert result.total_costs == pytest.approx(aaa_result.total_costs + bbb_result.total_costs)
+    expected_gross_pnl = sum(t.gross_pnl for t in aaa_result.trades) + sum(t.gross_pnl for t in bbb_result.trades)
+    assert result.total_gross_pnl == pytest.approx(expected_gross_pnl)
+    wins = sum(1 for t in aaa_result.trades + bbb_result.trades if t.gross_pnl > 0)
+    assert result.overall_win_rate == pytest.approx(wins / result.total_trades)
+
+
+def test_run_momentum_backtest_multi_uses_independent_starting_cash_per_symbol():
+    """Regressionstest: jedes Symbol muss mit DEMSELBEN, aber UNABHÄNGIGEN
+    Startkapital simuliert werden -- Trades in einem Symbol dürfen das
+    Endkapital eines ANDEREN Symbols nicht beeinflussen (kein geteiltes
+    Gesamtkapital, siehe run_momentum_backtest_multi-Docstring)."""
+    triggering_days = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+        TODAY: make_day(TODAY, bull_flag_setup_bars()),
+    }
+    quiet_days = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+        TODAY: _quiet_bars(TODAY),
+    }
+    bars_by_symbol = {
+        "AAA": build_bars(triggering_days),
+        "BBB": build_bars(quiet_days),
+    }
+
+    result = run_momentum_backtest_multi(bars_by_symbol, starting_cash_per_symbol=5_000.0, **COMMON_KWARGS)
+
+    bbb_result = result.per_symbol[1].result
+    assert bbb_result.num_trades == 0
+    assert bbb_result.final_equity == pytest.approx(5_000.0)  # unveraendert, keine Trades
+
+
+def test_run_momentum_backtest_multi_rejects_empty_dict():
+    with pytest.raises(ValueError, match="bars_by_symbol"):
+        run_momentum_backtest_multi({}, starting_cash_per_symbol=10_000.0, **COMMON_KWARGS)

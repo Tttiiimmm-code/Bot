@@ -810,3 +810,73 @@ def run_momentum_backtest(
         days_skipped_insufficient_lookback=days_skipped_lookback,
         days_skipped_insufficient_trend_history=days_skipped_trend,
     )
+
+
+@dataclass
+class SymbolMomentumResult:
+    symbol: str
+    result: MomentumBacktestResult
+
+
+@dataclass
+class MultiSymbolMomentumBacktestResult:
+    per_symbol: list[SymbolMomentumResult]
+    total_trades: int
+    total_costs: float
+    total_gross_pnl: float
+    overall_win_rate: float
+
+
+def run_momentum_backtest_multi(
+    bars_by_symbol: dict[str, pd.DataFrame],
+    starting_cash_per_symbol: float = 10_000.0,
+    **kwargs,
+) -> MultiSymbolMomentumBacktestResult:
+    """Führt run_momentum_backtest() UNABHÄNGIG für jedes Symbol in
+    `bars_by_symbol` aus (jeweils mit demselben `starting_cash_per_symbol`,
+    als hätte man für JEDES Symbol separat dieses Kapital reserviert) und
+    fasst die Ergebnisse zusammen -- ein schneller Mittelweg, um die
+    Strategie über mehrere selbst gewählte Kandidaten hinweg statt nur für
+    ein einzelnes Symbol zu testen.
+
+    WICHTIG: dies simuliert NICHT ein einzelnes, gemeinsames Konto mit
+    begrenztem Gesamtkapital, das sich mehrere gleichzeitig offene
+    Positionen teilt, und auch keine Obergrenze gleichzeitiger Positionen
+    (das macht live `momentum-run` über `--max-concurrent-positions`,
+    siehe tradingbot/momentum_live.py) -- jedes Symbol wird komplett
+    unabhängig behandelt, als stünde für JEDES Symbol dasselbe
+    Startkapital separat zur Verfügung. Echte historische Kandidatensuche
+    (welche Aktien der Scanner an einem vergangenen Tag gefunden hätte)
+    ist damit ebenfalls NICHT abgedeckt -- `bars_by_symbol` muss die
+    Symbole bereits selbst vorgeben (siehe README für die Gründe:
+    Alpacas Screener-API kennt kein historisches Datum).
+
+    `**kwargs` werden unverändert an jeden einzelnen
+    run_momentum_backtest()-Aufruf durchgereicht (alle Parameter außer
+    `bars`/`starting_cash`, z.B. max_risk_dollars, reward_risk_ratio, ...)
+    -- eine einzige Quelle der Validierung/Defaults statt einer
+    duplizierten Parameterliste hier."""
+    if not bars_by_symbol:
+        raise ValueError("bars_by_symbol darf nicht leer sein.")
+
+    per_symbol = [
+        SymbolMomentumResult(
+            symbol=symbol,
+            result=run_momentum_backtest(bars, starting_cash=starting_cash_per_symbol, **kwargs),
+        )
+        for symbol, bars in bars_by_symbol.items()
+    ]
+
+    all_trades = [t for s in per_symbol for t in s.result.trades]
+    total_costs = sum(s.result.total_costs for s in per_symbol)
+    total_gross_pnl = sum(t.gross_pnl for t in all_trades)
+    wins = sum(1 for t in all_trades if t.gross_pnl > 0)
+    overall_win_rate = wins / len(all_trades) if all_trades else 0.0
+
+    return MultiSymbolMomentumBacktestResult(
+        per_symbol=per_symbol,
+        total_trades=len(all_trades),
+        total_costs=total_costs,
+        total_gross_pnl=total_gross_pnl,
+        overall_win_rate=overall_win_rate,
+    )

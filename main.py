@@ -76,6 +76,23 @@ def _symbol(value: str) -> str:
     return symbol
 
 
+def _symbol_list(value: str) -> list[str]:
+    """Für --symbols: kommagetrennte Liste, jedes Symbol normalisiert wie
+    _symbol() (strip + Großschreibung). Duplikate werden entfernt, die
+    Reihenfolge bleibt erhalten."""
+    symbols = [s.strip().upper() for s in value.split(",")]
+    symbols = [s for s in symbols if s]
+    if not symbols:
+        raise argparse.ArgumentTypeError("darf nicht leer sein")
+    seen: set[str] = set()
+    deduped = []
+    for s in symbols:
+        if s not in seen:
+            seen.add(s)
+            deduped.append(s)
+    return deduped
+
+
 def _positive_float(value: str) -> float:
     x = float(value)
     if not (math.isfinite(x) and x > 0):
@@ -396,6 +413,7 @@ def cmd_momentum_backtest(
     config: Config,
     calendar_days: int,
     feed,
+    starting_cash: float,
     max_risk_dollars: float,
     reward_risk_ratio: float,
     min_relative_volume: float,
@@ -423,6 +441,7 @@ def cmd_momentum_backtest(
 
     result = run_momentum_backtest(
         bars,
+        starting_cash=starting_cash,
         max_risk_dollars=max_risk_dollars,
         reward_risk_ratio=reward_risk_ratio,
         min_relative_volume=min_relative_volume,
@@ -487,6 +506,104 @@ def cmd_momentum_backtest(
         "der Live-Bot tatsächlich sieht -- ohne --feed iex testet dieser Befehl gegen den volleren "
         "Standard-/SIP-Feed, was die Ergebnisse optimistischer als die Live-Realität wirken lassen "
         "kann. Kandidaten-Symbole findet `python main.py scan`."
+    )
+
+
+def cmd_momentum_backtest_multi(
+    config: Config,
+    symbols: list[str],
+    calendar_days: int,
+    feed,
+    starting_cash: float,
+    max_risk_dollars: float,
+    reward_risk_ratio: float,
+    min_relative_volume: float,
+    lookback_days: int,
+    daily_trend_window: int,
+    flagpole_min_gain_pct: float,
+    flagpole_max_bars: int,
+    min_pullback_bars: int,
+    max_pullback_bars: int,
+    max_pullback_retrace_pct: float,
+    extension_multiplier: float,
+    commission_pct: float,
+    slippage_pct: float,
+):
+    from alpaca.data.enums import DataFeed
+
+    from tradingbot.momentum import run_momentum_backtest_multi
+
+    data_feed = DataFeed.IEX if feed == "iex" else None
+
+    bars_by_symbol = {}
+    for symbol in symbols:
+        symbol_broker = Broker(dataclasses.replace(config, symbol=symbol))
+        bars = symbol_broker.get_minute_bars(calendar_days, feed=data_feed)
+        if bars.empty:
+            print(f"Keine Minuten-Kursdaten für {symbol} erhalten -- übersprungen.")
+            continue
+        bars_by_symbol[symbol] = bars
+
+    if not bars_by_symbol:
+        print("Für keines der angegebenen Symbole konnten Daten geladen werden.")
+        return
+
+    result = run_momentum_backtest_multi(
+        bars_by_symbol,
+        starting_cash_per_symbol=starting_cash,
+        max_risk_dollars=max_risk_dollars,
+        reward_risk_ratio=reward_risk_ratio,
+        min_relative_volume=min_relative_volume,
+        lookback_days=lookback_days,
+        daily_trend_window=daily_trend_window,
+        flagpole_min_gain_pct=flagpole_min_gain_pct,
+        flagpole_max_bars=flagpole_max_bars,
+        min_pullback_bars=min_pullback_bars,
+        max_pullback_bars=max_pullback_bars,
+        max_pullback_retrace_pct=max_pullback_retrace_pct,
+        extension_multiplier=extension_multiplier,
+        commission_pct=commission_pct,
+        slippage_pct=slippage_pct,
+    )
+
+    print(f"Symbole:               {', '.join(bars_by_symbol)} ({len(bars_by_symbol)} von {len(symbols)} mit Daten)")
+    print(
+        "Datenfeed:             "
+        + (
+            "IEX (echtzeitfähig, deckt aber nur ~2-3% des Marktvolumens ab -- entspricht dem, "
+            "was momentum-run live tatsächlich sieht)"
+            if data_feed is not None
+            else "Standard/SIP (voller Marktüberblick, ohne Zusatzabo >15 Min. verzögert -- "
+            "momentum-run live sieht das NICHT, siehe --feed iex)"
+        )
+    )
+    print(f"Startkapital/Symbol:   {starting_cash:,.2f} (siehe Hinweis unten)")
+    print(
+        f"Parameter:             Risiko/Trade=${max_risk_dollars:.0f}, Ziel={reward_risk_ratio:.1f}:1, "
+        f"Rel.Volumen>={min_relative_volume:.1f}x, Trend-SMA={daily_trend_window}T"
+    )
+    print()
+    print(f"{'Symbol':<8} {'Trades':>7} {'Trefferquote':>13} {'Endkapital':>14} {'Rendite':>10}")
+    print("-" * 58)
+    for s in result.per_symbol:
+        r = s.result
+        print(
+            f"{s.symbol:<8} {r.num_trades:>7} {r.win_rate:>12.0%} {r.final_equity:>14,.2f} "
+            f"{r.total_return_pct:>+9.2f}%"
+        )
+
+    print()
+    print(f"Trades gesamt:         {result.total_trades}")
+    print(f"Trefferquote gesamt:   {result.overall_win_rate:.0%}")
+    print(f"Bruttogewinn/-verlust gesamt: {result.total_gross_pnl:+,.2f}")
+    print(f"Kosten gesamt:         {result.total_costs:,.2f}")
+    print(
+        "\nHinweis: jedes Symbol wird UNABHÄNGIG mit demselben Startkapital simuliert, NICHT als "
+        "ein gemeinsames Konto mit begrenztem Gesamtkapital oder einer Obergrenze gleichzeitiger "
+        "Positionen (das macht live `momentum-run` über --max-concurrent-positions). Für eine "
+        "schnelle Einschätzung über mehrere selbst gewählte Kandidaten hinweg gedacht -- KEINE "
+        "Simulation, welche Aktien der Scanner an einem vergangenen Tag gefunden hätte (Alpacas "
+        "Screener-API kennt kein historisches Datum, siehe README)."
     )
 
 
@@ -766,7 +883,25 @@ def main():
         "--symbol",
         type=_symbol,
         default=None,
-        help="Zu testendes Symbol, überschreibt SYMBOL aus .env nur für diesen Aufruf.",
+        help="Zu testendes Symbol, überschreibt SYMBOL aus .env nur für diesen Aufruf. Schließt "
+        "sich mit --symbols gegenseitig aus.",
+    )
+    momentum_parser.add_argument(
+        "--symbols",
+        type=_symbol_list,
+        default=None,
+        help="Kommagetrennte Liste mehrerer Symbole (z.B. --symbols AAPL,TSLA,MSFT) -- führt den "
+        "Backtest für jedes Symbol UNABHÄNGIG mit demselben Startkapital aus (siehe "
+        "--starting-cash) und fasst die Ergebnisse zusammen. Simuliert KEIN gemeinsames Konto mit "
+        "begrenztem Gesamtkapital oder einer Obergrenze gleichzeitiger Positionen (das macht live "
+        "`momentum-run`). Schließt sich mit --symbol gegenseitig aus.",
+    )
+    momentum_parser.add_argument(
+        "--starting-cash",
+        type=_positive_float,
+        default=10_000.0,
+        help="Startkapital (Standard: 10000). Bei --symbols gilt dieser Betrag JE Symbol "
+        "unabhängig, nicht als geteiltes Gesamtkapital.",
     )
     momentum_parser.add_argument(
         "--days",
@@ -1055,6 +1190,9 @@ def main():
             # Markt, nicht ein einzelnes Symbol.
             config = dataclasses.replace(config, symbol=args.symbol)
 
+        if args.command == "momentum-backtest" and args.symbol is not None and args.symbols is not None:
+            raise ValueError("--symbol und --symbols schließen sich gegenseitig aus (nur eins von beiden angeben).")
+
         if args.command == "run":
             cmd_run(config)
         elif args.command == "backtest":
@@ -1101,24 +1239,47 @@ def main():
                 args.rsi_window,
             )
         elif args.command == "momentum-backtest":
-            cmd_momentum_backtest(
-                config,
-                args.calendar_days,
-                args.feed,
-                args.max_risk_dollars,
-                args.reward_risk_ratio,
-                args.min_relative_volume,
-                args.lookback_days,
-                args.daily_trend_window,
-                args.flagpole_min_gain_pct,
-                args.flagpole_max_bars,
-                args.min_pullback_bars,
-                args.max_pullback_bars,
-                args.max_pullback_retrace_pct,
-                args.extension_multiplier,
-                args.commission_pct,
-                args.slippage_pct,
-            )
+            if args.symbols is not None:
+                cmd_momentum_backtest_multi(
+                    config,
+                    args.symbols,
+                    args.calendar_days,
+                    args.feed,
+                    args.starting_cash,
+                    args.max_risk_dollars,
+                    args.reward_risk_ratio,
+                    args.min_relative_volume,
+                    args.lookback_days,
+                    args.daily_trend_window,
+                    args.flagpole_min_gain_pct,
+                    args.flagpole_max_bars,
+                    args.min_pullback_bars,
+                    args.max_pullback_bars,
+                    args.max_pullback_retrace_pct,
+                    args.extension_multiplier,
+                    args.commission_pct,
+                    args.slippage_pct,
+                )
+            else:
+                cmd_momentum_backtest(
+                    config,
+                    args.calendar_days,
+                    args.feed,
+                    args.starting_cash,
+                    args.max_risk_dollars,
+                    args.reward_risk_ratio,
+                    args.min_relative_volume,
+                    args.lookback_days,
+                    args.daily_trend_window,
+                    args.flagpole_min_gain_pct,
+                    args.flagpole_max_bars,
+                    args.min_pullback_bars,
+                    args.max_pullback_bars,
+                    args.max_pullback_retrace_pct,
+                    args.extension_multiplier,
+                    args.commission_pct,
+                    args.slippage_pct,
+                )
         elif args.command == "scan":
             cmd_scan(
                 config,

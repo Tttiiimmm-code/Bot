@@ -215,6 +215,23 @@ python main.py momentum-backtest --symbol TSLA --days 200 \
   --daily-trend-window 20 --lookback-days 10 --flagpole-min-gain-pct 0.015 --min-relative-volume 1.5
 ```
 
+**Mehrere Symbole auf einmal testen** (`--symbols`, kommagetrennt, statt `--symbol`): führt den
+Backtest für jedes angegebene Symbol unabhängig mit demselben Startkapital aus und fasst die
+Ergebnisse zusammen -- praktisch, um die Strategie über eine eigene Watchlist statt nur ein
+einzelnes Symbol einzuschätzen:
+
+```bash
+python main.py momentum-backtest --symbols AAPL,TSLA,MSFT --days 200 --starting-cash 10000
+```
+
+**Wichtig:** dies simuliert NICHT ein einzelnes Konto mit begrenztem Gesamtkapital oder einer
+Obergrenze gleichzeitiger Positionen (das macht live `momentum-run` über
+`--max-concurrent-positions`) -- jedes Symbol bekommt unabhängig dasselbe `--starting-cash`, als
+würde man für jedes Symbol separat Kapital reservieren. Und: dies simuliert NICHT, welche Aktien
+der Scanner an einem vergangenen Tag tatsächlich gefunden hätte (dafür gibt es keine historische
+Alpaca-API, siehe Abschnitt "Marktweiter Scanner" unten) -- die Symbole müssen selbst vorgegeben
+werden.
+
 **Wichtige Einschränkungen -- unbedingt lesen, bevor die Ergebnisse interpretiert werden:**
 
 - **Reine historische Analyse.** Dieser Backtest selbst löst nie Orders aus -- für den
