@@ -583,13 +583,16 @@ def cmd_momentum_backtest_multi(
         f"Rel.Volumen>={min_relative_volume:.1f}x, Trend-SMA={daily_trend_window}T"
     )
     print()
-    print(f"{'Symbol':<8} {'Trades':>7} {'Trefferquote':>13} {'Endkapital':>14} {'Rendite':>10}")
-    print("-" * 58)
+    print(
+        f"{'Symbol':<8} {'Tage ausgew.':>12} {'Trades':>7} {'Trefferquote':>13} "
+        f"{'Endkapital':>14} {'Rendite':>10}"
+    )
+    print("-" * 72)
     for s in result.per_symbol:
         r = s.result
         print(
-            f"{s.symbol:<8} {r.num_trades:>7} {r.win_rate:>12.0%} {r.final_equity:>14,.2f} "
-            f"{r.total_return_pct:>+9.2f}%"
+            f"{s.symbol:<8} {r.days_evaluated:>12} {r.num_trades:>7} {r.win_rate:>12.0%} "
+            f"{r.final_equity:>14,.2f} {r.total_return_pct:>+9.2f}%"
         )
 
     print()
