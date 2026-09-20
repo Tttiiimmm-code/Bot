@@ -217,10 +217,19 @@ python main.py momentum-backtest --symbol TSLA --days 200 \
 
 **Wichtige Einschränkungen -- unbedingt lesen, bevor die Ergebnisse interpretiert werden:**
 
-- **Reine historische Analyse.** Dieser Backtest selbst löst nie Orders aus und lädt Daten über
-  den Standard-/SIP-Feed (mit dem üblichen Sicherheitsabstand `_DATA_DELAY`) -- für den
-  tatsächlichen Live-Handel dieser Strategie siehe `python main.py momentum-run` weiter unten
-  (nutzt stattdessen den echtzeitfähigen IEX-Feed).
+- **Reine historische Analyse.** Dieser Backtest selbst löst nie Orders aus -- für den
+  tatsächlichen Live-Handel dieser Strategie siehe `python main.py momentum-run` weiter unten.
+- **Standardmäßig anderer Datenfeed als der Live-Bot.** Ohne `--feed` lädt dieser Backtest Daten
+  über Alpacas Standard-/SIP-Feed (vollen Marktüberblick, mit dem üblichen
+  Sicherheitsabstand `_DATA_DELAY`) -- `momentum-run` nutzt live aber IMMER den IEX-Feed (nur
+  ~2-3% des Marktvolumens, siehe unten). Ein Backtest gegen SIP kann deshalb Setups/Ergebnisse
+  zeigen, die der Live-Bot mit seinem eingeschränkteren Datenblick so nie sehen würde. Mit
+  `--feed iex` lädt dieser Backtest stattdessen exakt denselben (eingeschränkten) Feed wie
+  `momentum-run` -- realistischer, um vorab abzuschätzen, wie sich die Strategie live tatsächlich
+  verhalten würde:
+  ```bash
+  python main.py momentum-backtest --symbol TSLA --days 90 --feed iex
+  ```
 - **Kein Float-Filter.** Die Original-Strategie filtert u.a. nach Float (<100 Mio., ideal
   <20 Mio. Aktien). Alpacas Marktdaten-API liefert keinen Aktien-Float -- der separate
   `python main.py scan`-Befehl (siehe unten) deckt Tagesgewinn/Preisspanne/Relativvolumen/News

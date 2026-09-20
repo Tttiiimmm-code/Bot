@@ -9,7 +9,7 @@ from datetime import datetime, time, timedelta, timezone
 
 import pandas as pd
 from alpaca.common.exceptions import APIError
-from alpaca.data.enums import Adjustment
+from alpaca.data.enums import Adjustment, DataFeed
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
@@ -91,7 +91,7 @@ class Broker:
         symbol_bars = bars.xs(self.config.symbol, level="symbol")
         return symbol_bars["close"].tail(limit)
 
-    def get_minute_bars(self, calendar_days: int) -> pd.DataFrame:
+    def get_minute_bars(self, calendar_days: int, feed: DataFeed | None = None) -> pd.DataFrame:
         """Holt Minuten-OHLCV-Bars der letzten `calendar_days` Kalendertage
         für das konfigurierte Symbol, gefiltert auf reguläre US-
         Handelszeiten (9:30-16:00 ET) -- Vor-/Nachbörslich fließt sonst mit
@@ -103,8 +103,20 @@ class Broker:
         Verzögerungs-Sicherheitsabstand (_DATA_DELAY), was für eine
         Strategie, die auf die exakt erste Kerze nach einem Pullback
         abzielt, keine belastbare Basis ist.
+
+        `feed`: None (Standard) fragt Alpacas Standard-/SIP-Feed ab -- den
+        vollen Marktüberblick, aber nur für Daten älter als _DATA_DELAY.
+        `feed=DataFeed.IEX` fragt stattdessen den (ohne Zusatzabo)
+        einzigen ECHTZEIT-fähigen Feed ab, braucht dafür KEINEN
+        Verzögerungs-Sicherheitsabstand. Relevant, um einen Backtest exakt
+        nachzustellen, was tradingbot/momentum_live.py (das live IMMER
+        IEX nutzt) tatsächlich sehen würde -- IEX deckt nur einen
+        Bruchteil (~2-3%) des gesamten Marktvolumens ab, ein auf SIP
+        beruhender Backtest testet also ein ANDERES, vollständigeres Bild
+        des Marktes, als der Live-Bot je zu sehen bekommt.
         """
-        end = datetime.now(timezone.utc) - _DATA_DELAY
+        delay = timedelta(0) if feed == DataFeed.IEX else _DATA_DELAY
+        end = datetime.now(timezone.utc) - delay
         start = end - timedelta(days=calendar_days)
 
         request = StockBarsRequest(
@@ -113,6 +125,7 @@ class Broker:
             start=start,
             end=end,
             adjustment=Adjustment.ALL,
+            feed=feed,
         )
         bars = self.data_client.get_stock_bars(request).df
         return _filter_regular_session(bars, self.config.symbol)

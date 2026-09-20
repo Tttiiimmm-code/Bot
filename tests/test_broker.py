@@ -7,11 +7,14 @@ bauen und nur die eine Methode faken, deren Verhalten wir testen wollen.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
 import pytest
 from alpaca.common.exceptions import APIError
+from alpaca.data.enums import DataFeed
 
-from tradingbot.broker import Broker, Position
+from tradingbot.broker import _DATA_DELAY, Broker, Position
 from tradingbot.config import Config
 
 
@@ -171,6 +174,84 @@ def test_get_recent_closes_returns_empty_series_when_no_bars(monkeypatch):
     closes = broker.get_recent_closes(limit=10)
 
     assert closes.empty
+
+
+def make_minute_bars_df(symbol: str, rows: list[tuple]) -> pd.DataFrame:
+    """rows: Liste von (timestamp_utc, open, high, low, close, volume)."""
+    timestamps = pd.DatetimeIndex([r[0] for r in rows], tz="UTC")
+    index = pd.MultiIndex.from_arrays([[symbol] * len(rows), timestamps], names=["symbol", "timestamp"])
+    return pd.DataFrame(
+        {
+            "open": [r[1] for r in rows],
+            "high": [r[2] for r in rows],
+            "low": [r[3] for r in rows],
+            "close": [r[4] for r in rows],
+            "volume": [r[5] for r in rows],
+        },
+        index=index,
+    )
+
+
+def test_get_minute_bars_filters_to_regular_session(monkeypatch):
+    broker = make_broker()  # config.symbol == "TEST"
+    rows = [
+        (datetime(2024, 1, 10, 13, 0, tzinfo=timezone.utc), 1, 1, 1, 1, 10),  # 8:00 ET, vorbörslich
+        (datetime(2024, 1, 10, 14, 30, tzinfo=timezone.utc), 2, 2, 2, 2, 20),  # 9:30 ET, regulär
+        (datetime(2024, 1, 10, 20, 30, tzinfo=timezone.utc), 3, 3, 3, 3, 30),  # 15:30 ET, regulär
+        (datetime(2024, 1, 10, 21, 30, tzinfo=timezone.utc), 4, 4, 4, 4, 40),  # 16:30 ET, nachbörslich
+    ]
+    bars = make_minute_bars_df("TEST", rows)
+    monkeypatch.setattr(broker.data_client, "get_stock_bars", lambda request: FakeBarSet(bars))
+
+    result = broker.get_minute_bars(calendar_days=1)
+
+    assert list(result.columns) == ["open", "high", "low", "close", "volume"]
+    assert list(result["close"]) == [2.0, 3.0]
+
+
+def test_get_minute_bars_without_feed_applies_data_delay(monkeypatch):
+    """Regressionstest: ohne feed=DataFeed.IEX muss `end` weiterhin um
+    _DATA_DELAY in der Vergangenheit liegen (Standard-/SIP-Feed-Abfragen
+    für sehr aktuelle Daten scheitern sonst ohne Zusatzabo)."""
+    broker = make_broker()
+    captured = {}
+    monkeypatch.setattr(
+        broker.data_client,
+        "get_stock_bars",
+        lambda request: (captured.__setitem__("request", request), FakeBarSet(pd.DataFrame()))[1],
+    )
+
+    before = datetime.now(timezone.utc)
+    broker.get_minute_bars(calendar_days=1)
+    after = datetime.now(timezone.utc)
+
+    request = captured["request"]
+    assert request.feed is None
+    end = request.end.replace(tzinfo=timezone.utc)
+    assert before - _DATA_DELAY - timedelta(seconds=5) <= end <= after - _DATA_DELAY + timedelta(seconds=5)
+
+
+def test_get_minute_bars_iex_feed_skips_data_delay(monkeypatch):
+    """Regressionstest: feed=DataFeed.IEX muss den Verzögerungs-
+    Sicherheitsabstand WEGLASSEN (IEX ist ohne Zusatzabo echtzeitfähig,
+    siehe README) -- `end` muss nahe der tatsächlichen aktuellen Zeit
+    liegen, nicht um _DATA_DELAY zurückversetzt."""
+    broker = make_broker()
+    captured = {}
+    monkeypatch.setattr(
+        broker.data_client,
+        "get_stock_bars",
+        lambda request: (captured.__setitem__("request", request), FakeBarSet(pd.DataFrame()))[1],
+    )
+
+    before = datetime.now(timezone.utc)
+    broker.get_minute_bars(calendar_days=1, feed=DataFeed.IEX)
+    after = datetime.now(timezone.utc)
+
+    request = captured["request"]
+    assert request.feed == DataFeed.IEX
+    end = request.end.replace(tzinfo=timezone.utc)
+    assert before - timedelta(seconds=5) <= end <= after + timedelta(seconds=5)
 
 
 def test_has_open_buy_order_true_and_false(monkeypatch):

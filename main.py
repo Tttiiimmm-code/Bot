@@ -395,6 +395,7 @@ def cmd_walkforward(
 def cmd_momentum_backtest(
     config: Config,
     calendar_days: int,
+    feed,
     max_risk_dollars: float,
     reward_risk_ratio: float,
     min_relative_volume: float,
@@ -409,10 +410,13 @@ def cmd_momentum_backtest(
     commission_pct: float,
     slippage_pct: float,
 ):
+    from alpaca.data.enums import DataFeed
+
     from tradingbot.momentum import run_momentum_backtest
 
+    data_feed = DataFeed.IEX if feed == "iex" else None
     broker = Broker(config)
-    bars = broker.get_minute_bars(calendar_days)
+    bars = broker.get_minute_bars(calendar_days, feed=data_feed)
     if bars.empty:
         print(f"Keine Minuten-Kursdaten für {config.symbol} erhalten.")
         return
@@ -435,6 +439,16 @@ def cmd_momentum_backtest(
     )
 
     print(f"Symbol:                {config.symbol}")
+    print(
+        "Datenfeed:             "
+        + (
+            "IEX (echtzeitfähig, deckt aber nur ~2-3% des Marktvolumens ab -- entspricht dem, "
+            "was momentum-run live tatsächlich sieht)"
+            if data_feed is not None
+            else "Standard/SIP (voller Marktüberblick, ohne Zusatzabo >15 Min. verzögert -- "
+            "momentum-run live sieht das NICHT, siehe --feed iex)"
+        )
+    )
     print(f"Zeitraum:              {bars.index[0]} - {bars.index[-1]} ({calendar_days} Kalendertage angefragt)")
     print(
         f"Tage ausgewertet:      {result.days_evaluated} "
@@ -466,9 +480,13 @@ def cmd_momentum_backtest(
     print(f"Endkapital:            {result.final_equity:,.2f}")
     print(f"Gesamtrendite:         {result.total_return_pct:+.2f}%")
     print(
-        "\nHinweis: Näherung der Warrior-Trading-Momentum-Strategie ohne Float-Filter "
-        "(siehe README) und NUR für historische Analyse -- wegen Alpacas verzögertem "
-        "Datenplan nicht live handelbar. Kandidaten-Symbole findet `python main.py scan`."
+        "\nHinweis: Näherung der Warrior-Trading-Momentum-Strategie ohne Float-Filter (siehe README). "
+        "Dieser Befehl selbst platziert nie Orders -- für den Live-Handel siehe `python main.py "
+        "momentum-run` (nutzt intern immer den IEX-Feed). Mit --feed iex lässt sich hier vorab "
+        "testen, wie sich die Strategie auf genau den (eingeschränkten) Daten verhalten hätte, die "
+        "der Live-Bot tatsächlich sieht -- ohne --feed iex testet dieser Befehl gegen den volleren "
+        "Standard-/SIP-Feed, was die Ergebnisse optimistischer als die Live-Realität wirken lassen "
+        "kann. Kandidaten-Symbole findet `python main.py scan`."
     )
 
 
@@ -758,6 +776,16 @@ def main():
         help="Kalendertage (nicht Handelstage!) historischer Minutendaten, die geladen werden "
         "(Standard: 90). Alpacas kostenloser Plan liefert typischerweise nur einige Monate "
         "Minutenhistorie zurück.",
+    )
+    momentum_parser.add_argument(
+        "--feed",
+        choices=["sip", "iex"],
+        default="sip",
+        help="Datenfeed für den Backtest. 'sip' (Standard) fragt Alpacas Standard-/SIP-Feed ab -- "
+        "vollen Marktüberblick, aber ohne Zusatzabo nur für Daten älter als ~20 Minuten. 'iex' "
+        "fragt stattdessen genau den Feed ab, den `momentum-run` live tatsächlich nutzt (nur ~2-3%% "
+        "des Marktvolumens) -- testet damit realistischer, was der Live-Bot sehen würde, statt "
+        "gegen den volleren SIP-Feed zu optimistische Ergebnisse zu liefern.",
     )
     momentum_parser.add_argument(
         "--max-risk-dollars",
@@ -1076,6 +1104,7 @@ def main():
             cmd_momentum_backtest(
                 config,
                 args.calendar_days,
+                args.feed,
                 args.max_risk_dollars,
                 args.reward_risk_ratio,
                 args.min_relative_volume,
