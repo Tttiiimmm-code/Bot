@@ -49,7 +49,7 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, OrderStatus, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 
-from tradingbot.broker import _CALENDAR_DAYS_PER_TRADING_DAY
+from tradingbot.broker import _CALENDAR_DAYS_PER_TRADING_DAY, _filter_regular_session
 from tradingbot.config import Config
 from tradingbot.momentum import (
     BreakoutEvent,
@@ -57,6 +57,7 @@ from tradingbot.momentum import (
     ExitSignal,
     MomentumEngine,
     _build_relative_volume_reference,
+    _daily_trend_ok,
     _relative_volume_at,
 )
 from tradingbot.scanner import Scanner, ScanCriteria, latest_trading_session
@@ -172,8 +173,17 @@ def _validate_live_config(c: LiveMomentumConfig) -> None:
             f"order_poll_interval_seconds muss eine positive, endliche Zahl sein, "
             f"war {c.order_poll_interval_seconds}."
         )
-    if c.flatten_minutes_before_close < 0:
-        raise ValueError(f"flatten_minutes_before_close darf nicht negativ sein, war {c.flatten_minutes_before_close}.")
+    if c.flatten_minutes_before_close < 1:
+        # 0 wäre zwar rechnerisch zulässig (flatten_cutoff_et == session_close_et),
+        # ließe der Zwangs-Verkaufs-Order aber keinerlei Puffer, um vor dem
+        # tatsächlichen Handelsschluss noch auszuführen -- praktisch
+        # nutzlos bis riskant. Die CLI (main.py, _positive_int) verlangt
+        # ohnehin schon >= 1; dieselbe Grenze hier, damit die Bibliothek
+        # selbst (z.B. bei direkter LiveMomentumConfig-Nutzung ohne CLI)
+        # keine schwächere Garantie gibt als die CLI-Oberfläche.
+        raise ValueError(
+            f"flatten_minutes_before_close muss mindestens 1 sein, war {c.flatten_minutes_before_close}."
+        )
 
 
 @dataclass
@@ -233,15 +243,7 @@ def _fetch_minute_bars_for_symbol(
         feed=DataFeed.IEX,
     )
     bars = data_client.get_stock_bars(request).df
-    if bars.empty:
-        return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
-
-    symbol_bars = bars.xs(symbol, level="symbol")
-    ny_index = symbol_bars.index.tz_convert("America/New_York")
-    session_mask = (ny_index.time >= dt_time(9, 30)) & (ny_index.time < dt_time(16, 0))
-    regular_session = symbol_bars.loc[session_mask].copy()
-    regular_session.index = ny_index[session_mask]
-    return regular_session[["open", "high", "low", "close", "volume"]]
+    return _filter_regular_session(bars, symbol)
 
 
 class LiveMomentumBot:
@@ -373,23 +375,53 @@ class LiveMomentumBot:
         session_open_et = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
         session_close_et = session.close.replace(tzinfo=ZoneInfo("America/New_York"))
 
-        if now_et < session_open_et or now_et >= session_close_et:
-            logger.debug("Außerhalb der Handelssitzung (%s), überspringe Zyklus.", session.date)
+        if now_et < session_open_et:
+            logger.debug("Vor Sitzungsbeginn (%s), überspringe Zyklus.", session.date)
+            return
+
+        # WICHTIG: dieser Zweig muss VOR jedem "now_et >= session_close_et
+        # -> überspringen"-Check kommen (den gab es hier früher separat) --
+        # sonst könnte ein grobes --poll-interval-seconds (>=
+        # --flatten-minutes-before-close * 60) das gesamte Cutoff-Fenster
+        # zwischen zwei Zyklen überspringen (ein Zyklus kurz VOR dem
+        # Cutoff, der nächste schon NACH Sitzungsende) und offene
+        # Positionen blieben bis zum nächsten Handelstag ungeschlossen
+        # liegen -- genau das "kein Overnight-Halten"-Versprechen würde
+        # damit gebrochen. flatten_cutoff_et <= session_close_et gilt
+        # immer (flatten_minutes_before_close >= 0), das Fenster "nach
+        # Sitzungsende" ist also automatisch mit abgedeckt.
+        flatten_cutoff_et = session_close_et - timedelta(minutes=self.live_config.flatten_minutes_before_close)
+        if now_et >= flatten_cutoff_et:
+            if not self._flatten_triggered_today:
+                logger.info(
+                    "Sitzungsende nähert sich (Cutoff %s ET) -- schließe alle offenen Positionen.",
+                    flatten_cutoff_et.time(),
+                )
+                self._flatten_triggered_today = True
+            # Jeden Zyklus erneut aufrufen (idempotent), nicht nur beim
+            # ersten Überschreiten des Cutoffs -- sonst bliebe eine zum
+            # Cutoff-Zeitpunkt noch offene (pending_exit) Order, die sich
+            # erst DANACH in einen Teil-Fill auflöst, für den Rest der
+            # Sitzung unbewacht. _flatten_triggered_today steuert nur die
+            # einmalige Log-Meldung oben, nicht den eigentlichen
+            # Glattstellungsversuch.
+            self._flatten_all(now)
             return
 
         if self._halted:
-            # _flatten_all() erneut aufrufen statt nur einmal beim
-            # Auslösen (s.u.): ein Symbol mit einer zum Halte-Zeitpunkt
-            # noch offenen (pending_exit) Order wird von _flatten_all()
-            # dort bewusst übersprungen (keine zweite, konkurrierende
-            # Verkaufs-Order) -- löst sich diese Order später (via
-            # _resolve_pending_exits() oben) in einen Teil-Fill auf, bleibt
-            # ohne diesen wiederholten Aufruf die verbleibende Restmenge
-            # für den Rest des pausierten Handelstags komplett unbewacht
-            # (der Circuit-Breaker soll ausnahmslos ALLE Positionen
-            # schließen). _flatten_all() ist idempotent -- bereits
-            # geschlossene bzw. noch mit einer eigenen offenen Order
-            # wartende Symbole werden dort selbst wieder übersprungen.
+            # Wie beim Flatten-Cutoff oben: JEDEN Zyklus erneut aufrufen
+            # statt nur einmal beim Auslösen -- ein Symbol mit einer zum
+            # Halte-Zeitpunkt noch offenen (pending_exit) Order wird von
+            # _flatten_all() dort bewusst übersprungen (keine zweite,
+            # konkurrierende Verkaufs-Order) -- löst sich diese Order
+            # später (via _resolve_pending_exits() oben) in einen
+            # Teil-Fill auf, bleibt ohne diesen wiederholten Aufruf die
+            # verbleibende Restmenge für den Rest des pausierten
+            # Handelstags komplett unbewacht (der Circuit-Breaker soll
+            # ausnahmslos ALLE Positionen schließen). _flatten_all() ist
+            # idempotent -- bereits geschlossene bzw. noch mit einer
+            # eigenen offenen Order wartende Symbole werden dort selbst
+            # wieder übersprungen.
             self._flatten_all(now)
             return
 
@@ -412,24 +444,6 @@ class LiveMomentumBot:
                 self._halted = True
                 self._flatten_all(now)
                 return
-
-        flatten_cutoff_et = session_close_et - timedelta(minutes=self.live_config.flatten_minutes_before_close)
-        if now_et >= flatten_cutoff_et:
-            if not self._flatten_triggered_today:
-                logger.info(
-                    "Sitzungsende nähert sich (Cutoff %s ET) -- schließe alle offenen Positionen.",
-                    flatten_cutoff_et.time(),
-                )
-                self._flatten_triggered_today = True
-            # Wie beim Halted-Zweig oben: JEDEN Zyklus erneut aufrufen
-            # (idempotent), nicht nur beim ersten Überschreiten des
-            # Cutoffs -- sonst bliebe eine zum Cutoff-Zeitpunkt noch
-            # offene (pending_exit) Order, die sich erst DANACH in einen
-            # Teil-Fill auflöst, für den Rest der Sitzung unbewacht.
-            # _flatten_triggered_today steuert nur die einmalige Log-
-            # Meldung oben, nicht den eigentlichen Glattstellungsversuch.
-            self._flatten_all(now)
-            return
 
         if self._last_scan_time is None or (now - self._last_scan_time) >= timedelta(
             seconds=self.live_config.scan_interval_seconds
@@ -560,14 +574,7 @@ class LiveMomentumBot:
             feed=DataFeed.IEX,
         )
         df = self.data_client.get_stock_bars(request).df
-        if df.empty:
-            return
-
-        symbol_bars = df.xs(symbol, level="symbol")
-        ny_index = symbol_bars.index.tz_convert("America/New_York")
-        session_mask = (ny_index.time >= dt_time(9, 30)) & (ny_index.time < dt_time(16, 0))
-        bars = symbol_bars.loc[session_mask].copy()
-        bars.index = ny_index[session_mask]
+        bars = _filter_regular_session(df, symbol)
         if bars.empty:
             return
 
@@ -575,11 +582,7 @@ class LiveMomentumBot:
             state.cum_volume += float(row["volume"])
             state.last_close = float(row["close"])
             if state.trend_ok is None:
-                state.trend_ok = (
-                    state.daily_sma is not None
-                    and math.isfinite(state.daily_sma)
-                    and state.last_close > state.daily_sma
-                )
+                state.trend_ok = _daily_trend_ok(state.last_close, state.daily_sma)
             minute_index = int((bar_time - state.session_open).total_seconds() // 60)
             relative_volume = _relative_volume_at(state.cum_volume, state.rel_vol_reference, minute_index)
             in_window = self.live_config.trading_window_start <= bar_time.time() < self.live_config.trading_window_end

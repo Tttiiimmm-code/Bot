@@ -99,14 +99,19 @@ def _validate_bars(bars: pd.DataFrame) -> None:
         raise ValueError("bars muss einen DatetimeIndex haben (siehe Broker.get_minute_bars).")
 
 
-def _daily_trend_ok(day_bars: pd.DataFrame, daily_sma: float | None) -> bool:
+def _daily_trend_ok(first_close: float, daily_sma: float | None) -> bool:
     """Näherung für Kriterium 2 ('starker Tageschart, über den gleitenden
     Durchschnitten'): der erste Kurs der Sitzung muss über dem gleitenden
     Durchschnitt der VORHERIGEN Tage liegen (kein Lookahead: der SMA-Wert
-    bezieht das aktuelle, noch laufende Handelsdatum nicht mit ein)."""
+    bezieht das aktuelle, noch laufende Handelsdatum nicht mit ein).
+    Nimmt bewusst einen einzelnen Preis statt eines ganzen day_bars-
+    DataFrames entgegen -- geteilte Grundlage für den Backtest (erster
+    Schlusskurs des Tages) UND den Live-Bot (tradingbot/momentum_live.py,
+    Schlusskurs des ersten balkenweise verarbeiteten Balkens), ohne dass
+    Letzterer dafür ein künstliches Ein-Zeilen-DataFrame bauen müsste."""
     if daily_sma is None or not math.isfinite(daily_sma):
         return False
-    return day_bars["close"].iloc[0] > daily_sma
+    return first_close > daily_sma
 
 
 def _build_relative_volume_reference(prior_days_cum_volumes: list[np.ndarray], max_len: int) -> np.ndarray:
@@ -236,6 +241,13 @@ class MomentumEngine:
         self.state = "SEARCHING"
         self._swing_low_price = math.inf
         self._bars_since_swing_low = 0
+        # Schlusskurs des zuletzt verarbeiteten Balkens, unabhängig vom
+        # Zustand -- wird gebraucht, um nach einer geschlossenen Position
+        # die Swing-Tief-Referenz mit dem zuletzt beobachteten MARKTPREIS
+        # neu zu starten (siehe record_exit), nicht mit dem Ausführungspreis
+        # des eigenen Exits (der z.B. bei einem Stop durch Slippage/die
+        # Stop-Schwelle selbst systematisch von diesem abweicht).
+        self._last_close = 0.0
         self._flagpole_peak = 0.0
         self._flagpole_gain_abs = 0.0
         self._pullback_low = math.inf
@@ -289,6 +301,8 @@ class MomentumEngine:
                 "process_bar() aufgerufen, während ein BreakoutEvent noch unbeantwortet ist -- "
                 "vorher record_entry() oder decline_entry() aufrufen."
             )
+
+        self._last_close = close
 
         if self.state == "IN_POSITION":
             return self._process_position_bar(time, open_, high, low, close)
@@ -486,9 +500,16 @@ class MomentumEngine:
 
         self._shares_closed += shares_sold
         if self.shares_open <= 0:
-            self.state = "SEARCHING"
-            self._swing_low_price = fill_price
-            self._bars_since_swing_low = 0
+            # Swing-Tief-Referenz mit dem zuletzt beobachteten MARKTPREIS
+            # (Schlusskurs des letzten verarbeiteten Balkens) neu starten,
+            # NICHT mit fill_price -- der eigene Ausführungspreis (z.B. bei
+            # einem Stop durch Slippage UNTER der Stop-Schwelle) spiegelt
+            # den tatsächlichen Marktzustand systematisch verzerrt wider
+            # und würde eine neue Flagpole danach künstlich leichter
+            # auslösbar machen. Konsistent mit decline_entry() und dem
+            # Pullback-Invalidierungs-Pfad, die aus demselben Grund beide
+            # bereits einen Schlusskurs (nicht fill_price) verwenden.
+            self._reset_to_searching_after(self._last_close)
             return True
 
         # Teilverkauf (nur beim ersten TARGET-Treffer möglich): Stop auf
@@ -527,7 +548,7 @@ def _simulate_day(
     cash_delta = 0.0
     total_costs = 0.0
 
-    if not _daily_trend_ok(day_bars, daily_sma) or rel_vol_reference is None:
+    if not _daily_trend_ok(day_bars["close"].iloc[0], daily_sma) or rel_vol_reference is None:
         return trades, cash_delta, total_costs
 
     closes = day_bars["close"].to_numpy()

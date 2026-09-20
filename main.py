@@ -554,6 +554,7 @@ def cmd_momentum_run(
     scan_interval_seconds: int,
     poll_interval_seconds: int,
     order_fill_timeout_seconds: int,
+    order_poll_interval_seconds: float,
     flatten_minutes_before_close: int,
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
@@ -588,6 +589,7 @@ def cmd_momentum_run(
         scan_interval_seconds=scan_interval_seconds,
         poll_interval_seconds=poll_interval_seconds,
         order_fill_timeout_seconds=order_fill_timeout_seconds,
+        order_poll_interval_seconds=order_poll_interval_seconds,
         flatten_minutes_before_close=flatten_minutes_before_close,
     )
 
@@ -999,6 +1001,11 @@ def main():
         "(Kauf: stornieren; Verkauf: erneut versuchen). Standard: 30.",
     )
     momentum_run_parser.add_argument(
+        "--order-poll-interval-seconds", type=_positive_float, default=1.0,
+        help="Wie oft (Sekunden) der Order-Status während des Wartens auf eine Fill-Bestätigung "
+        "abgefragt wird (Standard: 1.0).",
+    )
+    momentum_run_parser.add_argument(
         "--flatten-minutes-before-close", type=_positive_int, default=5,
         help="Wie viele Minuten vor Sitzungsende alle offenen Positionen zwangsweise geschlossen werden "
         "(Standard: 5).",
@@ -1125,6 +1132,7 @@ def main():
                 args.scan_interval_seconds,
                 args.poll_interval_seconds,
                 args.order_fill_timeout_seconds,
+                args.order_poll_interval_seconds,
                 args.flatten_minutes_before_close,
             )
     except (RuntimeError, ValueError) as e:

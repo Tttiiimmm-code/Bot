@@ -28,6 +28,28 @@ _DATA_DELAY = timedelta(minutes=20)
 _CALENDAR_DAYS_PER_TRADING_DAY = 1.6
 
 
+def _filter_regular_session(bars: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    """Extrahiert aus einer Multi-Symbol-Minuten-Bars-Antwort (wie von
+    StockHistoricalDataClient.get_stock_bars(...).df zurückgegeben) die
+    OHLCV-Bars EINES Symbols, gefiltert auf reguläre US-Handelszeiten
+    (9:30-16:00 ET) -- Vor-/Nachbörslich fließt sonst mit untypisch
+    geringem Volumen in Muster-/Volumenvergleiche ein. Geteilte Grundlage
+    für Broker.get_minute_bars UND den Live-Bot
+    (tradingbot/momentum_live.py), damit beide garantiert dieselbe
+    Definition von "regulärer Handelstag" verwenden -- eine künftige
+    Änderung (z.B. Frühschluss-Behandlung) muss so nur an einer Stelle
+    gemacht werden."""
+    if bars.empty:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+
+    symbol_bars = bars.xs(symbol, level="symbol")
+    ny_index = symbol_bars.index.tz_convert("America/New_York")
+    session_mask = (ny_index.time >= time(9, 30)) & (ny_index.time < time(16, 0))
+    regular_session = symbol_bars.loc[session_mask].copy()
+    regular_session.index = ny_index[session_mask]
+    return regular_session[["open", "high", "low", "close", "volume"]]
+
+
 @dataclass
 class Position:
     qty: float
@@ -93,15 +115,7 @@ class Broker:
             adjustment=Adjustment.ALL,
         )
         bars = self.data_client.get_stock_bars(request).df
-        if bars.empty:
-            return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
-
-        symbol_bars = bars.xs(self.config.symbol, level="symbol")
-        ny_index = symbol_bars.index.tz_convert("America/New_York")
-        session_mask = (ny_index.time >= time(9, 30)) & (ny_index.time < time(16, 0))
-        regular_session = symbol_bars.loc[session_mask].copy()
-        regular_session.index = ny_index[session_mask]
-        return regular_session[["open", "high", "low", "close", "volume"]]
+        return _filter_regular_session(bars, self.config.symbol)
 
     def get_position(self) -> Position | None:
         """Gibt die offene Position zurück, oder None, wenn keine existiert.

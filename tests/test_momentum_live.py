@@ -281,6 +281,16 @@ def test_validate_live_config_rejects_daily_max_loss_out_of_range():
         _validate_live_config(config)
 
 
+def test_validate_live_config_rejects_zero_flatten_minutes_before_close():
+    """flatten_minutes_before_close=0 liesse flatten_cutoff_et exakt mit
+    session_close_et zusammenfallen -- der Zwangsverkauf hätte dann keinen
+    Puffer mehr, um vor dem tatsächlichen Handelsschluss noch auszuführen.
+    Dieselbe Grenze wie main.py's --flatten-minutes-before-close (_positive_int)."""
+    config = _live_config(flatten_minutes_before_close=0)
+    with pytest.raises(ValueError, match="flatten_minutes_before_close"):
+        _validate_live_config(config)
+
+
 # ---------------------------------------------------------------------------
 # run_once: Sitzungsgrenzen / Tageswechsel
 # ---------------------------------------------------------------------------
@@ -563,6 +573,34 @@ def test_end_of_day_flatten_closes_open_positions():
 
     trading_client.fill_price = 12.50
     bot.run_once(now=_et(15, 56))  # 4 Min vor Sitzungsende (16:00 ET)
+
+    assert bot._flatten_triggered_today is True
+    assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_flatten_fires_even_when_now_jumps_straight_past_session_close():
+    """Regressionstest: der Flatten-Cutoff-Zweig muss VOR jedem 'now_et >=
+    session_close_et -> Zyklus überspringen'-Check liegen. Sonst könnte
+    ein grobes --poll-interval-seconds (>= --flatten-minutes-before-close
+    * 60) das gesamte Cutoff-Fenster zwischen zwei Zyklen überspringen --
+    ein Zyklus kurz VOR dem Cutoff, der nächste schon NACH Sitzungsende,
+    ohne dass je ein now-Wert INNERHALB des Cutoff-Fensters gesehen wurde
+    -- und eine offene Position bliebe bis zum nächsten Handelstag
+    ungeschlossen liegen (entgegen dem dokumentierten 'kein
+    Overnight-Halten'-Versprechen)."""
+    data_client = _make_data_client("AAPL")
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner, live_config=_live_config(flatten_minutes_before_close=5))
+
+    bot.run_once(now=_et(9, 36))
+    assert bot._symbols["AAPL"].engine.in_position
+
+    # Springt DIREKT auf 16:05 ET -- nach Sitzungsende (16:00), OHNE je
+    # einen now-Wert innerhalb des Cutoff-Fensters [15:55, 16:00) gesehen
+    # zu haben (simuliert ein grobes Poll-Intervall).
+    trading_client.fill_price = 12.50
+    bot.run_once(now=_et(16, 5))
 
     assert bot._flatten_triggered_today is True
     assert not bot._symbols["AAPL"].engine.in_position

@@ -7,7 +7,9 @@ import pandas as pd
 import pytest
 
 from tradingbot.momentum import (
+    BreakoutEvent,
     ExitReason,
+    MomentumEngine,
     run_momentum_backtest,
 )
 
@@ -558,3 +560,50 @@ def test_end_to_end_smoke_on_realistic_random_walk_minute_data():
     for trade in result.trades:
         assert trade.shares_closed == trade.shares
         assert trade.entry_price > 0
+
+
+def _make_engine() -> MomentumEngine:
+    return MomentumEngine(
+        flagpole_min_gain_pct=0.05,
+        flagpole_max_bars=5,
+        min_pullback_bars=2,
+        max_pullback_bars=5,
+        max_pullback_retrace_pct=0.5,
+        reward_risk_ratio=2.0,
+        extension_multiplier=4.0,
+        min_relative_volume=2.0,
+    )
+
+
+def test_record_exit_reseeds_swing_low_with_bar_close_not_fill_price():
+    """Regressionstest: nach einer vollständig geschlossenen Position muss
+    die Swing-Tief-Referenz mit dem zuletzt beobachteten SCHLUSSKURS neu
+    gestartet werden, NICHT mit dem Ausführungspreis (fill_price) des
+    Exits -- der weicht z.B. bei einem Stop durch Slippage systematisch
+    UNTER der Stop-Schwelle ab und würde (fälschlich als neue Referenz
+    verwendet) eine nachfolgende Flagpole künstlich leichter auslösbar
+    machen. decline_entry() und der Pullback-Invalidierungspfad
+    (_reset_to_searching_after) verwenden beide bereits konsequent einen
+    Schlusskurs -- record_exit() war hier die einzige Ausnahme."""
+    engine = _make_engine()
+    entry_time = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", entry_time, 12.20, 11.30, 0.90)
+    engine.record_entry(10, 12.20, entry_time)
+
+    # Docht durch den Stop (low <= 11.30), aber der Balken schließt danach
+    # deutlich höher wieder (close=11.55) -- ein realistischer "Spike-down
+    # und Erholung"-Balken.
+    stop_bar_time = pd.Timestamp("2024-01-10 09:40")
+    events = engine.process_bar(
+        stop_bar_time, 11.50, 11.60, 11.00, 11.55, 500,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert len(events) == 1
+    assert events[0].reason == ExitReason.STOP
+
+    # Realer Fill (inkl. Slippage) liegt UNTER sowohl der Stop-Schwelle als
+    # auch dem Balken-Schlusskurs.
+    engine.record_exit(10, 11.25)
+
+    assert engine.state == "SEARCHING"
+    assert engine._swing_low_price == pytest.approx(11.55)
