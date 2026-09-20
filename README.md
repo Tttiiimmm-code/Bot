@@ -202,6 +202,38 @@ python main.py run
 
 Mit `Strg+C` sauber beenden.
 
+## Momentum-Day-Trading-Backtest (experimentell)
+
+Historischer Backtest einer regelbasierten Näherung der öffentlich bekannten
+["Warrior Trading" Momentum-Day-Trading-Strategie](https://www.warriortrading.com/momentum-day-trading-strategy/)
+(Ross Cameron) auf Minutendaten: Bull-Flag- bzw. Flat-Top-Breakout-Muster, 2:1-Chance-Risiko-
+Ziel mit hälftigem Teilverkauf, Breakeven-Stop, Ausstieg bei erster roter Kerze oder
+"Extension Bar".
+
+```bash
+python main.py momentum-backtest --symbol TSLA --days 200 \
+  --daily-trend-window 20 --lookback-days 10 --flagpole-min-gain-pct 0.015 --min-relative-volume 1.5
+```
+
+**Wichtige Einschränkungen -- unbedingt lesen, bevor die Ergebnisse interpretiert werden:**
+
+- **Nur für historische Analyse, nicht live handelbar.** Die Strategie beruht darauf, die erste
+  Kerze nach einem Pullback in Echtzeit zu kaufen. Alpacas kostenloser Datenplan liefert
+  Minutendaten mit demselben Sicherheitsabstand wie die Tagesdaten (`_DATA_DELAY`), das ist für
+  diese Strategie keine belastbare Live-Basis. Es gibt bewusst **keinen** `run`-Modus dafür.
+- **Kein markweiter Scanner.** Die Original-Strategie filtert täglich ~5000 Aktien nach Float
+  (<100 Mio., ideal <20 Mio.) und News-Katalysator. Alpacas Marktdaten-API liefert weder Float
+  noch ist hier eine News-Anbindung eingebaut -- dieser Backtest bekommt ein bereits
+  feststehendes Symbol übergeben, er durchsucht nicht den Gesamtmarkt.
+- **Regelbasierte Näherung, kein Pixel-genauer Nachbau.** Bull Flag/Flat Top sind im Original
+  diskretionäre Chartmuster ("das sieht sauber aus"); Schwellenwerte wie Flagpole-Mindestanstieg
+  oder "Extension Bar" sind im Artikel nicht numerisch definiert und wurden hier sinnvoll, aber
+  notwendigerweise etwas willkürlich gewählt (siehe `tradingbot/momentum.py`-Modul-Docstring und
+  `--help` für alle Parameter-Defaults).
+- Standardmäßig werden die ersten `--daily-trend-window` bzw. `--lookback-days` Handelstage des
+  geladenen Zeitraums übersprungen (zu wenig Vortage für Trendfilter/Relativvolumen) -- die
+  CLI-Ausgabe zeigt genau, wie viele.
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
@@ -265,7 +297,7 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
@@ -274,6 +306,7 @@ tradingbot/
   backtest.py          Vektor-Backtest inkl. Transaktionskosten
   validation.py         Out-of-Sample-Validierung (ein Train-/Test-Split)
   walkforward.py        Out-of-Sample-Validierung über mehrere Zeitfenster
+  momentum.py            Momentum-Day-Trading-Backtest auf Minutendaten (experimentell)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 

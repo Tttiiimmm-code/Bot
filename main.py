@@ -73,6 +73,13 @@ def _symbol(value: str) -> str:
     return symbol
 
 
+def _positive_float(value: str) -> float:
+    x = float(value)
+    if not (math.isfinite(x) and x > 0):
+        raise argparse.ArgumentTypeError(f"muss eine positive, endliche Zahl sein, nicht {x}")
+    return x
+
+
 def _window_or_disabled(value: str) -> int:
     """Für trend-window/rsi-window: 0 deaktiviert den Filter, sonst wie
     bei --days/long_window durch MAX_WINDOW vor einem OverflowError in
@@ -382,6 +389,86 @@ def cmd_walkforward(
     )
 
 
+def cmd_momentum_backtest(
+    config: Config,
+    calendar_days: int,
+    max_risk_dollars: float,
+    reward_risk_ratio: float,
+    min_relative_volume: float,
+    lookback_days: int,
+    daily_trend_window: int,
+    flagpole_min_gain_pct: float,
+    flagpole_max_bars: int,
+    min_pullback_bars: int,
+    max_pullback_bars: int,
+    max_pullback_retrace_pct: float,
+    extension_multiplier: float,
+    commission_pct: float,
+    slippage_pct: float,
+):
+    from tradingbot.momentum import run_momentum_backtest
+
+    broker = Broker(config)
+    bars = broker.get_minute_bars(calendar_days)
+    if bars.empty:
+        print(f"Keine Minuten-Kursdaten für {config.symbol} erhalten.")
+        return
+
+    result = run_momentum_backtest(
+        bars,
+        max_risk_dollars=max_risk_dollars,
+        reward_risk_ratio=reward_risk_ratio,
+        min_relative_volume=min_relative_volume,
+        lookback_days=lookback_days,
+        daily_trend_window=daily_trend_window,
+        flagpole_min_gain_pct=flagpole_min_gain_pct,
+        flagpole_max_bars=flagpole_max_bars,
+        min_pullback_bars=min_pullback_bars,
+        max_pullback_bars=max_pullback_bars,
+        max_pullback_retrace_pct=max_pullback_retrace_pct,
+        extension_multiplier=extension_multiplier,
+        commission_pct=commission_pct,
+        slippage_pct=slippage_pct,
+    )
+
+    print(f"Symbol:                {config.symbol}")
+    print(f"Zeitraum:              {bars.index[0]} - {bars.index[-1]} ({calendar_days} Kalendertage angefragt)")
+    print(
+        f"Tage ausgewertet:      {result.days_evaluated} "
+        f"({result.days_skipped_insufficient_lookback} übersprungen: zu wenig Vortage für Relativvolumen, "
+        f"{result.days_skipped_insufficient_trend_history} übersprungen: zu wenig Vortage für Trend-SMA)"
+    )
+    print(
+        f"Parameter:             Risiko/Trade=${max_risk_dollars:.0f}, Ziel={reward_risk_ratio:.1f}:1, "
+        f"Rel.Volumen>={min_relative_volume:.1f}x, Trend-SMA={daily_trend_window}T"
+    )
+    print()
+    if not result.trades:
+        print("Keine Setups erkannt (siehe README für die Einschränkungen dieser Näherung).")
+        return
+
+    print(f"{'Datum':<12} {'Muster':<10} {'Einstieg':>12} {'Stop':>10} {'Stück':>7} {'PnL':>10}")
+    print("-" * 65)
+    for t in result.trades:
+        marker = "+" if t.gross_pnl > 0 else ("-" if t.gross_pnl < 0 else " ")
+        print(
+            f"{str(t.day):<12} {t.pattern:<10} {t.entry_price:>11.2f} {t.initial_stop_price:>10.2f} "
+            f"{t.shares:>7} {marker}{abs(t.gross_pnl):>8.2f}"
+        )
+
+    print()
+    print(f"Trades:                {result.num_trades}")
+    print(f"Trefferquote:          {result.win_rate:.0%}")
+    print(f"Kosten (Provision+Slippage): {result.total_costs:,.2f}")
+    print(f"Endkapital:            {result.final_equity:,.2f}")
+    print(f"Gesamtrendite:         {result.total_return_pct:+.2f}%")
+    print(
+        "\nHinweis: Näherung der Warrior-Trading-Momentum-Strategie ohne markweiten Float-/"
+        "Katalysator-Scanner (siehe README) und NUR für historische Analyse -- wegen "
+        "Alpacas verzögertem Datenplan nicht live handelbar."
+    )
+
+
 def _add_strategy_arguments(subparser: argparse.ArgumentParser):
     """Fügt die für backtest und validate identischen Kosten-/Risiko-/
     Filter-Flags hinzu -- an einer Stelle definiert, damit beide
@@ -517,6 +604,111 @@ def main():
     )
     _add_strategy_arguments(walkforward_parser)
 
+    momentum_parser = subparsers.add_parser(
+        "momentum-backtest",
+        help="Historischer Backtest der Warrior-Trading-Momentum-Strategie (Bull Flag/Flat Top) auf Minutendaten.",
+    )
+    momentum_parser.add_argument(
+        "--symbol",
+        type=_symbol,
+        default=None,
+        help="Zu testendes Symbol, überschreibt SYMBOL aus .env nur für diesen Aufruf.",
+    )
+    momentum_parser.add_argument(
+        "--days",
+        type=_positive_int,
+        default=90,
+        dest="calendar_days",
+        help="Kalendertage (nicht Handelstage!) historischer Minutendaten, die geladen werden "
+        "(Standard: 90). Alpacas kostenloser Plan liefert typischerweise nur einige Monate "
+        "Minutenhistorie zurück.",
+    )
+    momentum_parser.add_argument(
+        "--max-risk-dollars",
+        type=_positive_float,
+        default=500.0,
+        help="Maximal riskierter Betrag pro Trade in Dollar, bestimmt die Positionsgröße "
+        "(Stückzahl = max_risk_dollars / Risiko pro Aktie). Standard: 500 (Artikel-Beispiel).",
+    )
+    momentum_parser.add_argument(
+        "--reward-risk-ratio",
+        type=_positive_float,
+        default=2.0,
+        help="Chance-Risiko-Verhältnis für das erste Kursziel (Artikel: 2:1). Standard: 2.0.",
+    )
+    momentum_parser.add_argument(
+        "--min-relative-volume",
+        type=_positive_float,
+        default=2.0,
+        help="Mindest-Relativvolumen (Vielfaches des Durchschnitts zur gleichen Tageszeit) für ein "
+        "gültiges Setup (Artikel-Kriterium 3). Standard: 2.0.",
+    )
+    momentum_parser.add_argument(
+        "--lookback-days",
+        type=_positive_int,
+        default=20,
+        help="Anzahl vorangehender Handelstage für den Relativvolumen-Vergleich. Standard: 20.",
+    )
+    momentum_parser.add_argument(
+        "--daily-trend-window",
+        type=_positive_int,
+        default=50,
+        help="Fenster (Handelstage) für den Tages-SMA-Trendfilter (Artikel-Kriterium 2). Standard: 50.",
+    )
+    momentum_parser.add_argument(
+        "--flagpole-min-gain-pct",
+        type=_positive_float,
+        default=0.03,
+        help="Mindestanstieg für eine gültige Flagpole (im Artikel nicht numerisch spezifiziert, "
+        "eigene Annäherung). Standard: 0.03 (3%%).",
+    )
+    momentum_parser.add_argument(
+        "--flagpole-max-bars",
+        type=_positive_int,
+        default=15,
+        help="Maximale Anzahl 1-Min-Bars, innerhalb derer der Flagpole-Anstieg stattfinden muss. Standard: 15.",
+    )
+    momentum_parser.add_argument(
+        "--min-pullback-bars",
+        type=_positive_int,
+        default=2,
+        help="Mindestanzahl Pullback-Bars vor einem gültigen Breakout-Einstieg (Artikel: '2-3 rote Kerzen'). "
+        "Standard: 2.",
+    )
+    momentum_parser.add_argument(
+        "--max-pullback-bars",
+        type=_positive_int,
+        default=5,
+        help="Nach so vielen Pullback-Bars ohne Breakout gilt das Setup als ungültig. Standard: 5.",
+    )
+    momentum_parser.add_argument(
+        "--max-pullback-retrace-pct",
+        type=_fraction_below_one,
+        default=0.5,
+        help="Zieht sich der Pullback um mehr als diesen Anteil des Flagpole-Anstiegs zurück, gilt das "
+        "Setup als ungültig (eigene Annäherung, im Artikel nicht spezifiziert). Standard: 0.5 (50%%).",
+    )
+    momentum_parser.add_argument(
+        "--extension-multiplier",
+        type=_positive_float,
+        default=4.0,
+        help="Ein Balken mit Handelsspanne >= diesem Vielfachen der durchschnittlichen Pullback-"
+        "Balkenspanne gilt als 'Extension Bar' (Artikel-Exit-Indikator #3, Schwelle eigene "
+        "Annäherung). Standard: 4.0.",
+    )
+    momentum_parser.add_argument(
+        "--commission-pct",
+        type=_fraction_below_one,
+        default=0.0,
+        help="Provision pro Order als Anteil des Ordervolumens. Standard: 0.0 (Alpaca ist provisionsfrei).",
+    )
+    momentum_parser.add_argument(
+        "--slippage-pct",
+        type=_fraction_below_one,
+        default=0.0005,
+        help="Erwartete Slippage pro Order gegenüber dem Balkenpreis. Standard: 0.05%%.",
+    )
+
     args = parser.parse_args()
 
     setup_logging()
@@ -575,6 +767,24 @@ def main():
                 args.risk_per_trade_pct,
                 args.trend_window,
                 args.rsi_window,
+            )
+        elif args.command == "momentum-backtest":
+            cmd_momentum_backtest(
+                config,
+                args.calendar_days,
+                args.max_risk_dollars,
+                args.reward_risk_ratio,
+                args.min_relative_volume,
+                args.lookback_days,
+                args.daily_trend_window,
+                args.flagpole_min_gain_pct,
+                args.flagpole_max_bars,
+                args.min_pullback_bars,
+                args.max_pullback_bars,
+                args.max_pullback_retrace_pct,
+                args.extension_multiplier,
+                args.commission_pct,
+                args.slippage_pct,
             )
     except (RuntimeError, ValueError) as e:
         print(f"Fehler: {e}", file=sys.stderr)

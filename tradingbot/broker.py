@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
 import pandas as pd
 from alpaca.common.exceptions import APIError
@@ -68,6 +68,40 @@ class Broker:
 
         symbol_bars = bars.xs(self.config.symbol, level="symbol")
         return symbol_bars["close"].tail(limit)
+
+    def get_minute_bars(self, calendar_days: int) -> pd.DataFrame:
+        """Holt Minuten-OHLCV-Bars der letzten `calendar_days` Kalendertage
+        für das konfigurierte Symbol, gefiltert auf reguläre US-
+        Handelszeiten (9:30-16:00 ET) -- Vor-/Nachbörslich fließt sonst mit
+        untypisch geringem Volumen in Muster-/Volumenvergleiche ein.
+
+        Nur für historische Analyse gedacht (z.B. Backtests intraday-
+        basierter Strategien). Für Live-Entscheidungen ungeeignet: Alpacas
+        kostenloser Datenplan liefert Minutendaten mit dem üblichen
+        Verzögerungs-Sicherheitsabstand (_DATA_DELAY), was für eine
+        Strategie, die auf die exakt erste Kerze nach einem Pullback
+        abzielt, keine belastbare Basis ist.
+        """
+        end = datetime.now(timezone.utc) - _DATA_DELAY
+        start = end - timedelta(days=calendar_days)
+
+        request = StockBarsRequest(
+            symbol_or_symbols=self.config.symbol,
+            timeframe=TimeFrame.Minute,
+            start=start,
+            end=end,
+            adjustment=Adjustment.ALL,
+        )
+        bars = self.data_client.get_stock_bars(request).df
+        if bars.empty:
+            return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+
+        symbol_bars = bars.xs(self.config.symbol, level="symbol")
+        ny_index = symbol_bars.index.tz_convert("America/New_York")
+        session_mask = (ny_index.time >= time(9, 30)) & (ny_index.time < time(16, 0))
+        regular_session = symbol_bars.loc[session_mask].copy()
+        regular_session.index = ny_index[session_mask]
+        return regular_session[["open", "high", "low", "close", "volume"]]
 
     def get_position(self) -> Position | None:
         """Gibt die offene Position zurück, oder None, wenn keine existiert.
