@@ -1,10 +1,12 @@
 """CLI-Einstiegspunkt für den Tradingbot.
 
 Nutzung:
-    python main.py run          # Live-/Paper-Trading-Loop starten
-    python main.py backtest     # Strategie gegen historische Daten testen
-    python main.py validate     # Out-of-Sample-Validierung (ein Train-/Test-Split)
-    python main.py walkforward  # Out-of-Sample-Validierung über mehrere Zeitfenster
+    python main.py run                # Live-/Paper-Trading-Loop starten
+    python main.py backtest           # Strategie gegen historische Daten testen
+    python main.py validate           # Out-of-Sample-Validierung (ein Train-/Test-Split)
+    python main.py walkforward        # Out-of-Sample-Validierung über mehrere Zeitfenster
+    python main.py momentum-backtest  # Momentum-Day-Trading-Backtest auf Minutendaten
+    python main.py scan               # Marktweiter Scanner (aktueller Marktzustand)
 """
 
 from __future__ import annotations
@@ -463,9 +465,63 @@ def cmd_momentum_backtest(
     print(f"Endkapital:            {result.final_equity:,.2f}")
     print(f"Gesamtrendite:         {result.total_return_pct:+.2f}%")
     print(
-        "\nHinweis: Näherung der Warrior-Trading-Momentum-Strategie ohne markweiten Float-/"
-        "Katalysator-Scanner (siehe README) und NUR für historische Analyse -- wegen "
-        "Alpacas verzögertem Datenplan nicht live handelbar."
+        "\nHinweis: Näherung der Warrior-Trading-Momentum-Strategie ohne Float-Filter "
+        "(siehe README) und NUR für historische Analyse -- wegen Alpacas verzögertem "
+        "Datenplan nicht live handelbar. Kandidaten-Symbole findet `python main.py scan`."
+    )
+
+
+def cmd_scan(
+    config: Config,
+    min_price: float,
+    max_price: float,
+    min_percent_change: float,
+    min_relative_volume: float,
+    relative_volume_lookback_days: int,
+    require_news: bool,
+    news_lookback_hours: int,
+    top_movers: int,
+    top_actives: int,
+):
+    from tradingbot.scanner import Scanner, ScanCriteria
+
+    scanner = Scanner(config)
+    criteria = ScanCriteria(
+        min_price=min_price,
+        max_price=max_price,
+        min_percent_change=min_percent_change,
+        min_relative_volume=min_relative_volume,
+        relative_volume_lookback_days=relative_volume_lookback_days,
+        require_news=require_news,
+        news_lookback_hours=news_lookback_hours,
+        top_movers=top_movers,
+        top_actives=top_actives,
+    )
+    candidates = scanner.scan(criteria)
+
+    print(
+        f"Kriterien: Preis ${min_price:.2f}-${max_price:.2f}, "
+        f"Tagesgewinn>={min_percent_change:.1f}%, Rel.Volumen>={min_relative_volume:.1f}x, "
+        f"News-Pflicht={'ja' if require_news else 'nein'}"
+    )
+    print()
+    if not candidates:
+        print("Keine Kandidaten gefunden.")
+        return
+
+    print(f"{'Symbol':<8} {'Preis':>9} {'Tagesgewinn':>12} {'Rel.Vol':>9} {'News':>6} {'Quelle':<14}")
+    print("-" * 62)
+    for c in candidates:
+        news = "?" if c.has_recent_news is None else ("ja" if c.has_recent_news else "nein")
+        print(
+            f"{c.symbol:<8} {c.price:>9.2f} {c.percent_change:>11.1f}% "
+            f"{c.relative_volume:>8.1f}x {news:>6} {','.join(c.sources):<14}"
+        )
+    print(
+        "\nHinweis: liefert nur den AKTUELLEN Marktzustand (Alpacas Screener-API kennt kein "
+        "historisches Datum), rein lesend -- keine Order wird ausgelöst. Kein Float-Filter "
+        "(siehe README). Symbol manuell in `momentum-backtest --symbol X` einsetzen, um es "
+        "historisch zu prüfen."
     )
 
 
@@ -709,18 +765,63 @@ def main():
         help="Erwartete Slippage pro Order gegenüber dem Balkenpreis. Standard: 0.05%%.",
     )
 
+    scan_parser = subparsers.add_parser(
+        "scan",
+        help="Marktweiter Scanner nach Warrior-Trading-Aktienauswahl-Kriterien (nur aktueller Marktzustand).",
+    )
+    scan_parser.add_argument(
+        "--min-price", type=_positive_float, default=1.0,
+        help="Untere Preisgrenze in Dollar (Standard: 1.0).",
+    )
+    scan_parser.add_argument(
+        "--max-price", type=_positive_float, default=20.0,
+        help="Obere Preisgrenze in Dollar (Standard: 20.0, Ross Camerons genereller Bereich; "
+        "fürs Small-Account-Beispiel aus dem Sample Trading Plan z.B. --min-price 5 --max-price 10).",
+    )
+    scan_parser.add_argument(
+        "--min-percent-change", type=_non_negative_finite, default=10.0,
+        help="Mindest-Tagesgewinn in Prozent (Standard: 10.0).",
+    )
+    scan_parser.add_argument(
+        "--min-relative-volume", type=_positive_float, default=5.0,
+        help="Mindest-Relativvolumen ggü. Tagesdurchschnitt der letzten N Tage (Standard: 5.0).",
+    )
+    scan_parser.add_argument(
+        "--relative-volume-lookback-days", type=_positive_int, default=30,
+        help="Anzahl Vortage für den Volumendurchschnitt (Standard: 30).",
+    )
+    scan_parser.add_argument(
+        "--require-news", action="store_true",
+        help="Nur Kandidaten mit aktueller News (siehe --news-lookback-hours) behalten "
+        "(Standard: aus -- News ist laut Strategie bevorzugt, nicht zwingend).",
+    )
+    scan_parser.add_argument(
+        "--news-lookback-hours", type=_positive_int, default=24,
+        help="Zeitfenster in Stunden für die News-Prüfung (Standard: 24).",
+    )
+    scan_parser.add_argument(
+        "--top-movers", type=_positive_int, default=30,
+        help="Wie viele Top-Tagesgewinner von Alpacas Screener-API abgefragt werden (Standard: 30).",
+    )
+    scan_parser.add_argument(
+        "--top-actives", type=_positive_int, default=30,
+        help="Wie viele Top-Symbole nach Handelsvolumen abgefragt werden (Standard: 30).",
+    )
+
     args = parser.parse_args()
 
     setup_logging()
 
     try:
         config = Config.from_env()
-        if args.command != "run" and args.symbol is not None:
-            # Nur die Analyse-Subcommands (backtest/validate/walkforward)
-            # erlauben ein Ad-hoc-Symbol -- run kennt --symbol als einziges
-            # gar nicht (siehe run-Subparser oben) und bleibt bewusst strikt
+        if args.command not in ("run", "scan") and args.symbol is not None:
+            # Nur die Analyse-Subcommands mit fest EINEM Symbol (backtest/
+            # validate/walkforward/momentum-backtest) erlauben ein Ad-hoc-
+            # Symbol. run kennt --symbol gar nicht und bleibt bewusst strikt
             # an .env gebunden, damit der Live-/Paper-Trading-Loop nie
-            # versehentlich per CLI-Flag ein anderes Symbol handelt.
+            # versehentlich per CLI-Flag ein anderes Symbol handelt. scan
+            # kennt --symbol ebenfalls nicht -- es durchsucht den ganzen
+            # Markt, nicht ein einzelnes Symbol.
             config = dataclasses.replace(config, symbol=args.symbol)
 
         if args.command == "run":
@@ -785,6 +886,19 @@ def main():
                 args.extension_multiplier,
                 args.commission_pct,
                 args.slippage_pct,
+            )
+        elif args.command == "scan":
+            cmd_scan(
+                config,
+                args.min_price,
+                args.max_price,
+                args.min_percent_change,
+                args.min_relative_volume,
+                args.relative_volume_lookback_days,
+                args.require_news,
+                args.news_lookback_hours,
+                args.top_movers,
+                args.top_actives,
             )
     except (RuntimeError, ValueError) as e:
         print(f"Fehler: {e}", file=sys.stderr)

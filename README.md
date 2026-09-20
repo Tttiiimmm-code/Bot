@@ -221,10 +221,11 @@ python main.py momentum-backtest --symbol TSLA --days 200 \
   Kerze nach einem Pullback in Echtzeit zu kaufen. Alpacas kostenloser Datenplan liefert
   Minutendaten mit demselben Sicherheitsabstand wie die Tagesdaten (`_DATA_DELAY`), das ist für
   diese Strategie keine belastbare Live-Basis. Es gibt bewusst **keinen** `run`-Modus dafür.
-- **Kein markweiter Scanner.** Die Original-Strategie filtert täglich ~5000 Aktien nach Float
-  (<100 Mio., ideal <20 Mio.) und News-Katalysator. Alpacas Marktdaten-API liefert weder Float
-  noch ist hier eine News-Anbindung eingebaut -- dieser Backtest bekommt ein bereits
-  feststehendes Symbol übergeben, er durchsucht nicht den Gesamtmarkt.
+- **Kein Float-Filter.** Die Original-Strategie filtert u.a. nach Float (<100 Mio., ideal
+  <20 Mio. Aktien). Alpacas Marktdaten-API liefert keinen Aktien-Float -- der separate
+  `python main.py scan`-Befehl (siehe unten) deckt Tagesgewinn/Preisspanne/Relativvolumen/News
+  ab, aber keinen Float. Dieser Backtest bekommt weiterhin ein bereits feststehendes Symbol
+  übergeben (z.B. einen Kandidaten aus `scan`), er durchsucht nicht selbst den Gesamtmarkt.
 - **Regelbasierte Näherung, kein Pixel-genauer Nachbau.** Bull Flag/Flat Top sind im Original
   diskretionäre Chartmuster ("das sieht sauber aus"); Schwellenwerte wie Flagpole-Mindestanstieg
   oder "Extension Bar" sind im Artikel nicht numerisch definiert und wurden hier sinnvoll, aber
@@ -233,6 +234,38 @@ python main.py momentum-backtest --symbol TSLA --days 200 \
 - Standardmäßig werden die ersten `--daily-trend-window` bzw. `--lookback-days` Handelstage des
   geladenen Zeitraums übersprungen (zu wenig Vortage für Trendfilter/Relativvolumen) -- die
   CLI-Ausgabe zeigt genau, wie viele.
+
+## Marktweiter Scanner (experimentell)
+
+Sucht den AKTUELLEN Marktzustand nach Kandidaten, die den in zwei Warrior-Trading-PDFs
+("Stock Selection", "Sample Trading Plan") beschriebenen Aktienauswahl-Kriterien entsprechen:
+Tagesgewinn (Standard: ≥10%), Kursspanne (Standard: $1-$20), relatives Volumen (Standard: ≥5x
+30-Tage-Durchschnitt) und optional ein aktueller News-Katalysator.
+
+```bash
+python main.py scan
+python main.py scan --min-price 5 --max-price 10 --min-relative-volume 2 --require-news
+```
+
+Nutzt Alpacas Screener-API (`get_market_movers`/`get_most_actives`, Top-Gewinner bzw.
+höchstes Handelsvolumen) als Kandidatenpool statt selbst tausende Symbole einzeln abzufragen,
+und die News-API für die Katalysator-Prüfung.
+
+**Wichtige Einschränkungen:**
+
+- **Rein lesend, nur aktueller Marktzustand.** Alpacas Screener-API kennt keinen historischen
+  Datumsparameter -- der Scanner lässt sich NICHT in den historischen `momentum-backtest`
+  einbauen. Er eignet sich, um manuell einen Kandidaten zu finden, den man dann per
+  `momentum-backtest --symbol X` historisch prüft. Es werden nie Orders ausgelöst.
+- **Kein Float-Filter** (siehe oben, Alpacas API liefert keinen Aktien-Float).
+- **Relatives Volumen wird auf einen vollen Handelstag projiziert**, wenn die Sitzung noch
+  läuft (sonst würde das bisherige Tagesvolumen systematisch zu niedrig wirken, gerade
+  vormittags). Der letzte verfügbare Handelstag (inkl. Wochenenden/Feiertagen/Frühschluss-Tagen)
+  wird über Alpacas echten Handelskalender bestimmt, nicht geraten.
+- **News-Prüfung ist eine Näherung** (reine Präsenzprüfung eines Artikels im Zeitfenster, keine
+  inhaltliche Bewertung, ob die News tatsächlich ein plausibler Kursgrund ist) und über alle
+  Kandidaten hinweg auf eine Gesamtzahl Artikel gedeckelt (`_NEWS_FETCH_LIMIT`), nicht
+  erschöpfend.
 
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
@@ -297,7 +330,7 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
@@ -307,6 +340,7 @@ tradingbot/
   validation.py         Out-of-Sample-Validierung (ein Train-/Test-Split)
   walkforward.py        Out-of-Sample-Validierung über mehrere Zeitfenster
   momentum.py            Momentum-Day-Trading-Backtest auf Minutendaten (experimentell)
+  scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 
