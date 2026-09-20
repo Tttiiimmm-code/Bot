@@ -2,7 +2,7 @@ import argparse
 
 import pytest
 
-from main import _fraction_below_one, _parse_grid, _positive_int, _train_ratio
+from main import _fraction_below_one, _parse_grid, _positive_int, _symbol, _train_ratio
 
 
 def test_parses_valid_grid():
@@ -97,3 +97,68 @@ def test_fraction_below_one_rejects_negative_and_one_or_more():
         _fraction_below_one("1")
     with pytest.raises(argparse.ArgumentTypeError):
         _fraction_below_one("1.5")
+
+
+def test_symbol_normalizes_case_and_whitespace():
+    assert _symbol("aapl") == "AAPL"
+    assert _symbol("  msft  ") == "MSFT"
+
+
+def test_symbol_rejects_empty_string():
+    with pytest.raises(argparse.ArgumentTypeError):
+        _symbol("")
+    with pytest.raises(argparse.ArgumentTypeError):
+        _symbol("   ")
+
+
+def _make_config(symbol: str):
+    from tradingbot.config import Config
+
+    return Config(
+        api_key="k",
+        secret_key="s",
+        paper=True,
+        symbol=symbol,
+        qty=1.0,
+        short_window=20,
+        long_window=50,
+        poll_interval_seconds=60,
+        stop_loss_pct=0.08,
+        take_profit_pct=0.15,
+        risk_per_trade_pct=0.0,
+        trend_window=200,
+        rsi_window=14,
+    )
+
+
+def test_backtest_symbol_flag_overrides_env_config(monkeypatch):
+    """--symbol soll für einen einzelnen backtest/validate-Aufruf das
+    SYMBOL aus .env überschreiben, ohne .env selbst zu ändern -- so lassen
+    sich mehrere Symbole durchtesten, ohne die Datei jedes Mal zu editieren."""
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "backtest", "--symbol", "msft"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_configs = []
+    monkeypatch.setattr(main_module, "cmd_backtest", lambda config, *a, **k: seen_configs.append(config))
+
+    main_module.main()
+
+    assert seen_configs[0].symbol == "MSFT"
+
+
+def test_run_command_rejects_symbol_flag(monkeypatch):
+    """Sicherheitsrelevant: run (Live-/Paper-Trading-Loop) darf --symbol gar
+    nicht erst als Option kennen -- sonst könnte ein CLI-Tippfehler
+    versehentlich ein anderes als das in .env konfigurierte Symbol
+    handeln lassen. argparse lehnt die unbekannte Option mit SystemExit ab,
+    bevor cmd_run() je aufgerufen wird."""
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "run", "--symbol", "MSFT"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    monkeypatch.setattr(main_module, "cmd_run", lambda config: pytest.fail("cmd_run darf nicht aufgerufen werden"))
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+

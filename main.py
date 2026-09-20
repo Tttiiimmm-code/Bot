@@ -8,6 +8,7 @@ Nutzung:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import logging
 import math
 import sys
@@ -59,6 +60,15 @@ def _non_negative_finite(value: str) -> float:
     if not (math.isfinite(x) and x >= 0):
         raise argparse.ArgumentTypeError(f"muss eine nicht-negative, endliche Zahl sein, nicht {x}")
     return x
+
+
+def _symbol(value: str) -> str:
+    """Normalisiert wie Config.from_env() (strip + Großschreibung), damit
+    --symbol AAPL und --symbol aapl identisch behandelt werden."""
+    symbol = value.strip().upper()
+    if not symbol:
+        raise argparse.ArgumentTypeError("darf nicht leer sein")
+    return symbol
 
 
 def _window_or_disabled(value: str) -> int:
@@ -262,6 +272,13 @@ def _add_strategy_arguments(subparser: argparse.ArgumentParser):
     rückwärtskompatibel abgeschaltet bleiben.
     """
     subparser.add_argument(
+        "--symbol",
+        type=_symbol,
+        default=None,
+        help="Zu testendes Symbol, überschreibt SYMBOL aus .env nur für diesen Aufruf "
+        "(z.B. --symbol MSFT). Standard: SYMBOL aus .env.",
+    )
+    subparser.add_argument(
         "--commission-pct",
         type=_fraction_below_one,
         default=0.0,
@@ -344,6 +361,12 @@ def main():
 
     try:
         config = Config.from_env()
+        if args.command != "run" and args.symbol is not None:
+            # Nur backtest/validate erlauben ein Ad-hoc-Symbol -- run bleibt
+            # bewusst strikt an .env gebunden, damit der Live-/Paper-
+            # Trading-Loop nie versehentlich per CLI-Flag ein anderes
+            # Symbol als das konfigurierte handelt.
+            config = dataclasses.replace(config, symbol=args.symbol)
 
         if args.command == "run":
             cmd_run(config)

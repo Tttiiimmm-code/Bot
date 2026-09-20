@@ -124,6 +124,14 @@ cp .env.example .env
 python main.py backtest --days 250
 ```
 
+Anderes Symbol testen, ohne `SYMBOL` in `.env` zu ändern (gilt nur für diesen Aufruf,
+`run` kennt `--symbol` bewusst nicht -- siehe unten):
+
+```bash
+python main.py backtest --symbol MSFT --days 600
+python main.py validate --symbol MSFT --days 600
+```
+
 Die CLI (`backtest`/`validate`) aktiviert standardmäßig alle Verbesserungen: Trendfilter
 (200-Tage-SMA), RSI-Filter, Trailing-Stop (8%), Take-Profit (15%), Slippage (0,05%). Volle
 Kontrolle über alle Flags:
