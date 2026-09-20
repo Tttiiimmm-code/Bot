@@ -1,8 +1,10 @@
 """CLI-Einstiegspunkt für den Tradingbot.
 
 Nutzung:
-    python main.py run         # Live-/Paper-Trading-Loop starten
-    python main.py backtest    # Strategie gegen historische Daten testen
+    python main.py run          # Live-/Paper-Trading-Loop starten
+    python main.py backtest     # Strategie gegen historische Daten testen
+    python main.py validate     # Out-of-Sample-Validierung (ein Train-/Test-Split)
+    python main.py walkforward  # Out-of-Sample-Validierung über mehrere Zeitfenster
 """
 
 from __future__ import annotations
@@ -259,6 +261,127 @@ def cmd_validate(
     print(f"  Differenz Test-Train: {gap:+.2f} Prozentpunkte {'(Overfitting-Warnsignal)' if gap < -10 else ''}")
 
 
+def cmd_walkforward(
+    config: Config,
+    days: int,
+    grid: list[tuple[int, int]],
+    train_window: int,
+    test_window: int,
+    step: int | None,
+    expanding: bool,
+    commission_pct: float,
+    slippage_pct: float,
+    stop_loss_pct: float,
+    take_profit_pct: float,
+    risk_per_trade_pct: float,
+    trend_window: int,
+    rsi_window: int,
+):
+    from tradingbot.walkforward import walk_forward_validate
+
+    broker = Broker(config)
+    closes = broker.get_recent_closes(limit=days)
+    if closes.empty:
+        print(f"Keine historischen Daten für {config.symbol} erhalten.")
+        return
+
+    # validate() prüft jede Grid-Kombination einzeln und überspringt nur die,
+    # die zu wenig Historie hat (siehe validation.py) -- der Lauf schlägt also
+    # erst fehl, wenn SELBST die kleinste Kombination im Grid nicht genug
+    # Trainingshistorie bekommt. min() statt max() über das Grid, sonst würde
+    # dieser Hinweis fälschlich "der Lauf schlägt fehl" melden, obwohl eine
+    # kleinere SMA-Kombination im selben Grid noch erfolgreich liefe.
+    best_case_required_history = max(min(l for _, l in grid), trend_window, rsi_window)
+    if train_window < best_case_required_history + 1:
+        if expanding:
+            # Bei --expanding wächst das Trainingsfenster mit jedem Schritt
+            # (train_window + i*step) -- ein zu kleines ANFANGS-Fenster lässt
+            # nur die ersten Fenster scheitern, spätere (größere) können
+            # trotzdem funktionieren. Anders als bei rolling (feste
+            # Fenstergröße über den ganzen Lauf) ist das kein Totalausfall.
+            print(
+                f"Hinweis: Das anfängliche --train-window {train_window} liegt unter den "
+                f"benötigten {best_case_required_history + 1} Handelstagen (selbst für die "
+                f"kleinste SMA-Kombination im Grid bzw. den Trend-/RSI-Filter) -- bei "
+                f"--expanding werden deshalb nur die ersten Fenster übersprungen, bis das "
+                f"wachsende Trainingsfenster groß genug ist.\n"
+            )
+        else:
+            print(
+                f"Hinweis: --train-window {train_window} liegt unter den benötigten "
+                f"{best_case_required_history + 1} Handelstagen (selbst für die kleinste "
+                f"SMA-Kombination im Grid bzw. den Trend-/RSI-Filter) -- jedes Zeitfenster wird "
+                f"deshalb übersprungen und der Lauf schlägt fehl (--train-window vergrößern, "
+                f"--trend-window/--rsi-window verkleinern oder eine kleinere SMA-Kombination "
+                f"ins Grid aufnehmen).\n"
+            )
+
+    result = walk_forward_validate(
+        closes,
+        grid,
+        train_window=train_window,
+        test_window=test_window,
+        step=step,
+        expanding=expanding,
+        commission_pct=commission_pct,
+        slippage_pct=slippage_pct,
+        stop_loss_pct=stop_loss_pct,
+        take_profit_pct=take_profit_pct,
+        risk_per_trade_pct=risk_per_trade_pct,
+        trend_window=trend_window,
+        rsi_window=rsi_window,
+    )
+
+    print(f"Symbol:          {config.symbol}")
+    print(f"Zeitraum:        {closes.index[0].date()} - {closes.index[-1].date()} ({len(closes)} Tage)")
+    print(
+        f"Fenster:         Training={train_window}, Test={test_window}, "
+        f"Schritt={step if step else test_window}, Modus={'expanding' if expanding else 'rolling'}"
+    )
+    print(
+        f"Filter/Exits:    Trend={trend_window if trend_window else 'aus'}, "
+        f"RSI={rsi_window if rsi_window else 'aus'}, "
+        f"Stop={stop_loss_pct:.1%}, Take-Profit={take_profit_pct:.1%}, "
+        f"Risiko/Trade={risk_per_trade_pct:.1%}"
+    )
+    print()
+    print(f"{'#':>3} {'Training':^23} {'Test':^23} {'SMA':<8} {'Train':>9} {'Test':>9} {'Gap':>8}")
+    print("-" * 92)
+    for w in result.windows:
+        best = w.result.best
+        gap = best.test.return_pct - best.train.return_pct
+        flag = " *" if gap < -10 else ""
+        sma = f"{best.short_window}/{best.long_window}"
+        print(
+            f"{w.window_index:>3} "
+            f"{best.train.start.date()!s:>10} - {best.train.end.date()!s:<10} "
+            f"{best.test.start.date()!s:>10} - {best.test.end.date()!s:<10} "
+            f"{sma:<8} "
+            f"{best.train.return_pct:>+8.2f}% {best.test.return_pct:>+8.2f}% {gap:>+7.2f}{flag}"
+        )
+
+    print()
+    print(f"Fenster gesamt:              {len(result.windows)}")
+    print(f"Positive Testfenster:        {result.win_rate:.0%}")
+    print(f"Mittelwert Testrendite:      {result.mean_test_return_pct:+.2f}%")
+    print(f"Median Testrendite:          {result.median_test_return_pct:+.2f}%")
+    if result.compounded_test_return_pct is not None:
+        print(f"Verkettete Testrendite:      {result.compounded_test_return_pct:+.2f}% "
+              f"(simuliert fortlaufendes Neu-Optimieren + Handeln nur im jeweils folgenden Testfenster)")
+    else:
+        print(
+            "Verkettete Testrendite:      nicht verfügbar (Testfenster überlappen sich bei "
+            "--step < --test-window -- Mittelwert/Median oben verwenden)"
+        )
+    print(
+        "\nHinweis: '*' markiert Fenster mit Test-Train-Differenz < -10 Prozentpunkte "
+        "(Overfitting-Warnsignal für dieses einzelne Fenster). Einzelne markierte Fenster sind "
+        "normal; viele markierte Fenster oder eine stark negative verkettete Testrendite "
+        "deuten darauf hin, dass die Parametersuche der Strategie nicht robust über "
+        "verschiedene Marktphasen hinweg funktioniert."
+    )
+
+
 def _add_strategy_arguments(subparser: argparse.ArgumentParser):
     """Fügt die für backtest und validate identischen Kosten-/Risiko-/
     Filter-Flags hinzu -- an einer Stelle definiert, damit beide
@@ -355,6 +478,45 @@ def main():
     )
     _add_strategy_arguments(validate_parser)
 
+    walkforward_parser = subparsers.add_parser(
+        "walkforward",
+        help="Walk-Forward-Validierung: validate() über mehrere aufeinanderfolgende Zeitfenster wiederholen.",
+    )
+    walkforward_parser.add_argument(
+        "--days", type=_positive_int, default=1500, help="Anzahl historischer Handelstage (Standard: 1500)."
+    )
+    walkforward_parser.add_argument(
+        "--grid",
+        type=_parse_grid,
+        default=[(5, 20), (10, 30), (20, 50), (50, 200)],
+        help="Zu testende SMA-Kombinationen als 'kurz:lang,kurz:lang,...' (Standard: 5:20,10:30,20:50,50:200).",
+    )
+    walkforward_parser.add_argument(
+        "--train-window",
+        type=_positive_int,
+        default=252,
+        help="Größe des Trainingsfensters in Handelstagen (Standard: 252, ca. 1 Jahr).",
+    )
+    walkforward_parser.add_argument(
+        "--test-window",
+        type=_positive_int,
+        default=63,
+        help="Größe des Testfensters in Handelstagen (Standard: 63, ca. 1 Quartal).",
+    )
+    walkforward_parser.add_argument(
+        "--step",
+        type=_positive_int,
+        default=None,
+        help="Schrittweite pro Fenster in Handelstagen (Standard: gleich --test-window, "
+        "d.h. nicht überlappende Testfenster).",
+    )
+    walkforward_parser.add_argument(
+        "--expanding",
+        action="store_true",
+        help="Trainingsfenster wächst ab Tag 0 statt mit fester Größe mitzurutschen (Standard: rolling).",
+    )
+    _add_strategy_arguments(walkforward_parser)
+
     args = parser.parse_args()
 
     setup_logging()
@@ -362,10 +524,11 @@ def main():
     try:
         config = Config.from_env()
         if args.command != "run" and args.symbol is not None:
-            # Nur backtest/validate erlauben ein Ad-hoc-Symbol -- run bleibt
-            # bewusst strikt an .env gebunden, damit der Live-/Paper-
-            # Trading-Loop nie versehentlich per CLI-Flag ein anderes
-            # Symbol als das konfigurierte handelt.
+            # Nur die Analyse-Subcommands (backtest/validate/walkforward)
+            # erlauben ein Ad-hoc-Symbol -- run kennt --symbol als einziges
+            # gar nicht (siehe run-Subparser oben) und bleibt bewusst strikt
+            # an .env gebunden, damit der Live-/Paper-Trading-Loop nie
+            # versehentlich per CLI-Flag ein anderes Symbol handelt.
             config = dataclasses.replace(config, symbol=args.symbol)
 
         if args.command == "run":
@@ -388,6 +551,23 @@ def main():
                 args.days,
                 args.train_ratio,
                 args.grid,
+                args.commission_pct,
+                args.slippage_pct,
+                args.stop_loss_pct,
+                args.take_profit_pct,
+                args.risk_per_trade_pct,
+                args.trend_window,
+                args.rsi_window,
+            )
+        elif args.command == "walkforward":
+            cmd_walkforward(
+                config,
+                args.days,
+                args.grid,
+                args.train_window,
+                args.test_window,
+                args.step,
+                args.expanding,
                 args.commission_pct,
                 args.slippage_pct,
                 args.stop_loss_pct,

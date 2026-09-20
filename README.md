@@ -167,6 +167,32 @@ Warnsignal") bedeutet, dass die auf den Trainingsdaten beste Kombination auf neu
 deutlich schlechter abschneidet – ein Hinweis, der Strategie/den Parametern nicht blind zu
 vertrauen.
 
+**Walk-Forward-Validierung** (wiederholt dieselbe Out-of-Sample-Idee über mehrere
+aufeinanderfolgende Zeitfenster statt eines einzelnen Splits – ein einzelner Testzeitraum kann
+zufällig günstig oder ungünstig ausfallen, mehrere Fenster zeigen, ob eine Strategie über
+verschiedene Marktphasen hinweg konsistent funktioniert):
+
+```bash
+python main.py walkforward --symbol SPY --days 1500 --train-window 252 --test-window 63
+```
+
+`--train-window`/`--test-window` sind Handelstage (Standard: 252 ≈ 1 Jahr Training, 63 ≈ 1
+Quartal Test). Standardmäßig rutscht das Trainingsfenster mit fester Größe mit ("rolling");
+`--expanding` lässt es stattdessen ab Tag 0 wachsen. `--step` steuert, wie weit die Fenster pro
+Schritt vorrücken (Standard: `--test-window`, also nicht überlappende Testfenster). Für jedes
+Fenster wird intern `validate()` aufgerufen (nur die SMA-Fenster werden pro Zeitfenster neu
+gewählt, Kosten/Stop-Loss/Take-Profit/Trend-/RSI-Filter bleiben über alle Fenster fest – sie
+zusätzlich pro Fenster zu optimieren würde die Kombinatorik und damit das Overfitting-Risiko
+explodieren lassen).
+
+Am wichtigsten ist die **verkettete Testrendite** (compounded): sie verkettet die Testrenditen
+aller Fenster sequentiell, so als hätte man die Parameter am Ende jedes Trainingsfensters neu
+gewählt und dann nur im jeweils folgenden, ungesehenen Testfenster gehandelt – eine deutlich
+realistischere Gesamtschätzung als ein einzelner Train-/Test-Split. Viele einzelne
+Overfitting-Warnsignale (`*`) sind normal; eine stark negative verkettete Testrendite oder eine
+sehr niedrige Gewinnfensterquote deuten dagegen darauf hin, dass die Parametersuche insgesamt
+nicht robust ist.
+
 **Live-/Paper-Trading-Loop starten** (fragt im konfigurierten Intervall neue Kurse ab und
 platziert Market-Orders bei Crossover-Signalen):
 
@@ -239,14 +265,15 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
   strategy.py           Signal-Logik: Crossover + Trendfilter + RSI-Filter
   bot.py               Live-/Paper-Trading-Loop
   backtest.py          Vektor-Backtest inkl. Transaktionskosten
-  validation.py         Out-of-Sample-Validierung (Train-/Test-Split)
+  validation.py         Out-of-Sample-Validierung (ein Train-/Test-Split)
+  walkforward.py        Out-of-Sample-Validierung über mehrere Zeitfenster
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 
