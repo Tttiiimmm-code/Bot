@@ -578,6 +578,18 @@ class LiveMomentumBot:
         if bars.empty:
             return
 
+        # Aufhol-Schwelle: wird ein Symbol erst Stunden nach Sitzungsbeginn
+        # neu aufgenommen (last_bar_time war None) oder war der Bot länger
+        # offline, liefert obige Anfrage einen ganzen Rückstand an Bars auf
+        # einen Schlag. Ohne diese Schwelle würde die Schleife unten JEDES
+        # historische Signal darin sofort als ECHTE Order zum AKTUELLEN statt
+        # zum historischen Signal-Kurs ausführen -- das erzeugt genau die Serie
+        # dicht getakteter echter Trades, die ein (Wieder-)Start sonst auslöst.
+        # Nur Bars innerhalb der Schwelle um `now` dürfen echte Orders
+        # auslösen; ältere Bars laufen weiter durch die Engine (für korrekte
+        # Muster-/Swing-Tief-Erkennung), werden aber nur simuliert nachvollzogen.
+        stale_cutoff = now - timedelta(seconds=max(2 * self.live_config.poll_interval_seconds, 120))
+
         for bar_time, row in bars.iterrows():
             state.cum_volume += float(row["volume"])
             state.last_close = float(row["close"])
@@ -599,6 +611,20 @@ class LiveMomentumBot:
                 daily_trend_ok=state.trend_ok,
             )
             state.last_bar_time = bar_time
+
+            if bar_time < stale_cutoff:
+                for event in events:
+                    if isinstance(event, BreakoutEvent):
+                        state.engine.decline_entry()
+                    else:
+                        logger.warning(
+                            "Aufhol-Balken bei %s erzeugte unerwartet ein Ausstiegssignal (%s); "
+                            "Engine-Zustand wird synthetisch nachgezogen, keine echte Order.",
+                            symbol,
+                            event.reason,
+                        )
+                        state.engine.record_exit(event.shares, event.reference_price)
+                continue
 
             for i, event in enumerate(events):
                 if isinstance(event, BreakoutEvent):

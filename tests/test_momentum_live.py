@@ -484,6 +484,70 @@ def test_buy_order_race_fill_during_cancel_is_still_recorded():
 
 
 # ---------------------------------------------------------------------------
+# _process_new_bars: nachgeholter Rueckstand (stale bars)
+# ---------------------------------------------------------------------------
+
+
+def test_catch_up_backlog_after_late_discovery_does_not_place_real_orders():
+    """Regressionstest fuer den Bug, der bei einem (Wieder-)Start bzw. einer
+    erst Stunden nach Sitzungsbeginn entdeckten Kandidatin auftrat: ohne die
+    stale_cutoff-Schwelle in _process_new_bars wuerde JEDES historische
+    Signal im nachgeholten Rueckstand (hier: das komplette Bull-Flag-Setup
+    kurz nach 9:30) sofort eine ECHTE Order zum AKTUELLEN statt zum
+    historischen Signal-Kurs ausloesen -- genau das erzeugte in der Praxis
+    eine Serie dicht getakteter echter Trades direkt nach dem Start."""
+    extra_flat_bars = [
+        {"open": 12.20, "high": 12.25, "low": 12.15, "close": 12.20, "volume": 50} for _ in range(200)
+    ]
+    data_client = _make_data_client("AAPL", extra_today_bars=extra_flat_bars)
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner)
+
+    # Kandidatin wird erst Stunden nach Sitzungsbeginn entdeckt -- der
+    # Rueckstand (Bull-Flag-Setup ab 9:30 bis hierher) wird in einem
+    # einzigen Zyklus nachgeholt.
+    bot.run_once(now=_et(13, 10))
+
+    state = bot._symbols["AAPL"]
+    assert trading_client.submitted_orders == []
+    assert not state.engine.in_position
+    assert state.engine.state == "SEARCHING"
+    assert state.last_bar_time is not None
+
+
+def test_catch_up_backlog_still_enters_on_fresh_breakout_near_now():
+    """Gegenprobe zu obigem Test: ein Signal NAH an `now` (innerhalb der
+    stale_cutoff-Schwelle) muss trotz vorausgehendem Rueckstand weiterhin
+    zu einer echten Order fuehren -- der Fix darf den Bot nicht komplett
+    stumm schalten, nur die Vergangenheit."""
+    days_common = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+    }
+    quiet_backlog = [
+        {"open": 10.50, "high": 10.55, "low": 10.45, "close": 10.50, "volume": 50} for _ in range(3)
+    ]
+    today_bars = quiet_backlog + bull_flag_setup_bars()
+    bars = build_bars({**days_common, TODAY: make_day(TODAY, today_bars)}).tz_convert("UTC")
+    data_client = FakeDataClient({"AAPL": bars})
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner)
+
+    # 3 ruhige Rueckstands-Balken (9:30-9:32) vor dem eigentlichen (frischen)
+    # Bull-Flag-Setup -- der Breakout-Balken (9:38) liegt innerhalb der
+    # stale_cutoff-Schwelle um `now` (9:39) und muss trotz vorausgehendem
+    # Rueckstand real ausgefuehrt werden.
+    bot.run_once(now=_et(9, 39))
+
+    state = bot._symbols["AAPL"]
+    assert state.engine.in_position
+    buy_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY]
+    assert len(buy_orders) == 1
+
+
+# ---------------------------------------------------------------------------
 # Ausstieg (Exit-Signal -> Order -> Fill)
 # ---------------------------------------------------------------------------
 

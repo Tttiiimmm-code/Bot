@@ -332,6 +332,12 @@ Market-Sell-Orders.
   `--order-fill-timeout-seconds` (Standard 30s) füllt, wird storniert und der Einstieg verworfen;
   eine Verkaufs-Order wird dagegen NIE aufgegeben (reale Position bliebe sonst unbewacht) --
   sie wird bei Bedarf über mehrere Zyklen hinweg weiterverfolgt und erneut versucht.
+- Rückstände werden nachgeholt, aber niemals real gehandelt: wird ein Symbol erst Stunden nach
+  Sitzungsbeginn neu aufgenommen, oder war der Bot eine Weile offline (Neustart!), holt er die
+  fehlenden Minuten-Bars auf einmal nach, damit Muster (Flagge/Pullback/Swing-Tief) korrekt aus
+  der echten Historie erkannt werden -- Signale aus diesem Rückstand lösen aber KEINE echte Order
+  mehr aus, sondern werden nur simuliert nachgezogen. Nur ein Signal auf einem aktuellen Balken
+  (innerhalb der letzten `2 * --poll-interval-seconds`, mind. 120s) kann real ausgeführt werden.
 
 **Wichtige Einschränkungen -- vor Einsatz unbedingt lesen:**
 
