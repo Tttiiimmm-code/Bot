@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 
@@ -52,8 +54,13 @@ def make_config() -> Config:
     )
 
 
-def make_scanner() -> Scanner:
-    return Scanner(make_config())
+def make_scanner(asset_names: dict[str, str] | None = None) -> Scanner:
+    scanner = Scanner(make_config())
+    names = asset_names or {}
+    scanner.trading_client.get_asset = lambda symbol: SimpleNamespace(
+        tradable=True, name=names.get(symbol, f"{symbol} Inc. Common Stock")
+    )
+    return scanner
 
 
 class FakeMover:
@@ -588,3 +595,38 @@ def test_news_request_uses_a_generous_limit_not_a_tight_default():
 
     assert len(captured_requests) == 1
     assert captured_requests[0].limit >= 200
+
+
+def test_excludes_warrants_units_and_rights_by_asset_name():
+    """Regression: der Scanner nahm Warrants/Varianten auf (z.B. CRMLW neben
+    CRML). Erkennung über den Asset-Namen, nicht das Symbol (SNOW endet
+    ebenfalls auf W)."""
+    scanner = make_scanner({
+        "CRMLW": "Critical Metals Corp. Warrant",
+        "ABCU": "ABC Acquisition Corp. Units",
+        "ABCR": "ABC Acquisition Corp. Rights",
+        "SNOW": "Snowflake Inc. Class A Common Stock",
+    })
+    symbols = ["CRML", "CRMLW", "ABCU", "ABCR", "SNOW"]
+    gainers = [FakeMover(s, percent_change=25.0, price=5.0) for s in symbols]
+    bars = make_multi_symbol_bars({s: [(4.0, 100_000)] * 30 + [(5.0, 600_000)] for s in symbols})
+    install_fakes(scanner, gainers, [], bars)
+
+    candidates = scanner.scan(ScanCriteria(), reference_time=TEST_NOW)
+
+    assert sorted(c.symbol for c in candidates) == ["CRML", "SNOW"]
+
+
+def test_keeps_candidate_when_asset_lookup_fails():
+    scanner = make_scanner()
+
+    def failing_get_asset(symbol):
+        raise RuntimeError("API down")
+
+    scanner.trading_client.get_asset = failing_get_asset
+    bars = make_multi_symbol_bars({"GOOD": [(4.0, 100_000)] * 30 + [(5.0, 600_000)]})
+    install_fakes(scanner, [FakeMover("GOOD", percent_change=25.0, price=5.0)], [], bars)
+
+    candidates = scanner.scan(ScanCriteria(), reference_time=TEST_NOW)
+
+    assert [c.symbol for c in candidates] == ["GOOD"]

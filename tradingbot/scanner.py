@@ -20,7 +20,9 @@ finden, den man dann per `momentum-backtest --symbol X` historisch prüft.
 
 from __future__ import annotations
 
+import logging
 import math
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -51,6 +53,12 @@ from tradingbot.config import Config
 # Kandidaten aus dem Ergebnis fallen. Bleibt trotzdem eine Näherung, keine
 # erschöpfende Abfrage.
 _NEWS_FETCH_LIMIT = 200
+
+logger = logging.getLogger(__name__)
+
+# Keine Stammaktien: Warrants, Units (SPAC-Bündel), Rights -- erkennbar nur
+# am Asset-Namen, nicht zuverlässig am Symbol (z.B. endet auch "SNOW" auf W).
+_NON_COMMON_NAME = re.compile(r"\b(warrants?|units?|rights?)\b", re.IGNORECASE)
 
 
 def latest_trading_session(trading_client: TradingClient, now: datetime):
@@ -159,6 +167,23 @@ class Scanner:
         # tatsächliche Sitzungszeiten inkl. Frühschluss-Tage) -- kein
         # Order-Zugriff nötig, Konto-Endpoint wird hier nie aufgerufen.
         self.trading_client = TradingClient(config.api_key, config.secret_key, paper=config.paper)
+        self._is_common_stock_cache: dict[str, bool] = {}
+
+    def _is_common_stock(self, symbol: str) -> bool:
+        """False für Warrants/Units/Rights (z.B. CRMLW) und nicht handelbare
+        Assets. Bei einem API-Fehler True (Kandidat lieber behalten als den
+        Scan scheitern lassen)."""
+        cached = self._is_common_stock_cache.get(symbol)
+        if cached is not None:
+            return cached
+        try:
+            asset = self.trading_client.get_asset(symbol)
+        except Exception:
+            logger.warning("Asset-Info für %s nicht abrufbar -- Kandidat wird behalten.", symbol)
+            return True
+        result = bool(asset.tradable) and not _NON_COMMON_NAME.search(asset.name or "")
+        self._is_common_stock_cache[symbol] = result
+        return result
 
     def scan(self, criteria: ScanCriteria, reference_time: datetime | None = None) -> list[ScanCandidate]:
         """Führt einen einzelnen Scan des AKTUELLEN Marktzustands aus (siehe
@@ -260,6 +285,11 @@ class Scanner:
             projected_volume = float(today["volume"]) / session_fraction
             relative_volume = projected_volume / avg_volume
             if relative_volume < criteria.min_relative_volume:
+                continue
+
+            # Erst NACH den billigen Filtern (nur verbliebene Kandidaten
+            # kosten einen API-Aufruf, pro Symbol gecacht).
+            if not self._is_common_stock(symbol):
                 continue
 
             sources = []
