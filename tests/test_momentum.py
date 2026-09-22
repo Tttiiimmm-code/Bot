@@ -576,6 +576,45 @@ def _make_engine() -> MomentumEngine:
     )
 
 
+def test_breakout_event_and_position_diagnostics_after_entry():
+    """Regressionstest für die Nachvollziehbarkeits-Felder auf
+    BreakoutEvent (swing_low_price/flagpole_gain_pct/pullback_bars/
+    relative_volume) sowie die Positions-Properties (entry_price/
+    stop_price/target_price/avg_bar_range) -- werden für die Live-Log-
+    Anreicherung gebraucht (siehe momentum_live.py._handle_breakout /
+    _submit_exit)."""
+    engine = _make_engine()
+    bars = bull_flag_setup_bars()
+    base_time = pd.Timestamp("2024-01-10 09:30")
+
+    event = None
+    for i, bar in enumerate(bars):
+        time = base_time + pd.Timedelta(minutes=i)
+        events = engine.process_bar(
+            time, bar["open"], bar["high"], bar["low"], bar["close"], bar["volume"],
+            in_window=True, relative_volume=5.0, daily_trend_ok=True,
+        )
+        for e in events:
+            if isinstance(e, BreakoutEvent):
+                event = e
+
+    assert event is not None
+    assert event.pattern == "BULL_FLAG"
+    assert event.swing_low_price == pytest.approx(10.00)
+    assert event.flagpole_gain_pct == pytest.approx(0.20)
+    assert event.pullback_bars == 3
+    assert event.relative_volume == pytest.approx(5.0)
+
+    engine.record_entry(77, event.reference_price, event.time)
+
+    assert engine.entry_price == pytest.approx(12.20)
+    assert engine.stop_price == pytest.approx(11.30)
+    assert engine.target_price == pytest.approx(12.20 + 2.0 * event.risk_per_share)
+    # Pullback-Balken inkl. Breakout-Balken: bar3 (12.00-11.60=0.40),
+    # bar4 (11.75-11.30=0.45), bar5 (12.25-11.35=0.90).
+    assert engine.avg_bar_range == pytest.approx((0.40 + 0.45 + 0.90) / 3)
+
+
 def test_record_exit_reseeds_swing_low_with_bar_close_not_fill_price():
     """Regressionstest: nach einer vollständig geschlossenen Position muss
     die Swing-Tief-Referenz mit dem zuletzt beobachteten SCHLUSSKURS neu

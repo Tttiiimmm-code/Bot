@@ -320,6 +320,12 @@ Fund (Bull Flag/Flat Top) löst eine echte Market-Buy-Order aus (Stückzahl risi
 kapitalbasiert wie im Backtest), Ausstiegssignale (Ziel/Stop/rote Kerze/Extension Bar) echte
 Market-Sell-Orders.
 
+**Nachvollziehbarkeit:** jeder erkannte Breakout wird mit voller Begründung geloggt (Swing-Tief,
+Flaggenstange-Gewinn%, Rel.Volumen, Pullback-Balken, Stop, Risiko/Aktie) -- auch wenn der Einstieg
+danach an einem Kapital-/Positionslimit scheitert. Jede Verkaufs-Order loggt zusätzlich zum Grund
+(Ziel/Stop/rote Kerze/Extension) den Einstiegs-, Stop- und Zielkurs der Position, damit der
+Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
+
 **Sicherheitsmechanismen:**
 
 - `--max-concurrent-positions` (Standard 3): Obergrenze gleichzeitig offener Positionen.

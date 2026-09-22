@@ -180,6 +180,15 @@ class BreakoutEvent:
     reference_price: float  # Schlusskurs des Breakout-Balkens
     stop_price: float  # Pullback-Tief
     risk_per_share: float
+    # Diagnose-Felder für Nachvollziehbarkeit (Logging live/Auswertung
+    # Backtest) -- fließen NICHT in die Handelsentscheidung ein, die ist
+    # zu diesem Zeitpunkt schon getroffen. Defaults, damit bestehender
+    # Code/Tests mit den ursprünglichen 5 Positionsargumenten weiter
+    # funktionieren.
+    swing_low_price: float = 0.0
+    flagpole_gain_pct: float = 0.0
+    pullback_bars: int = 0
+    relative_volume: float | None = None
 
 
 @dataclass
@@ -250,6 +259,7 @@ class MomentumEngine:
         self._last_close = 0.0
         self._flagpole_peak = 0.0
         self._flagpole_gain_abs = 0.0
+        self._flagpole_relative_volume: float | None = None
         self._pullback_low = math.inf
         self._pullback_highs: list[float] = []
         self._pullback_bars_count = 0
@@ -275,6 +285,25 @@ class MomentumEngine:
     @property
     def shares_open(self) -> int:
         return self._shares_total - self._shares_closed
+
+    @property
+    def entry_price(self) -> float:
+        """Nur aussagekräftig, während in_position True ist (bzw.
+        unmittelbar nach record_exit() für Logging vor dem nächsten
+        Einstieg -- danach überschrieben)."""
+        return self._entry_price
+
+    @property
+    def stop_price(self) -> float:
+        return self._stop_price
+
+    @property
+    def target_price(self) -> float:
+        return self._target_price
+
+    @property
+    def avg_bar_range(self) -> float:
+        return self._avg_bar_range
 
     def process_bar(
         self,
@@ -345,6 +374,7 @@ class MomentumEngine:
         self.state = "PULLBACK"
         self._flagpole_peak = close
         self._flagpole_gain_abs = close - self._swing_low_price
+        self._flagpole_relative_volume = relative_volume
         self._pullback_low = math.inf
         self._pullback_highs = []
         self._pullback_bars_count = 0
@@ -396,6 +426,10 @@ class MomentumEngine:
             reference_price=close,
             stop_price=self._pullback_low,
             risk_per_share=risk_per_share,
+            swing_low_price=self._swing_low_price,
+            flagpole_gain_pct=self._flagpole_gain_abs / self._swing_low_price,
+            pullback_bars=self._pullback_bars_count,
+            relative_volume=self._flagpole_relative_volume,
         )
         # avg_bar_range wird schon hier vorbereitet (Pullback-Bars inkl.
         # Breakout-Balken), record_entry() übernimmt ihn unverändert.

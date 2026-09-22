@@ -667,6 +667,22 @@ class LiveMomentumBot:
                     return
 
     def _handle_breakout(self, symbol: str, state: _SymbolState, event: BreakoutEvent) -> None:
+        # Vollstaendige Muster-Begruendung -- unabhaengig davon, ob der
+        # Einstieg unten noch an Kapital-/Positionslimits scheitert, damit
+        # auch ein abgelehnter Breakout nachvollziehbar bleibt.
+        logger.info(
+            "Breakout erkannt: %s (%s) @ %.4f -- Swing-Tief=%.4f, Flaggenstange=+%.1f%%, "
+            "Rel.Vol=%s, Pullback-Balken=%d, Stop=%.4f, Risiko/Aktie=%.4f",
+            symbol,
+            event.pattern,
+            event.reference_price,
+            event.swing_low_price,
+            event.flagpole_gain_pct * 100,
+            f"{event.relative_volume:.1f}x" if event.relative_volume is not None else "?",
+            event.pullback_bars,
+            event.stop_price,
+            event.risk_per_share,
+        )
         open_positions = sum(1 for s in self._symbols.values() if s.engine.in_position)
         if open_positions >= self.live_config.max_concurrent_positions:
             logger.info(
@@ -844,8 +860,21 @@ class LiveMomentumBot:
         order = self.trading_client.submit_order(
             MarketOrderRequest(symbol=symbol, qty=event.shares, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
         )
+        # Einstieg/Stop/Ziel HIER loggen (vor record_exit() weiter unten,
+        # das die Position ggf. schließt und diese Werte damit ungültig
+        # macht) -- macht den Ausstiegsgrund nachvollziehbar (z.B. "Kurs
+        # 11.25 < Stop 11.30" statt nur "Grund=STOP" ohne Kontext).
         logger.info(
-            "Verkaufs-Order platziert: %s %s Stück (Grund=%s, id=%s)", symbol, event.shares, event.reason, order.id
+            "Verkaufs-Order platziert: %s %s Stück (Grund=%s, Kurs=%.4f, Einstieg=%.4f, Stop=%.4f, "
+            "Ziel=%.4f, id=%s)",
+            symbol,
+            event.shares,
+            event.reason,
+            event.reference_price,
+            state.engine.entry_price,
+            state.engine.stop_price,
+            state.engine.target_price,
+            order.id,
         )
 
         try:

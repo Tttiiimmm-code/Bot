@@ -447,6 +447,29 @@ def test_breakout_declined_when_max_concurrent_positions_reached():
     assert len(buy_orders) == 1
 
 
+def test_breakout_logs_pattern_reasoning_even_when_declined(caplog):
+    """Die Muster-Begruendung (Swing-Tief/Flaggenstange-Gewinn/Rel.Vol/
+    Pullback-Balken) muss geloggt werden, BEVOR ueber Kapital-/Positions-
+    limits entschieden wird -- sonst waere ein abgelehnter Breakout (wie
+    BBB hier) nicht nachvollziehbar, nur der Ablehnungsgrund selbst."""
+    caplog.set_level("INFO")
+    days_common = {
+        DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
+        DAY_MINUS_1: flat_day(DAY_MINUS_1, 10, 10.00, 50),
+    }
+    bars_a = build_bars({**days_common, TODAY: make_day(TODAY, bull_flag_setup_bars())}).tz_convert("UTC")
+    bars_b = build_bars({**days_common, TODAY: make_day(TODAY, bull_flag_setup_bars())}).tz_convert("UTC")
+    data_client = FakeDataClient({"AAA": bars_a, "BBB": bars_b})
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAA"), _make_candidate("BBB")])
+    bot = _make_bot(data_client, trading_client, scanner, live_config=_live_config(max_concurrent_positions=1))
+
+    bot.run_once(now=_et(9, 36))
+
+    breakout_logs = [r.message for r in caplog.records if "Breakout erkannt" in r.message]
+    assert any("BBB" in msg and "Swing-Tief=10.0000" in msg and "Flaggenstange=+20.0%" in msg for msg in breakout_logs)
+
+
 def test_buy_order_timeout_cancels_and_declines_entry():
     data_client = _make_data_client("AAPL")
     trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], auto_fill=False)
@@ -573,6 +596,29 @@ def test_stop_loss_exit_fills_and_closes_position():
     sell_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
     assert len(sell_orders) == 1
     assert sell_orders[0].qty == 77
+
+
+def test_submit_exit_logs_entry_stop_target_context(caplog):
+    """Der Ausstiegsgrund allein (z.B. "Grund=STOP") sagt nichts über die
+    zugrundeliegenden Schwellenwerte aus -- die Order-Log-Zeile muss
+    Einstieg/Stop/Ziel der Position mitloggen, damit der Ausstieg ohne
+    Rückgriff auf frühere Log-Zeilen nachvollziehbar ist."""
+    caplog.set_level("INFO")
+    extra_bars = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
+    data_client = _make_data_client("AAPL", extra_today_bars=extra_bars)
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner)
+
+    bot.run_once(now=_et(9, 35))
+    trading_client.fill_price = 11.30
+    bot.run_once(now=_et(9, 37))
+
+    sell_logs = [r.message for r in caplog.records if "Verkaufs-Order platziert" in r.message]
+    assert len(sell_logs) == 1
+    assert "Grund=ExitReason.STOP" in sell_logs[0]
+    assert "Einstieg=12.2000" in sell_logs[0]
+    assert "Stop=11.3000" in sell_logs[0]
 
 
 def test_stale_exit_bar_for_real_position_still_places_real_sell_order():
