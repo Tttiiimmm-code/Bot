@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+import pytest
+from alpaca.common.enums import Sort
+from alpaca.trading.enums import OrderSide, QueryOrderStatus
+from alpaca.trading.requests import GetOrdersRequest
+
+from tradingbot.report import fetch_closed_orders, group_by_trading_day, match_trades
+
+_NY = ZoneInfo("America/New_York")
+
+
+def _dt(hour: int, minute: int, day: int = 22) -> datetime:
+    return datetime(2026, 9, day, hour, minute, tzinfo=timezone.utc)
+
+
+class FakeOrder:
+    def __init__(self, symbol: str, side: OrderSide, filled_qty: float, filled_avg_price: float, filled_at):
+        self.symbol = symbol
+        self.side = side
+        self.filled_qty = filled_qty
+        self.filled_avg_price = filled_avg_price
+        self.filled_at = filled_at
+        self.submitted_at = filled_at
+
+
+class FakeTradingClient:
+    """Bildet nur get_orders() nach -- filtert nach after/until (auf
+    submitted_at) und respektiert `limit`, damit sich die Paginierung in
+    fetch_closed_orders() testen lässt."""
+
+    def __init__(self, orders: list[FakeOrder]):
+        self._orders = orders
+        self.requests: list[GetOrdersRequest] = []
+
+    def get_orders(self, filter: GetOrdersRequest):
+        self.requests.append(filter)
+        assert filter.status == QueryOrderStatus.CLOSED
+        assert filter.direction == Sort.ASC
+        # Wie die echte Alpaca-API: `after` ist EXKLUSIV (Grenze zwischen
+        # zwei Seiten darf nicht doppelt zurückgegeben werden), `until`
+        # inklusiv.
+        matching = [o for o in self._orders if filter.after < o.submitted_at <= filter.until]
+        matching.sort(key=lambda o: o.submitted_at)
+        return matching[: filter.limit]
+
+
+def test_match_trades_single_buy_single_sell():
+    orders = [
+        FakeOrder("GLND", OrderSide.BUY, 100, 3.20, _dt(15, 36)),
+        FakeOrder("GLND", OrderSide.SELL, 100, 3.03, _dt(15, 37)),
+    ]
+
+    trades, open_positions = match_trades(orders)
+
+    assert open_positions == []
+    assert len(trades) == 1
+    t = trades[0]
+    assert t.symbol == "GLND"
+    assert t.shares == 100
+    assert t.entry_price == 3.20
+    assert t.exit_price == 3.03
+    assert t.pnl == pytest.approx((3.03 - 3.20) * 100)
+    assert t.pnl_pct == pytest.approx((3.03 - 3.20) / 3.20)
+
+
+def test_match_trades_partial_exit_two_sells_are_one_trade():
+    """Spiegelt IMCC aus dem echten Log: ein Kauf, zwei Verkaufs-Fills
+    (Ziel-Teilverkauf + Rest) -- muss als EIN Trade mit gewichtetem
+    Ausstiegskurs zusammengefasst werden, nicht als zwei."""
+    orders = [
+        FakeOrder("IMCC", OrderSide.BUY, 17597, 4.51, _dt(15, 37)),
+        FakeOrder("IMCC", OrderSide.SELL, 8798, 4.62, _dt(15, 38)),
+        FakeOrder("IMCC", OrderSide.SELL, 8799, 4.602386, _dt(15, 41)),
+    ]
+
+    trades, open_positions = match_trades(orders)
+
+    assert open_positions == []
+    assert len(trades) == 1
+    t = trades[0]
+    assert t.shares == 17597
+    assert t.entry_price == 4.51
+    expected_proceeds = 8798 * 4.62 + 8799 * 4.602386
+    expected_cost = 17597 * 4.51
+    assert t.pnl == pytest.approx(expected_proceeds - expected_cost)
+    assert t.exit_time == _dt(15, 41)
+
+
+def test_match_trades_two_round_trips_same_symbol_stay_separate():
+    orders = [
+        FakeOrder("GLND", OrderSide.BUY, 6249, 3.20, _dt(15, 36)),
+        FakeOrder("GLND", OrderSide.SELL, 6249, 3.03, _dt(15, 37)),
+        FakeOrder("GLND", OrderSide.BUY, 24999, 2.90, _dt(16, 45)),
+        FakeOrder("GLND", OrderSide.SELL, 24999, 2.89, _dt(16, 47)),
+    ]
+
+    trades, open_positions = match_trades(orders)
+
+    assert open_positions == []
+    assert len(trades) == 2
+    assert [t.shares for t in trades] == [6249, 24999]
+
+
+def test_match_trades_leaves_unmatched_buy_as_open_position():
+    orders = [
+        FakeOrder("VEEE", OrderSide.BUY, 500, 10.00, _dt(15, 36)),
+    ]
+
+    trades, open_positions = match_trades(orders)
+
+    assert trades == []
+    assert len(open_positions) == 1
+    p = open_positions[0]
+    assert p.symbol == "VEEE"
+    assert p.shares == 500
+    assert p.entry_price == 10.00
+    assert p.entry_time == _dt(15, 36)
+
+
+def test_group_by_trading_day_uses_new_york_exit_time():
+    """21:30 UTC ist an diesem Datum bereits 17:30 ET (Sommerzeit), also
+    noch derselbe Handelstag -- aber 02:30 UTC am Folgetag ist 22:30 ET
+    des VORTAGS. Die Gruppierung muss sich nach America/New_York richten,
+    nicht nach dem UTC-Kalendertag."""
+    late_exit_still_same_ny_day = datetime(2026, 9, 22, 21, 30, tzinfo=timezone.utc)
+    orders = [
+        FakeOrder("AAA", OrderSide.BUY, 10, 5.00, _dt(15, 0)),
+        FakeOrder("AAA", OrderSide.SELL, 10, 5.10, late_exit_still_same_ny_day),
+    ]
+
+    trades, _ = match_trades(orders)
+    by_day = group_by_trading_day(trades)
+
+    assert list(by_day.keys()) == [datetime(2026, 9, 22, tzinfo=_NY).date()]
+    assert by_day[datetime(2026, 9, 22, tzinfo=_NY).date()].num_trades == 1
+
+
+def test_fetch_closed_orders_excludes_zero_fill_orders():
+    orders = [
+        FakeOrder("AAA", OrderSide.BUY, 0, 0.0, _dt(15, 0)),  # storniert, nichts gefüllt
+        FakeOrder("AAA", OrderSide.BUY, 10, 5.00, _dt(15, 1)),
+    ]
+    client = FakeTradingClient(orders)
+
+    result = fetch_closed_orders(client, _dt(9, 0), _dt(20, 0))
+
+    assert len(result) == 1
+    assert result[0].filled_qty == 10
+
+
+def test_fetch_closed_orders_paginates_beyond_page_limit(monkeypatch):
+    import tradingbot.report as report_module
+
+    monkeypatch.setattr(report_module, "_PAGE_LIMIT", 2)
+    orders = [FakeOrder("AAA", OrderSide.BUY, 10, 5.00, _dt(9, i)) for i in range(5)]
+    client = FakeTradingClient(orders)
+
+    result = fetch_closed_orders(client, _dt(8, 0), _dt(20, 0))
+
+    assert len(result) == 5
+    assert len(client.requests) == 3  # 2 + 2 + 1
+    assert [o.submitted_at for o in result] == [o.submitted_at for o in orders]
+
+
+def test_day_summary_win_rate_and_net_pnl():
+    orders = [
+        FakeOrder("A", OrderSide.BUY, 10, 5.00, _dt(9, 0)),
+        FakeOrder("A", OrderSide.SELL, 10, 6.00, _dt(9, 1)),  # +10
+        FakeOrder("B", OrderSide.BUY, 10, 5.00, _dt(9, 2)),
+        FakeOrder("B", OrderSide.SELL, 10, 4.00, _dt(9, 3)),  # -10
+    ]
+    trades, _ = match_trades(orders)
+    by_day = group_by_trading_day(trades)
+    summary = next(iter(by_day.values()))
+
+    assert summary.num_trades == 2
+    assert summary.wins == 1
+    assert summary.win_rate == 0.5
+    assert summary.net_pnl == 0.0

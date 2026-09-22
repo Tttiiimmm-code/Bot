@@ -257,3 +257,29 @@ def test_momentum_backtest_dispatches_to_single_without_symbols(monkeypatch):
 
     assert seen_configs[0].symbol == "MSFT"
 
+
+def test_momentum_report_dispatches_with_default_days(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-report"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_args = []
+    monkeypatch.setattr(main_module, "cmd_momentum_report", lambda config, *a: seen_args.append(a))
+
+    main_module.main()
+
+    assert seen_args[0] == (1,)
+
+
+def test_momentum_report_dispatches_with_custom_days(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-report", "--days", "5"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_args = []
+    monkeypatch.setattr(main_module, "cmd_momentum_report", lambda config, *a: seen_args.append(a))
+
+    main_module.main()
+
+    assert seen_args[0] == (5,)
+

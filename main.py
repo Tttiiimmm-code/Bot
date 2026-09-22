@@ -8,6 +8,7 @@ Nutzung:
     python main.py momentum-backtest  # Momentum-Day-Trading-Backtest auf Minutendaten
     python main.py scan               # Marktweiter Scanner (aktueller Marktzustand)
     python main.py momentum-run       # Live-Momentum-Bot: Scanner + Bull-Flag/Flat-Top-Engine + echte Orders
+    python main.py momentum-report    # P&L-Report aus Alpacas Order-Historie (momentum-run auswerten)
 """
 
 from __future__ import annotations
@@ -610,6 +611,75 @@ def cmd_momentum_backtest_multi(
     )
 
 
+def cmd_momentum_report(config: Config, days: int):
+    from datetime import datetime, timedelta, timezone
+
+    from alpaca.trading.client import TradingClient
+
+    from tradingbot.report import fetch_closed_orders, group_by_trading_day, match_trades
+
+    trading_client = TradingClient(config.api_key, config.secret_key, paper=config.paper)
+    until = datetime.now(timezone.utc)
+    after = until - timedelta(days=days)
+
+    orders = fetch_closed_orders(trading_client, after, until)
+    trades, open_positions = match_trades(orders)
+
+    if not trades and not open_positions:
+        print(f"Keine ausgeführten Orders in den letzten {days} Tag(en) gefunden.")
+        return
+
+    by_day = group_by_trading_day(trades)
+
+    print(f"=== Trading-Report: letzte {days} Tag(e) ===\n")
+
+    if by_day:
+        print(f"{'Datum':<12} {'Trades':>7} {'Trefferquote':>13} {'Netto-P&L':>12}")
+        print("-" * 47)
+        for day, summary in by_day.items():
+            print(
+                f"{day.isoformat():<12} {summary.num_trades:>7} {summary.win_rate:>12.0%} "
+                f"{summary.net_pnl:>+11.2f}"
+            )
+        print("-" * 47)
+        total_trades = len(trades)
+        total_wins = sum(1 for t in trades if t.pnl > 0)
+        total_pnl = sum(t.pnl for t in trades)
+        print(
+            f"{'Gesamt':<12} {total_trades:>7} {total_wins / total_trades:>12.0%} "
+            f"{total_pnl:>+11.2f}"
+        )
+
+        print("\nEinzeltrades:")
+        print(f"{'Datum':<12} {'Symbol':<8} {'Einstieg':>10} {'Ausstieg':>10} {'Stück':>10} {'P&L':>12} {'P&L%':>8}")
+        print("-" * 74)
+        for t in trades:
+            print(
+                f"{t.trading_day.isoformat():<12} {t.symbol:<8} {t.entry_price:>10.4f} {t.exit_price:>10.4f} "
+                f"{t.shares:>10.0f} {t.pnl:>+12.2f} {t.pnl_pct:>+7.1%}"
+            )
+
+        best = max(trades, key=lambda t: t.pnl)
+        worst = min(trades, key=lambda t: t.pnl)
+        print(f"\nBester Trade:  {best.symbol:<6} {best.pnl:>+10.2f} $ ({best.trading_day.isoformat()})")
+        print(f"Schlechtester: {worst.symbol:<6} {worst.pnl:>+10.2f} $ ({worst.trading_day.isoformat()})")
+    else:
+        print("Keine abgeschlossenen Trades im Zeitraum (nur noch offene Positionen).")
+
+    print("\nOffene Positionen (noch nicht geschlossen):")
+    if open_positions:
+        for p in open_positions:
+            print(f"  {p.symbol:<8} {p.shares:>10.0f} Stück, Einstieg {p.entry_price:>8.4f} ({p.entry_time})")
+    else:
+        print("  (keine)")
+
+    print(
+        "\nHinweis: P&L ist brutto (Kommissionen/Slippage nicht berücksichtigt -- im Paper-Modus "
+        "ohnehin 0). Handelstag richtet sich nach dem Ausstiegszeitpunkt in America/New_York, "
+        "unabhängig von der Server-Zeitzone."
+    )
+
+
 def cmd_scan(
     config: Config,
     min_price: float,
@@ -1177,13 +1247,23 @@ def main():
         "(Standard: 5).",
     )
 
+    report_parser = subparsers.add_parser(
+        "momentum-report",
+        help="Wertet Alpacas Order-Historie des Live-Bots (momentum-run) zu einem P&L-Report pro "
+        "Handelstag aus -- ruft nur Daten ab, platziert keine Orders.",
+    )
+    report_parser.add_argument(
+        "--days", type=_positive_int, default=1,
+        help="Wie viele Kalendertage rückwirkend die Order-Historie abgefragt wird (Standard: 1).",
+    )
+
     args = parser.parse_args()
 
     setup_logging()
 
     try:
         config = Config.from_env()
-        if args.command not in ("run", "scan", "momentum-run") and args.symbol is not None:
+        if args.command not in ("run", "scan", "momentum-run", "momentum-report") and args.symbol is not None:
             # Nur die Analyse-Subcommands mit fest EINEM Symbol (backtest/
             # validate/walkforward/momentum-backtest) erlauben ein Ad-hoc-
             # Symbol. run kennt --symbol gar nicht und bleibt bewusst strikt
@@ -1328,6 +1408,8 @@ def main():
                 args.order_poll_interval_seconds,
                 args.flatten_minutes_before_close,
             )
+        elif args.command == "momentum-report":
+            cmd_momentum_report(config, args.days)
     except (RuntimeError, ValueError) as e:
         print(f"Fehler: {e}", file=sys.stderr)
         sys.exit(1)

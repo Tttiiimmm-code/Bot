@@ -357,6 +357,21 @@ Market-Sell-Orders.
   (hohes `--max-tracked-symbols`) kann ein Zyklus entsprechend länger dauern als
   `--poll-interval-seconds`.
 
+### Trading-Report (P&L-Auswertung)
+
+`momentum-report` wertet Alpacas Order-Historie (nicht die eigenen Logs) zu abgeschlossenen
+Trades mit P&L aus -- ruft nur Daten ab, platziert keine Orders:
+
+```bash
+python main.py momentum-report --days 7
+```
+
+Fasst Kauf-/Verkaufs-Orders pro Symbol von "flach" bis wieder "flach" zu einem Trade zusammen
+(auch bei mehreren Teil-Fills, z.B. Ziel-Teilverkauf + Rest-Ausstieg), gruppiert nach Handelstag
+in America/New_York, und zeigt pro Tag sowie insgesamt Trades/Trefferquote/Netto-P&L, eine
+Einzeltrade-Tabelle sowie noch offene Positionen. P&L ist brutto (im Paper-Modus ohnehin ohne
+Kommissionen/Slippage).
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
@@ -420,7 +435,7 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
@@ -432,6 +447,7 @@ tradingbot/
   momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten (experimentell)
   scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
   momentum_live.py       Live-Momentum-Bot: Scanner + Momentum-Engine + echte Orders (experimentell)
+  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 
