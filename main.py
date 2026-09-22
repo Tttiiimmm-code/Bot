@@ -611,13 +611,24 @@ def cmd_momentum_backtest_multi(
     )
 
 
+def _format_duration(td) -> str:
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes}:{seconds:02d}"
+
+
 def cmd_momentum_report(config: Config, days: int):
     from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
 
     from alpaca.trading.client import TradingClient
 
     from tradingbot.report import fetch_closed_orders, group_by_trading_day, match_trades
 
+    berlin = ZoneInfo("Europe/Berlin")
     trading_client = TradingClient(config.api_key, config.secret_key, paper=config.paper)
     until = datetime.now(timezone.utc)
     after = until - timedelta(days=days)
@@ -650,12 +661,19 @@ def cmd_momentum_report(config: Config, days: int):
             f"{total_pnl:>+11.2f}"
         )
 
-        print("\nEinzeltrades:")
-        print(f"{'Datum':<12} {'Symbol':<8} {'Einstieg':>10} {'Ausstieg':>10} {'Stück':>10} {'P&L':>12} {'P&L%':>8}")
-        print("-" * 74)
+        print("\nEinzeltrades (Zeiten in deutscher Ortszeit):")
+        print(
+            f"{'Datum':<12} {'Ein':>8} {'Aus':>8} {'Dauer':>8} {'Symbol':<8} "
+            f"{'Einstieg':>10} {'Ausstieg':>10} {'Stück':>10} {'P&L':>12} {'P&L%':>8}"
+        )
+        print("-" * 100)
         for t in trades:
+            entry_local = t.entry_time.astimezone(berlin)
+            exit_local = t.exit_time.astimezone(berlin)
             print(
-                f"{t.trading_day.isoformat():<12} {t.symbol:<8} {t.entry_price:>10.4f} {t.exit_price:>10.4f} "
+                f"{t.trading_day.isoformat():<12} {entry_local.strftime('%H:%M:%S'):>8} "
+                f"{exit_local.strftime('%H:%M:%S'):>8} {_format_duration(t.duration):>8} {t.symbol:<8} "
+                f"{t.entry_price:>10.4f} {t.exit_price:>10.4f} "
                 f"{t.shares:>10.0f} {t.pnl:>+12.2f} {t.pnl_pct:>+7.1%}"
             )
 
@@ -669,7 +687,11 @@ def cmd_momentum_report(config: Config, days: int):
     print("\nOffene Positionen (noch nicht geschlossen):")
     if open_positions:
         for p in open_positions:
-            print(f"  {p.symbol:<8} {p.shares:>10.0f} Stück, Einstieg {p.entry_price:>8.4f} ({p.entry_time})")
+            entry_local = p.entry_time.astimezone(berlin)
+            print(
+                f"  {p.symbol:<8} {p.shares:>10.0f} Stück, Einstieg {p.entry_price:>8.4f} "
+                f"({entry_local.strftime('%Y-%m-%d %H:%M:%S')} deutsche Zeit)"
+            )
     else:
         print("  (keine)")
 

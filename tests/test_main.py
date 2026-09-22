@@ -1,8 +1,9 @@
 import argparse
+from datetime import timedelta
 
 import pytest
 
-from main import _fraction_below_one, _parse_grid, _positive_int, _symbol, _train_ratio
+from main import _format_duration, _fraction_below_one, _parse_grid, _positive_int, _symbol, _train_ratio
 
 
 def test_parses_valid_grid():
@@ -256,6 +257,18 @@ def test_momentum_backtest_dispatches_to_single_without_symbols(monkeypatch):
     main_module.main()
 
     assert seen_configs[0].symbol == "MSFT"
+
+
+def test_format_duration_under_a_minute():
+    assert _format_duration(timedelta(seconds=47)) == "0:47"
+
+
+def test_format_duration_minutes_and_seconds():
+    assert _format_duration(timedelta(minutes=1, seconds=7)) == "1:07"
+
+
+def test_format_duration_hours():
+    assert _format_duration(timedelta(hours=1, minutes=2, seconds=3)) == "1:02:03"
 
 
 def test_momentum_report_dispatches_with_default_days(monkeypatch):

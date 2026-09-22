@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -65,6 +65,7 @@ def test_match_trades_single_buy_single_sell():
     assert t.exit_price == 3.03
     assert t.pnl == pytest.approx((3.03 - 3.20) * 100)
     assert t.pnl_pct == pytest.approx((3.03 - 3.20) / 3.20)
+    assert t.duration == timedelta(minutes=1)
 
 
 def test_match_trades_partial_exit_two_sells_are_one_trade():

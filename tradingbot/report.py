@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from alpaca.common.enums import Sort
@@ -41,6 +41,10 @@ class MatchedTrade:
     @property
     def trading_day(self) -> date:
         return self.exit_time.astimezone(_NY).date()
+
+    @property
+    def duration(self) -> timedelta:
+        return self.exit_time - self.entry_time
 
 
 @dataclass
