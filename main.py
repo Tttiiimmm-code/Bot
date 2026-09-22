@@ -634,9 +634,9 @@ def cmd_momentum_report(config: Config, days: int):
     after = until - timedelta(days=days)
 
     orders = fetch_closed_orders(trading_client, after, until)
-    trades, open_positions = match_trades(orders)
+    trades, open_positions, unmatched_sells = match_trades(orders)
 
-    if not trades and not open_positions:
+    if not trades and not open_positions and not unmatched_sells:
         print(f"Keine ausgeführten Orders in den letzten {days} Tag(en) gefunden.")
         return
 
@@ -695,6 +695,15 @@ def cmd_momentum_report(config: Config, days: int):
             )
     else:
         print("  (keine)")
+
+    if unmatched_sells:
+        print("\nVerkäufe ohne Kauf im Zeitraum (Position vor Zeitraumbeginn eröffnet, nicht im P&L enthalten):")
+        for s in unmatched_sells:
+            sell_local = s.time.astimezone(berlin)
+            print(
+                f"  {s.symbol:<8} {s.shares:>10.0f} Stück @ {s.price:>8.4f} "
+                f"({sell_local.strftime('%Y-%m-%d %H:%M:%S')} deutsche Zeit) -- ggf. mit größerem --days auswerten"
+            )
 
     print(
         "\nHinweis: P&L ist brutto (Kommissionen/Slippage nicht berücksichtigt -- im Paper-Modus "
@@ -787,9 +796,19 @@ def cmd_momentum_run(
     order_fill_timeout_seconds: int,
     order_poll_interval_seconds: float,
     flatten_minutes_before_close: int,
+    allow_live_trading: bool = False,
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
+
+    # Der Live-Momentum-Bot ist nur im Paper-Modus erprobt -- ein
+    # versehentliches ALPACA_PAPER=false (z.B. eine .env eines anderen
+    # Projekts) darf nicht unbemerkt mit echtem Geld handeln.
+    if not config.paper and not allow_live_trading:
+        raise RuntimeError(
+            "momentum-run ist nur für Paper-Trading gedacht, aber ALPACA_PAPER=false ist gesetzt. "
+            "Für echtes Geld zusätzlich --allow-live-trading angeben (auf eigenes Risiko)."
+        )
 
     criteria = ScanCriteria(
         min_price=min_price,
@@ -1269,6 +1288,11 @@ def main():
         help="Wie viele Minuten vor Sitzungsende alle offenen Positionen zwangsweise geschlossen werden "
         "(Standard: 5).",
     )
+    momentum_run_parser.add_argument(
+        "--allow-live-trading", action="store_true",
+        help="Erlaubt den Start mit ALPACA_PAPER=false (ECHTES Geld). Ohne dieses Flag bricht "
+        "momentum-run im Live-Modus ab.",
+    )
 
     report_parser = subparsers.add_parser(
         "momentum-report",
@@ -1430,6 +1454,7 @@ def main():
                 args.order_fill_timeout_seconds,
                 args.order_poll_interval_seconds,
                 args.flatten_minutes_before_close,
+                args.allow_live_trading,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

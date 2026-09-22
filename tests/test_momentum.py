@@ -178,6 +178,22 @@ def test_stop_loss_exit_closes_full_position():
     assert exit_.shares == trade.shares
 
 
+def test_stop_loss_on_gap_below_stop_fills_at_open_not_stop():
+    """Regression: eröffnet der Balken bereits UNTER dem Stop (Kurslücke),
+    war der Stop-Preis nie handelbar -- der Backtest verbuchte trotzdem den
+    Stop-Preis und schönte so den Verlust. Realistischer Fill: Eröffnung."""
+    bars = _entered_trade_bars([
+        {"open": 11.00, "high": 11.05, "low": 10.90, "close": 11.00, "volume": 100},  # Gap unter Stop 11.30
+    ])
+
+    result = run_momentum_backtest(bars, starting_cash=100_000.0, **COMMON_KWARGS)
+
+    assert result.num_trades == 1
+    exit_ = result.trades[0].exits[0]
+    assert exit_.reason == ExitReason.STOP
+    assert exit_.price == pytest.approx(11.00)
+
+
 def test_red_candle_exit_before_target_closes_full_position():
     """Erste rote Kerze VOR Erreichen des 2:1-Ziels ist ein
     Voll-Ausstiegssignal (Exit Indicator #2 im Artikel)."""

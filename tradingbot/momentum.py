@@ -491,7 +491,11 @@ class MomentumEngine:
         # für denselben Kompromiss auf Tagesbasis). Stop ist immer der
         # einzige und letzte Ausstieg auf diesem Balken (volle Restmenge).
         if low <= self._stop_price:
-            return [ExitSignal(ExitReason.STOP, time, self._stop_price, remaining)]
+            # Eröffnet der Balken bereits UNTER dem Stop (Kurslücke), ist der
+            # Stop-Preis nie handelbar gewesen -- realistischer Fill ist der
+            # Eröffnungskurs. Sonst würde der Backtest Verluste bei Gaps
+            # systematisch schönen (gerade bei volatilen Small-Caps).
+            return [ExitSignal(ExitReason.STOP, time, min(open_, self._stop_price), remaining)]
 
         breakeven_after = self._breakeven
         if not self._breakeven and high >= self._target_price:

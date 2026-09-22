@@ -54,7 +54,7 @@ def test_match_trades_single_buy_single_sell():
         FakeOrder("GLND", OrderSide.SELL, 100, 3.03, _dt(15, 37)),
     ]
 
-    trades, open_positions = match_trades(orders)
+    trades, open_positions, unmatched_sells = match_trades(orders)
 
     assert open_positions == []
     assert len(trades) == 1
@@ -78,7 +78,7 @@ def test_match_trades_partial_exit_two_sells_are_one_trade():
         FakeOrder("IMCC", OrderSide.SELL, 8799, 4.602386, _dt(15, 41)),
     ]
 
-    trades, open_positions = match_trades(orders)
+    trades, open_positions, unmatched_sells = match_trades(orders)
 
     assert open_positions == []
     assert len(trades) == 1
@@ -99,7 +99,7 @@ def test_match_trades_two_round_trips_same_symbol_stay_separate():
         FakeOrder("GLND", OrderSide.SELL, 24999, 2.89, _dt(16, 47)),
     ]
 
-    trades, open_positions = match_trades(orders)
+    trades, open_positions, unmatched_sells = match_trades(orders)
 
     assert open_positions == []
     assert len(trades) == 2
@@ -111,7 +111,7 @@ def test_match_trades_leaves_unmatched_buy_as_open_position():
         FakeOrder("VEEE", OrderSide.BUY, 500, 10.00, _dt(15, 36)),
     ]
 
-    trades, open_positions = match_trades(orders)
+    trades, open_positions, unmatched_sells = match_trades(orders)
 
     assert trades == []
     assert len(open_positions) == 1
@@ -120,6 +120,46 @@ def test_match_trades_leaves_unmatched_buy_as_open_position():
     assert p.shares == 500
     assert p.entry_price == 10.00
     assert p.entry_time == _dt(15, 36)
+
+
+def test_match_trades_sell_of_position_opened_before_window_is_not_merged_with_later_buy():
+    """Regression: ein Verkauf ohne Kauf im Zeitraum (Position vor
+    Zeitraumbeginn eröffnet) wurde mit dem NÄCHSTEN Kauf zu einem
+    Phantom-Trade verrechnet (erfundenes P&L, negative Haltedauer), und die
+    tatsächlich noch offene neue Position verschwand."""
+    orders = [
+        FakeOrder("XYZ", OrderSide.SELL, 10, 50.00, _dt(14, 0, day=21)),
+        FakeOrder("XYZ", OrderSide.BUY, 10, 20.00, _dt(14, 0, day=22)),
+        FakeOrder("XYZ", OrderSide.SELL, 5, 21.00, _dt(15, 0, day=22)),
+    ]
+
+    trades, open_positions, unmatched_sells = match_trades(orders)
+
+    assert trades == []
+    assert len(open_positions) == 1
+    assert open_positions[0].shares == 5
+    assert open_positions[0].entry_price == 20.00
+    assert len(unmatched_sells) == 1
+    assert unmatched_sells[0].shares == 10
+    assert unmatched_sells[0].price == 50.00
+
+
+def test_match_trades_sell_exceeding_bought_qty_splits_off_excess():
+    """Teil der Verkaufsmenge gehört zu einer Position von VOR dem
+    Zeitraum: nur die im Zeitraum gekaufte Menge fließt in den Trade ein."""
+    orders = [
+        FakeOrder("XYZ", OrderSide.BUY, 10, 20.00, _dt(14, 0)),
+        FakeOrder("XYZ", OrderSide.SELL, 15, 22.00, _dt(15, 0)),
+    ]
+
+    trades, open_positions, unmatched_sells = match_trades(orders)
+
+    assert len(trades) == 1
+    assert trades[0].shares == 10
+    assert trades[0].pnl == pytest.approx(20.0)
+    assert open_positions == []
+    assert len(unmatched_sells) == 1
+    assert unmatched_sells[0].shares == pytest.approx(5)
 
 
 def test_group_by_trading_day_uses_new_york_exit_time():
@@ -133,7 +173,7 @@ def test_group_by_trading_day_uses_new_york_exit_time():
         FakeOrder("AAA", OrderSide.SELL, 10, 5.10, late_exit_still_same_ny_day),
     ]
 
-    trades, _ = match_trades(orders)
+    trades, _, _ = match_trades(orders)
     by_day = group_by_trading_day(trades)
 
     assert list(by_day.keys()) == [datetime(2026, 9, 22, tzinfo=_NY).date()]
@@ -174,7 +214,7 @@ def test_day_summary_win_rate_and_net_pnl():
         FakeOrder("B", OrderSide.BUY, 10, 5.00, _dt(9, 2)),
         FakeOrder("B", OrderSide.SELL, 10, 4.00, _dt(9, 3)),  # -10
     ]
-    trades, _ = match_trades(orders)
+    trades, _, _ = match_trades(orders)
     by_day = group_by_trading_day(trades)
     summary = next(iter(by_day.values()))
 

@@ -107,17 +107,36 @@ def fetch_closed_orders(trading_client: TradingClient, after: datetime, until: d
     return [o for o in orders if float(o.filled_qty or 0) > 0]
 
 
-def match_trades(orders: list[Order]) -> tuple[list[MatchedTrade], list[OpenPosition]]:
+@dataclass
+class UnmatchedSell:
+    """Verkaufte Stückzahl ohne zugehörigen Kauf im angefragten Zeitraum --
+    die Position wurde VOR Zeitraumbeginn eröffnet. Kein P&L berechenbar
+    (Einstiegskurs unbekannt)."""
+
+    symbol: str
+    shares: float
+    price: float
+    time: datetime
+
+
+def match_trades(orders: list[Order]) -> tuple[list[MatchedTrade], list[OpenPosition], list[UnmatchedSell]]:
     """Fasst Kauf-/Verkaufs-Orders pro Symbol zu abgeschlossenen Trades
     zusammen (Positions-Lebensdauer von "flach" bis wieder "flach").
     Positionen, die am Ende des Zeitraums noch offen sind, werden separat
-    als OpenPosition zurückgegeben."""
+    als OpenPosition zurückgegeben.
+
+    Verkäufe, die über die im Zeitraum gekaufte Menge hinausgehen (Position
+    wurde vor Zeitraumbeginn eröffnet), werden als UnmatchedSell getrennt
+    zurückgegeben -- NICHT mit einem späteren Kauf verrechnet, sonst
+    entstünde ein Phantom-Trade mit erfundenem P&L und negativer Haltedauer,
+    während die tatsächlich noch offene neue Position verschwände."""
     by_symbol: dict[str, list[Order]] = defaultdict(list)
     for o in orders:
         by_symbol[o.symbol].append(o)
 
     trades: list[MatchedTrade] = []
     open_positions: list[OpenPosition] = []
+    unmatched_sells: list[UnmatchedSell] = []
 
     for symbol, symbol_orders in by_symbol.items():
         symbol_orders.sort(key=lambda o: o.filled_at or o.submitted_at)
@@ -136,6 +155,13 @@ def match_trades(orders: list[Order]) -> tuple[list[MatchedTrade], list[OpenPosi
                 bought_qty += qty
                 bought_cost += qty * price
             else:
+                open_qty = bought_qty - sold_qty
+                excess = qty - max(open_qty, 0.0)
+                if excess > 1e-6:
+                    unmatched_sells.append(UnmatchedSell(symbol, excess, price, filled_at))
+                    qty -= excess
+                if qty <= 1e-9:
+                    continue
                 sold_qty += qty
                 sold_proceeds += qty * price
                 exit_time = filled_at
@@ -167,7 +193,7 @@ def match_trades(orders: list[Order]) -> tuple[list[MatchedTrade], list[OpenPosi
             )
 
     trades.sort(key=lambda t: t.exit_time)
-    return trades, open_positions
+    return trades, open_positions, unmatched_sells
 
 
 def group_by_trading_day(trades: list[MatchedTrade]) -> dict[date, DaySummary]:

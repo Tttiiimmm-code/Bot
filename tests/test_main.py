@@ -296,3 +296,51 @@ def test_momentum_report_dispatches_with_custom_days(monkeypatch):
 
     assert seen_args[0] == (5,)
 
+
+
+def _make_live_config(symbol: str):
+    import dataclasses
+
+    return dataclasses.replace(_make_config(symbol), paper=False)
+
+
+def test_momentum_run_refuses_live_trading_without_flag(monkeypatch, capsys):
+    """Regression: momentum-run ist nur für Paper-Trading gedacht, startete
+    aber mit ALPACA_PAPER=false kommentarlos mit echtem Geld."""
+    import main as main_module
+    import tradingbot.momentum_live as momentum_live
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_live_config("AAPL")))
+    monkeypatch.setattr(
+        momentum_live, "LiveMomentumBot",
+        lambda *a, **k: pytest.fail("LiveMomentumBot darf ohne --allow-live-trading nicht starten"),
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        main_module.main()
+
+    assert exc_info.value.code == 1
+    assert "--allow-live-trading" in capsys.readouterr().err
+
+
+def test_momentum_run_allows_live_trading_with_flag(monkeypatch):
+    import main as main_module
+    import tradingbot.momentum_live as momentum_live
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", "--allow-live-trading"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_live_config("AAPL")))
+    started = []
+
+    class FakeBot:
+        def __init__(self, config, criteria, live_config):
+            started.append(config.paper)
+
+        def run_forever(self):
+            pass
+
+    monkeypatch.setattr(momentum_live, "LiveMomentumBot", FakeBot)
+
+    main_module.main()
+
+    assert started == [False]
