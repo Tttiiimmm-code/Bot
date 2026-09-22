@@ -1,4 +1,8 @@
-alpaca-py>=0.33
-pandas>=2.0
-python-dotenv>=1.0
-pytest>=8.0
+# Obergrenzen = zuletzt getestete Versionen (alpaca-py 0.44, pandas 3.0,
+# numpy 2.5). Ein neueres alpaca-py kann die API ändern -- erst testen,
+# dann die Grenze anheben.
+alpaca-py>=0.33,<0.45
+pandas>=2.0,<4
+numpy>=1.24,<3
+python-dotenv>=1.0,<2
+pytest>=8.0,<10
