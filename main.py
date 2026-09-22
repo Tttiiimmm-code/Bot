@@ -800,6 +800,7 @@ def cmd_momentum_run(
     broker_stop_orders: bool = True,
     min_stop_pct: float = 0.02,
     max_position_dollars: float = 25_000.0,
+    max_entry_slippage_pct: float = 0.01,
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -847,6 +848,7 @@ def cmd_momentum_run(
         broker_stop_orders=broker_stop_orders,
         min_stop_pct=min_stop_pct,
         max_position_dollars=max_position_dollars,
+        max_entry_slippage_pct=max_entry_slippage_pct,
     )
 
     print(
@@ -1313,6 +1315,11 @@ def main():
         "--max-position-dollars", type=float, default=25_000.0,
         help="Maximaler Positionswert pro Trade in $. Standard: 25000.",
     )
+    momentum_run_parser.add_argument(
+        "--max-entry-slippage-pct", type=float, default=0.01,
+        help="Kauf als Limit-Order höchstens so weit über dem Signalkurs (Anteil). Stückzahl und "
+        "Risiko werden mit diesem Limit gerechnet. Standard: 0.01 (1%%).",
+    )
 
     report_parser = subparsers.add_parser(
         "momentum-report",
@@ -1478,6 +1485,7 @@ def main():
                 args.broker_stop_orders,
                 args.min_stop_pct,
                 args.max_position_dollars,
+                args.max_entry_slippage_pct,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

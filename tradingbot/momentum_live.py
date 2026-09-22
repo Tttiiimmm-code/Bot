@@ -47,7 +47,7 @@ from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, OrderStatus, TimeInForce
-from alpaca.trading.requests import MarketOrderRequest, StopOrderRequest
+from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest, StopOrderRequest
 
 from tradingbot.broker import _CALENDAR_DAYS_PER_TRADING_DAY, _filter_regular_session
 from tradingbot.config import Config
@@ -118,11 +118,18 @@ class LiveMomentumConfig:
     min_stop_pct: float = 0.02
     # Obergrenze für den Positionswert (Stückzahl x Kurs) pro Trade.
     max_position_dollars: float = 25_000.0
+    # Kauf als Limit-Order höchstens so viel über dem Signalkurs: begrenzt
+    # die Einstiegs-Slippage. Stückzahl und Risiko werden mit diesem
+    # Limitkurs (dem schlechtestmöglichen Fill) gerechnet. Füllt die Order
+    # nicht innerhalb von order_fill_timeout_seconds, wird sie storniert.
+    max_entry_slippage_pct: float = 0.01
 
 
 def _validate_live_config(c: LiveMomentumConfig) -> None:
     if not (math.isfinite(c.min_stop_pct) and 0 <= c.min_stop_pct < 1):
         raise ValueError(f"min_stop_pct muss in [0, 1) liegen, war {c.min_stop_pct}.")
+    if not (math.isfinite(c.max_entry_slippage_pct) and 0 <= c.max_entry_slippage_pct < 1):
+        raise ValueError(f"max_entry_slippage_pct muss in [0, 1) liegen, war {c.max_entry_slippage_pct}.")
     if not (math.isfinite(c.max_position_dollars) and c.max_position_dollars > 0):
         raise ValueError(f"max_position_dollars muss eine positive, endliche Zahl sein, war {c.max_position_dollars}.")
     if not (math.isfinite(c.max_risk_dollars) and c.max_risk_dollars > 0):
@@ -759,10 +766,13 @@ class LiveMomentumBot:
 
         account = self.trading_client.get_account()
         cash = max(float(account.cash), 0.0)
-        sizing_risk_per_share = max(event.risk_per_share, event.reference_price * self.live_config.min_stop_pct)
+        limit_price = _round_stop_price(event.reference_price * (1 + self.live_config.max_entry_slippage_pct))
+        sizing_risk_per_share = max(
+            limit_price - event.stop_price, event.reference_price * self.live_config.min_stop_pct
+        )
         risk_based_shares = int(self.live_config.max_risk_dollars // sizing_risk_per_share)
-        cash_based_shares = int(cash // event.reference_price)
-        position_based_shares = int(self.live_config.max_position_dollars // event.reference_price)
+        cash_based_shares = int(cash // limit_price)
+        position_based_shares = int(self.live_config.max_position_dollars // limit_price)
         shares = min(risk_based_shares, cash_based_shares, position_based_shares)
         if shares <= 0:
             logger.info(
@@ -778,9 +788,22 @@ class LiveMomentumBot:
             return
 
         order = self.trading_client.submit_order(
-            MarketOrderRequest(symbol=symbol, qty=shares, side=OrderSide.BUY, time_in_force=TimeInForce.DAY)
+            LimitOrderRequest(
+                symbol=symbol,
+                qty=shares,
+                side=OrderSide.BUY,
+                time_in_force=TimeInForce.DAY,
+                limit_price=limit_price,
+            )
         )
-        logger.info("Kauf-Order platziert: %s %s Stück (Muster=%s, id=%s)", symbol, shares, event.pattern, order.id)
+        logger.info(
+            "Kauf-Order platziert: %s %s Stück, Limit %.4f (Muster=%s, id=%s)",
+            symbol,
+            shares,
+            limit_price,
+            event.pattern,
+            order.id,
+        )
 
         try:
             filled = self._wait_for_fill(order.id, self.live_config.order_fill_timeout_seconds)

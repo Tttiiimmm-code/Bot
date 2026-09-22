@@ -62,6 +62,8 @@ def _live_config(**overrides) -> LiveMomentumConfig:
         order_fill_timeout_seconds=0.05,
         order_poll_interval_seconds=0.01,
         flatten_minutes_before_close=5,
+        # Limit = Signalkurs, damit die Stückzahlen der übrigen Tests gleich bleiben.
+        max_entry_slippage_pct=0.0,
     )
     defaults.update(overrides)
     return LiveMomentumConfig(**defaults)
@@ -83,6 +85,7 @@ class FakeOrder:
         self.filled_qty = 0
         self.filled_avg_price = 0.0
         self.stop_price = None
+        self.limit_price = None
 
 
 class FakeTradingClient:
@@ -165,6 +168,7 @@ class FakeTradingClient:
         order_id = f"order-{self._next_id}"
         self._next_id += 1
         order = FakeOrder(order_id, order_request.symbol, order_request.qty, order_request.side)
+        order.limit_price = getattr(order_request, "limit_price", None)
         if getattr(order_request, "stop_price", None) is not None:
             if self.fail_stop_submit:
                 raise APIError("simulierter Fehler beim Anlegen der Stop-Order")
@@ -471,6 +475,8 @@ def test_full_cycle_detects_breakout_and_enters_position():
         ({"min_stop_pct": 0.10}, 57),
         # Positions-Obergrenze 500$ -> floor(500 / 12.20) = 40
         ({"max_position_dollars": 500.0}, 40),
+        # Limit 1% über Signal = 12.32 -> Risiko 12.32 - 11.30 = 1.02 -> floor(70 / 1.02) = 68
+        ({"max_entry_slippage_pct": 0.01}, 68),
     ],
 )
 def test_position_size_limited_by_min_stop_and_max_position(overrides, expected_shares):
@@ -1565,3 +1571,17 @@ def test_no_close_all_when_no_positions_at_startup():
     bot.run_once(now=_et(9, 20))
 
     assert trading_client.close_all_calls == []
+
+
+def test_buy_is_limit_order_capped_above_signal_price():
+    data_client = _make_data_client("AAPL")
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.25)
+    bot = _make_bot(
+        data_client, trading_client, FakeScanner([_make_candidate("AAPL")]),
+        _live_config(max_entry_slippage_pct=0.01),
+    )
+
+    bot.run_once(now=_et(9, 36))
+
+    buy_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY]
+    assert [o.limit_price for o in buy_orders] == [pytest.approx(12.32)]

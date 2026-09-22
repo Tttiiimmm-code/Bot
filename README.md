@@ -347,6 +347,10 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   (`--min-stop-pct`), auch wenn das Pullback-Tief nur wenige Cent unter dem Kurs liegt,
   und der Positionswert ist auf 25.000 $ begrenzt (`--max-position-dollars`). Der Stop
   selbst bleibt am Pullback-Tief.
+- **Kauf als Limit-Order:** höchstens 1 % über dem Signalkurs (`--max-entry-slippage-pct`).
+  Stückzahl und Risiko werden mit diesem Limit gerechnet, der tatsächliche Verlust beim
+  Stop bleibt so nahe an `--max-risk-dollars`. Füllt die Order nicht rechtzeitig, wird sie
+  storniert und der Trade ausgelassen.
 - **Neustart mit offener Position:** Findet der Bot beim Start Positionen im Depot, die er
   nicht kennt, stellt er sie samt offener Orders sofort glatt (sonst hätten sie keinen Stop
   und würden nicht vor Handelsschluss geschlossen). Neustarts daher möglichst ohne offene
