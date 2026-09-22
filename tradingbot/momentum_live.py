@@ -612,24 +612,29 @@ class LiveMomentumBot:
             )
             state.last_bar_time = bar_time
 
-            if bar_time < stale_cutoff:
-                for event in events:
-                    if isinstance(event, BreakoutEvent):
-                        state.engine.decline_entry()
-                    else:
-                        logger.warning(
-                            "Aufhol-Balken bei %s erzeugte unerwartet ein Ausstiegssignal (%s); "
-                            "Engine-Zustand wird synthetisch nachgezogen, keine echte Order.",
-                            symbol,
-                            event.reason,
-                        )
-                        state.engine.record_exit(event.shares, event.reference_price)
-                continue
-
             for i, event in enumerate(events):
                 if isinstance(event, BreakoutEvent):
+                    if bar_time < stale_cutoff:
+                        # Balken liegt vor der Aufhol-Schwelle -- kein
+                        # echter Einstieg für ein längst vergangenes
+                        # Signal (siehe stale_cutoff oben); Engine fällt
+                        # zurück auf SEARCHING (decline_entry()).
+                        state.engine.decline_entry()
+                        continue
                     self._handle_breakout(symbol, state, event)
                 else:
+                    # Ein ExitSignal setzt voraus, dass die Engine
+                    # IN_POSITION ist -- und das ist nur nach einem
+                    # ECHTEN Fill möglich (record_entry() wird nur in
+                    # _handle_breakout() nach einer echten Order-
+                    # Ausführung aufgerufen, siehe unten -- niemals für
+                    # einen wegen Staleness abgelehnten Einstieg). Ein
+                    # Ausstieg für eine echte Position muss deshalb IMMER
+                    # real ausgeführt werden, unabhängig vom Alter des
+                    # auslösenden Balkens -- sonst bliebe eine echte,
+                    # bereits gefüllte Position ungeschützt (der Stop
+                    # würde nie auslösen), während die Engine intern
+                    # schon "flach" wäre.
                     self._submit_exit(symbol, state, event)
                 if state.pending_exit is not None or state.deferred_exits:
                     # Eine noch unbestätigte Verkaufs-Order (pending_exit)

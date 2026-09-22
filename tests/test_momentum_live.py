@@ -575,6 +575,39 @@ def test_stop_loss_exit_fills_and_closes_position():
     assert sell_orders[0].qty == 77
 
 
+def test_stale_exit_bar_for_real_position_still_places_real_sell_order():
+    """Regressionstest: die stale_cutoff-Schwelle in _process_new_bars darf
+    NUR unbeantwortete BreakoutEvents unterdruecken (noch keine echte
+    Position) -- ein ExitSignal setzt dagegen IMMER eine bereits ECHTE,
+    gefuellte Position voraus (record_entry() wird nur nach einem echten
+    Fill aufgerufen) und muss deshalb unabhaengig vom Alter des
+    ausloesenden Balkens real ausgefuehrt werden. Simuliert einen
+    verzoegerten Poll-Zyklus (now liegt 5 Minuten nach dem Einstieg, der
+    Stop-Balken selbst also 4 Minuten -- mehr als die 2-Minuten-Schwelle --
+    in der Vergangenheit): ohne den Fix würde die Engine hier nur
+    synthetisch schliessen (record_exit() ohne echte Order), waehrend die
+    echte Position am Broker ungeschuetzt offen bliebe."""
+    extra_bars = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
+    data_client = _make_data_client("AAPL", extra_today_bars=extra_bars)
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner)
+
+    bot.run_once(now=_et(9, 35))  # echter Einstieg (bar5)
+    assert bot._symbols["AAPL"].engine.in_position
+
+    trading_client.fill_price = 11.30
+    # now liegt 4 Minuten nach dem Stop-Balken (9:36) -- stale_cutoff waere
+    # now - 2min = 9:38, der Stop-Balken (9:36) also "stale".
+    bot.run_once(now=_et(9, 40))
+
+    state = bot._symbols["AAPL"]
+    assert not state.engine.in_position
+    sell_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(sell_orders) == 1
+    assert sell_orders[0].qty == 77
+
+
 def test_sell_order_timeout_creates_pending_exit_and_resolves_next_cycle():
     extra_bars = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
     data_client = _make_data_client("AAPL", extra_today_bars=extra_bars)

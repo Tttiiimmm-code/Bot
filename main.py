@@ -662,11 +662,12 @@ def cmd_momentum_report(config: Config, days: int):
         )
 
         print("\nEinzeltrades (Zeiten in deutscher Ortszeit):")
-        print(
+        header = (
             f"{'Datum':<12} {'Ein':>8} {'Aus':>8} {'Dauer':>8} {'Symbol':<8} "
             f"{'Einstieg':>10} {'Ausstieg':>10} {'Stück':>10} {'P&L':>12} {'P&L%':>8}"
         )
-        print("-" * 100)
+        print(header)
+        print("-" * len(header))
         for t in trades:
             entry_local = t.entry_time.astimezone(berlin)
             exit_local = t.exit_time.astimezone(berlin)
