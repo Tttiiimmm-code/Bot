@@ -797,6 +797,7 @@ def cmd_momentum_run(
     order_poll_interval_seconds: float,
     flatten_minutes_before_close: int,
     allow_live_trading: bool = False,
+    broker_stop_orders: bool = True,
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -841,6 +842,7 @@ def cmd_momentum_run(
         order_fill_timeout_seconds=order_fill_timeout_seconds,
         order_poll_interval_seconds=order_poll_interval_seconds,
         flatten_minutes_before_close=flatten_minutes_before_close,
+        broker_stop_orders=broker_stop_orders,
     )
 
     print(
@@ -1293,6 +1295,11 @@ def main():
         help="Erlaubt den Start mit ALPACA_PAPER=false (ECHTES Geld). Ohne dieses Flag bricht "
         "momentum-run im Live-Modus ab.",
     )
+    momentum_run_parser.add_argument(
+        "--no-broker-stop", dest="broker_stop_orders", action="store_false",
+        help="Keine zusätzliche Stop-Order bei Alpaca hinterlegen (nur Software-Stop). Standard: "
+        "Stop-Order wird hinterlegt und greift auch, wenn der Bot ausfällt.",
+    )
 
     report_parser = subparsers.add_parser(
         "momentum-report",
@@ -1455,6 +1462,7 @@ def main():
                 args.order_poll_interval_seconds,
                 args.flatten_minutes_before_close,
                 args.allow_live_trading,
+                args.broker_stop_orders,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

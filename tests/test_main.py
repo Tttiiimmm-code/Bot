@@ -344,3 +344,26 @@ def test_momentum_run_allows_live_trading_with_flag(monkeypatch):
     main_module.main()
 
     assert started == [False]
+
+
+@pytest.mark.parametrize("argv, expected", [([], True), (["--no-broker-stop"], False)])
+def test_momentum_run_broker_stop_flag(monkeypatch, argv, expected):
+    import main as main_module
+    import tradingbot.momentum_live as momentum_live
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", *argv])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen = []
+
+    class FakeBot:
+        def __init__(self, config, criteria, live_config):
+            seen.append(live_config.broker_stop_orders)
+
+        def run_forever(self):
+            pass
+
+    monkeypatch.setattr(momentum_live, "LiveMomentumBot", FakeBot)
+
+    main_module.main()
+
+    assert seen == [expected]

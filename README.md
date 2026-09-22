@@ -338,6 +338,11 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   `--order-fill-timeout-seconds` (Standard 30s) füllt, wird storniert und der Einstieg verworfen;
   eine Verkaufs-Order wird dagegen NIE aufgegeben (reale Position bliebe sonst unbewacht) --
   sie wird bei Bedarf über mehrere Zyklen hinweg weiterverfolgt und erneut versucht.
+- Stop-Order bei Alpaca als Sicherheitsnetz: nach jedem Kauf legt der Bot zusätzlich zum
+  Software-Stop eine echte Stop-Order (DAY) beim Broker an. Sie greift auch, wenn der Bot
+  abstürzt oder die Verbindung verliert. Vor jedem eigenen Verkauf wird sie storniert, nach
+  einem Teilverkauf mit neuer Stückzahl und Breakeven-Stop neu angelegt; löst sie selbst aus,
+  verbucht der Bot das im nächsten Zyklus. Abschaltbar mit `--no-broker-stop`.
 - Rückstände werden nachgeholt, aber niemals real gehandelt: wird ein Symbol erst Stunden nach
   Sitzungsbeginn neu aufgenommen, oder war der Bot eine Weile offline (Neustart!), holt er die
   fehlenden Minuten-Bars auf einmal nach, damit Muster (Flagge/Pullback/Swing-Tief) korrekt aus
@@ -356,7 +361,9 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   `--poll-interval-seconds` nach unten begrenzt.
 - **Kein Zustand übersteht einen Neustart.** Bei einem Absturz mit offener(n) Position(en)
   verliert der Bot jede Kenntnis davon (kein Persistenz-Layer) -- nach einem Absturz IMMER
-  manuell im Alpaca-Dashboard prüfen, ob noch offene Positionen/Orders existieren.
+  manuell im Alpaca-Dashboard prüfen, ob noch offene Positionen/Orders existieren. Die
+  Broker-Stop-Order (s.o.) schützt die Position bis Handelsschluss, der Zwangsverkauf vor
+  Handelsschluss greift nach einem Absturz aber NICHT (die Stop-Order verfällt am Tagesende).
 - **Kein Float-Filter** (siehe Scanner/Backtest oben).
 - **Ein einzelner Prozess, keine Parallelisierung** -- alle beobachteten Symbole werden
   sequentiell im selben Zyklus abgefragt; bei sehr vielen gleichzeitig beobachteten Symbolen

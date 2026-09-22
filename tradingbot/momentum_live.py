@@ -47,7 +47,7 @@ from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, OrderStatus, TimeInForce
-from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.requests import MarketOrderRequest, StopOrderRequest
 
 from tradingbot.broker import _CALENDAR_DAYS_PER_TRADING_DAY, _filter_regular_session
 from tradingbot.config import Config
@@ -106,6 +106,10 @@ class LiveMomentumConfig:
     # Wie viele Minuten vor Sitzungsende alle offenen Positionen zwangs-
     # weise glattgestellt werden (kein Overnight-Halten, siehe Artikel).
     flatten_minutes_before_close: int = 5
+    # Zusätzlich zum Software-Stop eine echte Stop-Order bei Alpaca
+    # hinterlegen (Sicherheitsnetz, greift auch bei Absturz/Netzausfall
+    # des Bots) -- siehe LiveMomentumBot._ensure_broker_stop.
+    broker_stop_orders: bool = True
 
 
 def _validate_live_config(c: LiveMomentumConfig) -> None:
@@ -222,6 +226,15 @@ class _SymbolState:
     # _resolve_pending_exits), statt dauerhaft einen Platz in
     # max_tracked_symbols zu blockieren.
     carried_over: bool = False
+    # ID der bei Alpaca hinterlegten Stop-Order (Sicherheitsnetz für die
+    # offene Position), None = aktuell keine hinterlegt.
+    broker_stop_order_id: str | None = None
+
+
+def _round_stop_price(price: float) -> float:
+    """Alpaca akzeptiert Stop-Preise ab 1 $ nur in Cent-Schritten, darunter
+    mit bis zu 4 Nachkommastellen."""
+    return round(price, 2) if price >= 1 else round(price, 4)
 
 
 def _fetch_minute_bars_for_symbol(
@@ -800,6 +813,117 @@ class LiveMomentumBot:
             event.stop_price,
             fill_price + self.live_config.reward_risk_ratio * event.risk_per_share,
         )
+        self._ensure_broker_stop(symbol, state)
+
+    # --- Broker-seitige Stop-Order (Sicherheitsnetz) ------------------------
+    #
+    # Der eigentliche Stop bleibt die Software-Logik der MomentumEngine. Die
+    # Stop-Order bei Alpaca ist nur ein Netz für den Fall, dass der Bot
+    # ausfällt (Absturz, Neustart, Netzausfall). Invarianten:
+    # - Vor JEDEM eigenen Verkauf wird sie storniert (_submit_exit), sonst
+    #   hält Alpaca die Aktien für sie zurück und der Verkauf wird abgelehnt.
+    # - Löst sie selbst aus, wird der Fill in der Engine verbucht
+    #   (_check_broker_stop bzw. beim Stornierungsversuch).
+    # - Nach jedem Teilverkauf/Stornieren wird sie mit aktueller Stückzahl
+    #   und aktuellem Stop-Preis neu angelegt (_ensure_broker_stop).
+
+    def _ensure_broker_stop(self, symbol: str, state: _SymbolState) -> None:
+        """Legt eine Stop-Order für die offene Position an, falls noch keine
+        existiert. Fehler werden nur geloggt -- der Software-Stop greift
+        weiterhin, das Anlegen wird im nächsten Zyklus erneut versucht."""
+        if not self.live_config.broker_stop_orders:
+            return
+        engine = state.engine
+        if not engine.in_position or state.pending_exit is not None or state.broker_stop_order_id is not None:
+            return
+        if engine.shares_open <= 0 or engine.stop_price <= 0:
+            return
+        stop_price = _round_stop_price(engine.stop_price)
+        if state.last_close and state.last_close <= stop_price:
+            # Kurs liegt schon am/unter dem Stop -- Alpaca würde eine Sell-
+            # Stop-Order über dem Marktpreis ablehnen, und der Software-Stop
+            # verkauft ohnehin sofort.
+            return
+        try:
+            order = self.trading_client.submit_order(
+                StopOrderRequest(
+                    symbol=symbol,
+                    qty=engine.shares_open,
+                    side=OrderSide.SELL,
+                    time_in_force=TimeInForce.DAY,
+                    stop_price=stop_price,
+                )
+            )
+        except Exception:
+            logger.exception(
+                "Stop-Order bei Alpaca für %s konnte nicht angelegt werden -- Software-Stop bleibt aktiv, "
+                "neuer Versuch im nächsten Zyklus.",
+                symbol,
+            )
+            return
+        state.broker_stop_order_id = order.id
+        logger.info(
+            "Stop-Order bei Alpaca hinterlegt: %s %s Stück @ Stop %.4f (id=%s)",
+            symbol,
+            engine.shares_open,
+            stop_price,
+            order.id,
+        )
+
+    def _record_broker_stop_fill(self, symbol: str, state: _SymbolState, order) -> None:
+        """Verbucht einen (Teil-)Fill der Broker-Stop-Order in der Engine."""
+        filled_qty = int(float(order.filled_qty or 0))
+        if filled_qty <= 0 or not state.engine.in_position:
+            return
+        filled_qty = min(filled_qty, state.engine.shares_open)
+        fill_price = float(order.filled_avg_price)
+        fully_closed = state.engine.record_exit(filled_qty, fill_price)
+        logger.warning(
+            "Stop-Order bei Alpaca für %s ausgelöst: %s Stück @ %.4f verkauft%s",
+            symbol,
+            filled_qty,
+            fill_price,
+            " -- Position vollständig geschlossen" if fully_closed else "",
+        )
+        if fully_closed:
+            self._clear_stale_deferred_exits(symbol, state)
+
+    def _check_broker_stop(self, symbol: str, state: _SymbolState) -> None:
+        """Prüft, ob die Broker-Stop-Order inzwischen einen Endzustand
+        erreicht hat (ausgelöst/verfallen), und verbucht ggf. den Fill."""
+        if state.broker_stop_order_id is None:
+            return
+        order = self.trading_client.get_order_by_id(state.broker_stop_order_id)
+        if order.status not in (OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED, OrderStatus.EXPIRED):
+            return
+        state.broker_stop_order_id = None
+        self._record_broker_stop_fill(symbol, state, order)
+
+    def _cancel_broker_stop(self, symbol: str, state: _SymbolState) -> bool:
+        """Storniert die Broker-Stop-Order vor einem eigenen Verkauf und
+        verbucht einen evtl. schon erfolgten Fill (Race: Stop löst genau
+        jetzt aus). False, wenn die Stornierung nicht bestätigt werden
+        konnte -- dann darf NICHT verkauft werden (Aktien noch reserviert,
+        Gefahr eines doppelten Verkaufs)."""
+        order_id = state.broker_stop_order_id
+        if order_id is None:
+            return True
+        try:
+            self.trading_client.cancel_order_by_id(order_id)
+        except APIError:
+            pass  # z.B. bereits gefüllt/verfallen -- der Status unten ist maßgeblich
+        order = self._wait_for_fill(order_id, self.live_config.order_fill_timeout_seconds)
+        if order is None:
+            logger.critical(
+                "Stop-Order für %s (id=%s) konnte nicht rechtzeitig storniert werden -- Verkauf wird "
+                "zurückgestellt und im nächsten Zyklus erneut versucht.",
+                symbol,
+                order_id,
+            )
+            return False
+        state.broker_stop_order_id = None
+        self._record_broker_stop_fill(symbol, state, order)
+        return True
 
     def _clear_stale_deferred_exits(self, symbol: str, state: _SymbolState) -> None:
         """Wird aufgerufen, sobald eine Position vollständig geschlossen
@@ -871,6 +995,26 @@ class LiveMomentumBot:
         return ExitSignal(event.reason, event.time, event.reference_price, remaining_for_event)
 
     def _submit_exit(self, symbol: str, state: _SymbolState, event: ExitSignal, _retries_left: int = 1) -> None:
+        # Broker-Stop zuerst stornieren (hält sonst die Aktien zurück) --
+        # hat er inzwischen selbst ausgelöst, ist dieser Verkauf ganz oder
+        # teilweise schon erledigt.
+        if not self._cancel_broker_stop(symbol, state):
+            state.deferred_exits.append(event)
+            return
+        if not state.engine.in_position:
+            return
+        if event.shares > state.engine.shares_open:
+            event = ExitSignal(event.reason, event.time, event.reference_price, state.engine.shares_open)
+        try:
+            self._submit_exit_order(symbol, state, event, _retries_left)
+        finally:
+            # Nach Teilverkauf (Breakeven-Stop) bzw. fehlgeschlagenem Verkauf
+            # das Sicherheitsnetz für die verbleibende Menge neu anlegen.
+            self._ensure_broker_stop(symbol, state)
+
+    def _submit_exit_order(
+        self, symbol: str, state: _SymbolState, event: ExitSignal, _retries_left: int = 1
+    ) -> None:
         order = self.trading_client.submit_order(
             MarketOrderRequest(symbol=symbol, qty=event.shares, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
         )
@@ -1001,6 +1145,7 @@ class LiveMomentumBot:
                 )
 
     def _resolve_pending_exit_for_symbol(self, symbol: str, state: _SymbolState) -> None:
+        self._check_broker_stop(symbol, state)
         pending = state.pending_exit
         if pending is not None:
             order = self.trading_client.get_order_by_id(pending.order_id)
@@ -1036,6 +1181,10 @@ class LiveMomentumBot:
         if state.pending_exit is None and state.deferred_exits and state.engine.in_position:
             next_event = state.deferred_exits.pop(0)
             self._submit_exit(symbol, state, next_event)
+
+        # Sicherheitsnetz nach Auflösung einer ausstehenden Order (bzw. nach
+        # verfallener/ausgelöster Stop-Order) wiederherstellen.
+        self._ensure_broker_stop(symbol, state)
 
         if state.carried_over and state.pending_exit is None and not state.engine.in_position:
             # Von einem vorherigen Handelstag übernommenes Symbol ist jetzt

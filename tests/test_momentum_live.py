@@ -82,6 +82,7 @@ class FakeOrder:
         self.status = OrderStatus.NEW
         self.filled_qty = 0
         self.filled_avg_price = 0.0
+        self.stop_price = None
 
 
 class FakeTradingClient:
@@ -129,6 +130,11 @@ class FakeTradingClient:
         self.orders: dict[str, FakeOrder] = {}
         self.submitted_orders: list[FakeOrder] = []
         self.canceled_order_ids: list[str] = []
+        # Broker-Stop-Orders (StopOrderRequest) getrennt von submitted_orders
+        # geführt: sie füllen NICHT sofort (warten auf ihren Auslösekurs) und
+        # sollen bestehende Zählungen von Markt-Orders nicht verfälschen.
+        self.stop_orders: list[FakeOrder] = []
+        self.fail_stop_submit = False
         self.get_account_calls = 0
         self._next_id = 1
 
@@ -145,6 +151,13 @@ class FakeTradingClient:
         order_id = f"order-{self._next_id}"
         self._next_id += 1
         order = FakeOrder(order_id, order_request.symbol, order_request.qty, order_request.side)
+        if getattr(order_request, "stop_price", None) is not None:
+            if self.fail_stop_submit:
+                raise APIError("simulierter Fehler beim Anlegen der Stop-Order")
+            order.stop_price = order_request.stop_price
+            self.orders[order_id] = order
+            self.stop_orders.append(order)
+            return order
         if self.auto_fill:
             order.status = OrderStatus.FILLED
             order.filled_qty = order_request.qty
@@ -155,8 +168,16 @@ class FakeTradingClient:
         self.submitted_orders.append(order)
         return order
 
+    def open_stop_orders(self) -> list[FakeOrder]:
+        return [o for o in self.stop_orders if o.status == OrderStatus.NEW]
+
+    def trigger_stop(self, order: FakeOrder, fill_price: float) -> None:
+        order.status = OrderStatus.FILLED
+        order.filled_qty = order.qty
+        order.filled_avg_price = fill_price
+
     def get_order_by_id(self, order_id):
-        if self.raise_on_next_get_order_by_id:
+        if self.raise_on_next_get_order_by_id and self.orders[order_id].stop_price is None:
             self.raise_on_next_get_order_by_id = False
             raise APIError("simulierter transienter API-Fehler beim Abfragen der Order")
         return self.orders[order_id]
@@ -165,6 +186,9 @@ class FakeTradingClient:
         self.canceled_order_ids.append(order_id)
         order = self.orders[order_id]
         if order.status in (OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED, OrderStatus.EXPIRED):
+            return
+        if order.stop_price is not None:
+            order.status = OrderStatus.CANCELED
             return
         if self.race_fill_on_cancel:
             order.status = OrderStatus.FILLED
@@ -1335,3 +1359,128 @@ def test_tracked_symbols_processed_before_rescan():
 
     assert len(seen_at_scan) == 1
     assert seen_at_scan[0] is not None
+
+
+# ---------------------------------------------------------------------------
+# Broker-seitige Stop-Order (Sicherheitsnetz)
+# ---------------------------------------------------------------------------
+
+
+def _entered_bot(**live_overrides):
+    """Bot, der im Zyklus um 9:35 ET per Bull-Flag eingestiegen ist (77 Stück
+    @ 12.20, Stop 11.30); weitere Balken ab 9:36 über extra_today_bars."""
+    extra = live_overrides.pop("extra_today_bars", ())
+    data_client = _make_data_client("AAPL", extra_today_bars=extra)
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    bot = _make_bot(data_client, trading_client, FakeScanner([_make_candidate("AAPL")]), _live_config(**live_overrides))
+    bot.run_once(now=_et(9, 35))
+    assert bot._symbols["AAPL"].engine.in_position
+    return bot, trading_client
+
+
+def test_entry_places_broker_stop_order_for_full_position():
+    bot, trading_client = _entered_bot()
+
+    stops = trading_client.open_stop_orders()
+    assert len(stops) == 1
+    assert stops[0].side == OrderSide.SELL
+    assert stops[0].qty == 77
+    assert stops[0].stop_price == pytest.approx(11.30)
+    assert bot._symbols["AAPL"].broker_stop_order_id == stops[0].id
+
+
+def test_no_broker_stop_order_when_disabled():
+    _, trading_client = _entered_bot(broker_stop_orders=False)
+
+    assert trading_client.stop_orders == []
+
+
+def test_own_exit_cancels_broker_stop_before_selling():
+    """Ohne vorheriges Stornieren hielte Alpaca die Aktien für die Stop-Order
+    zurück und würde den eigenen Verkauf ablehnen."""
+    extra = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=extra)
+    stop_id = trading_client.open_stop_orders()[0].id
+
+    trading_client.fill_price = 11.30
+    bot.run_once(now=_et(9, 37))
+
+    assert stop_id in trading_client.canceled_order_ids
+    assert trading_client.open_stop_orders() == []
+    sell_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(sell_orders) == 1
+    assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_triggered_broker_stop_is_recorded_without_extra_sell():
+    """Der Bot war z.B. kurz nicht erreichbar -- der Stop bei Alpaca hat
+    ausgelöst. Der nächste Zyklus muss das verbuchen, statt die (nicht mehr
+    vorhandene) Position noch einmal zu verkaufen."""
+    bot, trading_client = _entered_bot()
+    trading_client.trigger_stop(trading_client.open_stop_orders()[0], fill_price=11.28)
+
+    bot.run_once(now=_et(9, 36))
+
+    state = bot._symbols["AAPL"]
+    assert not state.engine.in_position
+    assert state.broker_stop_order_id is None
+    assert [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL] == []
+
+
+def test_own_exit_racing_triggered_broker_stop_does_not_double_sell():
+    """Software-Stop und Broker-Stop lösen gleichzeitig aus: beim
+    Stornierungsversuch zeigt sich, dass der Broker-Stop schon gefüllt ist --
+    es darf KEIN zweiter Verkauf folgen (sonst Leerverkauf)."""
+    extra = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=extra)
+    state = bot._symbols["AAPL"]
+    stop = trading_client.open_stop_orders()[0]
+
+    # Stop füllt genau zwischen Statusprüfung und eigenem Verkauf.
+    original_check = bot._check_broker_stop
+
+    def check_then_trigger(symbol, st):
+        original_check(symbol, st)
+        trading_client.trigger_stop(stop, fill_price=11.29)
+
+    bot._check_broker_stop = check_then_trigger
+    bot.run_once(now=_et(9, 37))
+
+    assert not state.engine.in_position
+    assert [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL] == []
+
+
+def test_partial_target_exit_replaces_broker_stop_at_breakeven_for_remainder():
+    target_bar = [{"open": 12.30, "high": 14.05, "low": 12.25, "close": 14.00, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=target_bar)
+    first_stop = trading_client.open_stop_orders()[0]
+
+    bot.run_once(now=_et(9, 37))
+
+    state = bot._symbols["AAPL"]
+    assert state.engine.in_position
+    assert state.engine.shares_open == 39
+    assert first_stop.status == OrderStatus.CANCELED
+    stops = trading_client.open_stop_orders()
+    assert len(stops) == 1
+    assert stops[0].qty == 39
+    assert stops[0].stop_price == pytest.approx(12.20)  # Breakeven
+
+
+def test_broker_stop_submit_failure_keeps_trading_and_retries_next_cycle():
+    data_client = _make_data_client("AAPL")
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    trading_client.fail_stop_submit = True
+    bot = _make_bot(data_client, trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 35))
+
+    state = bot._symbols["AAPL"]
+    assert state.engine.in_position
+    assert state.broker_stop_order_id is None
+
+    trading_client.fail_stop_submit = False
+    bot.run_once(now=_et(9, 36))
+
+    assert state.broker_stop_order_id is not None
+    assert len(trading_client.open_stop_orders()) == 1
