@@ -137,6 +137,20 @@ class FakeTradingClient:
         self.fail_stop_submit = False
         self.get_account_calls = 0
         self._next_id = 1
+        # Beim Bot-Start bereits im Depot liegende Positionen (Symbolnamen).
+        self.positions: list[str] = []
+        self.close_all_calls: list[bool] = []
+        self.fail_positions_query = False
+
+    def get_all_positions(self):
+        if self.fail_positions_query:
+            raise APIError("simulierter Fehler")
+        return [SimpleNamespace(symbol=sym, qty="100") for sym in self.positions]
+
+    def close_all_positions(self, cancel_orders=None):
+        self.close_all_calls.append(cancel_orders)
+        self.positions = []
+        return []
 
     def get_calendar(self, request):
         return self._calendar_entries
@@ -1509,3 +1523,45 @@ def test_broker_stop_submit_failure_keeps_trading_and_retries_next_cycle():
 
     assert state.broker_stop_order_id is not None
     assert len(trading_client.open_stop_orders()) == 1
+
+
+# ---------------------------------------------------------------------------
+# Verwaiste Positionen beim Start
+# ---------------------------------------------------------------------------
+
+
+def test_orphaned_positions_at_startup_are_closed_once():
+    """Nach einem Neustart kennt der Bot bestehende Positionen nicht (kein
+    Stop, kein Flatten vor Handelsschluss) -- sie werden beim Start
+    glattgestellt, samt offener Orders (z.B. alte Broker-Stops)."""
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    trading_client.positions = ["GLND"]
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([]))
+
+    bot.run_once(now=_et(9, 20))
+    bot.run_once(now=_et(9, 21))
+
+    assert trading_client.close_all_calls == [True]
+
+
+def test_orphaned_position_check_retried_after_api_error():
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    trading_client.positions = ["GLND"]
+    trading_client.fail_positions_query = True
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([]))
+
+    bot.run_once(now=_et(9, 20))
+    assert trading_client.close_all_calls == []
+
+    trading_client.fail_positions_query = False
+    bot.run_once(now=_et(9, 21))
+    assert trading_client.close_all_calls == [True]
+
+
+def test_no_close_all_when_no_positions_at_startup():
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([]))
+
+    bot.run_once(now=_et(9, 20))
+
+    assert trading_client.close_all_calls == []

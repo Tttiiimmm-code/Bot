@@ -309,6 +309,27 @@ class LiveMomentumBot:
         self._flatten_triggered_today = False
         self._day_start_equity: float | None = None
         self._last_scan_time: datetime | None = None
+        self._orphans_checked = False
+
+    def _close_orphaned_positions(self) -> None:
+        """Einmalig beim Start: Positionen, die schon im Depot liegen (z.B.
+        nach einem Neustart mitten im Trade), kennt der Bot nicht -- sie
+        hätten weder Software-Stop noch Flatten vor Handelsschluss. Deshalb
+        samt offener Orders (alte Broker-Stops) glattstellen. Bei einem
+        API-Fehler wird es im nächsten Zyklus erneut versucht."""
+        try:
+            positions = self.trading_client.get_all_positions()
+            if positions:
+                logger.critical(
+                    "Beim Start %d unbekannte Position(en) im Depot gefunden (%s) -- werden samt offener "
+                    "Orders glattgestellt.",
+                    len(positions),
+                    ", ".join(sorted(p.symbol for p in positions)),
+                )
+                self.trading_client.close_all_positions(cancel_orders=True)
+            self._orphans_checked = True
+        except Exception:
+            logger.exception("Prüfung auf verwaiste Positionen fehlgeschlagen, nächster Versuch im nächsten Zyklus.")
 
     def _start_new_day(self, session, now: datetime) -> None:
         # Symbole mit noch offener Position oder unbestätigter Order NICHT
@@ -385,6 +406,8 @@ class LiveMomentumBot:
         Tageswechsel/Sitzungsgrenzen/Flatten-Cutoff deterministisch
         durchgespielt werden können."""
         now = now if now is not None else datetime.now(timezone.utc)
+        if not self._orphans_checked:
+            self._close_orphaned_positions()
         session = latest_trading_session(self.trading_client, now)
         if session.date != self._trading_day:
             self._start_new_day(session, now)
