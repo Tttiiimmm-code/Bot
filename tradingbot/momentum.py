@@ -133,16 +133,33 @@ def _build_relative_volume_reference(prior_days_cum_volumes: list[np.ndarray], m
     return avg
 
 
+def _session_minutes(index: pd.DatetimeIndex) -> np.ndarray:
+    """Minuten seit 9:30 (Sitzungsbeginn) für jeden Balken eines Tages.
+    `index` muss in America/New_York-Zeit vorliegen (siehe
+    broker._filter_regular_session)."""
+    session_open = index[0].normalize() + pd.Timedelta(hours=9, minutes=30)
+    return ((index - session_open).total_seconds() // 60).astype(int).to_numpy()
+
+
+def _cum_volume_by_session_minute(day_bars: pd.DataFrame) -> np.ndarray:
+    """Kumuliertes Volumen je UHRZEIT-Minute seit Sitzungsbeginn (Position i
+    = 9:30 + i Minuten). Minuten ohne Balken zählen mit Volumen 0 -- IEX
+    liefert bei dünn gehandelten Small-Caps viele Minuten gar nicht. Eine
+    Ausrichtung nach Balken-POSITION statt Uhrzeit würde Referenz und
+    Live-Abfrage (die per Uhrzeit-Minute indiziert, siehe momentum_live.py)
+    auseinanderlaufen lassen."""
+    minutes = _session_minutes(day_bars.index)
+    volume = np.zeros(int(minutes.max()) + 1)
+    np.add.at(volume, minutes, day_bars["volume"].to_numpy(dtype=float))
+    return np.cumsum(volume)
+
+
 def _relative_volume_reference(days: list[pd.Timestamp], day_bars_by_day: dict, lookback_days: int):
     """Baut für jeden Tag (ab dem `lookback_days`-ten) eine Referenzkurve
     der durchschnittlichen kumulierten Lautstärke je Minute-seit-Sitzungs-
     beginn über die vorangegangenen `lookback_days` Tage (siehe
-    _build_relative_volume_reference; Frühschluss-Handelstage können die
-    Ausrichtung leicht verschieben, für die Zwecke dieses Näherungs-
-    Backtests ausreichend genau)."""
-    cum_vol_by_day = {
-        day: day_bars_by_day[day]["volume"].cumsum().to_numpy() for day in days
-    }
+    _build_relative_volume_reference)."""
+    cum_vol_by_day = {day: _cum_volume_by_session_minute(day_bars_by_day[day]) for day in days}
 
     reference: dict[pd.Timestamp, np.ndarray | None] = {}
     for i, day in enumerate(days):
@@ -597,6 +614,7 @@ def _simulate_day(
     times = day_bars.index
     n = len(day_bars)
     cum_volume = np.cumsum(volumes)
+    session_minutes = _session_minutes(times)
 
     engine = MomentumEngine(
         flagpole_min_gain_pct=flagpole_min_gain_pct,
@@ -613,7 +631,7 @@ def _simulate_day(
     for i in range(n):
         bar_time = times[i]
         in_window = trading_window_start <= bar_time.time() < trading_window_end
-        rel_vol = _relative_volume_at(cum_volume[i], rel_vol_reference, i)
+        rel_vol = _relative_volume_at(cum_volume[i], rel_vol_reference, session_minutes[i])
 
         events = engine.process_bar(
             bar_time,

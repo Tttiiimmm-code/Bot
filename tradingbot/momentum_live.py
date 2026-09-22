@@ -57,6 +57,7 @@ from tradingbot.momentum import (
     ExitSignal,
     MomentumEngine,
     _build_relative_volume_reference,
+    _cum_volume_by_session_minute,
     _daily_trend_ok,
     _relative_volume_at,
 )
@@ -445,12 +446,25 @@ class LiveMomentumBot:
                 self._flatten_all(now)
                 return
 
+        # Bereits beobachtete Symbole (inkl. offener Positionen) ZUERST
+        # verarbeiten, erst DANACH scannen: der Kontextaufbau für neue
+        # Kandidaten (mehrere Monate Minutendaten je Symbol) kann viele
+        # Sekunden dauern -- Stops/Ausstiege offener Positionen dürfen nicht
+        # so lange warten. Neu aufgenommene Symbole werden direkt im
+        # Anschluss an den Scan noch im selben Zyklus verarbeitet.
+        already_tracked = set(self._symbols)
+        self._process_symbols(already_tracked, now)
+
         if self._last_scan_time is None or (now - self._last_scan_time) >= timedelta(
             seconds=self.live_config.scan_interval_seconds
         ):
             self._rescan(now, session)
+            self._process_symbols(set(self._symbols) - already_tracked, now)
 
+    def _process_symbols(self, symbols: set[str], now: datetime) -> None:
         for symbol, state in list(self._symbols.items()):
+            if symbol not in symbols:
+                continue
             if state.pending_exit is not None or state.deferred_exits:
                 # deferred_exits kann hier bereits VOR diesem Aufruf nicht-
                 # leer sein, wenn _resolve_pending_exits() (s.o.) einen
@@ -542,7 +556,7 @@ class LiveMomentumBot:
 
         day_bars_by_day = {d: bars.loc[day_keys == d] for d in prior_days}
         recent_days = prior_days[-self.live_config.lookback_days :]
-        cum_vols = [day_bars_by_day[d]["volume"].cumsum().to_numpy() for d in recent_days]
+        cum_vols = [_cum_volume_by_session_minute(day_bars_by_day[d]) for d in recent_days]
         max_len = max(len(c) for c in cum_vols)
         rel_vol_reference = _build_relative_volume_reference(cum_vols, max_len)
 

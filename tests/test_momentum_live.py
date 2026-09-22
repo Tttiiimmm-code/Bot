@@ -1285,3 +1285,53 @@ def test_halted_retries_flatten_all_across_cycles_for_pending_symbol():
     sell_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
     assert len(sell_orders) == 1  # nur der Flatten-Verkauf des Rests (die pending Order wurde nicht ueber submit_order() gesendet)
     assert sell_orders[0].qty == 39
+
+
+def test_build_symbol_context_reference_aligned_by_clock_minute_for_sparse_data():
+    """Regression: bei lückenhaften IEX-Minutendaten muss die Referenzkurve
+    per UHRZEIT-Minute indiziert sein -- genau so fragt _process_new_bars
+    sie ab (minute_index = Minuten seit session_open)."""
+    from tests.test_momentum import _sparse_day
+
+    days = {
+        DAY_MINUS_2: _sparse_day(DAY_MINUS_2, {0: 100, 5: 100}),
+        DAY_MINUS_1: _sparse_day(DAY_MINUS_1, {0: 100, 5: 100}),
+    }
+    data_client = FakeDataClient({"AAPL": build_bars(days).tz_convert("UTC")})
+    bot = _make_bot(data_client, FakeTradingClient([FakeCalendarEntry(TODAY)]), FakeScanner([]))
+
+    context = bot._build_symbol_context("AAPL", _et(9, 31), FakeCalendarEntry(TODAY))
+
+    assert context is not None
+    rel_vol_reference, _, _ = context
+    assert rel_vol_reference[3] == pytest.approx(100)
+    assert rel_vol_reference[5] == pytest.approx(200)
+
+
+def test_tracked_symbols_processed_before_rescan():
+    """Regression: der Scan (inkl. langsamem Kontextaufbau für neue
+    Kandidaten) lief VOR der Balkenverarbeitung -- Stops/Ausstiege offener
+    Positionen mussten darauf warten."""
+    data_client = _make_data_client("AAPL")
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=10.0)
+    live_config = _live_config()
+    seen_at_scan = []
+
+    class RecordingScanner(FakeScanner):
+        def scan(self, criteria, reference_time=None):
+            seen_at_scan.append(bot._symbols["AAPL"].last_bar_time)
+            return super().scan(criteria, reference_time)
+
+    bot = _make_bot(data_client, trading_client, RecordingScanner([]), live_config=live_config)
+    bot._trading_day = TODAY
+    bot._symbols["AAPL"] = _SymbolState(
+        engine=_entered_engine(live_config, entry_price=10.0, stop_price=9.0),
+        rel_vol_reference=np.array([50.0] * 10),
+        daily_sma=9.0,
+        session_open=_et(9, 30).astimezone(ZoneInfo("America/New_York")),
+    )
+
+    bot.run_once(now=_et(9, 36))
+
+    assert len(seen_at_scan) == 1
+    assert seen_at_scan[0] is not None

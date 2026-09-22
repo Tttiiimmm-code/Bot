@@ -738,3 +738,36 @@ def test_run_momentum_backtest_multi_uses_independent_starting_cash_per_symbol()
 def test_run_momentum_backtest_multi_rejects_empty_dict():
     with pytest.raises(ValueError, match="bars_by_symbol"):
         run_momentum_backtest_multi({}, starting_cash_per_symbol=10_000.0, **COMMON_KWARGS)
+
+
+def _sparse_day(day: date, minute_volumes: dict[int, float], price: float = 10.00) -> pd.DataFrame:
+    """Tag mit Balken NUR in den angegebenen Minuten seit 9:30 (wie IEX bei
+    dünn gehandelten Small-Caps: Minuten ohne Trade fehlen komplett)."""
+    start = pd.Timestamp(datetime(day.year, day.month, day.day, 9, 30), tz="America/New_York")
+    idx = pd.DatetimeIndex([start + pd.Timedelta(minutes=m) for m in minute_volumes])
+    rows = [
+        {"open": price, "high": price, "low": price, "close": price, "volume": v} for v in minute_volumes.values()
+    ]
+    return pd.DataFrame(rows, index=idx)
+
+
+def test_relative_volume_reference_aligns_by_clock_minute_not_bar_position():
+    """Regression: die Referenzkurve wurde nach Balken-POSITION aufgebaut
+    (i-ter Balken des Tages), abgefragt aber (live) nach UHRZEIT-Minute seit
+    Sitzungsbeginn. Bei lückenhaften Daten (IEX, Small-Caps) liefen beide
+    auseinander -- Relativvolumen wurde falsch bzw. gar nicht berechnet."""
+    from tradingbot.momentum import _relative_volume_reference
+
+    d1, d2, d3 = date(2024, 1, 8), date(2024, 1, 9), date(2024, 1, 10)
+    day_bars = {
+        d1: _sparse_day(d1, {0: 100, 5: 100}),
+        d2: _sparse_day(d2, {0: 100, 5: 100}),
+        d3: _sparse_day(d3, {0: 100, 5: 100}),
+    }
+
+    reference = _relative_volume_reference([d1, d2, d3], day_bars, lookback_days=2)[d3]
+
+    # 9:33 (Minute 3): bis dahin nur der 9:30-Balken gehandelt.
+    assert reference[3] == pytest.approx(100)
+    # 9:35 (Minute 5): beide Balken.
+    assert reference[5] == pytest.approx(200)
