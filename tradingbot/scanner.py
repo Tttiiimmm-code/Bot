@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pandas as pd
 from alpaca.data.enums import Adjustment
 from alpaca.data.historical import StockHistoricalDataClient
@@ -113,10 +114,21 @@ def elapsed_session_fraction(now: datetime, session) -> float:
         return 0.01
     elapsed_minutes = (now_et - session_open).total_seconds() / 60
     total_minutes = (session_close - session_open).total_seconds() / 60
+    # Nicht linear: morgens wird deutlich mehr gehandelt als mittags (U-Form
+    # des Intraday-Volumens). Linear hochgerechnet würde das relative
+    # Volumen kurz nach Handelsbeginn stark überschätzt.
+    fraction = float(np.interp(elapsed_minutes / total_minutes, _VOLUME_PROFILE_TIME, _VOLUME_PROFILE_CUM))
     # Untergrenze verhindert eine Division durch (fast) 0 kurz nach
     # Handelsbeginn, die das projizierte Volumen sonst ins Absurde
     # treiben würde.
-    return max(elapsed_minutes / total_minutes, 0.01)
+    return max(fraction, 0.01)
+
+
+# Typischer kumulierter Anteil am Tagesvolumen US-Aktien (U-Form) über den
+# Anteil der verstrichenen Sitzung; Stützpunkte bei 0/15/30/60/90/120/180/
+# 240/300/360/390 von 390 Minuten. Grobe Näherung, genauer als linear.
+_VOLUME_PROFILE_TIME = [m / 390 for m in (0, 15, 30, 60, 90, 120, 180, 240, 300, 360, 390)]
+_VOLUME_PROFILE_CUM = [0.0, 0.07, 0.12, 0.20, 0.27, 0.33, 0.44, 0.55, 0.66, 0.82, 1.0]
 
 
 @dataclass

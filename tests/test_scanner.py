@@ -479,7 +479,8 @@ def test_relative_volume_projects_partial_session_volume():
     mit dem vollständigen historischen Tagesdurchschnitt würde das relative
     Volumen systematisch unterschätzen. 30 Minuten nach Handelsbeginn
     (10:00 EDT) sollte das Volumen auf einen vollen Handelstag hochgerechnet
-    werden: projected = volume / (30/390) = volume * 13."""
+    werden -- nach dem Intraday-Volumenprofil sind dann ~12% des Tages-
+    volumens gehandelt (nicht linear 30/390 = 7.7%)."""
     scanner = make_scanner()
     gainers = [FakeMover("MIDSESSION", percent_change=20.0, price=5.0)]
     bars = make_multi_symbol_bars({
@@ -491,8 +492,8 @@ def test_relative_volume_projects_partial_session_volume():
     candidates = scanner.scan(ScanCriteria(min_relative_volume=5.0), reference_time=mid_session)
 
     assert len(candidates) == 1
-    # projected_volume = 600_000 / (30/390) = 7_800_000; rel.vol = 78.0
-    assert candidates[0].relative_volume == pytest.approx(78.0)
+    # projected_volume = 600_000 / 0.12 = 5_000_000; rel.vol = 50.0
+    assert candidates[0].relative_volume == pytest.approx(50.0)
 
 
 def test_lookback_window_caps_history_to_requested_days():
@@ -630,3 +631,23 @@ def test_keeps_candidate_when_asset_lookup_fails():
     candidates = scanner.scan(ScanCriteria(), reference_time=TEST_NOW)
 
     assert [c.symbol for c in candidates] == ["GOOD"]
+
+
+@pytest.mark.parametrize(
+    "hour, minute, expected",
+    [
+        (9, 45, 0.07),  # 15 min: morgens schon 7% statt linear 3.8%
+        (10, 0, 0.12),
+        (12, 30, 0.44),
+        (15, 30, 0.82),
+    ],
+)
+def test_elapsed_session_fraction_follows_intraday_volume_profile(hour, minute, expected):
+    from datetime import date
+
+    from tradingbot.scanner import elapsed_session_fraction
+
+    et = ZoneInfo("America/New_York")
+    day = date(2026, 9, 22)
+    now = datetime.combine(day, time(hour, minute), tzinfo=et)
+    assert elapsed_session_fraction(now, FakeCalendarEntry(day)) == pytest.approx(expected)
