@@ -110,9 +110,21 @@ class LiveMomentumConfig:
     # hinterlegen (Sicherheitsnetz, greift auch bei Absturz/Netzausfall
     # des Bots) -- siehe LiveMomentumBot._ensure_broker_stop.
     broker_stop_orders: bool = True
+    # Mindest-Stop-Abstand in Prozent des Einstiegskurses FÜR DIE
+    # POSITIONSGRÖSSE: liegt das Pullback-Tief nur 1-2 Cent unter dem Kurs,
+    # rechnet die Stückzahl trotzdem mit diesem Mindestabstand. Der Stop
+    # selbst bleibt am Pullback-Tief; so kostet Slippage durch den Stop
+    # (dünne Small Caps) nicht ein Vielfaches von max_risk_dollars.
+    min_stop_pct: float = 0.02
+    # Obergrenze für den Positionswert (Stückzahl x Kurs) pro Trade.
+    max_position_dollars: float = 25_000.0
 
 
 def _validate_live_config(c: LiveMomentumConfig) -> None:
+    if not (math.isfinite(c.min_stop_pct) and 0 <= c.min_stop_pct < 1):
+        raise ValueError(f"min_stop_pct muss in [0, 1) liegen, war {c.min_stop_pct}.")
+    if not (math.isfinite(c.max_position_dollars) and c.max_position_dollars > 0):
+        raise ValueError(f"max_position_dollars muss eine positive, endliche Zahl sein, war {c.max_position_dollars}.")
     if not (math.isfinite(c.max_risk_dollars) and c.max_risk_dollars > 0):
         raise ValueError(f"max_risk_dollars muss eine positive, endliche Zahl sein, war {c.max_risk_dollars}.")
     if not (math.isfinite(c.reward_risk_ratio) and c.reward_risk_ratio > 0):
@@ -724,16 +736,20 @@ class LiveMomentumBot:
 
         account = self.trading_client.get_account()
         cash = max(float(account.cash), 0.0)
-        risk_based_shares = int(self.live_config.max_risk_dollars // event.risk_per_share)
+        sizing_risk_per_share = max(event.risk_per_share, event.reference_price * self.live_config.min_stop_pct)
+        risk_based_shares = int(self.live_config.max_risk_dollars // sizing_risk_per_share)
         cash_based_shares = int(cash // event.reference_price)
-        shares = min(risk_based_shares, cash_based_shares)
+        position_based_shares = int(self.live_config.max_position_dollars // event.reference_price)
+        shares = min(risk_based_shares, cash_based_shares, position_based_shares)
         if shares <= 0:
             logger.info(
-                "Breakout bei %s (%s) ignoriert: Stückzahl <= 0 (Risiko-Obergrenze=%d, Cash-Obergrenze=%d).",
+                "Breakout bei %s (%s) ignoriert: Stückzahl <= 0 (Risiko-Obergrenze=%d, Cash-Obergrenze=%d, "
+                "Positions-Obergrenze=%d).",
                 symbol,
                 event.pattern,
                 risk_based_shares,
                 cash_based_shares,
+                position_based_shares,
             )
             state.engine.decline_entry()
             return

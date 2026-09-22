@@ -798,6 +798,8 @@ def cmd_momentum_run(
     flatten_minutes_before_close: int,
     allow_live_trading: bool = False,
     broker_stop_orders: bool = True,
+    min_stop_pct: float = 0.02,
+    max_position_dollars: float = 25_000.0,
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -843,6 +845,8 @@ def cmd_momentum_run(
         order_poll_interval_seconds=order_poll_interval_seconds,
         flatten_minutes_before_close=flatten_minutes_before_close,
         broker_stop_orders=broker_stop_orders,
+        min_stop_pct=min_stop_pct,
+        max_position_dollars=max_position_dollars,
     )
 
     print(
@@ -1300,6 +1304,15 @@ def main():
         help="Keine zusätzliche Stop-Order bei Alpaca hinterlegen (nur Software-Stop). Standard: "
         "Stop-Order wird hinterlegt und greift auch, wenn der Bot ausfällt.",
     )
+    momentum_run_parser.add_argument(
+        "--min-stop-pct", type=float, default=0.02,
+        help="Mindest-Stop-Abstand (Anteil vom Kurs) für die Stückzahl-Berechnung. Ein engerer Stop "
+        "führt nicht mehr zu einer größeren Position. Standard: 0.02 (2%%).",
+    )
+    momentum_run_parser.add_argument(
+        "--max-position-dollars", type=float, default=25_000.0,
+        help="Maximaler Positionswert pro Trade in $. Standard: 25000.",
+    )
 
     report_parser = subparsers.add_parser(
         "momentum-report",
@@ -1463,6 +1476,8 @@ def main():
                 args.flatten_minutes_before_close,
                 args.allow_live_trading,
                 args.broker_stop_orders,
+                args.min_stop_pct,
+                args.max_position_dollars,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

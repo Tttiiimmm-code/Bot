@@ -343,6 +343,10 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   abstürzt oder die Verbindung verliert. Vor jedem eigenen Verkauf wird sie storniert, nach
   einem Teilverkauf mit neuer Stückzahl und Breakeven-Stop neu angelegt; löst sie selbst aus,
   verbucht der Bot das im nächsten Zyklus. Abschaltbar mit `--no-broker-stop`.
+- **Positionsgröße begrenzt:** Die Stückzahl rechnet mit mindestens 2 % Stop-Abstand
+  (`--min-stop-pct`), auch wenn das Pullback-Tief nur wenige Cent unter dem Kurs liegt,
+  und der Positionswert ist auf 25.000 $ begrenzt (`--max-position-dollars`). Der Stop
+  selbst bleibt am Pullback-Tief.
 - Rückstände werden nachgeholt, aber niemals real gehandelt: wird ein Symbol erst Stunden nach
   Sitzungsbeginn neu aufgenommen, oder war der Bot eine Weile offline (Neustart!), holt er die
   fehlenden Minuten-Bars auf einmal nach, damit Muster (Flagge/Pullback/Swing-Tief) korrekt aus

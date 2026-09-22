@@ -450,6 +450,31 @@ def test_full_cycle_detects_breakout_and_enters_position():
     assert buy_orders[0].qty == 77
 
 
+@pytest.mark.parametrize(
+    "overrides, expected_shares",
+    [
+        # Mindest-Stop 10% von 12.20 = 1.22 > 0.90 -> floor(70 / 1.22) = 57
+        ({"min_stop_pct": 0.10}, 57),
+        # Positions-Obergrenze 500$ -> floor(500 / 12.20) = 40
+        ({"max_position_dollars": 500.0}, 40),
+    ],
+)
+def test_position_size_limited_by_min_stop_and_max_position(overrides, expected_shares):
+    """Regressionstest (22.09.2026): 1-2 Cent enge Stops ergaben 30.000+
+    Stück; Slippage beim Stop kostete dann ein Vielfaches von max_risk_dollars."""
+    data_client = _make_data_client("AAPL")
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    scanner = FakeScanner([_make_candidate("AAPL")])
+    bot = _make_bot(data_client, trading_client, scanner, _live_config(**overrides))
+
+    bot.run_once(now=_et(9, 36))
+
+    buy_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY]
+    assert [o.qty for o in buy_orders] == [expected_shares]
+    # Stop bleibt am Pullback-Tief, nur die Stückzahl sinkt.
+    assert bot._symbols["AAPL"].engine.stop_price == pytest.approx(11.30)
+
+
 def test_breakout_declined_when_max_concurrent_positions_reached():
     days_common = {
         DAY_MINUS_2: flat_day(DAY_MINUS_2, 10, 10.00, 50),
