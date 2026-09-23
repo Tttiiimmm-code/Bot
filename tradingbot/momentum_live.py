@@ -783,7 +783,7 @@ class LiveMomentumBot:
                     # bereits gefüllte Position ungeschützt (der Stop
                     # würde nie auslösen), während die Engine intern
                     # schon "flach" wäre.
-                    self._submit_exit(symbol, state, event)
+                    self._submit_exit_or_defer(symbol, state, event)
                 if state.pending_exit is not None or state.deferred_exits:
                     # Eine noch unbestätigte Verkaufs-Order (pending_exit)
                     # ODER ein bereits zurückgestelltes, aber noch nicht
@@ -843,6 +843,22 @@ class LiveMomentumBot:
             state.engine.decline_entry()
             return
 
+        try:
+            order = self._submit_entry_order(symbol, state, event)
+        except Exception:
+            # Ohne Antwort auf das BreakoutEvent bricht process_bar() für
+            # dieses Symbol sonst in JEDEM weiteren Zyklus mit RuntimeError ab.
+            # Kam die Order trotz Fehler (z.B. Timeout nach Annahme) doch bei
+            # Alpaca an und füllt, verkauft der Depot-Abgleich die Aktien.
+            state.engine.decline_entry()
+            raise
+        if order is None:
+            return
+        self._await_entry_fill(symbol, state, event, order)
+
+    def _submit_entry_order(self, symbol: str, state: _SymbolState, event: BreakoutEvent):
+        """Positionsgröße bestimmen und Kauf-Order senden. None, wenn der
+        Einstieg mangels Stückzahl abgelehnt wurde (decline_entry() erfolgt)."""
         account = self.trading_client.get_account()
         cash = max(float(account.cash), 0.0)
         limit_price = _round_stop_price(event.reference_price * (1 + self.live_config.max_entry_slippage_pct))
@@ -864,7 +880,7 @@ class LiveMomentumBot:
                 position_based_shares,
             )
             state.engine.decline_entry()
-            return
+            return None
 
         order = self.trading_client.submit_order(
             LimitOrderRequest(
@@ -883,7 +899,9 @@ class LiveMomentumBot:
             event.pattern,
             order.id,
         )
+        return order
 
+    def _await_entry_fill(self, symbol: str, state: _SymbolState, event: BreakoutEvent, order) -> None:
         try:
             filled = self._wait_for_fill(order.id, self.live_config.order_fill_timeout_seconds)
             if filled is None:
@@ -922,6 +940,12 @@ class LiveMomentumBot:
                 symbol,
                 order.id,
             )
+            # Die Limit-Order wurde evtl. noch gar nicht storniert (Fehler beim
+            # ersten Status-Abruf) -- nicht bei Alpaca offen liegen lassen.
+            try:
+                self.trading_client.cancel_order_by_id(order.id)
+            except Exception:
+                logger.exception("Stornieren der Kauf-Order für %s (id=%s) fehlgeschlagen.", symbol, order.id)
             state.engine.decline_entry()
             return
 
@@ -942,6 +966,7 @@ class LiveMomentumBot:
             return
 
         fill_price = float(filled.filled_avg_price)
+        shares = int(float(order.qty))
         if shares_filled < shares:
             logger.warning(
                 "Kauf-Order für %s nur teilweise gefüllt: %s von %s Stück (Status=%s) -- Position wird "
@@ -972,7 +997,9 @@ class LiveMomentumBot:
                 fill_price,
                 event.stop_price,
             )
-            self._submit_exit(symbol, state, ExitSignal(ExitReason.STOP, event.time, fill_price, shares_filled))
+            self._submit_exit_or_defer(
+                symbol, state, ExitSignal(ExitReason.STOP, event.time, fill_price, shares_filled)
+            )
             return
         self._ensure_broker_stop(symbol, state)
 
@@ -1168,6 +1195,23 @@ class LiveMomentumBot:
         if remaining_for_event <= 0:
             return None
         return ExitSignal(event.reason, event.time, event.reference_price, remaining_for_event)
+
+    def _submit_exit_or_defer(self, symbol: str, state: _SymbolState, event: ExitSignal) -> None:
+        """_submit_exit für ein frisches Engine-Signal: scheitert es mit einem
+        Fehler (z.B. APIError beim Senden), wird das Signal zurückgestellt
+        und von _resolve_pending_exits() im nächsten Zyklus erneut versucht.
+        Ein Stop- oder Schwäche-Signal kommt mit der nächsten Kerze nicht
+        zwingend wieder -- ohne Zurückstellen ginge der Verkauf verloren."""
+        try:
+            self._submit_exit(symbol, state, event)
+        except Exception:
+            logger.exception(
+                "Verkauf von %s (Grund=%s) fehlgeschlagen -- Signal zurückgestellt, neuer Versuch im nächsten Zyklus.",
+                symbol,
+                event.reason,
+            )
+            if state.pending_exit is None and state.engine.in_position:
+                state.deferred_exits.append(event)
 
     def _submit_exit(self, symbol: str, state: _SymbolState, event: ExitSignal, _retries_left: int = 1) -> None:
         # Broker-Stop zuerst stornieren (hält sonst die Aktien zurück) --

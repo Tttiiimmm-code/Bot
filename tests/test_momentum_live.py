@@ -1753,3 +1753,57 @@ def test_failed_rollover_force_exit_is_retried_until_it_succeeds():
     sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
     assert [o.qty for o in sells] == [50]
     assert "AAPL" not in bot._symbols
+
+
+def test_buy_submit_error_declines_entry_instead_of_blocking_symbol_forever():
+    """Wirft das Senden der Kauf-Order (oder der Kontostand-Abruf) einen
+    API-Fehler, muss die Engine das offene BreakoutEvent trotzdem verwerfen
+    -- sonst bricht process_bar() für dieses Symbol in JEDEM weiteren Zyklus
+    mit RuntimeError ab und es wird bis zum Neustart nie wieder gehandelt."""
+    extra = [{"open": 12.20, "high": 12.25, "low": 12.10, "close": 12.15, "volume": 100}]
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20, fail_submit_for_symbol="AAPL")
+    bot = _make_bot(_make_data_client("AAPL", extra_today_bars=extra), trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 35))
+
+    engine = bot._symbols["AAPL"].engine
+    assert not engine.in_position
+    assert engine._pending_breakout is None
+    trading_client.fail_submit_for_symbol = None
+    bot.run_once(now=_et(9, 37))  # verarbeitet den 9:36-Balken ohne RuntimeError
+    assert bot._symbols["AAPL"].last_bar_time == pd.Timestamp(_et(9, 36)).tz_convert("America/New_York")
+
+
+def test_buy_order_left_open_after_wait_error_is_canceled():
+    """Bricht das Warten auf die Kauf-Order mit einem API-Fehler ab, darf die
+    Limit-Order nicht offen bei Alpaca liegen bleiben -- sie könnte sonst
+    irgendwann später füllen (unverwaltete Aktien)."""
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20, auto_fill=False)
+    trading_client.raise_on_next_get_order_by_id = True
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 35))
+
+    buy = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY][0]
+    assert buy.id in trading_client.canceled_order_ids
+    assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_exit_submit_error_is_deferred_and_retried_next_cycle():
+    """Scheitert das Senden der Verkaufs-Order (transienter API-Fehler), darf
+    das Ausstiegssignal nicht verloren gehen -- ein Stop- oder Schwäche-
+    Signal kommt mit der nächsten Kerze nicht zwingend wieder."""
+    extra = [{"open": 12.20, "high": 12.20, "low": 11.20, "close": 11.25, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=extra)
+
+    trading_client.fail_submit_for_symbol = "AAPL"
+    trading_client.fill_price = 11.30
+    bot.run_once(now=_et(9, 37))
+    assert bot._symbols["AAPL"].engine.in_position
+
+    trading_client.fail_submit_for_symbol = None
+    bot.run_once(now=_et(9, 38))  # keine neue Kerze -- nur der Nachholversuch
+
+    sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert [o.qty for o in sells] == [77]
+    assert not bot._symbols["AAPL"].engine.in_position
