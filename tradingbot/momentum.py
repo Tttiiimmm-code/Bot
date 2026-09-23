@@ -36,12 +36,17 @@ import pandas as pd
 from tradingbot.backtest import _execute_sell
 
 REQUIRED_COLUMNS = ("open", "high", "low", "close", "volume")
+# Schwäche-Ausstieg VOR dem Ziel-Teilverkauf: "red_candle" = erste Kerze,
+# die rot schließt; "new_low" = erste Kerze, deren Tief unter dem der
+# Vorkerze liegt (Warrior Trading: "first candle to make a new low").
+WEAKNESS_EXITS = ("red_candle", "new_low")
 
 
 class ExitReason(str, Enum):
     TARGET = "TARGET"  # 2:1-Ziel erreicht, 50% verkauft
     STOP = "STOP"  # Stop-Loss (Pullback-Tief bzw. Breakeven) ausgelöst
     RED_CANDLE = "RED_CANDLE"  # erste rote Kerze (vor Teilverkauf)
+    NEW_LOW = "NEW_LOW"  # erste Kerze mit Tief unter dem der Vorkerze (vor Teilverkauf)
     EXTENSION = "EXTENSION"  # ungewöhnlich starker Spike, Gewinn mitgenommen
     END_OF_DAY = "END_OF_DAY"  # Zwangsschluss am Sitzungsende (kein Overnight-Halten)
     CIRCUIT_BREAKER = "CIRCUIT_BREAKER"  # Zwangsschluss durch den Tages-Maximalverlust-Schutz (nur Live-Bot)
@@ -256,7 +261,11 @@ class MomentumEngine:
         reward_risk_ratio: float,
         extension_multiplier: float,
         min_relative_volume: float,
+        weakness_exit: str = "red_candle",
     ):
+        if weakness_exit not in WEAKNESS_EXITS:
+            raise ValueError(f"weakness_exit muss eines von {WEAKNESS_EXITS} sein, war {weakness_exit!r}.")
+        self._weakness_exit = weakness_exit
         self._flagpole_min_gain_pct = flagpole_min_gain_pct
         self._flagpole_max_bars = flagpole_max_bars
         self._min_pullback_bars = min_pullback_bars
@@ -276,6 +285,13 @@ class MomentumEngine:
         # des eigenen Exits (der z.B. bei einem Stop durch Slippage/die
         # Stop-Schwelle selbst systematisch von diesem abweicht).
         self._last_close = 0.0
+        # Hoch/Tief des zuletzt verarbeiteten Balkens -- Breakout-Trigger
+        # ("erste Kerze, die über dem Hoch der Vorkerze schließt") und
+        # NEW_LOW-Ausstieg vergleichen jeweils mit der Vorkerze.
+        self._prev_high = math.inf
+        self._prev_low = -math.inf
+        # Höchstes HOCH der Flaggenstange (inkl. Fortsetzungs-Kerzen mit
+        # neuem Hoch, bevor der Rücksetzer beginnt).
         self._flagpole_peak = 0.0
         self._flagpole_gain_abs = 0.0
         self._flagpole_relative_volume: float | None = None
@@ -353,21 +369,24 @@ class MomentumEngine:
         self._last_close = close
 
         if self.state == "IN_POSITION":
-            return self._process_position_bar(time, open_, high, low, close)
-
-        if self.state == "SEARCHING":
-            self._process_searching_bar(time, close, in_window, relative_volume, daily_trend_ok)
-            return []
-
-        if self.state == "PULLBACK":
+            events = self._process_position_bar(time, open_, high, low, close)
+        elif self.state == "SEARCHING":
+            self._process_searching_bar(time, high, close, in_window, relative_volume, daily_trend_ok)
+            events = []
+        elif self.state == "PULLBACK":
             event = self._process_pullback_bar(time, high, low, close, in_window)
-            return [event] if event is not None else []
+            events = [event] if event is not None else []
+        else:
+            raise AssertionError(f"Unbekannter Zustand: {self.state}")
 
-        raise AssertionError(f"Unbekannter Zustand: {self.state}")
+        self._prev_high = high
+        self._prev_low = low
+        return events
 
     def _process_searching_bar(
         self,
         time: pd.Timestamp,
+        high: float,
         close: float,
         in_window: bool,
         relative_volume: float | None,
@@ -391,9 +410,12 @@ class MomentumEngine:
 
         # Flagpole bestätigt.
         self.state = "PULLBACK"
-        self._flagpole_peak = close
-        self._flagpole_gain_abs = close - self._swing_low_price
+        self._flagpole_peak = high
+        self._flagpole_gain_abs = high - self._swing_low_price
         self._flagpole_relative_volume = relative_volume
+        self._start_pullback()
+
+    def _start_pullback(self) -> None:
         self._pullback_low = math.inf
         self._pullback_highs = []
         self._pullback_bars_count = 0
@@ -402,6 +424,31 @@ class MomentumEngine:
     def _process_pullback_bar(
         self, time: pd.Timestamp, high: float, low: float, close: float, in_window: bool
     ) -> BreakoutEvent | None:
+        """Nach der Flaggenstange, in dieser Reihenfolge:
+
+        1. Breakout: nach mindestens min_pullback_bars ECHTEN Rücksetzer-
+           Kerzen schließt eine Kerze über dem Hoch der Vorkerze (Warrior
+           Trading: "first candle to make a new high", bestätigt durch den
+           Schluss). Vorher genügte "Schluss über dem Flaggenstangen-
+           Schluss" nach beliebigen Folgekerzen -- das kaufte auch
+           Seitwärtsphasen ohne jeden Rücksetzer und sogar die erste
+           Schwächekerze nach einem Hoch (siehe Live-Trades GRML/MSS vom
+           23.09.), mit einem Stop praktisch am Einstiegskurs.
+        2. Neues Hoch über der Flaggenstange ohne Breakout: die Stange läuft
+           noch weiter -- ihr Hoch wird nachgezogen, der Rücksetzer beginnt
+           von vorn (eine Fortsetzungskerze ist kein Rücksetzer).
+        3. Sonst: Rücksetzer-Kerze (Hoch nicht über der Stange). Zu tief
+           (max_pullback_retrace_pct der Stangenhöhe) oder zu lang
+           (max_pullback_bars) verwirft das Setup."""
+        if in_window and self._pullback_bars_count >= self._min_pullback_bars and close > self._prev_high:
+            return self._emit_breakout(time, high, low, close)
+
+        if high > self._flagpole_peak:
+            self._flagpole_peak = high
+            self._flagpole_gain_abs = high - self._swing_low_price
+            self._start_pullback()
+            return None
+
         self._pullback_bars_count += 1
         self._pullback_low = min(self._pullback_low, low)
         self._pullback_highs.append(high)
@@ -413,46 +460,35 @@ class MomentumEngine:
         )
         if invalidated:
             self._reset_to_searching_after(close)
-            return None
+        return None
 
-        breakout = self._pullback_bars_count >= self._min_pullback_bars and close > self._flagpole_peak
-        if not (breakout and in_window):
-            return None
-
-        risk_per_share = close - self._pullback_low
-        if risk_per_share <= 0:
-            self._reset_to_searching_after(close)
-            return None
-
-        # Die Flat-Top-Klassifizierung darf das Hoch des Breakout-Balkens
-        # selbst nicht mit einbeziehen -- der ist per Definition höher als
-        # das Pullback-Plateau (sonst wäre es kein Breakout) und würde eine
-        # echte Flat-Top-Formation fälschlich als Bull Flag einstufen.
-        # Bleiben dadurch weniger als 2 Vergleichs-Bars übrig (z.B.
-        # min_pullback_bars=1), lässt sich "flach" gar nicht beurteilen --
-        # dann Standard BULL_FLAG.
-        prior_pullback_highs = self._pullback_highs[:-1]
+    def _emit_breakout(self, time: pd.Timestamp, high: float, low: float, close: float) -> BreakoutEvent:
+        # Stop = Tief des Rücksetzers; ein Breakout-Balken, der kurz noch
+        # tiefer ausschlägt, zieht ihn mit nach unten.
+        stop_price = min(self._pullback_low, low)
+        # Flat Top: die Hochs der Rücksetzer-Kerzen liegen (fast) gleich auf
+        # -- ab 2 Vergleichs-Kerzen beurteilbar, sonst Standard BULL_FLAG.
         pattern = (
             "FLAT_TOP"
-            if len(prior_pullback_highs) >= 2
-            and (max(prior_pullback_highs) - min(prior_pullback_highs)) <= 0.003 * self._flagpole_peak
+            if len(self._pullback_highs) >= 2
+            and (max(self._pullback_highs) - min(self._pullback_highs)) <= 0.003 * self._flagpole_peak
             else "BULL_FLAG"
         )
-
         self._pending_breakout = BreakoutEvent(
             pattern=pattern,
             time=time,
             reference_price=close,
-            stop_price=self._pullback_low,
-            risk_per_share=risk_per_share,
+            stop_price=stop_price,
+            risk_per_share=close - stop_price,
             swing_low_price=self._swing_low_price,
             flagpole_gain_pct=self._flagpole_gain_abs / self._swing_low_price,
             pullback_bars=self._pullback_bars_count,
             relative_volume=self._flagpole_relative_volume,
         )
-        # avg_bar_range wird schon hier vorbereitet (Pullback-Bars inkl.
-        # Breakout-Balken), record_entry() übernimmt ihn unverändert.
-        self._avg_bar_range = self._pullback_range_sum / self._pullback_bars_count
+        # Durchschnittliche Kerzengröße aus Rücksetzer + Breakout-Balken --
+        # Referenz für den Extension-Bar-Ausstieg, record_entry() übernimmt
+        # sie unverändert.
+        self._avg_bar_range = (self._pullback_range_sum + high - low) / (self._pullback_bars_count + 1)
         return self._pending_breakout
 
     def _reset_to_searching_after(self, close: float) -> None:
@@ -533,8 +569,11 @@ class MomentumEngine:
         )
         if is_extension:
             signals.append(ExitSignal(ExitReason.EXTENSION, time, close, remaining))
-        elif close < open_ and not breakeven_after:
-            signals.append(ExitSignal(ExitReason.RED_CANDLE, time, close, remaining))
+        elif not breakeven_after:
+            if self._weakness_exit == "red_candle" and close < open_:
+                signals.append(ExitSignal(ExitReason.RED_CANDLE, time, close, remaining))
+            elif self._weakness_exit == "new_low" and low < self._prev_low:
+                signals.append(ExitSignal(ExitReason.NEW_LOW, time, close, remaining))
         return signals
 
     def force_exit(self, time: pd.Timestamp, price: float, reason: ExitReason = ExitReason.END_OF_DAY) -> ExitSignal | None:
@@ -614,6 +653,7 @@ def _simulate_day(
     trading_window_end,
     commission_pct: float,
     slippage_pct: float,
+    weakness_exit: str = "red_candle",
 ) -> tuple[list[MomentumTrade], float, float]:
     """Simuliert einen einzelnen Handelstag mit MomentumEngine und gibt
     (Trades, cash_delta, total_costs) zurück. Höchstens EINE offene
@@ -645,6 +685,7 @@ def _simulate_day(
         reward_risk_ratio=reward_risk_ratio,
         extension_multiplier=extension_multiplier,
         min_relative_volume=min_relative_volume,
+        weakness_exit=weakness_exit,
     )
     current_trade: MomentumTrade | None = None
 
@@ -756,6 +797,7 @@ def run_momentum_backtest(
     trading_window_end=None,
     commission_pct: float = 0.0,
     slippage_pct: float = 0.0005,
+    weakness_exit: str = "red_candle",
 ) -> MomentumBacktestResult:
     """Backtest der Bull-Flag/Flat-Top-Momentum-Strategie auf Minutendaten.
 
@@ -822,6 +864,8 @@ def run_momentum_backtest(
         )
     if not (math.isfinite(extension_multiplier) and extension_multiplier > 0):
         raise ValueError(f"extension_multiplier muss eine positive, endliche Zahl sein, war {extension_multiplier}.")
+    if weakness_exit not in WEAKNESS_EXITS:
+        raise ValueError(f"weakness_exit muss eines von {WEAKNESS_EXITS} sein, war {weakness_exit!r}.")
 
     day_keys = pd.Series(bars.index.date, index=bars.index)
     days = sorted(day_keys.unique())
@@ -867,6 +911,7 @@ def run_momentum_backtest(
             trading_window_end=trading_window_end,
             commission_pct=commission_pct,
             slippage_pct=slippage_pct,
+            weakness_exit=weakness_exit,
         )
         cash += cash_delta
         total_costs += day_costs

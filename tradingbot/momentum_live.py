@@ -55,6 +55,7 @@ from tradingbot.momentum import (
     BreakoutEvent,
     ExitReason,
     ExitSignal,
+    WEAKNESS_EXITS,
     MomentumEngine,
     _build_relative_volume_reference,
     _cum_volume_by_session_minute,
@@ -84,6 +85,8 @@ class LiveMomentumConfig:
     max_pullback_bars: int = 5
     max_pullback_retrace_pct: float = 0.5
     extension_multiplier: float = 4.0
+    # Schwäche-Ausstieg vor dem Ziel-Teilverkauf, siehe momentum.WEAKNESS_EXITS.
+    weakness_exit: str = "red_candle"
     trading_window_start: dt_time = field(default_factory=lambda: dt_time(9, 30))
     trading_window_end: dt_time = field(default_factory=lambda: dt_time(11, 30))
     # Obergrenze gleichzeitig OFFENER Positionen -- begrenzt das gesamte
@@ -126,6 +129,8 @@ class LiveMomentumConfig:
 
 
 def _validate_live_config(c: LiveMomentumConfig) -> None:
+    if c.weakness_exit not in WEAKNESS_EXITS:
+        raise ValueError(f"weakness_exit muss eines von {WEAKNESS_EXITS} sein, war {c.weakness_exit!r}.")
     if not (math.isfinite(c.min_stop_pct) and 0 <= c.min_stop_pct < 1):
         raise ValueError(f"min_stop_pct muss in [0, 1) liegen, war {c.min_stop_pct}.")
     if not (math.isfinite(c.max_entry_slippage_pct) and 0 <= c.max_entry_slippage_pct < 1):
@@ -564,6 +569,7 @@ class LiveMomentumBot:
                 reward_risk_ratio=self.live_config.reward_risk_ratio,
                 extension_multiplier=self.live_config.extension_multiplier,
                 min_relative_volume=self.live_config.min_relative_volume,
+                weakness_exit=self.live_config.weakness_exit,
             )
             self._symbols[candidate.symbol] = _SymbolState(
                 engine=engine,

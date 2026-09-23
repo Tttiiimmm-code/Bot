@@ -24,6 +24,7 @@ from alpaca.common.exceptions import APIError
 from tradingbot.bot import TradingBot
 from tradingbot.broker import Broker
 from tradingbot.config import Config
+from tradingbot.momentum import WEAKNESS_EXITS
 from tradingbot.strategy import MAX_WINDOW
 
 
@@ -428,6 +429,7 @@ def cmd_momentum_backtest(
     extension_multiplier: float,
     commission_pct: float,
     slippage_pct: float,
+    weakness_exit: str = "red_candle",
 ):
     from alpaca.data.enums import DataFeed
 
@@ -456,6 +458,7 @@ def cmd_momentum_backtest(
         extension_multiplier=extension_multiplier,
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
+        weakness_exit=weakness_exit,
     )
 
     print(f"Symbol:                {config.symbol}")
@@ -529,6 +532,7 @@ def cmd_momentum_backtest_multi(
     extension_multiplier: float,
     commission_pct: float,
     slippage_pct: float,
+    weakness_exit: str = "red_candle",
 ):
     from alpaca.data.enums import DataFeed
 
@@ -565,6 +569,7 @@ def cmd_momentum_backtest_multi(
         extension_multiplier=extension_multiplier,
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
+        weakness_exit=weakness_exit,
     )
 
     print(f"Symbole:               {', '.join(bars_by_symbol)} ({len(bars_by_symbol)} von {len(symbols)} mit Daten)")
@@ -801,6 +806,7 @@ def cmd_momentum_run(
     min_stop_pct: float = 0.02,
     max_position_dollars: float = 25_000.0,
     max_entry_slippage_pct: float = 0.01,
+    weakness_exit: str = "red_candle",
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -849,6 +855,7 @@ def cmd_momentum_run(
         min_stop_pct=min_stop_pct,
         max_position_dollars=max_position_dollars,
         max_entry_slippage_pct=max_entry_slippage_pct,
+        weakness_exit=weakness_exit,
     )
 
     trading_mode_warning = (
@@ -1124,6 +1131,11 @@ def main():
         "Annäherung). Standard: 4.0.",
     )
     momentum_parser.add_argument(
+        "--weakness-exit", choices=WEAKNESS_EXITS, default="red_candle",
+        help="Schwäche-Ausstieg vor dem Ziel-Teilverkauf: red_candle = erste rot schließende Kerze, "
+        "new_low = erste Kerze mit Tief unter dem der Vorkerze (Standard: red_candle).",
+    )
+    momentum_parser.add_argument(
         "--commission-pct",
         type=_fraction_below_one,
         default=0.0,
@@ -1263,6 +1275,11 @@ def main():
         "--extension-multiplier", type=_positive_float, default=4.0,
         help="Vielfaches der durchschnittlichen Pullback-Balkenspanne für einen 'Extension Bar'-Ausstieg "
         "(Standard: 4.0).",
+    )
+    momentum_run_parser.add_argument(
+        "--weakness-exit", choices=WEAKNESS_EXITS, default="red_candle",
+        help="Schwäche-Ausstieg vor dem Ziel-Teilverkauf: red_candle = erste rot schließende Kerze, "
+        "new_low = erste Kerze mit Tief unter dem der Vorkerze (Standard: red_candle).",
     )
     momentum_run_parser.add_argument(
         "--max-concurrent-positions", type=_positive_int, default=3,
@@ -1421,6 +1438,7 @@ def main():
                     args.extension_multiplier,
                     args.commission_pct,
                     args.slippage_pct,
+                    weakness_exit=args.weakness_exit,
                 )
             else:
                 cmd_momentum_backtest(
@@ -1441,6 +1459,7 @@ def main():
                     args.extension_multiplier,
                     args.commission_pct,
                     args.slippage_pct,
+                    weakness_exit=args.weakness_exit,
                 )
         elif args.command == "scan":
             cmd_scan(
@@ -1491,6 +1510,7 @@ def main():
                 args.min_stop_pct,
                 args.max_position_dollars,
                 args.max_entry_slippage_pct,
+                weakness_exit=args.weakness_exit,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

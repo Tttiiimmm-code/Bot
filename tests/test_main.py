@@ -190,7 +190,7 @@ def test_momentum_run_dispatches_with_parsed_arguments(monkeypatch):
     )
     monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
     seen_args = []
-    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda config, *a: seen_args.append(a))
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda config, *a, **k: seen_args.append(a))
 
     main_module.main()
 
@@ -231,7 +231,7 @@ def test_momentum_backtest_dispatches_to_multi_when_symbols_given(monkeypatch):
     )
     monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
     seen_args = []
-    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda config, *a: seen_args.append((config, a)))
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda config, *a, **k: seen_args.append((config, a)))
     monkeypatch.setattr(
         main_module, "cmd_momentum_backtest", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
     )
@@ -367,3 +367,29 @@ def test_momentum_run_broker_stop_flag(monkeypatch, argv, expected):
     main_module.main()
 
     assert seen == [expected]
+
+
+def test_momentum_backtest_passes_weakness_exit(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-backtest", "--symbols", "AAPL", "--weakness-exit", "new_low"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "new_low"
+
+
+def test_momentum_run_weakness_exit_defaults_to_red_candle(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "red_candle"

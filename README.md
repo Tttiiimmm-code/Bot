@@ -210,6 +210,14 @@ Historischer Backtest einer regelbasierten Näherung der öffentlich bekannten
 Ziel mit hälftigem Teilverkauf, Breakeven-Stop, Ausstieg bei erster roter Kerze oder
 "Extension Bar".
 
+**Muster-Definition:** Flaggenstange = Anstieg vom Swing-Tief um mindestens
+`--flagpole-min-gain-pct` bei erhöhtem Relativvolumen; Kerzen mit neuem Hoch verlängern die Stange.
+Danach braucht es mindestens `--min-pullback-bars` echte Rücksetzer-Kerzen (Hoch nicht über der
+Stange). Einstieg erst, wenn eine Kerze über dem Hoch der Vorkerze schließt ("first candle to make a
+new high"); Stop = Tief des Rücksetzers. Ausstieg bei Schwäche vor dem Ziel über
+`--weakness-exit`: `red_candle` (Standard, erste rot schließende Kerze) oder `new_low` (erste Kerze
+mit Tief unter dem der Vorkerze).
+
 ```bash
 python main.py momentum-backtest --symbol TSLA --days 200 \
   --daily-trend-window 20 --lookback-days 10 --flagpole-min-gain-pct 0.015 --min-relative-volume 1.5

@@ -536,7 +536,7 @@ def test_breakout_logs_pattern_reasoning_even_when_declined(caplog):
     bot.run_once(now=_et(9, 36))
 
     breakout_logs = [r.message for r in caplog.records if "Breakout erkannt" in r.message]
-    assert any("BBB" in msg and "Swing-Tief=10.0000" in msg and "Flaggenstange=+20.0%" in msg for msg in breakout_logs)
+    assert any("BBB" in msg and "Swing-Tief=10.0000" in msg and "Flaggenstange=+20.5%" in msg for msg in breakout_logs)
 
 
 def test_buy_order_timeout_cancels_and_declines_entry():
