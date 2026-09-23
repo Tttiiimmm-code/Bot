@@ -939,7 +939,13 @@ class LiveMomentumBot:
             return
         filled_qty = min(filled_qty, state.engine.shares_open)
         fill_price = float(order.filled_avg_price)
-        fully_closed = state.engine.record_exit(filled_qty, fill_price)
+        # is_target_partial=False: eine Broker-Stop-Order ist per
+        # Definition ein Stop-Ereignis, nie ein Zieltreffer -- ein
+        # Teil-Fill (z.B. bei dünner Liquidität nur ein Teil der Order
+        # ausgeführt, bevor sie storniert/verworfen wurde) darf den Stop
+        # deshalb NICHT auf Breakeven anheben (siehe record_exit()-
+        # Docstring).
+        fully_closed = state.engine.record_exit(filled_qty, fill_price, is_target_partial=False)
         logger.warning(
             "Stop-Order bei Alpaca für %s ausgelöst: %s Stück @ %.4f verkauft%s",
             symbol,
@@ -1040,7 +1046,14 @@ class LiveMomentumBot:
             return event
 
         fill_price = float(order.filled_avg_price)
-        fully_closed = state.engine.record_exit(filled_qty, fill_price)
+        # is_target_partial: nur ein TARGET-Ereignis rechtfertigt Breakeven
+        # (siehe record_exit()-Docstring) -- STOP/RED_CANDLE/EXTENSION/etc.
+        # fordern immer die volle Restmenge an; füllt eine solche Order bei
+        # dünner Liquidität dennoch nur teilweise, bleibt es ein Stop-
+        # Ereignis, kein Zieltreffer.
+        fully_closed = state.engine.record_exit(
+            filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
+        )
         logger.critical(
             "Verkaufs-Order für %s (Status=%s) vor Abbruch teilweise gefüllt: %s Stück @ %.2f nachträglich verbucht.",
             symbol,
@@ -1121,7 +1134,9 @@ class LiveMomentumBot:
         if filled is not None and filled.status == OrderStatus.FILLED:
             filled_qty = int(float(filled.filled_qty))
             fill_price = float(filled.filled_avg_price)
-            fully_closed = state.engine.record_exit(filled_qty, fill_price)
+            fully_closed = state.engine.record_exit(
+                filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
+            )
             logger.info(
                 "Verkauf gefüllt: %s %s Stück @ %.2f (Grund=%s)%s",
                 symbol,
@@ -1214,7 +1229,9 @@ class LiveMomentumBot:
             if order.status == OrderStatus.FILLED:
                 filled_qty = int(float(order.filled_qty))
                 fill_price = float(order.filled_avg_price)
-                fully_closed = state.engine.record_exit(filled_qty, fill_price)
+                fully_closed = state.engine.record_exit(
+                    filled_qty, fill_price, is_target_partial=(pending.event.reason == ExitReason.TARGET)
+                )
                 logger.info(
                     "Zuvor ausstehende Verkaufs-Order für %s nun gefüllt: %s Stück @ %.2f%s",
                     symbol,

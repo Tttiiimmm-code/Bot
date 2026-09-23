@@ -1472,6 +1472,31 @@ def test_triggered_broker_stop_is_recorded_without_extra_sell():
     assert [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL] == []
 
 
+def test_partial_broker_stop_fill_before_cancel_does_not_move_stop_to_breakeven():
+    """Regressionstest: ein Teil-Fill der Broker-Stop-Order VOR einer
+    Stornierung (z.B. bei dünner Liquidität nur ein Teil ausgeführt) ist
+    ein Stop-Ereignis, kein Zieltreffer -- record_exit() darf den
+    (weiterhin gültigen) Stop-Preis der Restposition deshalb NICHT auf
+    Breakeven anheben (sonst wäre die Restposition bis zum nächsten
+    Balken fälschlich als "abgesichert" markiert, obwohl der Kurs schon
+    unter dem echten Stop liegt)."""
+    bot, trading_client = _entered_bot()
+    state = bot._symbols["AAPL"]
+    stop = trading_client.open_stop_orders()[0]
+
+    # Teil-Fill vor Stornierung: 30 von 77 Stück gefüllt, dann storniert
+    # (reales Alpaca-Verhalten bei einer teilweise ausgeführten Stop-Order).
+    stop.status = OrderStatus.CANCELED
+    stop.filled_qty = 30
+    stop.filled_avg_price = 11.28
+
+    bot._check_broker_stop("AAPL", state)
+
+    assert state.engine.in_position
+    assert state.engine.shares_open == 47
+    assert state.engine.stop_price == pytest.approx(11.30)  # unverändert, NICHT Breakeven (12.20)
+
+
 def test_own_exit_racing_triggered_broker_stop_does_not_double_sell():
     """Software-Stop und Broker-Stop lösen gleichzeitig aus: beim
     Stornierungsversuch zeigt sich, dass der Broker-Stop schon gefüllt ist --

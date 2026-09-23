@@ -116,9 +116,11 @@ def _daily_trend_ok(first_close: float, daily_sma: float | None) -> bool:
 
 def _build_relative_volume_reference(prior_days_cum_volumes: list[np.ndarray], max_len: int) -> np.ndarray:
     """Baut die Referenzkurve (durchschnittliche kumulierte Lautstärke je
-    Minute seit Sitzungsbeginn, ausgerichtet über die POSITION innerhalb
-    der Sitzung statt der Uhrzeit) aus den kumulierten Tagesvolumen-Kurven
-    mehrerer Vortage. Geteilte Grundlage für den Backtest
+    Minute seit Sitzungsbeginn, ausgerichtet über die UHRZEIT seit
+    Sitzungsbeginn -- siehe _cum_volume_by_session_minute, der Index i
+    steht für Minute i nach 9:30, nicht für den i-ten Balken) aus den
+    kumulierten Tagesvolumen-Kurven mehrerer Vortage. Geteilte Grundlage
+    für den Backtest
     (_relative_volume_reference, viele Tage auf einmal) UND den Live-Bot
     (tradingbot/momentum_live.py, eine Referenzkurve pro Symbol und
     Handelstag) -- eine einzige Quelle der Berechnung."""
@@ -543,11 +545,28 @@ class MomentumEngine:
             return None
         return ExitSignal(reason, time, price, self.shares_open)
 
-    def record_exit(self, shares_sold: int, fill_price: float) -> bool:
+    def record_exit(self, shares_sold: int, fill_price: float, *, is_target_partial: bool = True) -> bool:
         """Meldet die tatsächliche Ausführung eines ExitSignal zurück.
         Gibt True zurück, wenn die Position dadurch vollständig geschlossen
         wurde (Zustand fällt zurück auf SEARCHING), sonst False (Teil-
-        verkauf, z.B. TARGET: Stop wandert auf Einstiegspreis)."""
+        verkauf, Position bleibt offen).
+
+        `is_target_partial` (Standard True): ob dieser Teilverkauf ein
+        TARGET-Treffer war -- nur dann wandert der Stop auf den
+        Einstiegspreis (Breakeven), wie es die Engine selbst für ihre
+        eigenen ExitSignal-Teilverkäufe garantiert (siehe
+        _process_position_bar: nur TARGET liefert je ein ExitSignal für
+        weniger als die volle Restmenge). Ein AUSSERHALB der Engine
+        entstandener Teil-Fill mit einer ANDEREN Ursache -- z.B. eine
+        Broker-seitige Stop-Order (momentum_live.py._record_broker_stop_fill),
+        die bei einer dünn gehandelten Aktie nur teilweise ausgeführt wird,
+        bevor sie storniert/verworfen wird -- ist KEIN Zielgewinn, sondern
+        weiterhin ein ausgelöster Stop: mit is_target_partial=False bleibt
+        der bisherige Stop (bzw. ein zuvor schon erreichtes Breakeven)
+        unverändert, statt fälschlich auf Breakeven angehoben zu werden
+        (das würde einen bereits verletzten Stop nachträglich "reparieren"
+        und die verbleibenden Aktien bis zum nächsten Balken ohne
+        korrekten Schutz lassen)."""
         if self.state != "IN_POSITION":
             raise RuntimeError("record_exit() ohne offene Position aufgerufen.")
         if shares_sold <= 0 or shares_sold > self.shares_open:
@@ -567,10 +586,11 @@ class MomentumEngine:
             self._reset_to_searching_after(self._last_close)
             return True
 
-        # Teilverkauf (nur beim ersten TARGET-Treffer möglich): Stop auf
-        # den Einstiegspreis nachziehen (Breakeven), Position bleibt offen.
-        self._stop_price = self._entry_price
-        self._breakeven = True
+        if is_target_partial:
+            # Teilverkauf durch Zielerreichung: Stop auf den Einstiegspreis
+            # nachziehen (Breakeven), Position bleibt offen.
+            self._stop_price = self._entry_price
+            self._breakeven = True
         return False
 
 
@@ -689,7 +709,9 @@ def _simulate_day(
             cash_delta += proceeds
             assert current_trade is not None
             current_trade.exits.append(MomentumExit(event.time, fill_price, event.shares, event.reason))
-            fully_closed = engine.record_exit(event.shares, fill_price)
+            fully_closed = engine.record_exit(
+                event.shares, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
+            )
             if fully_closed:
                 trades.append(current_trade)
                 current_trade = None

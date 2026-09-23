@@ -592,6 +592,42 @@ def _make_engine() -> MomentumEngine:
     )
 
 
+def test_record_exit_partial_without_target_does_not_move_stop_to_breakeven():
+    """Regressionstest: ein Teil-Fill, der NICHT von einem TARGET-Treffer
+    stammt (z.B. eine STOP-Order, die bei dünner Liquidität nur teilweise
+    ausgeführt wird, bevor sie storniert wird -- siehe
+    momentum_live.py._record_broker_stop_fill/_reconcile_terminal_exit_order),
+    darf den Stop NICHT auf Breakeven anheben. Der ursprüngliche (bereits
+    verletzte) Stop muss bestehen bleiben, sonst wäre die Restposition bis
+    zum nächsten Balken fälschlich als "abgesichert" markiert, obwohl der
+    Kurs schon unter dem echten Stop liegt."""
+    engine = _make_engine()
+    entry_time = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", entry_time, 12.20, 11.30, 0.90)
+    engine.record_entry(100, 12.20, entry_time)
+
+    fully_closed = engine.record_exit(40, 11.28, is_target_partial=False)
+
+    assert fully_closed is False
+    assert engine.stop_price == pytest.approx(11.30)  # unverändert, NICHT auf Breakeven (12.20)
+    assert engine.shares_open == 60
+
+
+def test_record_exit_target_partial_still_moves_stop_to_breakeven():
+    """Gegenprobe: der Standardfall (TARGET-Teilverkauf, is_target_partial
+    bleibt beim Default True) muss weiterhin wie zuvor auf Breakeven
+    ziehen -- der Fix darf das bestehende Verhalten nicht brechen."""
+    engine = _make_engine()
+    entry_time = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", entry_time, 12.20, 11.30, 0.90)
+    engine.record_entry(100, 12.20, entry_time)
+
+    fully_closed = engine.record_exit(50, 14.00)
+
+    assert fully_closed is False
+    assert engine.stop_price == pytest.approx(12.20)  # Breakeven
+
+
 def test_breakout_event_and_position_diagnostics_after_entry():
     """Regressionstest für die Nachvollziehbarkeits-Felder auf
     BreakoutEvent (swing_low_price/flagpole_gain_pct/pullback_bars/

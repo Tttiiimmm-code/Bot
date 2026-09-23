@@ -851,12 +851,17 @@ def cmd_momentum_run(
         max_entry_slippage_pct=max_entry_slippage_pct,
     )
 
+    trading_mode_warning = (
+        "nur für Paper-Trading gedacht."
+        if config.paper
+        else "!!! ECHTES GELD (--allow-live-trading gesetzt) !!! Nur im Paper-Modus erprobt."
+    )
     print(
         f"Starte Live-Momentum-Bot (paper={config.paper}) -- Scanner alle {scan_interval_seconds}s, "
         f"Balken-Polling alle {poll_interval_seconds}s, max. {max_concurrent_positions} gleichzeitige "
         f"Positionen, Tages-Maximalverlust {daily_max_loss_pct:.1%}.\n"
         "ACHTUNG: siehe README für die Einschränkungen (IEX-Feed statt voller Marktabdeckung, kein "
-        "Zustand übersteht einen Neustart, kein Float-Filter) -- nur für Paper-Trading gedacht. "
+        f"Zustand übersteht einen Neustart, kein Float-Filter) -- {trading_mode_warning} "
         "Mit Strg+C beenden.\n"
     )
     bot = LiveMomentumBot(config, criteria, live_config)
