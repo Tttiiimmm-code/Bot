@@ -265,6 +265,10 @@ class MomentumEngine:
     ):
         if weakness_exit not in WEAKNESS_EXITS:
             raise ValueError(f"weakness_exit muss eines von {WEAKNESS_EXITS} sein, war {weakness_exit!r}.")
+        if min_pullback_bars < 1:
+            # Ohne Rücksetzer-Kerze gäbe es kein Rücksetzer-Tief als Stop --
+            # der Breakout-Balken selbst würde Stop = Schluss liefern (Risiko 0).
+            raise ValueError(f"min_pullback_bars muss mindestens 1 sein, war {min_pullback_bars}.")
         self._weakness_exit = weakness_exit
         self._flagpole_min_gain_pct = flagpole_min_gain_pct
         self._flagpole_max_bars = flagpole_max_bars
@@ -441,12 +445,23 @@ class MomentumEngine:
            (max_pullback_retrace_pct der Stangenhöhe) oder zu lang
            (max_pullback_bars) verwirft das Setup."""
         if in_window and self._pullback_bars_count >= self._min_pullback_bars and close > self._prev_high:
+            # Ein Breakout-Balken, der vorher unter die Rücksetzer-Grenze
+            # durchsticht, würde einen Stop liefern, den kein gültiger
+            # Rücksetzer zulässt -- Setup verwerfen statt kaufen.
+            if self._too_deep(min(self._pullback_low, low)):
+                self._reset_to_searching_after(close)
+                return None
             return self._emit_breakout(time, high, low, close)
 
         if high > self._flagpole_peak:
             self._flagpole_peak = high
             self._flagpole_gain_abs = high - self._swing_low_price
             self._start_pullback()
+            # Neues Hoch, aber Docht tief in die Stange hinein: Umkehrkerze,
+            # kein sauberes Fortsetzen -- ihr Tief darf nicht einfach
+            # verschwinden, nur weil der Rücksetzer neu beginnt.
+            if self._too_deep(low):
+                self._reset_to_searching_after(close)
             return None
 
         self._pullback_bars_count += 1
@@ -454,13 +469,14 @@ class MomentumEngine:
         self._pullback_highs.append(high)
         self._pullback_range_sum += high - low
 
-        invalidated = (
-            self._pullback_low <= self._flagpole_peak - self._max_pullback_retrace_pct * self._flagpole_gain_abs
-            or self._pullback_bars_count > self._max_pullback_bars
-        )
-        if invalidated:
+        if self._too_deep(self._pullback_low) or self._pullback_bars_count > self._max_pullback_bars:
             self._reset_to_searching_after(close)
         return None
+
+    def _too_deep(self, low: float) -> bool:
+        """Liegt `low` tiefer als max_pullback_retrace_pct der Stangenhöhe
+        unter ihrem Hoch?"""
+        return low <= self._flagpole_peak - self._max_pullback_retrace_pct * self._flagpole_gain_abs
 
     def _emit_breakout(self, time: pd.Timestamp, high: float, low: float, close: float) -> BreakoutEvent:
         # Stop = Tief des Rücksetzers; ein Breakout-Balken, der kurz noch

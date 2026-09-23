@@ -951,3 +951,40 @@ def test_relative_volume_reference_aligns_by_clock_minute_not_bar_position():
     assert reference[3] == pytest.approx(100)
     # 9:35 (Minute 5): beide Balken.
     assert reference[5] == pytest.approx(200)
+
+
+def test_breakout_bar_wicking_below_retrace_limit_is_not_traded():
+    """Stange 10 -> 11 (Hoch 11.05), Grenze bei 50% = 10.525. Der Breakout-
+    Balken sticht auf 10.20 durch und schließt über dem Vorkerzen-Hoch --
+    der Stop läge tiefer, als ein gültiger Rücksetzer erlaubt."""
+    engine = _make_engine()
+    bars = [
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 11.05, 9.99, 11.00),    # Flaggenstange
+        (11.00, 11.00, 10.80, 10.85),
+        (10.85, 10.90, 10.80, 10.85),
+        (10.85, 10.95, 10.20, 10.93),   # Docht bis 10.20, Schluss > 10.90
+    ]
+    assert _feed(engine, bars) == []
+    assert engine.state == "SEARCHING"
+
+
+def test_pole_extension_bar_with_deep_wick_invalidates_setup():
+    """Neues Hoch, aber Docht unter die Rücksetzer-Grenze der verlängerten
+    Stange: Umkehrkerze -- das Setup wird verworfen, statt ihr Tief
+    stillschweigend zu ignorieren und später einen zu engen Stop zu setzen."""
+    engine = _make_engine()
+    bars = [
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 10.65, 9.99, 10.60),    # Flaggenstange
+        (10.60, 11.00, 10.30, 10.60),   # neues Hoch 11.00, Docht 10.30 < 10.50
+        (10.60, 10.62, 10.55, 10.58),
+        (10.58, 10.60, 10.55, 10.57),
+        (10.57, 10.70, 10.56, 10.68),   # Schluss > Vorkerzen-Hoch
+    ]
+    assert _feed(engine, bars) == []
+
+
+def test_min_pullback_bars_below_one_is_rejected():
+    with pytest.raises(ValueError, match="min_pullback_bars"):
+        _live_like_engine(min_pullback_bars=0)

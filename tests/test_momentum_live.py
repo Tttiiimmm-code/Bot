@@ -142,13 +142,20 @@ class FakeTradingClient:
         self._next_id = 1
         # Beim Bot-Start bereits im Depot liegende Positionen (Symbolnamen).
         self.positions: list[str] = []
+        # Abweichende Stückzahl je Symbol (Standard "100").
+        self.position_qty: dict[str, str] = {}
         self.close_all_calls: list[bool] = []
         self.fail_positions_query = False
+        # Wenn gesetzt: cancel_order_by_id() lässt eine Kauf-Order zunächst
+        # PENDING_CANCEL (0 gefüllt); erst die ZWEITE Abfrage danach zeigt
+        # CANCELED mit dieser nachträglich gefüllten Stückzahl.
+        self.pending_cancel_fill_qty: float | None = None
+        self._pending_cancel_polls: dict[str, int] = {}
 
     def get_all_positions(self):
         if self.fail_positions_query:
             raise APIError("simulierter Fehler")
-        return [SimpleNamespace(symbol=sym, qty="100") for sym in self.positions]
+        return [SimpleNamespace(symbol=sym, qty=self.position_qty.get(sym, "100")) for sym in self.positions]
 
     def close_all_positions(self, cancel_orders=None):
         self.close_all_calls.append(cancel_orders)
@@ -198,7 +205,16 @@ class FakeTradingClient:
         if self.raise_on_next_get_order_by_id and self.orders[order_id].stop_price is None:
             self.raise_on_next_get_order_by_id = False
             raise APIError("simulierter transienter API-Fehler beim Abfragen der Order")
-        return self.orders[order_id]
+        order = self.orders[order_id]
+        if order_id in self._pending_cancel_polls:
+            if self._pending_cancel_polls[order_id] > 0:
+                self._pending_cancel_polls[order_id] -= 1
+            else:
+                del self._pending_cancel_polls[order_id]
+                order.status = OrderStatus.CANCELED
+                order.filled_qty = self.pending_cancel_fill_qty
+                order.filled_avg_price = self.fill_price if self.fill_price is not None else 10.0
+        return order
 
     def cancel_order_by_id(self, order_id):
         self.canceled_order_ids.append(order_id)
@@ -208,7 +224,10 @@ class FakeTradingClient:
         if order.stop_price is not None:
             order.status = OrderStatus.CANCELED
             return
-        if self.race_fill_on_cancel:
+        if self.pending_cancel_fill_qty is not None:
+            order.status = OrderStatus.PENDING_CANCEL
+            self._pending_cancel_polls[order_id] = 1
+        elif self.race_fill_on_cancel:
             order.status = OrderStatus.FILLED
             order.filled_qty = order.qty
             order.filled_avg_price = self.fill_price if self.fill_price is not None else 10.0
@@ -1610,3 +1629,127 @@ def test_buy_is_limit_order_capped_above_signal_price():
 
     buy_orders = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY]
     assert [o.limit_price for o in buy_orders] == [pytest.approx(12.32)]
+
+
+# ---------------------------------------------------------------------------
+# Review-Runde 24.09.: Einstiegs-Absicherung und Depot-Abgleich
+# ---------------------------------------------------------------------------
+
+
+def test_buy_timeout_waits_for_pending_cancel_and_records_late_fill():
+    """Nach dem Stornieren ist die Kauf-Order noch PENDING_CANCEL (0 gefüllt)
+    und wird erst danach teilweise gefüllt. Eine einzelne Momentaufnahme
+    direkt nach dem Stornieren (alte Logik) verwirft den Einstieg, obwohl
+    30 Aktien real im Depot landen -- ohne Stop und ohne Flatten."""
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], auto_fill=False, fill_price=12.20)
+    trading_client.pending_cancel_fill_qty = 30
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 35))
+
+    state = bot._symbols["AAPL"]
+    assert state.engine.in_position
+    assert state.engine.shares_open == 30
+
+
+def test_unmanaged_shares_are_sold_without_duplicate_orders():
+    """Aktien im Depot, die keine Engine verwaltet (z.B. Nach-Fill einer
+    stornierten Kauf-Order), werden verkauft -- aber nur einmal, solange die
+    Verkaufs-Order offen ist."""
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    bot = _make_bot(FakeDataClient({}), trading_client, FakeScanner([]))
+    bot.run_once(now=_et(9, 35))  # Start-Abgleich: Depot leer
+
+    trading_client.positions = ["XYZ"]
+    trading_client.auto_fill = False
+    bot.run_once(now=_et(9, 36))
+    bot.run_once(now=_et(9, 37))
+
+    sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(sells) == 1
+    assert sells[0].symbol == "XYZ"
+    assert sells[0].qty == 100
+
+
+def test_unmanaged_excess_over_engine_position_is_sold():
+    bot, trading_client = _entered_bot()  # 77 Stück verwaltet
+    trading_client.positions = ["AAPL"]
+    trading_client.position_qty = {"AAPL": "100"}
+
+    bot.run_once(now=_et(9, 36))
+
+    sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert [o.qty for o in sells] == [23]
+    assert bot._symbols["AAPL"].engine.shares_open == 77
+
+
+def test_unmanaged_shares_not_sold_after_session_close():
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    bot = _make_bot(FakeDataClient({}), trading_client, FakeScanner([]))
+    bot.run_once(now=_et(9, 35))
+
+    trading_client.positions = ["XYZ"]
+    bot.run_once(now=_et(16, 5))
+
+    assert [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL] == []
+
+
+def test_fill_at_stop_is_sold_immediately_without_broker_stop():
+    """Der Kauf füllt bei 11.30 -- genau auf dem Stop (Pullback-Tief). Das
+    Setup ist gescheitert, bevor der Trade beginnt: sofort verkaufen statt
+    bis zur nächsten Kerze zu warten, und keine Broker-Stop-Order über dem
+    Marktpreis anlegen."""
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=11.30)
+    bot = _make_bot(_make_data_client("AAPL"), trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 35))
+
+    buys = [o for o in trading_client.submitted_orders if o.side == OrderSide.BUY]
+    sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(buys) == 1
+    assert [o.qty for o in sells] == [buys[0].qty]
+    assert not bot._symbols["AAPL"].engine.in_position
+    assert trading_client.stop_orders == []
+
+
+def test_breakout_on_older_bar_of_same_fetch_is_not_traded():
+    """Kommen Breakout-Kerze (9:35) und eine neuere Kerze (9:36) im selben
+    Abruf, ist das Signal überholt -- kein Kauf zum aktuellen Kurs auf Basis
+    der älteren Kerze."""
+    extra = [{"open": 12.20, "high": 12.25, "low": 11.00, "close": 11.10, "volume": 100}]
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    bot = _make_bot(_make_data_client("AAPL", extra_today_bars=extra), trading_client, FakeScanner([_make_candidate("AAPL")]))
+
+    bot.run_once(now=_et(9, 37))
+
+    assert trading_client.submitted_orders == []
+    assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_failed_rollover_force_exit_is_retried_until_it_succeeds():
+    """Scheitert das Zwangs-Glattstellen beim Tageswechsel (hier zwei Zyklen
+    lang), muss der Verkauf eingereiht bleiben und im nächsten Zyklus erneut
+    versucht werden -- _start_new_day läuft nur einmal pro Tag."""
+    yesterday = date(2024, 1, 9)
+    trading_client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20, fail_submit_for_symbol="AAPL")
+    bot = _make_bot(FakeDataClient({}), trading_client, FakeScanner([]))
+    bot._symbols["AAPL"] = _SymbolState(
+        engine=_entered_engine(bot.live_config, shares=50, entry_price=12.20, stop_price=11.30),
+        rel_vol_reference=np.array([50.0, 100.0]),
+        daily_sma=10.0,
+        session_open=_et(9, 30, day=yesterday),
+        last_close=12.50,
+    )
+    bot._trading_day = yesterday
+
+    bot.run_once(now=_et(9, 31))  # Tageswechsel, Verkauf scheitert
+    bot.run_once(now=_et(9, 32))  # Wiederholung scheitert erneut
+    assert bot._symbols["AAPL"].engine.in_position
+    assert bot._symbols["AAPL"].deferred_exits
+
+    trading_client.fail_submit_for_symbol = None
+    bot.run_once(now=_et(9, 33))
+
+    sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
+    assert [o.qty for o in sells] == [50]
+    assert "AAPL" not in bot._symbols

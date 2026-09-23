@@ -369,6 +369,14 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   der echten Historie erkannt werden -- Signale aus diesem Rückstand lösen aber KEINE echte Order
   mehr aus, sondern werden nur simuliert nachgezogen. Nur ein Signal auf einem aktuellen Balken
   (innerhalb der letzten `2 * --poll-interval-seconds`, mind. 120s) kann real ausgeführt werden.
+  Außerdem muss der Breakout auf der neuesten abgerufenen Kerze liegen -- gibt es schon eine
+  neuere, ist das Signal überholt.
+- **Fill auf/unter dem Stop:** Ist der Kurs zwischen Signal und Kauf schon auf den Stop gefallen,
+  verkauft der Bot sofort wieder, statt bis zur nächsten Kerze zu warten.
+- **Depot-Abgleich in jedem Zyklus:** Liegen während der Sitzung mehr Aktien im Depot, als der
+  Bot verwaltet (z.B. eine stornierte Kauf-Order, die doch noch gefüllt wurde), verkauft er den
+  Überschuss per Market-Order. **Das Konto muss deshalb dem Bot allein gehören** -- manuell
+  gekaufte Aktien würden ebenfalls verkauft.
 
 **Wichtige Einschränkungen -- vor Einsatz unbedingt lesen:**
 
