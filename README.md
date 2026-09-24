@@ -215,8 +215,12 @@ Ziel mit hälftigem Teilverkauf, Breakeven-Stop, Ausstieg bei erster roter Kerze
 Danach braucht es mindestens `--min-pullback-bars` echte Rücksetzer-Kerzen (Hoch nicht über der
 Stange). Einstieg erst, wenn eine Kerze über dem Hoch der Vorkerze schließt ("first candle to make a
 new high"); Stop = Tief des Rücksetzers. Ausstieg bei Schwäche vor dem Ziel über
-`--weakness-exit`: `red_candle` (Standard, erste rot schließende Kerze) oder `new_low` (erste Kerze
-mit Tief unter dem der Vorkerze).
+`--weakness-exit`: `red_candle` (Standard, erste rot schließende Kerze), `new_low` (erste Kerze
+mit Tief unter dem der Vorkerze) oder `none` (kein Schwäche-Ausstieg -- nur Stop, Ziel und
+Extension Bar). Bei dünn gehandelten Small Caps liefert der IEX-Feed oft nur einzelne Abschlüsse
+pro Minute; eine "rote Kerze" ist dann häufig Rauschen. Im Backtest über 22 Symbole/250 Tage
+(Stand 24.09.) erreichten mit `none` 18 statt 12 Trades das Ziel (Ø R −0,14 statt −0,40) --
+weiterhin nicht profitabel, aber deutlich weniger negativ.
 
 ```bash
 python main.py momentum-backtest --symbol TSLA --days 200 \

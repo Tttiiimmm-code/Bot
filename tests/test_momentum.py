@@ -729,6 +729,32 @@ def test_red_candle_exit_remains_default():
     assert [e.reason for e in events] == [ExitReason.RED_CANDLE]
 
 
+@pytest.mark.parametrize(
+    "bar",
+    [
+        (10.10, 10.15, 9.95, 10.00),  # rot schließend
+        (10.00, 10.20, 9.85, 10.15),  # Tief unter dem Vorkerzentief
+        (10.10, 10.15, 9.80, 9.85),   # rot UND neues Tief
+    ],
+)
+def test_weakness_exit_none_holds_through_weakness(bar):
+    engine = _entered_engine("none")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), *bar, 1000, in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert events == []
+    assert engine.in_position
+
+
+def test_weakness_exit_none_still_stops_out():
+    engine = _entered_engine("none")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), 9.70, 9.75, 9.40, 9.45, 1000,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert [e.reason for e in events] == [ExitReason.STOP]
+
+
 def test_invalid_weakness_exit_is_rejected():
     with pytest.raises(ValueError, match="weakness_exit"):
         _live_like_engine(weakness_exit="green_candle")

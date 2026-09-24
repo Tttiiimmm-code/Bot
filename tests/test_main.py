@@ -393,3 +393,16 @@ def test_momentum_run_weakness_exit_defaults_to_red_candle(monkeypatch):
     main_module.main()
 
     assert seen_kwargs[0]["weakness_exit"] == "red_candle"
+
+
+def test_momentum_run_passes_weakness_exit_none(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", "--weakness-exit", "none"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "none"

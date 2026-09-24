@@ -1133,7 +1133,8 @@ def main():
     momentum_parser.add_argument(
         "--weakness-exit", choices=WEAKNESS_EXITS, default="red_candle",
         help="Schwäche-Ausstieg vor dem Ziel-Teilverkauf: red_candle = erste rot schließende Kerze, "
-        "new_low = erste Kerze mit Tief unter dem der Vorkerze (Standard: red_candle).",
+        "new_low = erste Kerze mit Tief unter dem der Vorkerze, none = keiner (nur Stop/Ziel/Extension) "
+        "(Standard: red_candle).",
     )
     momentum_parser.add_argument(
         "--commission-pct",
@@ -1279,7 +1280,8 @@ def main():
     momentum_run_parser.add_argument(
         "--weakness-exit", choices=WEAKNESS_EXITS, default="red_candle",
         help="Schwäche-Ausstieg vor dem Ziel-Teilverkauf: red_candle = erste rot schließende Kerze, "
-        "new_low = erste Kerze mit Tief unter dem der Vorkerze (Standard: red_candle).",
+        "new_low = erste Kerze mit Tief unter dem der Vorkerze, none = keiner (nur Stop/Ziel/Extension) "
+        "(Standard: red_candle).",
     )
     momentum_run_parser.add_argument(
         "--max-concurrent-positions", type=_positive_int, default=3,

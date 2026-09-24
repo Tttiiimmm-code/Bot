@@ -38,8 +38,11 @@ from tradingbot.backtest import _execute_sell
 REQUIRED_COLUMNS = ("open", "high", "low", "close", "volume")
 # Schwäche-Ausstieg VOR dem Ziel-Teilverkauf: "red_candle" = erste Kerze,
 # die rot schließt; "new_low" = erste Kerze, deren Tief unter dem der
-# Vorkerze liegt (Warrior Trading: "first candle to make a new low").
-WEAKNESS_EXITS = ("red_candle", "new_low")
+# Vorkerze liegt (Warrior Trading: "first candle to make a new low");
+# "none" = kein Schwäche-Ausstieg, nur Stop/Ziel/Extension (bei dünnen
+# IEX-Daten ist eine einzelne rote Kerze oft nur ein Abschluss einen Cent
+# tiefer -- im Backtest und live am 24.09. schnitt das Gewinner ab).
+WEAKNESS_EXITS = ("red_candle", "new_low", "none")
 
 
 class ExitReason(str, Enum):

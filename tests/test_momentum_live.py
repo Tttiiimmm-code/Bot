@@ -1807,3 +1807,25 @@ def test_exit_submit_error_is_deferred_and_retried_next_cycle():
     sells = [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL]
     assert [o.qty for o in sells] == [77]
     assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_weakness_exit_none_holds_position_through_red_candle():
+    """Mit --weakness-exit none verkauft der Live-Bot bei einer roten Kerze
+    über dem Stop nicht -- die Position bleibt samt Broker-Stop offen."""
+    extra = [{"open": 12.30, "high": 12.35, "low": 12.00, "close": 12.05, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=extra, weakness_exit="none")
+
+    bot.run_once(now=_et(9, 37))
+
+    assert bot._symbols["AAPL"].engine.in_position
+    assert [o for o in trading_client.submitted_orders if o.side == OrderSide.SELL] == []
+    assert len(trading_client.open_stop_orders()) == 1
+
+
+def test_red_candle_default_sells_same_bar_for_comparison():
+    extra = [{"open": 12.30, "high": 12.35, "low": 12.00, "close": 12.05, "volume": 100}]
+    bot, trading_client = _entered_bot(extra_today_bars=extra)
+
+    bot.run_once(now=_et(9, 37))
+
+    assert not bot._symbols["AAPL"].engine.in_position
