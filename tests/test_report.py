@@ -8,7 +8,14 @@ from alpaca.common.enums import Sort
 from alpaca.trading.enums import OrderSide, QueryOrderStatus
 from alpaca.trading.requests import GetOrdersRequest
 
-from tradingbot.report import fetch_closed_orders, group_by_trading_day, match_trades
+from tradingbot.report import (
+    account_stats,
+    fetch_closed_orders,
+    group_by_trading_day,
+    group_parallel_trades,
+    match_trades,
+    read_account_env,
+)
 
 _NY = ZoneInfo("America/New_York")
 
@@ -222,3 +229,87 @@ def test_day_summary_win_rate_and_net_pnl():
     assert summary.wins == 1
     assert summary.win_rate == 0.5
     assert summary.net_pnl == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Konto-Vergleich
+# ---------------------------------------------------------------------------
+
+
+def _trades(*round_trips):
+    """round_trips: (symbol, buy_minute, sell_minute, buy_price, sell_price) je 10 Stück."""
+    orders = []
+    for symbol, buy_min, sell_min, buy_px, sell_px in round_trips:
+        orders.append(FakeOrder(symbol, OrderSide.BUY, 10, buy_px, _dt(14, buy_min)))
+        orders.append(FakeOrder(symbol, OrderSide.SELL, 10, sell_px, _dt(14, sell_min)))
+    trades, _, _ = match_trades(orders)
+    return trades
+
+
+def test_account_stats_averages_and_profit_factor():
+    stats = account_stats(_trades(("A", 0, 2, 5.0, 7.0), ("B", 3, 4, 5.0, 4.0), ("C", 5, 9, 5.0, 4.5)))
+
+    assert stats.num_trades == 3
+    assert stats.wins == 1
+    assert stats.net_pnl == pytest.approx(20 - 10 - 5)
+    assert stats.avg_win == pytest.approx(20)
+    assert stats.avg_loss == pytest.approx(-7.5)
+    assert stats.profit_factor == pytest.approx(20 / 15)
+    assert stats.avg_duration == timedelta(minutes=(2 + 1 + 4) / 3)
+
+
+def test_account_stats_without_losses_or_trades():
+    only_wins = account_stats(_trades(("A", 0, 2, 5.0, 6.0)))
+    assert only_wins.profit_factor is None
+    assert only_wins.avg_loss is None
+
+    empty = account_stats([])
+    assert empty.num_trades == 0
+    assert empty.win_rate == 0.0
+    assert empty.avg_duration is None
+
+
+def test_group_parallel_trades_pairs_same_setup_across_accounts():
+    red = _trades(("SECZ", 14, 16, 15.74, 15.53), ("LITS", 20, 25, 1.46, 1.41))
+    none = _trades(("SECZ", 15, 40, 15.74, 16.11), ("GLND", 30, 35, 3.70, 3.94))
+
+    groups = group_parallel_trades({"red": red, "none": none})
+
+    assert [sorted(g) for g in groups] == [["none", "red"], ["red"], ["none"]]
+    assert groups[0]["red"].symbol == groups[0]["none"].symbol == "SECZ"
+    assert groups[1]["red"].symbol == "LITS"
+    assert groups[2]["none"].symbol == "GLND"
+
+
+def test_group_parallel_trades_splits_beyond_tolerance_and_repeated_trades():
+    red = _trades(("MSS", 0, 1, 2.0, 2.1), ("MSS", 2, 3, 2.0, 1.9))  # zweiter MSS-Trade desselben Kontos
+    none = _trades(("MSS", 10, 12, 2.0, 2.2))  # 10 Min später -> eigenes Setup
+
+    groups = group_parallel_trades({"red": red, "none": none}, tolerance=timedelta(minutes=3))
+
+    assert [sorted(g) for g in groups] == [["red"], ["red"], ["none"]]
+
+
+def test_read_account_env_reads_keys_without_touching_environment(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPACA_API_KEY", raising=False)
+    env = tmp_path / "bot2.env"
+    env.write_text("ALPACA_API_KEY=key2\nALPACA_SECRET_KEY=secret2\nALPACA_PAPER=true\n")
+
+    assert read_account_env(str(env)) == ("key2", "secret2", True)
+    import os
+
+    assert "ALPACA_API_KEY" not in os.environ
+
+
+@pytest.mark.parametrize(
+    "content, match",
+    [
+        ("ALPACA_API_KEY=k\n", "ALPACA_SECRET_KEY"),
+        ("ALPACA_API_KEY=k\nALPACA_SECRET_KEY=s\nALPACA_PAPER=vielleicht\n", "ALPACA_PAPER"),
+    ],
+)
+def test_read_account_env_rejects_incomplete_files(tmp_path, content, match):
+    env = tmp_path / "bad.env"
+    env.write_text(content)
+    with pytest.raises(ValueError, match=match):
+        read_account_env(str(env))

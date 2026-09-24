@@ -417,6 +417,33 @@ in America/New_York, und zeigt pro Tag sowie insgesamt Trades/Trefferquote/Netto
 Einzeltrade-Tabelle sowie noch offene Positionen. P&L ist brutto (im Paper-Modus ohnehin ohne
 Kommissionen/Slippage).
 
+### Mehrere Bots vergleichen (`momentum-compare`)
+
+Mehrere Bots mit unterschiedlichen Einstellungen (z.B. `--weakness-exit red_candle` gegen
+`none`) laufen parallel -- **jeder auf einem eigenen Alpaca-Paper-Konto**: der Bot hält das
+Konto für seins und verkauft beim Start sowie in jedem Zyklus Aktien, die er nicht selbst
+verwaltet; auch der Tages-Maximalverlust bezieht sich auf das ganze Konto. Die Keys des
+zweiten Kontos in eine eigene Datei (z.B. `~/bot2.env`) und vor dem Start in der Shell laden
+(Umgebungsvariablen haben Vorrang vor `.env`):
+
+```bash
+set -a; source ~/bot2.env; set +a
+python main.py momentum-run --weakness-exit none
+```
+
+Der Vergleich liest jede Order-Historie mit den Keys aus der jeweiligen Datei (ändert die
+Umgebung nicht, platziert keine Orders):
+
+```bash
+python main.py momentum-compare --days 5 --account red=.env --account none=~/bot2.env
+```
+
+Zeigt je Konto Equity, Trades, Trefferquote, Netto-P&L, Ø Gewinn/Verlust, Profit-Faktor und
+Ø Haltedauer, den P&L pro Handelstag und eine Setup-Tabelle: Trades desselben Symbols mit
+Einstieg innerhalb von `--tolerance-minutes` (Standard 3) stehen nebeneinander -- so wird
+direkt sichtbar, wie unterschiedliche Regeln dasselbe Setup behandelt haben. Zweimal dasselbe
+Konto (gleiche API-Keys) wird abgelehnt.
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
@@ -480,7 +507,7 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report / momentum-compare)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
@@ -492,7 +519,7 @@ tradingbot/
   momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten (experimentell)
   scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
   momentum_live.py       Live-Momentum-Bot: Scanner + Momentum-Engine + echte Orders (experimentell)
-  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report)
+  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report/-compare)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 

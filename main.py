@@ -9,6 +9,7 @@ Nutzung:
     python main.py scan               # Marktweiter Scanner (aktueller Marktzustand)
     python main.py momentum-run       # Live-Momentum-Bot: Scanner + Bull-Flag/Flat-Top-Engine + echte Orders
     python main.py momentum-report    # P&L-Report aus Alpacas Order-Historie (momentum-run auswerten)
+    python main.py momentum-compare   # mehrere Bot-Konten nebeneinander vergleichen
 """
 
 from __future__ import annotations
@@ -36,6 +37,20 @@ def _positive_int(value: str) -> int:
     if not 0 < n <= 50_000:
         raise argparse.ArgumentTypeError(f"muss zwischen 1 und 50000 liegen, nicht {n}")
     return n
+
+
+def _account_spec(value: str) -> tuple[str, str]:
+    """Für momentum-compare --account: "NAME=PFAD" -> (NAME, PFAD mit ~ aufgelöst)."""
+    import os
+
+    name, sep, path = value.partition("=")
+    name, path = name.strip(), path.strip()
+    if not sep or not name or not path:
+        raise argparse.ArgumentTypeError(f"erwartet NAME=PFAD (z.B. none=~/bot2.env), nicht {value!r}")
+    path = os.path.expanduser(path)
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"Datei {path} existiert nicht")
+    return name, path
 
 
 def _train_ratio(value: str) -> float:
@@ -717,6 +732,127 @@ def cmd_momentum_report(config: Config, days: int):
     )
 
 
+def _signed(value: float | None) -> str:
+    return "-" if value is None else f"{value:+.2f}"
+
+
+def cmd_momentum_compare(accounts: list[tuple[str, str]], days: int, tolerance_minutes: int = 3):
+    """Vergleicht die Order-Historie mehrerer Paper-Konten (je ein Bot)
+    nebeneinander -- ruft nur Daten ab, platziert keine Orders."""
+    from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
+
+    from alpaca.trading.client import TradingClient
+
+    from tradingbot.report import (
+        account_stats,
+        fetch_closed_orders,
+        group_by_trading_day,
+        group_parallel_trades,
+        match_trades,
+        read_account_env,
+    )
+
+    if len(accounts) < 2:
+        raise ValueError("Für einen Vergleich mindestens zwei Konten angeben (--account NAME=PFAD, mehrfach).")
+    names = [name for name, _ in accounts]
+    if len(set(names)) != len(names):
+        raise ValueError(f"Kontonamen müssen eindeutig sein, waren {names}.")
+
+    credentials = {name: read_account_env(path) for name, path in accounts}
+    seen_keys: dict[str, str] = {}
+    for name, (api_key, _, _) in credentials.items():
+        if api_key in seen_keys:
+            raise ValueError(
+                f"{seen_keys[api_key]} und {name} nutzen dieselben API-Keys, also dasselbe Konto -- "
+                "jeder Bot braucht ein eigenes Paper-Konto."
+            )
+        seen_keys[api_key] = name
+
+    berlin = ZoneInfo("Europe/Berlin")
+    until = datetime.now(timezone.utc)
+    after = until - timedelta(days=days)
+
+    trades_by_account = {}
+    open_by_account = {}
+    equity_by_account = {}
+    for name, (api_key, secret_key, paper) in credentials.items():
+        client = TradingClient(api_key, secret_key, paper=paper)
+        trades, open_positions, _ = match_trades(fetch_closed_orders(client, after, until))
+        trades_by_account[name] = trades
+        open_by_account[name] = open_positions
+        equity_by_account[name] = float(client.get_account().equity)
+
+    stats = {name: account_stats(trades) for name, trades in trades_by_account.items()}
+    width = max(12, *(len(n) for n in names))
+
+    def row(label: str, values) -> str:
+        return f"{label:<18}" + "".join(f"{v:>{width + 2}}" for v in values)
+
+    print(f"=== Konto-Vergleich: letzte {days} Tag(e) ===\n")
+    print(row("", names))
+    print("-" * (18 + (width + 2) * len(names)))
+    print(row("Konto-Equity", [f"{equity_by_account[n]:,.2f}" for n in names]))
+    print(row("Trades", [stats[n].num_trades for n in names]))
+    print(row("Trefferquote", [f"{stats[n].win_rate:.0%}" for n in names]))
+    print(row("Netto-P&L", [f"{stats[n].net_pnl:+.2f}" for n in names]))
+    print(row("Ø Gewinn", [_signed(stats[n].avg_win) for n in names]))
+    print(row("Ø Verlust", [_signed(stats[n].avg_loss) for n in names]))
+    print(row(
+        "Profit-Faktor",
+        ["-" if stats[n].num_trades == 0 else ("∞" if stats[n].profit_factor is None else f"{stats[n].profit_factor:.2f}")
+         for n in names],
+    ))
+    print(row(
+        "Ø Haltedauer",
+        ["-" if stats[n].avg_duration is None else _format_duration(stats[n].avg_duration) for n in names],
+    ))
+    print(row("Offene Positionen", [len(open_by_account[n]) for n in names]))
+
+    by_day = {name: group_by_trading_day(trades) for name, trades in trades_by_account.items()}
+    all_days = sorted({d for days_ in by_day.values() for d in days_})
+    if all_days:
+        print("\nNetto-P&L pro Handelstag (Anzahl Trades):")
+        print(row("Datum", names))
+        for day in all_days:
+            print(row(
+                day.isoformat(),
+                [f"{by_day[n][day].net_pnl:+.2f} ({by_day[n][day].num_trades})" if day in by_day[n] else "-"
+                 for n in names],
+            ))
+
+    groups = group_parallel_trades(trades_by_account, timedelta(minutes=tolerance_minutes))
+    if groups:
+        print(
+            f"\nSetups im Vergleich (gleiches Symbol, Einstieg innerhalb {tolerance_minutes} Min; "
+            "P&L und Haltedauer, deutsche Zeit):"
+        )
+        print(f"{'Datum':<11} {'Ein':>5} {'Symbol':<7}" + "".join(f"{n:>{width + 8}}" for n in names))
+        for group in groups:
+            first = min(group.values(), key=lambda t: t.entry_time)
+            entry_local = first.entry_time.astimezone(berlin)
+            cells = [
+                f"{group[n].pnl:+.2f} ({_format_duration(group[n].duration)})" if n in group else "-"
+                for n in names
+            ]
+            print(
+                f"{first.trading_day.isoformat():<11} {entry_local.strftime('%H:%M'):>5} {first.symbol:<7}"
+                + "".join(f"{c:>{width + 8}}" for c in cells)
+            )
+        shared = sum(1 for g in groups if len(g) == len(names))
+        print(
+            f"\n{shared} Setup(s) von allen Konten gehandelt, {len(groups) - shared} nur von einem Teil "
+            "(z.B. Kauf-Order nicht gefüllt, Positionslimit erreicht oder noch in einer Position)."
+        )
+    else:
+        print("\nKeine abgeschlossenen Trades im Zeitraum.")
+
+    print(
+        "\nHinweis: Nur ausgeführte Orders; P&L brutto. Ein Unterschied an einzelnen Tagen ist Zufall "
+        "-- erst über mehrere Handelstage aussagekräftig."
+    )
+
+
 def cmd_scan(
     config: Config,
     min_price: float,
@@ -1355,11 +1491,34 @@ def main():
         help="Wie viele Kalendertage rückwirkend die Order-Historie abgefragt wird (Standard: 1).",
     )
 
+    compare_parser = subparsers.add_parser(
+        "momentum-compare",
+        help="Vergleicht mehrere Bot-Konten (je ein Alpaca-Paper-Konto mit eigener .env-Datei) "
+        "nebeneinander -- ruft nur Daten ab, platziert keine Orders.",
+    )
+    compare_parser.add_argument(
+        "--account", type=_account_spec, action="append", required=True, metavar="NAME=PFAD",
+        help="Kontoname und Pfad zu dessen .env-Datei, mehrfach angeben, z.B. "
+        "--account red=.env --account none=~/bot2.env",
+    )
+    compare_parser.add_argument(
+        "--days", type=_positive_int, default=1,
+        help="Wie viele Kalendertage rückwirkend die Order-Historien abgefragt werden (Standard: 1).",
+    )
+    compare_parser.add_argument(
+        "--tolerance-minutes", type=_positive_int, default=3,
+        help="Einstiege desselben Symbols innerhalb dieser Minuten gelten als dasselbe Setup (Standard: 3).",
+    )
+
     args = parser.parse_args()
 
     setup_logging()
 
     try:
+        if args.command == "momentum-compare":
+            # Eigene Keys je Konto (--account), unabhängig von der .env.
+            cmd_momentum_compare(args.account, args.days, args.tolerance_minutes)
+            return
         config = Config.from_env()
         if args.command not in ("run", "scan", "momentum-run", "momentum-report") and args.symbol is not None:
             # Nur die Analyse-Subcommands mit fest EINEM Symbol (backtest/
