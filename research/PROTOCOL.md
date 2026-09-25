@@ -545,3 +545,44 @@ Bestehensregeln wie Runde 8 (V, W: zwei unabhängige Zeiträume mit Alpha-t >= 2
 - U Paarhandel: 0,85 % p.a., Sharpe 0,22, Walk-Forward Alpha 0,36 % p.a. (t 0,20)
   -> NICHT BESTANDEN.
 - Insgesamt protokollierte Versuche: 244.
+
+# Runde 10: Systematischer Scan (2026-09-26)
+
+Nutzer: "jede mögliche Konfiguration auf jeder Art von Asset". Bei tausenden Tests erscheinen
+~5 % zufällig signifikant. Deshalb zweistufig mit Korrektur für ALLE Tests:
+
+- Assets (Yahoo, Tagesdaten inkl. Dividenden): ETFs SPY, QQQ, IWM, DIA, EFA, EEM, TLT, IEF, LQD,
+  HYG, TIP, GLD, SLV, DBC, USO, UNG, VNQ, SMH und die 9 SPDR-Sektoren; Devisen EURUSD, GBPUSD,
+  USDJPY, AUDUSD, USDCHF, USDCAD, NZDUSD (Kassakurs, ohne Zinsdifferenz); Krypto (Binance)
+  BTC, ETH, BNB, XRP, ADA, LTC, TRX, ETC.
+- Regeln (Position zum Schluss t, gilt für t -> t+1; Varianten long/flat und long/short):
+  SMA-Trend n {10, 20, 50, 100, 200}; SMA-Kreuzung {5/20, 10/50, 20/100, 50/200};
+  Zeitreihen-Momentum L {20, 60, 120, 250}; Donchian-Ausbruch N {20, 55, 100} (Ausstieg N/2);
+  RSI(2)-Rückkehr Einstieg < {10, 30}, RSI(14) < {30}; Bollinger-Rückkehr z {1,5; 2; 2,5};
+  Wochentag {Mo..Fr} (nur long); ETFs zusätzlich Overnight (long) und Monatswechsel (long).
+- Kosten je Seite: ETFs 1 bp, Devisen 1 bp, Krypto 10 bp.
+- Kennzahl je Test: Alpha-t-Wert der Tagesrenditen gegenüber Halten des Assets.
+- Stufe 1 (Entdeckung): ETFs/Devisen 2016-01-01 bis 2025-09-19, Krypto 2017-08 bis 2021-12.
+  Benjamini-Hochberg über ALLE Tests, FDR 10 %, einseitig (Alpha > 0).
+- Stufe 2 (Bestätigung, unabhängiger Zeitraum): ETFs/Devisen vor 2016, Krypto 2022-01 bis
+  2026-09 (Holdout ist verbraucht). Bestanden nur mit Alpha > 0 und Bonferroni-korrigiertem
+  einseitigem p < 5 % über die Zahl der Stufe-1-Überlebenden.
+- Diese Runde zählt als ein eigener Test-Block; die Korrektur ist hier eingebaut (statt DSR).
+- Ergänzung vor der Auswertung (Ausstieg der Rückkehr-Regeln): RSI-Regeln verlassen die
+  Position, sobald der RSI 50 kreuzt (short: Einstieg bei RSI > 100 - Schwelle); Bollinger-
+  Regeln, sobald der Kurs den SMA20 wieder erreicht. Monatswechsel = letzter + erste 3
+  Handelstage. Krypto-Wochentage wie ETFs Mo-Fr.
+
+## 2026-09-26 -- Ergebnis Runde 10 (systematischer Scan)
+
+- 2.112 Tests (1.377 ETF, 392 Krypto, 343 Devisen), 49 Regeln je Asset (+ Overnight und
+  Monatswechsel bei ETFs).
+- Entdeckung: 56 Tests mit t > 2 -- bei reinem Zufall erwartet ~49. Benjamini-Hochberg
+  (FDR 10 %): 0 Überlebende -> kein Test besteht.
+- Beste Einzelergebnisse ohne Korrektur (t Entdeckung / t Bestätigung): ADA SMA 10/50 2,83 /
+  1,29; BTC SMA50 2,68 / 1,31; SPY SMA 5/20 2,64 / -1,09; UNG RSI14 2,77 / 0,17. Alle
+  schwächer oder mit umgekehrtem Vorzeichen im unabhängigen Zeitraum.
+- Vollständige Tabelle: research/scan_results.csv.
+- Hinweis zur Methode: long- und long/short-Varianten derselben Regel haben praktisch den
+  gleichen Alpha-t-Wert (long/short = 2 x long - Halten), sind also keine unabhängigen Tests;
+  die Korrektur ist dadurch eher zu streng als zu locker.

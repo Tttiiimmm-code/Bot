@@ -582,6 +582,86 @@ def cmd_anomalies(train_days: int, test_days: int) -> None:
         evaluate_walk_forward(returns, train_days, test_days, benchmark=bench)
 
 
+SCAN_ETFS = ("SPY QQQ IWM DIA EFA EEM TLT IEF LQD HYG TIP GLD SLV DBC USO UNG VNQ SMH "
+             "XLB XLE XLF XLI XLK XLP XLU XLV XLY").split()
+SCAN_FX = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCHF=X", "USDCAD=X", "NZDUSD=X"]
+SCAN_CRYPTO = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "TRXUSDT", "ETCUSDT"]
+
+
+def cmd_scan(q: float = 0.10) -> None:
+    """Runde 10 (research/PROTOCOL.md): alle Regeln auf allen Assets, Stufe 1
+    Benjamini-Hochberg (Entdeckung), Stufe 2 Bonferroni (Bestätigung)."""
+    from datetime import date as _date
+
+    from tradingbot.research import history, scan
+    from tradingbot.research.crypto import CRYPTO_DIR
+
+    dev = (_date(2016, 1, 1), _date(2025, 9, 19))
+    pre = (_date(1990, 1, 1), _date(2015, 12, 31))
+    crypto_dev = (_date(2017, 8, 1), _date(2021, 12, 31))
+    crypto_conf = (_date(2022, 1, 1), _date(2026, 12, 31))
+    assets = []  # (name, klasse, close, cost, discovery, confirmation, raw)
+    for s in SCAN_ETFS:
+        raw = history.fetch_yahoo(s, until=_date(2025, 9, 20))
+        assets.append((s, "ETF", raw["adjclose"], 1e-4, dev, pre, raw))
+    for s in SCAN_FX:
+        raw = history.fetch_yahoo(s, until=_date(2025, 9, 20))
+        assets.append((s.replace("=X", ""), "FX", raw["close"], 1e-4, dev, pre, None))
+    for s in SCAN_CRYPTO:
+        c = pd.read_pickle(CRYPTO_DIR / f"{s}.pkl")["close"]
+        assets.append((s.replace("USDT", ""), "Krypto", c, 1e-3, crypto_dev, crypto_conf, None))
+
+    def sl(x: pd.Series, period) -> pd.Series:
+        return x[(x.index >= period[0]) & (x.index <= period[1])]
+
+    rows = []
+    for name, klass, close, cost, disc, conf, raw in assets:
+        close = close.dropna()
+        ret = close.pct_change()
+        tests = [(fam, p, ls, scan.strategy_returns(scan.rule_positions(close, fam, p, ls), ret, cost))
+                 for fam, p, ls in scan.RULES]
+        if raw is not None:  # ETFs: Overnight und Monatswechsel
+            on = (raw["open"] + raw["dividend"]) / raw["close"].shift(1) - 1
+            tests.append(("overnight", "-", False, (on - 2 * cost).reindex(ret.index)))
+            months = pd.Series([(d.year, d.month) for d in close.index], index=close.index)
+            first = months.groupby(months).cumcount() < 3
+            last = months.groupby(months).cumcount(ascending=False) < 1
+            window = (first | last).astype(float)
+            tom_pos = window.shift(-1).fillna(0.0)
+            tests.append(("turn_of_month", "-", False, scan.strategy_returns(tom_pos, ret, cost)))
+        for fam, p, ls, strat in tests:
+            row = {"asset": name, "klasse": klass, "regel": fam, "parameter": str(p),
+                   "richtung": "long/short" if ls else "long"}
+            for label, period in (("entdeckung", disc), ("bestaetigung", conf)):
+                s, b = sl(strat, period), sl(ret, period)
+                a, t = scan.alpha_t(s, b)
+                row[f"t_{label}"] = round(t, 3)
+                row[f"alpha_pa_{label}"] = round(a * (365 if klass == "Krypto" else 252), 5)
+            rows.append(row)
+    df = pd.DataFrame(rows)
+    df["p_entdeckung"] = df["t_entdeckung"].map(scan.one_sided_p)
+    df["stufe1"] = scan.benjamini_hochberg(df["p_entdeckung"].to_numpy(), q)
+    n1 = int(df["stufe1"].sum())
+    df["p_bestaetigung"] = df["t_bestaetigung"].map(scan.one_sided_p)
+    df["bestanden"] = df["stufe1"] & (df["p_bestaetigung"] * max(n1, 1) < 0.05)
+    out = Path("research") / "scan_results.csv"
+    df.to_csv(out, index=False)
+
+    print(f"Tests insgesamt: {len(df)} ({df['klasse'].value_counts().to_dict()})")
+    print(f"Entdeckung t > 2 (ohne Korrektur): {(df['t_entdeckung'] > 2).sum()} "
+          f"(bei reinem Zufall erwartet ~{0.023 * len(df):.0f})")
+    print(f"Stufe 1 (Benjamini-Hochberg, FDR {q:.0%}): {n1} Überlebende")
+    if n1:
+        cols = ["asset", "klasse", "regel", "parameter", "richtung", "t_entdeckung", "alpha_pa_entdeckung",
+                "t_bestaetigung", "alpha_pa_bestaetigung", "bestanden"]
+        print(df[df["stufe1"]].sort_values("t_entdeckung", ascending=False)[cols].to_string(index=False))
+    print(f"Stufe 2 (Bestätigung, Bonferroni über {n1}): {int(df['bestanden'].sum())} bestanden")
+    top = df.sort_values("t_entdeckung", ascending=False).head(15)
+    print("\nTop 15 nach Entdeckungs-t (zur Einordnung):")
+    print(top[["asset", "regel", "parameter", "richtung", "t_entdeckung", "t_bestaetigung"]].to_string(index=False))
+    print(f"\nVollständige Tabelle: {out}")
+
+
 def cmd_round9(train_days: int, test_days: int) -> None:
     """Runde 9 (research/PROTOCOL.md): V Pre-FOMC, W Short-Vola (zwei Zeiträume),
     U Paarhandel (Walk-Forward auf dem Aktien-Panel ab 2016)."""
@@ -809,6 +889,7 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
     sub.add_parser("validate-history", help="Runde 7: Kandidaten auf 2003-2015 (Yahoo) prüfen.")
+    sub.add_parser("scan", help="Runde 10: systematischer Scan aller Regeln auf allen Assets.")
     r9 = sub.add_parser("round9", help="Runde 9: Pre-FOMC, Short-Vola, Paarhandel (Familien U-W).")
     r9.add_argument("--train-days", type=int, default=504)
     r9.add_argument("--test-days", type=int, default=126)
@@ -869,6 +950,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "scan":
+            cmd_scan()
             return
         if args.command == "round9":
             cmd_round9(args.train_days, args.test_days)
