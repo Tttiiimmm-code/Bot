@@ -143,3 +143,92 @@ Keine der vier Familien (B Noise-Breakout, C Letzte halbe Stunde, D Gap-Fade, A 
 Stocks in Play) besteht die Kriterien. 138 protokollierte Versuche. Holdout (ab
 2025-09-22) wurde NICHT geöffnet und steht für einen künftigen Kandidaten weiter zur
 Verfügung.
+
+# Runde 2: Haltedauer über Nacht bis wenige Tage (2026-09-25)
+
+Auf Wunsch des Nutzers nach Runde 1 (keine Day-Trading-Strategie bestanden). Keine Day
+Trades mehr -> PDT-Regel greift nicht.
+
+## Zusätzliche Grundregel für Runde 2
+
+Long-Strategien sind schon durch die Aktienmarkt-Prämie "profitabel". Zusätzlich zu den
+Grundregeln aus Runde 1 (Walk-Forward, >= 60 % positive Fenster, PF >= 1,2 auf Tagesbasis,
+Deflated Sharpe >= 0,95 mit N = alle Versuche beider Runden) muss gelten:
+- Alpha gegenüber SPY (Regression der OOS-Tagesrenditen auf SPY-Tagesrenditen) > 0 mit
+  t-Wert >= 2.
+Ausführung, Kosten und Holdout (ab 2025-09-22 gesperrt) wie in Runde 1. Signale nutzen nur
+Daten bis zum Ausführungszeitpunkt.
+
+## Vorab-Registrierung: Familie E, Overnight-Effekt auf ETFs
+
+Quelle: Cooper, Cliff & Gulen (2008); Lou, Polk & Skouras (2019): ein Großteil der
+Aktienrendite entsteht über Nacht.
+- Kauf zum Schlusskurs (Close des 15:59-Bars, Market-on-Close), Verkauf zum Open des
+  nächsten Handelstags. Symbole: SPY, QQQ, IWM, DIA, XLK, XLF, XLE, SMH.
+- Varianten: {immer, nur wenn Kurs um 15:50 > SMA200 der Vortages-Schlüsse}.
+- 16 Versuche. Kosten 1 bp je Seite + SEC-Gebühr. Hinweis: braucht ein Margin-Konto
+  (im Cash-Konto wäre der tägliche Wiederkauf mit unabgewickeltem Geld eine
+  Good-Faith-Violation), aber keine Day Trades.
+
+## Vorab-Registrierung: Familie F, RSI(2)-Mean-Reversion auf ETFs
+
+Quelle: Connors & Alvarez (2008), "Short Term Trading Strategies That Work".
+- Signal um 15:50: RSI(2) aus den Vortages-Schlüssen plus dem 15:50-Kurs; Einstieg zum
+  Schlusskurs desselben Tages, nur wenn 15:50-Kurs > SMA200 der Vortages-Schlüsse.
+- Ausstieg zum Schlusskurs des Tages, an dem der 15:50-Kurs das Ausstiegskriterium erfüllt.
+- Varianten: Einstieg RSI(2) < {5, 10} x Ausstieg {15:50-Kurs > SMA5, RSI(2) > 70}.
+- Symbole wie Familie E -> 32 Versuche. Volle Position (Exposure 1.0) je Symbol-Lauf.
+
+## Vorab-Registrierung: Familie G, Wochen-Umkehr bei liquiden Aktien
+
+Quelle: Lehmann (1990), Jegadeesh (1990); Umkehr kurzfristiger Verlierer.
+- Universum je Stichtag (point-in-time): Top 500 nach Ø-Dollar-Volumen der 20 Vortage,
+  Kurs > 5 $, aus dem Stocks-in-Play-Tagespanel (inkl. delisteter Symbole).
+- Alle 5 Handelstage zum Schluss: Rendite der letzten L Tage; die n schwächsten Aktien
+  gleichgewichtet zum nächsten Open kaufen, 5 Handelstage halten, Verkauf zum Open.
+- Varianten: n {10, 25} x L {5, 10} -> 4 Versuche.
+- Kosten 1 bp + 0,01 $ je Aktie und Seite + SEC-Gebühr. Fehlen Kurse während der Haltedauer
+  (Delisting), Ausstieg zum letzten verfügbaren Schluss (Bias dokumentieren).
+
+## 2026-09-25 -- Ergebnisse Runde 2
+
+- E Overnight (16 Versuche): ALLE 16 Varianten einzeln nach Kosten positiv (Sharpe 0,17-1,35,
+  mit Trendfilter meist besser). Walk-Forward (wählt je Fenster EIN ETF) jagt SMH und
+  bricht 2022 ein: OOS -2,6 %, Sharpe 0,08, Alpha -5,0 % p.a. (t -0,80) -> NICHT BESTANDEN.
+- F RSI(2) (32 Versuche): meist positiv, aber nur 30-70 Trades je ETF in 9 Jahren.
+  Walk-Forward OOS -22 % (Corona-Crash -33 % in einem Fenster), Alpha -6,9 % p.a.
+  (t -1,57) -> NICHT BESTANDEN.
+- G Wochen-Umkehr (4 Versuche): Sharpe 0,2-0,3, MaxDD bis -68 %, Walk-Forward OOS -8 %,
+  Alpha -7,0 % p.a. (t -0,51), Beta 1,17 -> NICHT BESTANDEN.
+- Insgesamt protokollierte Versuche: 190. Holdout weiterhin ungeöffnet.
+
+## 2026-09-25 -- Vorab-Registrierung: E-Portfolio (nachträglich motiviert!)
+
+Motiviert durch das Ergebnis von E (alle 16 Einzelvarianten positiv) -- also datengetrieben
+und entsprechend mit Vorsicht zu behandeln. Deshalb: EINE feste Variante, keine Auswahl,
+strenge Kriterien, und der Holdout entscheidet am Ende.
+
+- Overnight mit Trendfilter (15:50-Kurs > SMA200) auf allen 8 ETFs gleichzeitig, je 1/8
+  des Kapitals (ETFs ohne Signal: Anteil bleibt Cash). Kosten wie E.
+- Zählt als 1 neuer Versuch (N = 191).
+- Bestehen im Entwicklungszeitraum (ohne Walk-Forward, da keine Parameterwahl):
+  Deflated Sharpe >= 0,95 mit N = 191, Alpha ggü. SPY > 0 mit t >= 2, PF (Tage) >= 1,2,
+  >= 60 % positive Halbjahre.
+- Nur wenn bestanden: Holdout (ab 2025-09-22) EINMAL öffnen. Bestanden dort, wenn Rendite
+  > 0 und Alpha > 0. Erst dann Paper-Trading.
+
+## 2026-09-25 -- Ergebnis E-Portfolio
+
+- Entwicklungszeitraum: +94 % (7,75 % p.a.), Sharpe 1,00, MaxDD -13,6 %, PF 1,21,
+  Alpha ggü. SPY 5,3 % p.a. (t 2,23), Beta 0,17, 63 % positive Halbjahre.
+- Deflated Sharpe 0,000 (N = 191) -> NICHT BESTANDEN. Geprüft, ob das ein Artefakt der
+  stark negativen ORB-Versuche ist: auch ohne ORB liegt die Schwelle (erwartete maximale
+  Sharpe unter N Zufallsversuchen) bei 1,54 p.a. Eine Sharpe von 1,0 ist nach 191
+  Versuchen kein belastbarer Nachweis.
+- Holdout NICHT geöffnet.
+
+## 2026-09-25 -- Fazit nach Runde 2
+
+191 protokollierte Versuche in 7 Familien plus einem Folgetest, keiner besteht. Bestes
+Ergebnis: Overnight-Portfolio mit Trendfilter (Alpha t = 2,23), statistisch aber nicht von
+Glück zu unterscheiden. Jede weitere Suche auf denselben Daten erhöht N und damit die Hürde.

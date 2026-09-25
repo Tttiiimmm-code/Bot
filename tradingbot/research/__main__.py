@@ -192,8 +192,10 @@ def cmd_grid(family: str, symbols: list[str], costs: CostModel, max_exposure: fl
     evaluate_walk_forward(all_returns, train_days, test_days)
 
 
-def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, test_days: int) -> bool:
-    """Walk-Forward über alle Varianten und Prüfung der Bestehenskriterien."""
+def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, test_days: int,
+                          benchmark: pd.Series | None = None) -> bool:
+    """Walk-Forward über alle Varianten und Prüfung der Bestehenskriterien.
+    Mit `benchmark` (Runde 2) zusätzlich: Alpha gegenüber dem Benchmark mit t >= 2."""
     n_trials, sr_var = _trial_stats()
     print(f"\nWalk-Forward (Training {train_days} / Test {test_days} Handelstage) über alle "
           f"{len(all_returns)} Varianten dieser Familie; insgesamt protokollierte Versuche: {n_trials}")
@@ -222,6 +224,15 @@ def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, te
         f"Profit-Faktor >= {MIN_PROFIT_FACTOR}": pf >= MIN_PROFIT_FACTOR,
         f"Deflated Sharpe >= {MIN_DSR}": dsr >= MIN_DSR,
     }
+    if benchmark is not None:
+        from tradingbot.research.swing import alpha_vs_benchmark
+
+        alpha, t_alpha, beta = alpha_vs_benchmark(oos, benchmark)
+        bench_oos = benchmark.reindex(oos.index).fillna(0.0)
+        print(f"Gegenüber SPY: Alpha {alpha:.2%} p.a. (t = {t_alpha:.2f}), Beta {beta:.2f}; "
+              f"SPY im selben Zeitraum: Sharpe {sharpe_ratio(bench_oos):.2f}, "
+              f"{float(np.prod(1 + bench_oos) - 1):.1%} gesamt")
+        checks["Alpha ggü. SPY > 0 mit t >= 2"] = alpha > 0 and t_alpha >= 2
     for name, ok in checks.items():
         print(f"  [{'OK' if ok else 'NEIN'}] {name}")
     print("BESTANDEN (vor Robustheits-/Holdout-Prüfung)" if all(checks.values()) else "NICHT BESTANDEN")
@@ -283,6 +294,105 @@ def cmd_orb_grid(slippage_bps: float, per_share: float, train_days: int, test_da
     evaluate_walk_forward(main_returns, train_days, test_days)
 
 
+SWING_ETFS = ["SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "SMH"]
+SWING_GRIDS = {
+    "overnight": [{"trend_filter": f} for f in (False, True)],
+    "rsi2": [{"entry_below": e, "exit_rule": x} for e in (5, 10) for x in ("sma5", "rsi70")],
+    "reversal": [{"n_stocks": n, "lookback": lb} for n in (10, 25) for lb in (5, 10)],
+}
+
+
+def cmd_swing_grid(family: str, train_days: int, test_days: int) -> None:
+    """Runde 2 (research/PROTOCOL.md): vorab registrierte Varianten, Walk-Forward
+    und Alpha-Prüfung gegenüber SPY."""
+    from tradingbot.research import swing
+
+    spy = swing.etf_daily("SPY")
+    benchmark = (spy["close"] / spy["close"].shift(1) - 1).dropna()
+    all_returns: dict[str, pd.Series] = {}
+    if family in ("overnight", "rsi2"):
+        costs = CostModel(slippage_bps=1.0)
+        for symbol in SWING_ETFS:
+            daily = swing.etf_daily(symbol)
+            for params in SWING_GRIDS[family]:
+                if family == "overnight":
+                    res = swing.overnight(daily, params["trend_filter"], costs, symbol)
+                else:
+                    res = swing.rsi2_reversion(daily, params["entry_below"], params["exit_rule"], costs, symbol)
+                _log_trial(family, symbol, params, costs, 1.0, res)
+                label = f"{symbol} {json.dumps(params, sort_keys=True)}"
+                _print_metrics(label, res)
+                all_returns[label] = res.daily_returns
+    else:
+        from tradingbot.research.universe import load_daily_panel
+
+        costs = CostModel(slippage_bps=1.0, commission_per_share=0.01)
+        opens, closes, mask = swing.reversal_matrices(load_daily_panel())
+        for params in SWING_GRIDS[family]:
+            res = swing.weekly_reversal(opens, closes, mask, swing.ReversalParams(**params), costs)
+            _log_trial(family, "top500", params, costs, 1.0, res)
+            label = f"top500 {json.dumps(params, sort_keys=True)}"
+            _print_metrics(label, res)
+            print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()})
+            all_returns[label] = res.daily_returns
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark)
+
+
+def cmd_overnight_portfolio(holdout: bool) -> bool:
+    """E-Portfolio (research/PROTOCOL.md): Overnight mit Trendfilter auf allen
+    SWING_ETFS, je 1/n des Kapitals, eine feste Variante ohne Auswahl."""
+    from tradingbot.research import swing
+    from tradingbot.research.metrics import deflated_sharpe
+    from tradingbot.research.swing import alpha_vs_benchmark
+
+    costs = CostModel(slippage_bps=1.0)
+    legs, trades = {}, []
+    for symbol in SWING_ETFS:
+        res = swing.overnight(swing.etf_daily(symbol, allow_holdout=holdout), True, costs, symbol)
+        legs[symbol] = res.daily_returns
+        trades += res.trades
+    frame = pd.DataFrame(legs).fillna(0.0)
+    portfolio = frame.mean(axis=1)
+    spy = swing.etf_daily("SPY", allow_holdout=holdout)["close"]
+    benchmark = (spy / spy.shift(1) - 1).dropna()
+    if holdout:
+        portfolio = portfolio[portfolio.index >= HOLDOUT_START]
+        benchmark = benchmark[benchmark.index >= HOLDOUT_START]
+    result = BacktestResult("overnight_portfolio", portfolio, trades)
+    if not holdout:
+        _log_trial("overnight_portfolio", "+".join(SWING_ETFS), {"trend_filter": True}, costs, 1.0, result)
+    m = compute_metrics(result)
+    n_trials, sr_var = _trial_stats()
+    dsr = deflated_sharpe(portfolio, n_trials, sr_var)
+    alpha, t_alpha, beta = alpha_vs_benchmark(portfolio, benchmark)
+    active = portfolio[portfolio != 0]
+    pf = active[active > 0].sum() / -active[active < 0].sum()
+    idx = pd.to_datetime(portfolio.index)
+    halves = portfolio.groupby([idx.year, idx.month > 6]).apply(lambda x: float(np.prod(1 + x) - 1))
+    bench_total = float(np.prod(1 + benchmark.reindex(portfolio.index).fillna(0)) - 1)
+    label = "HOLDOUT" if holdout else "Entwicklungszeitraum"
+    print(f"{label} {portfolio.index[0]} .. {portfolio.index[-1]} ({len(portfolio)} Tage)")
+    print(f"Rendite {m.total_return:.1%} ({m.cagr:.2%} p.a.), Sharpe {m.sharpe:.2f}, MaxDD {m.max_drawdown:.1%}, "
+          f"PF (Tage) {pf:.2f}, Deflated Sharpe {dsr:.3f} (N={n_trials})")
+    print(f"Alpha ggü. SPY {alpha:.2%} p.a. (t = {t_alpha:.2f}), Beta {beta:.2f}; SPY im Zeitraum {bench_total:.1%}")
+    print(f"Positive Halbjahre: {(halves > 0).mean():.0%} ({(halves > 0).sum()}/{len(halves)})")
+    print("Jahresrenditen:", {y: f"{v:.1%}" for y, v in yearly_returns(portfolio).items()})
+    if holdout:
+        checks = {"Rendite > 0": m.total_return > 0, "Alpha > 0": alpha > 0}
+    else:
+        checks = {
+            f"Deflated Sharpe >= {MIN_DSR}": dsr >= MIN_DSR,
+            "Alpha ggü. SPY > 0 mit t >= 2": alpha > 0 and t_alpha >= 2,
+            f"Profit-Faktor >= {MIN_PROFIT_FACTOR}": pf >= MIN_PROFIT_FACTOR,
+            "positive Halbjahre >= 60 %": (halves > 0).mean() >= 0.6,
+        }
+    for name, ok in checks.items():
+        print(f"  [{'OK' if ok else 'NEIN'}] {name}")
+    passed = all(checks.values())
+    print("BESTANDEN" if passed else "NICHT BESTANDEN")
+    return passed
+
+
 def cmd_portfolio(family: str, symbols: list[str], params: dict, costs: CostModel,
                   max_exposure: float) -> pd.Series:
     """Eine feste Variante auf mehreren Symbolen, jedes mit 1/n des Kapitals.
@@ -336,6 +446,12 @@ def main(argv: list[str] | None = None) -> None:
     o.add_argument("--ticks", action="store_true", help="Einstiegs-Minuten Tick-genau auflösen")
     ot = sub.add_parser("orb-ticks", help="Ticks der mehrdeutigen ORB-Einstiegs-Minuten laden.")
     ot.add_argument("--env-file", default=".env")
+    sw = sub.add_parser("swing-grid", help="Runde 2: Haltedauer über Nacht bis wenige Tage.")
+    sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
+    sw.add_argument("--train-days", type=int, default=504)
+    sw.add_argument("--test-days", type=int, default=126)
+    op = sub.add_parser("overnight-portfolio", help="E-Portfolio: Overnight mit Trendfilter auf allen ETFs.")
+    op.add_argument("--holdout", action="store_true", help="Holdout EINMALIG öffnen (nur nach Bestehen)")
     for name in ("grid", "run", "holdout", "portfolio"):
         p = sub.add_parser(name)
         p.add_argument("--family", required=True, choices=sorted(FAMILIES))
@@ -367,6 +483,12 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "orb-ticks":
             cmd_orb_ticks(args.env_file)
+            return
+        if args.command == "swing-grid":
+            cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "overnight-portfolio":
+            cmd_overnight_portfolio(args.holdout)
             return
         costs = CostModel(slippage_bps=args.slippage_bps)
         if args.command == "grid":
