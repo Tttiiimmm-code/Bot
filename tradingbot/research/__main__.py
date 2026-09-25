@@ -410,6 +410,44 @@ def cmd_metals_grid(family: str, train_days: int, test_days: int) -> None:
                           benchmark_name="50/50 GLD/SLV")
 
 
+MULTI_GRID = [{"signal": s, "mode": m} for s in ("sma200", "m12", "m6") for m in ("absolute", "dual")]
+
+
+def _multi_asset_panel(allow_holdout: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+    from tradingbot.research import swing
+
+    dailies = {s: swing.etf_daily(s, allow_holdout=allow_holdout) for s in swing.MULTI_ASSETS}
+    close = pd.DataFrame({s: d["close"] for s, d in dailies.items()}).dropna()
+    pre = pd.DataFrame({s: d["pre_close"] for s, d in dailies.items()}).reindex(close.index)
+    return close, pre
+
+
+def cmd_multiasset_grid(train_days: int, test_days: int) -> None:
+    """Runde 5 (research/PROTOCOL.md): Multi-Asset-Trendfolge, Benchmark 1/9 halten."""
+    from tradingbot.research import crypto, swing
+
+    close, pre = _multi_asset_panel()
+    cost_side = 1.0 / 10_000 + 27.8e-6 / 2  # 1 bp + SEC-Gebühr (nur Verkäufe, ~halber Umschlag)
+    costs = CostModel(slippage_bps=1.0)
+    rets = close / close.shift(1) - 1
+    benchmark = rets.mean(axis=1).dropna()
+    all_returns: dict[str, pd.Series] = {}
+    for params in MULTI_GRID:
+        w = swing.multi_asset_weights(close, pre, params["signal"], params["mode"])
+        res = crypto.run_weights(w, close, cost_side, "multi_asset")
+        _log_trial("multi_asset_trend", "+".join(swing.MULTI_ASSETS), params, costs, 1.0, res)
+        label = json.dumps(params, sort_keys=True)
+        _print_metrics(label, res)
+        print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()},
+              f"| Ø investiert {w.sum(axis=1).loc[res.daily_returns.index].mean():.0%}")
+        all_returns[label] = res.daily_returns
+    start = min(r.index[0] for r in all_returns.values())
+    _print_metrics("Vergleich: 1/9 halten", BacktestResult("bench", benchmark[benchmark.index >= start]))
+    _print_metrics("Vergleich: SPY halten", BacktestResult("spy", rets["SPY"][rets.index >= start]))
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark,
+                          benchmark_name="1/9 halten")
+
+
 def cmd_overnight_portfolio(holdout: bool) -> bool:
     """E-Portfolio (research/PROTOCOL.md): Overnight mit Trendfilter auf allen
     SWING_ETFS, je 1/n des Kapitals, eine feste Variante ohne Auswahl."""
@@ -522,6 +560,9 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
+    ma = sub.add_parser("multiasset-grid", help="Runde 5: Multi-Asset-Trendfolge (Familie M).")
+    ma.add_argument("--train-days", type=int, default=504)
+    ma.add_argument("--test-days", type=int, default=126)
     mg = sub.add_parser("metals-grid", help="Runde 4: Gold/Silber (Familien K/L).")
     mg.add_argument("--family", required=True, choices=sorted(METALS_GRIDS))
     mg.add_argument("--train-days", type=int, default=504)
@@ -567,6 +608,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "multiasset-grid":
+            cmd_multiasset_grid(args.train_days, args.test_days)
             return
         if args.command == "metals-grid":
             cmd_metals_grid(args.family, args.train_days, args.test_days)

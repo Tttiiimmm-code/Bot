@@ -124,3 +124,22 @@ def test_trend_close_to_close_holds_only_above_sma():
     assert r.iloc[r.index.get_loc(make_daily(close).index[11])] == pytest.approx(0.10)
     # Tag 12: Kurs 100 < SMA(100,100,100,110,121)=106,2 -> nicht investiert für 12->13
     assert r.iloc[-1] == 0.0
+
+
+def test_multi_asset_weights_monthly_absolute_and_dual():
+    from tradingbot.research.swing import multi_asset_weights
+
+    days = pd.bdate_range("2018-01-01", periods=300).date
+    close = pd.DataFrame({"UP": np.linspace(100, 200, 300), "DOWN": np.linspace(200, 100, 300),
+                          "FLATUP": np.linspace(100, 110, 300)}, index=days)
+    pre = close.copy()
+    w = multi_asset_weights(close, pre, "m12", "absolute")
+    last = w.iloc[-1]
+    assert last["UP"] == pytest.approx(1 / 3) and last["DOWN"] == 0 and last["FLATUP"] == pytest.approx(1 / 3)
+    d = multi_asset_weights(close, pre, "m12", "dual", top_k=1)
+    assert d.iloc[-1].tolist() == [1.0, 0.0, 0.0]
+    # Gewichte ändern sich nur am Monatsende
+    changes = w.diff().abs().sum(axis=1)
+    changed_days = [day for day, c in changes.items() if c > 0]
+    assert all(pd.Timestamp(day).is_month_end or (pd.Timestamp(day) + pd.offsets.BDay(1)).month != pd.Timestamp(day).month
+               for day in changed_days)

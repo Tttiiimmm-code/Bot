@@ -324,3 +324,35 @@ vor allem während der Asien-/London-Sitzung, also zwischen US-Schluss und US-Op
 - L Trendfolge (6 Versuche): GLD Sharpe 0,57-0,75 (halten 0,89), SLV 0,16-0,36 (halten 0,49).
   Walk-Forward OOS +45 %, Alpha -0,7 % p.a. -> NICHT BESTANDEN.
 - Insgesamt protokollierte Versuche: 215.
+
+# Runde 5: Multi-Asset-Trendfolge mit ETFs (2026-09-25)
+
+Begründung: Trendfolge auf EINEM Markt (Runden 3/4) senkt Drawdowns, schlägt das Halten aber
+nicht. Die Literatur verortet den Vorteil in der Streuung über Anlageklassen (Moskowitz, Ooi
+& Pedersen 2012; Faber 2007, "A Quantitative Approach to Tactical Asset Allocation";
+Antonacci 2014, "Dual Momentum").
+
+- Universum fest: SPY (US-Aktien), IWM (US-Nebenwerte), EFA (Industrieländer), EEM
+  (Schwellenländer), TLT (lange US-Anleihen), IEF (mittlere US-Anleihen), GLD (Gold), DBC
+  (Rohstoffe), VNQ (Immobilien). Alpaca-SIP 2016-2025.
+- Umschichtung monatlich am letzten Handelstag: Signal um 15:50, Ausführung zum Schlusskurs.
+  Kosten 1 bp je Seite + SEC-Gebühr auf den Umschlag. Nicht investierte Anteile: Cash (0 %).
+- Benchmark: dieselben 9 ETFs gleichgewichtet halten (monatlich neu gewichtet).
+- Bestehen wie Runde 2 (Walk-Forward 504/126, >= 60 % positive Fenster, PF (Tage) >= 1,2,
+  Deflated Sharpe >= 0,95 mit N = alle Versuche, Alpha ggü. Benchmark > 0 mit t >= 2).
+
+## Vorab-Registrierung: Familie M
+
+- Signal s {Kurs > SMA200, 12-Monats-Rendite > 0, 6-Monats-Rendite > 0}
+  x Gewichtung {absolut: jedes ETF mit positivem Signal 1/9; dual: die 3 ETFs mit der
+  höchsten 12-Monats- bzw. 6-Monats-Rendite (beim SMA-Signal: höchste 12M-Rendite), sofern
+  Signal positiv, je 1/3} -> 6 Versuche.
+
+## 2026-09-25 -- Ergebnis Runde 5 (Multi-Asset-Trendfolge)
+
+- Alle 6 Varianten Sharpe 0,55-0,74 bei MaxDD -11 bis -18 % (1/9 halten: Sharpe 0,54, MaxDD
+  -23 %; SPY halten: Sharpe 0,75, 13,2 % p.a., MaxDD -34 %). "dual" 8 % p.a., "absolute" ~4 %
+  p.a. bei ~58 % Investitionsgrad.
+- Walk-Forward OOS +44 %, 77 % positive Fenster, PF 1,10, Alpha 2,9 % p.a. (t 0,79) ->
+  NICHT BESTANDEN. Bestes Risikoprofil aller Runden, aber kein belastbares Alpha.
+- Insgesamt protokollierte Versuche: 221.

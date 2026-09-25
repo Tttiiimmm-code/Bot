@@ -238,3 +238,39 @@ def trend_close_to_close(daily: pd.DataFrame, lookback: int, costs: CostModel,
             active.append(r)
     return BacktestResult("trend", pd.Series(rets, index=pd.Index(out_days, name="day"), dtype=float),
                           [], np.array(active, dtype=float))
+
+
+MULTI_ASSETS = ("SPY", "IWM", "EFA", "EEM", "TLT", "IEF", "GLD", "DBC", "VNQ")
+
+
+def multi_asset_weights(close: pd.DataFrame, pre: pd.DataFrame, signal: str, mode: str,
+                        top_k: int = 3) -> pd.DataFrame:
+    """Familie M (Runde 5): monatlich am letzten Handelstag, Signal aus dem
+    15:50-Kurs und den Vortages-Schlüssen. signal: "sma200" | "m12" | "m6";
+    mode: "absolute" (jedes ETF mit positivem Signal 1/n) oder "dual" (die
+    top_k nach Momentum, sofern Signal positiv, je 1/top_k)."""
+    days = close.index
+    month_end = pd.Series(days, index=days).groupby(
+        [pd.Index([d.year for d in days]), pd.Index([d.month for d in days])]).transform("max")
+    is_month_end = month_end.to_numpy() == np.asarray(days)
+    C, P = close.to_numpy(float), pre.to_numpy(float)
+    n = C.shape[1]
+    W = np.zeros_like(C)
+    current = np.zeros(n)
+    lookback = {"sma200": 252, "m12": 252, "m6": 126}[signal]
+    for t in range(len(days)):
+        if is_month_end[t] and t >= 252:
+            if signal == "sma200":
+                sig = P[t] > C[t - 200:t].mean(axis=0)
+                mom = P[t] / C[t - 252] - 1
+            else:
+                mom = P[t] / C[t - lookback] - 1
+                sig = mom > 0
+            current = np.zeros(n)
+            if mode == "absolute":
+                current[sig] = 1.0 / n
+            else:
+                top = np.argsort(-mom)[:top_k]
+                current[[j for j in top if sig[j]]] = 1.0 / top_k
+        W[t] = current
+    return pd.DataFrame(W, index=days, columns=close.columns)
