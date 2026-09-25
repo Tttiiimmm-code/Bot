@@ -19,14 +19,17 @@ _URL = ("https://query1.finance.yahoo.com/v8/finance/chart/{sym}?period1={p1}&pe
         "&interval=1d&events=div%2Csplit")
 
 
-def fetch_yahoo(symbol: str, base: Path = YAHOO_DIR) -> pd.DataFrame:
-    """Rohdaten 1993-2016: open, close (split-bereinigt), adjclose (zusätzlich
-    dividendenbereinigt), dividend (am Ex-Tag, sonst 0). Index: Handelstag."""
-    path = base / f"{symbol}.pkl"
+def fetch_yahoo(symbol: str, base: Path = YAHOO_DIR, until: date = date(2016, 1, 1)) -> pd.DataFrame:
+    """Rohdaten 1993 bis `until` (exklusiv): open, close (split-bereinigt),
+    adjclose (zusätzlich dividendenbereinigt), dividend (am Ex-Tag, sonst 0).
+    Index: Handelstag. Standard bis 2016 (Runde 7); Runde 8 lädt bis heute
+    in einen eigenen Cache (Suffix _full)."""
+    suffix = "" if until == date(2016, 1, 1) else "_full"
+    path = base / f"{symbol}{suffix}.pkl"
     if path.exists():
         return pd.read_pickle(path)
     p1 = int(datetime(1993, 1, 1, tzinfo=timezone.utc).timestamp())
-    p2 = int(datetime(2016, 1, 1, tzinfo=timezone.utc).timestamp())
+    p2 = int(datetime(until.year, until.month, until.day, tzinfo=timezone.utc).timestamp())
     req = urllib.request.Request(_URL.format(sym=symbol, p1=p1, p2=p2), headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=60) as r:
         res = json.load(r)["chart"]["result"][0]

@@ -460,3 +460,53 @@ geprüft (keine neue Parameterwahl).
   unabhängigen Zeiträumen ein positives Alpha mit t > 2 (2016-2025: t 2,23; 2001-2015: t 2,13)
   bei sehr kleinem Beta und kleinen Drawdowns. Einziger Kandidat mit wiederholtem Signal ->
   Vorwärtstest als Paper-Bot (overnight-run) ist der angemessene nächste Schritt.
+
+# Runde 8: Weitere bekannte Anomalien (2026-09-25)
+
+Nutzer: "alle Strategien ausprobieren". Holdout verbraucht -> neue Bestehensregel mit zwei
+unabhängigen Zeiträumen, wo Daten vorhanden:
+
+- Familien mit ETF-Daten vor 2016 (P, Q, R): Variante mit dem höchsten Alpha-t-Wert in
+  2016-2025 (Alpaca) wählen; bestanden nur, wenn dieselbe Variante in 2016-2025 UND im
+  Zeitraum vor 2016 (Yahoo) je ein Alpha > 0 mit t >= 2 gegenüber der Benchmark hat.
+- Familien nur mit Daten ab 2016 (S, T, Aktien-Querschnitt inkl. delisteter Titel): Walk-
+  Forward und alle Kriterien aus Runde 2 inkl. Deflated Sharpe mit N = alle Versuche.
+- Kosten: ETFs 1 bp je Seite + SEC-Gebühr; Einzelaktien 3 bp je Seite (1 bp + ~1 Cent/Aktie).
+- Signal zum Schlusskurs, Umschichtung zum Schlusskurs; Kosten auf den Umschlag.
+
+## Vorab-Registrierung
+
+- P Volatilitätsgesteuertes SPY (Moreira & Muir 2017, "Volatility-Managed Portfolios"):
+  Gewicht = min(cap, 15 % / annualisierte Vola der letzten 21 Tage), täglich.
+  cap {1,0; 1,5} -> 2 Versuche. Benchmark SPY.
+- Q Halloween-Effekt (Bouman & Jacobsen 2002, "Sell in May"): SPY November-April, sonst Cash.
+  1 Versuch. Benchmark SPY.
+- R Sektor-Momentum (Moskowitz & Grinblatt 1999): 9 SPDR-Sektoren (XLB, XLE, XLF, XLI, XLK,
+  XLP, XLU, XLV, XLY), monatlich die 3 mit höchster 6- bzw. 12-Monats-Rendite (nur bei
+  positiver Rendite), je 1/3. 2 Versuche. Benchmark: 9 Sektoren gleichgewichtet.
+- S Aktien-Momentum 12-1 (Jegadeesh & Titman 1993): Top-500-Universum nach Liquidität
+  (point-in-time), monatlich die n Aktien mit höchster Rendite von t-252 bis t-21, gleich-
+  gewichtet. n {50, 100} -> 2 Versuche. Benchmark SPY.
+- T Niedrige Volatilität (Baker, Bradley & Wurgler 2011): gleiches Universum, monatlich die n
+  Aktien mit der niedrigsten Tagesvola der letzten 63 Tage. n {50, 100} -> 2 Versuche.
+  Benchmark SPY.
+- Ergänzung vor der Auswertung: P, Q, R nutzen für BEIDE Zeiträume Yahoo-Schlusskurse inkl.
+  Dividenden (Alpaca-Schlusskurse enthalten keine Dividenden, das würde Strategien mit
+  Cash-Anteil begünstigen). Zeiträume: vor 2016 ab Auflage bzw. Warm-up, und 2016-01-01 bis
+  2025-09-19. Hebel über 1 (P, cap 1,5) kostet 6 % p.a. Finanzierungszins auf den geliehenen
+  Anteil; Cash verzinst sich mit 0 % (konservativ).
+- Klarstellung vor der Auswertung (S, T): Das Liquiditäts-Universum enthält auch ETFs/ETNs
+  (u.a. gehebelte wie TQQQ, SOXL). Diese werden über den Namen ausgeschlossen (ETF, ETN,
+  Fund, Trust, iShares, SPDR, ProShares, Direxion, Invesco, Vanguard, VanEck, Ultra, 2X/3X,
+  Bull/Bear, Index), damit nur Einzelaktien bleiben. SPY dient nur als Benchmark.
+
+## 2026-09-25 -- Ergebnisse Runde 8
+
+- P Vola-gesteuert: cap 1,0 Alpha t 1,33 (vor 2016) / 1,70 (2016-2025), cap 1,5 0,83 / 1,36.
+  In beiden Zeiträumen positiv, aber nicht signifikant -> NICHT BESTANDEN.
+- Q Halloween: t 1,34 vor 2016, -0,93 seit 2016 -> NICHT BESTANDEN.
+- R Sektor-Momentum: m6 t 1,18 / -0,16, m12 0,67 / 0,51 -> NICHT BESTANDEN.
+- S Aktien-Momentum: n=50 25,6 % p.a., Sharpe 0,85, MaxDD -46 %; Walk-Forward OOS 26,9 % p.a.,
+  Alpha 11,1 % p.a. (t 1,16), Beta 1,24, PF 1,17 -> NICHT BESTANDEN.
+- T Niedrige Vola: Sharpe 0,62-0,64, Walk-Forward Alpha 0,8 % p.a. (t 0,26) -> NICHT BESTANDEN.
+- Insgesamt protokollierte Versuche: 240.

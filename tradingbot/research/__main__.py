@@ -496,6 +496,92 @@ def cmd_carry_grid(train_days: int, test_days: int) -> None:
                           periods=crypto.PERIODS, benchmark_name="BTC")
 
 
+SECTORS = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+_FUND_NAME = (r"\bETF\b|\bETN\b|Fund|Trust|iShares|SPDR|ProShares|Direxion|Invesco|Vanguard|VanEck|"
+              r"Ultra|\b[23]X\b|Bull|Bear|Index")
+
+
+def cmd_anomalies(train_days: int, test_days: int) -> None:
+    """Runde 8 (research/PROTOCOL.md): P, Q, R mit zwei unabhängigen Zeiträumen
+    (Yahoo inkl. Dividenden), S, T per Walk-Forward auf dem Aktien-Panel."""
+    import re
+    from datetime import date as _date
+
+    from tradingbot.research import anomalies, crypto, history, swing
+    from tradingbot.research.universe import UNIVERSE_DIR, load_daily_panel
+
+    split, dev_end = _date(2015, 12, 31), _date(2025, 9, 19)
+    etf_cost = 1.0 / 10_000 + 27.8e-6 / 2
+    costs = CostModel(slippage_bps=1.0)
+
+    def adj(sym: str) -> pd.Series:
+        d = history.fetch_yahoo(sym, until=_date(2025, 9, 20))
+        return d["adjclose"][d.index <= dev_end]
+
+    spy = adj("SPY")
+    spy_ret = spy.pct_change().dropna()
+    sectors = pd.DataFrame({s: adj(s) for s in SECTORS}).dropna()
+    sector_bench = sectors.pct_change().mean(axis=1).dropna()
+
+    candidates: dict[str, tuple[str, pd.Series, pd.Series]] = {}
+    for cap in (1.0, 1.5):
+        w = anomalies.vol_managed_weights(spy, cap)
+        candidates[f"P cap {cap}"] = ("vol_managed", anomalies.financed_returns(w, spy, etf_cost), spy_ret)
+    candidates["Q Halloween"] = ("halloween",
+                                 anomalies.financed_returns(anomalies.halloween_weights(spy.index), spy, etf_cost),
+                                 spy_ret)
+    for sig in ("m6", "m12"):
+        w = swing.multi_asset_weights(sectors, sectors, sig, "dual")
+        res = crypto.run_weights(w, sectors, etf_cost, "sector_momentum")
+        candidates[f"R Sektoren {sig}"] = ("sector_momentum", res.daily_returns, sector_bench)
+
+    print("Variante                 Zeitraum     p.a.    Sharpe  Bench-Sharpe  Alpha p.a.  t-Wert")
+    table = {}
+    for label, (family, r, bench) in candidates.items():
+        row = {}
+        for period, mask in (("vor 2016", r.index <= split), ("2016-2025", r.index > split)):
+            part = r[mask]
+            part = part[part.index >= part.ne(0).idxmax()] if period == "vor 2016" else part
+            b = bench.reindex(part.index).fillna(0.0)
+            m, mb = compute_metrics(BacktestResult(label, part)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(part, b)
+            row[period] = t_a
+            print(f"{label:24s} {period:10s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:11.2f}  {alpha:9.2%}  {t_a:6.2f}")
+            if period == "2016-2025":
+                _log_trial(family, "SPY" if family != "sector_momentum" else "SPDR-Sektoren",
+                           {"variant": label}, costs, 1.0, BacktestResult(label, part))
+        table[label] = row
+    for fam in ("P", "Q", "R"):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["2016-2025"])
+        ok = table[best]["2016-2025"] >= 2 and table[best]["vor 2016"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t 2016-2025 = {table[best]['2016-2025']:.2f}, "
+              f"vor 2016 = {table[best]['vor 2016']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+    # S, T: Einzelaktien (ohne Fonds/ETFs), Top-500 nach Liquidität
+    assets = pd.read_pickle(UNIVERSE_DIR / "assets.pkl")
+    funds = set(assets.loc[assets["name"].fillna("").str.contains(re.compile(_FUND_NAME, re.I)), "symbol"])
+    panel = load_daily_panel()
+    panel = panel[panel.index.get_level_values("date") < HOLDOUT_START]
+    spy_panel = panel.xs("SPY", level="symbol")["close"]
+    bench = spy_panel.pct_change().dropna()
+    stocks = panel[~panel.index.get_level_values("symbol").isin(funds)]
+    _, closes, mask = swing.reversal_matrices(stocks)
+    for fam, score, highest, name in (("S", anomalies.momentum_12_1(closes), True, "stock_momentum"),
+                                      ("T", anomalies.low_volatility(closes), False, "low_volatility")):
+        returns = {}
+        for n in (50, 100):
+            w = anomalies.cross_section_weights(closes, mask, score, n, highest)
+            res = crypto.run_weights(w, closes, 3.0 / 10_000, name)
+            _log_trial(name, "top500", {"n": n}, CostModel(slippage_bps=3.0), 1.0, res)
+            label = f"{fam} n={n}"
+            _print_metrics(label, res)
+            print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()})
+            returns[label] = res.daily_returns
+        print(f"\nFamilie {fam}:")
+        evaluate_walk_forward(returns, train_days, test_days, benchmark=bench)
+
+
 def cmd_validate_history() -> None:
     """Runde 7 (research/PROTOCOL.md): die drei auf 2016-2025 festgelegten
     Kandidaten einmalig auf Yahoo-Daten bis 2015 prüfen. Keine Parameterwahl,
@@ -654,6 +740,9 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
     sub.add_parser("validate-history", help="Runde 7: Kandidaten auf 2003-2015 (Yahoo) prüfen.")
+    an = sub.add_parser("anomalies", help="Runde 8: bekannte Anomalien (Familien P-T).")
+    an.add_argument("--train-days", type=int, default=504)
+    an.add_argument("--test-days", type=int, default=126)
     tg = sub.add_parser("tom-grid", help="Runde 6: Monatswechsel-Effekt (Familie N).")
     tg.add_argument("--train-days", type=int, default=504)
     tg.add_argument("--test-days", type=int, default=126)
@@ -708,6 +797,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "anomalies":
+            cmd_anomalies(args.train_days, args.test_days)
             return
         if args.command == "validate-history":
             cmd_validate_history()
