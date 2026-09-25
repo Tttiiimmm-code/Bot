@@ -85,3 +85,17 @@ def test_momentum_weights_hold_between_rebalances_and_drop_delisted():
     w = momentum_weights(close, u, lookback=7, k=1, btc_filter=False)
     assert w.iloc[21:25]["BBBUSDT"].tolist() == [1.0] * 4
     assert w.iloc[26]["BBBUSDT"] == 0.0
+
+
+def test_funding_carry_earns_funding_and_hedges_price():
+    from tradingbot.research.crypto import funding_carry
+
+    idx = pd.date_range("2021-01-01", periods=12).date
+    spot = pd.Series(100 * 1.05 ** np.arange(12), index=idx)  # Kurs +5 %/Tag
+    perp = pd.DataFrame({"perp_close": spot.to_numpy(), "funding": 0.003}, index=idx)
+    res = funding_carry(spot, perp, filtered=False, cost_spot=0.0, cost_perp=0.0)
+    # Preis neutralisiert, Funding 0,3 %/Tag auf halbe Nominale
+    assert res.daily_returns.iloc[1:].tolist() == pytest.approx([0.0015] * 10)
+    neg = perp.assign(funding=-0.001)
+    filt = funding_carry(spot, neg, filtered=True, cost_spot=0.0, cost_perp=0.0)
+    assert (filt.daily_returns == 0).all()

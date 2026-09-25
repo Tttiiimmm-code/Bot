@@ -448,6 +448,54 @@ def cmd_multiasset_grid(train_days: int, test_days: int) -> None:
                           benchmark_name="1/9 halten")
 
 
+def cmd_tom_grid(train_days: int, test_days: int) -> None:
+    """Runde 6, Familie N: Monatswechsel-Effekt, Alpha je ETF und im Walk-Forward ggü. SPY."""
+    from tradingbot.research import swing
+
+    costs = CostModel(slippage_bps=1.0)
+    all_returns: dict[str, pd.Series] = {}
+    spy_bench = None
+    for symbol in ("SPY", "QQQ", "IWM"):
+        daily = swing.etf_daily(symbol)
+        own = (daily["close"] / daily["close"].shift(1) - 1).dropna()
+        if symbol == "SPY":
+            spy_bench = own
+        for w in (1, 2):
+            res = swing.turn_of_month(daily, w, costs, symbol=symbol)
+            _log_trial("turn_of_month", symbol, {"last_days": w}, costs, 1.0, res)
+            label = f"{symbol} {{\"last_days\": {w}}}"
+            _print_metrics(label, res)
+            alpha, t_a, beta = swing.alpha_vs_benchmark(res.daily_returns, own)
+            invested = (res.daily_returns != 0).mean()
+            print(f"   Alpha ggü. {symbol} {alpha:.2%} p.a. (t = {t_a:.2f}), investiert an {invested:.0%} der Tage")
+            all_returns[label] = res.daily_returns
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=spy_bench)
+
+
+def cmd_carry_grid(train_days: int, test_days: int) -> None:
+    """Runde 6, Familie O: Funding-Carry BTC/ETH (marktneutral), Alpha ggü. BTC."""
+    from tradingbot.research import crypto
+
+    close, _ = crypto.load_panel()
+    btc = close["BTCUSDT"].dropna()
+    benchmark = (btc / btc.shift(1) - 1).dropna()
+    costs = CostModel(slippage_bps=7.5)  # nur fürs Versuchsprotokoll (Ø aus 10 und 5 bp)
+    all_returns: dict[str, pd.Series] = {}
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        perp = crypto.fetch_perp(symbol)
+        perp = perp[perp.index < HOLDOUT_START]
+        for filtered in (False, True):
+            res = crypto.funding_carry(close[symbol].dropna(), perp, filtered, 0.001, 0.0005)
+            _log_trial("funding_carry", symbol, {"filtered": filtered}, costs, 1.0, res, crypto.PERIODS)
+            label = f"{symbol} {{\"filtered\": {str(filtered).lower()}}}"
+            _print_metrics(label, res, crypto.PERIODS)
+            print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()},
+                  f"| schlechtester Tag {res.daily_returns.min():.2%}")
+            all_returns[label] = res.daily_returns
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark,
+                          periods=crypto.PERIODS, benchmark_name="BTC")
+
+
 def cmd_overnight_portfolio(holdout: bool) -> bool:
     """E-Portfolio (research/PROTOCOL.md): Overnight mit Trendfilter auf allen
     SWING_ETFS, je 1/n des Kapitals, eine feste Variante ohne Auswahl."""
@@ -560,6 +608,12 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
+    tg = sub.add_parser("tom-grid", help="Runde 6: Monatswechsel-Effekt (Familie N).")
+    tg.add_argument("--train-days", type=int, default=504)
+    tg.add_argument("--test-days", type=int, default=126)
+    cy = sub.add_parser("carry-grid", help="Runde 6: Krypto-Funding-Carry (Familie O).")
+    cy.add_argument("--train-days", type=int, default=730)
+    cy.add_argument("--test-days", type=int, default=182)
     ma = sub.add_parser("multiasset-grid", help="Runde 5: Multi-Asset-Trendfolge (Familie M).")
     ma.add_argument("--train-days", type=int, default=504)
     ma.add_argument("--test-days", type=int, default=126)
@@ -608,6 +662,12 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "tom-grid":
+            cmd_tom_grid(args.train_days, args.test_days)
+            return
+        if args.command == "carry-grid":
+            cmd_carry_grid(args.train_days, args.test_days)
             return
         if args.command == "multiasset-grid":
             cmd_multiasset_grid(args.train_days, args.test_days)

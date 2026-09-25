@@ -356,3 +356,72 @@ Antonacci 2014, "Dual Momentum").
 - Walk-Forward OOS +44 %, 77 % positive Fenster, PF 1,10, Alpha 2,9 % p.a. (t 0,79) ->
   NICHT BESTANDEN. Bestes Risikoprofil aller Runden, aber kein belastbares Alpha.
 - Insgesamt protokollierte Versuche: 221.
+
+# Runde 6: Prämien mit ökonomischer Ursache (2026-09-25)
+
+Begründung: Alle bisher getesteten Preisregeln scheiterten. Diese Runde testet Effekte mit
+struktureller Ursache: Monatswechsel (Zuflüsse von Gehältern/Pensionsfonds) und Funding-Prämie
+(Nachfrage nach Hebel am Krypto-Terminmarkt).
+
+## Vorab-Registrierung: Familie N, Monatswechsel-Effekt
+
+Quelle: Lakonishok & Smidt (1988); McConnell & Xu (2008), "Equity Returns at the Turn of the
+Month".
+- Investiert nur an den Tagen des Fensters (Schluss-zu-Schluss-Renditen): die letzten w
+  Handelstage des Monats und die ersten 3 des Folgemonats, sonst Cash. Kauf zum Schluss vor
+  dem Fenster, Verkauf zum Schluss des 3. Handelstags (Market-on-Close, kalenderbasiert).
+- Varianten: w {1, 2} x {SPY, QQQ, IWM} -> 6 Versuche. Kosten 1 bp je Seite + SEC-Gebühr.
+- Benchmark: dasselbe ETF halten (Alpha-Test gegen das jeweilige ETF; beim Walk-Forward
+  gegen SPY). Bestehen wie Runde 2.
+
+## Vorab-Registrierung: Familie O, Funding-Carry (Krypto, marktneutral)
+
+- Je Coin: 50 % des Kapitals Spot long, 50 % als Sicherheit für eine gleich große Short-
+  Position im USDT-Perpetual (Binance). Tagesrendite auf das Gesamtkapital =
+  0,5 x (Spot-Rendite - Perp-Rendite + Summe der Funding-Raten des Tages).
+- Varianten: Coin {BTC, ETH} x {immer investiert, nur wenn Ø-Funding der letzten 7 Tage
+  > 0 (tägliche Entscheidung zum Tagesschluss)} -> 4 Versuche.
+- Kosten je Seite: Spot 0,10 %, Perp 0,05 % (Binance-Taker), jeweils auf den halben
+  Kapitalanteil. Daten ab 2019-09 (Beginn der Funding-Historie), Holdout wie immer gesperrt.
+- Benchmark für den Alpha-Test: BTC halten. Bestehen wie Runde 3 (Walk-Forward 730/182,
+  365 Tage Annualisierung).
+- Bekannte Risiken außerhalb des Backtests: Ausfall der Börse (vgl. FTX 2022), Liquidation
+  der Short-Position bei extremen Kurssprüngen, eingeschränkter Zugang zu Perpetuals für
+  Privatkunden in der EU (MiCA). Werden im Ergebnis ausdrücklich bewertet.
+
+## 2026-09-25 -- Ergebnisse Runde 6
+
+- N Monatswechsel (6 Versuche): SPY/QQQ Sharpe 0,31-0,55 bei 19-24 % Investitionsgrad, IWM
+  -0,09 bis 0,21. Walk-Forward OOS +53 %, 67 % positive Fenster, PF 1,24, Alpha 3,2 % p.a.
+  (t 0,95), DSR 0,000 -> NICHT BESTANDEN (4 von 6 Kriterien).
+- O Funding-Carry (4 Versuche): Sharpe 6,5-8,1, CAGR 6,0-8,0 %, MaxDD ca. -1 %. Walk-Forward
+  OOS +16,9 % (4,0 % p.a.), 100 % positive Fenster, PF 6,3, Alpha 3,9 % p.a. (t 23,0),
+  Beta 0,00, DSR 1,000 (N = 231) -> ALLE KRITERIEN BESTANDEN.
+- Plausibilitätsprüfung (keine Versuche): Perp/Spot-Basis Median -0,03 %, Tagesdifferenz der
+  Renditen Std 0,06 %; Funding Ø 12,9 % (BTC) bzw. 15,7 % (ETH) p.a. auf die Nominale, an
+  ~10 % der Tage negativ. Ertrag entsteht tatsächlich aus Funding, kein Simulationsfehler.
+  Aber: Ertrag aufs Kapital je Jahr BTC 8,6 / 15,3 / 2,1 / 3,9 / 6,0 / 1,9 % (2020-2025),
+  also seit 2022 in der Größenordnung risikoloser Geldmarktzinsen.
+
+## 2026-09-25 -- Vorab-Registrierung: Holdout-Test Funding-Carry (einmalig)
+
+- Kandidat nach der Walk-Forward-Regel: Variante mit der besten Sharpe in den letzten 730
+  Tagen vor dem Holdout.
+- Holdout: 2025-09-22 bis zum letzten verfügbaren Tag. Gleiche Kosten und Berechnung.
+- Bestanden, wenn (1) Rendite > 0 und (2) annualisierte Rendite > 4 % p.a. (Näherung für
+  risikolose USD-Geldmarktzinsen; darunter lohnt das zusätzliche Börsen-/Gegenparteirisiko
+  nicht).
+- Zusätzlich berichtet (nicht entscheidend): alle 4 Varianten im Holdout, doppelte Kosten.
+
+## 2026-09-25 -- Ergebnis Holdout-Test Funding-Carry (Holdout damit verbraucht)
+
+- Kandidat nach Regel: ETHUSDT, immer investiert (Sharpe letzte 730 Tage 15,3).
+- Holdout 2025-09-22 bis 2026-09-25 (369 Tage): +1,21 % (1,20 % p.a.), Sharpe 5,2, MaxDD
+  -0,31 %. Kriterium (1) Rendite > 0 erfüllt, Kriterium (2) > 4 % p.a. VERFEHLT
+  -> NICHT BESTANDEN.
+- Zur Information: BTC immer +1,76 % p.a.; gefilterte Varianten 0,7-0,9 % p.a., mit doppelten
+  Kosten leicht negativ. ETH-Funding im Holdout nur noch Ø 2,5 % p.a. auf die Nominale
+  (Entwicklungszeitraum 15,7 %), an 25 % der Tage negativ. Die Prämie ist weitgehend
+  wegarbitriert (plausibel: Spot-ETFs, große Basis-Trade-Fonds wie Ethena).
+- Der Holdout ist hiermit geöffnet. Künftige Kandidaten können nur noch mit neuen Daten
+  (Vorwärtstest im Paper-Handel oder bisher ungenutzte Datenquellen) bestätigt werden.

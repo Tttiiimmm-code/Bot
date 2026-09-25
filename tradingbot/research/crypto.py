@@ -238,3 +238,62 @@ def momentum_weights(close: pd.DataFrame, universe: pd.DataFrame, lookback: int,
                 current[close.columns.get_indexer(cand.nlargest(k).index)] = 1.0 / k
         rows[i] = np.where(avail[i], current, 0.0)
     return pd.DataFrame(rows, index=close.index, columns=close.columns)
+
+
+# ------------------------------------------------------------ Familie O: Funding-Carry
+
+FAPI = "https://fapi.binance.com/fapi/v1"
+FUNDING_START_MS = int(datetime(2019, 9, 1, tzinfo=timezone.utc).timestamp() * 1000)
+
+
+def fetch_perp(symbol: str, base: Path = CRYPTO_DIR) -> pd.DataFrame:
+    """Perp-Tageskerzen und Funding je UTC-Tag. Funding eines Haltetags D
+    (00:00 D bis 00:00 D+1) = Zahlungen um 08:00 D, 16:00 D und 00:00 D+1."""
+    path = base / "perp" / f"{symbol}.pkl"
+    if path.exists():
+        return pd.read_pickle(path)
+    rows, start = [], FUNDING_START_MS
+    while True:
+        batch = json.loads(_get(f"{FAPI}/klines?symbol={symbol}&interval=1d&startTime={start}&limit=1000"))
+        rows += batch
+        if len(batch) < 1000:
+            break
+        start = batch[-1][0] + 1
+    perp = _to_frame(rows)["close"].rename("perp_close")
+    fund, start = [], FUNDING_START_MS
+    while True:
+        batch = json.loads(_get(f"{FAPI}/fundingRate?symbol={symbol}&startTime={start}&limit=1000"))
+        fund += batch
+        if len(batch) < 1000:
+            break
+        start = batch[-1]["fundingTime"] + 1
+    ft = pd.DataFrame(fund)
+    day = pd.to_datetime(ft["fundingTime"].astype("int64") - 1, unit="ms", utc=True).dt.date
+    funding = ft["fundingRate"].astype(float).groupby(day.to_numpy()).sum().rename("funding")
+    out = pd.concat([perp, funding], axis=1).sort_index()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    out.to_pickle(path)
+    return out
+
+
+def funding_carry(spot_close: pd.Series, perp: pd.DataFrame, filtered: bool, cost_spot: float,
+                  cost_perp: float, name: str = "funding_carry") -> BacktestResult:
+    """50 % Spot long + 50 % Perp short (gleiche Nominale). Position zum
+    Tagesschluss D-1 festgelegt, gilt für Tag D. filtered: nur investiert,
+    wenn das Ø-Funding der letzten 7 Tage bis einschließlich D-1 > 0."""
+    df = pd.concat([spot_close.rename("spot"), perp], axis=1).dropna(subset=["spot", "perp_close"])
+    df["funding"] = df["funding"].fillna(0.0)
+    spot_r = df["spot"].pct_change()
+    perp_r = df["perp_close"].pct_change()
+    if filtered:
+        pos = (df["funding"].rolling(7).mean() > 0).astype(float)
+    else:
+        pos = pd.Series(1.0, index=df.index)
+    held = pos.shift(1).fillna(0.0)
+    gross = 0.5 * (spot_r - perp_r + df["funding"]) * held
+    switch = (pos - held).abs().shift(1).fillna(0.0)  # Umschichtung zum Schluss D-1
+    net = (gross - 0.5 * (cost_spot + cost_perp) * switch).iloc[1:]
+    if not filtered:
+        net.iloc[0] -= 0.5 * (cost_spot + cost_perp)  # einmaliger Einstieg
+    active = net[held.iloc[1:] > 0]
+    return BacktestResult(name, net.fillna(0.0), [], active.to_numpy())

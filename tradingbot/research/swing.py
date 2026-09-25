@@ -274,3 +274,33 @@ def multi_asset_weights(close: pd.DataFrame, pre: pd.DataFrame, signal: str, mod
                 current[[j for j in top if sig[j]]] = 1.0 / top_k
         W[t] = current
     return pd.DataFrame(W, index=days, columns=close.columns)
+
+
+def turn_of_month(daily: pd.DataFrame, last_days: int, costs: CostModel, first_days: int = 3,
+                  symbol: str = "") -> BacktestResult:
+    """Familie N (Runde 6): investiert an den letzten `last_days` und den
+    ersten `first_days` Handelstagen jedes Monats (Schluss-zu-Schluss), sonst
+    Cash. Kalenderbasiert, daher ohne Kurs-Signal. Kosten je Ein-/Ausstieg."""
+    days = list(daily.index)
+    close = daily["close"].to_numpy(float)
+    months = pd.Series([(d.year, d.month) for d in days])
+    pos_in_month = months.groupby(months).cumcount().to_numpy()
+    from_end = months.groupby(months).cumcount(ascending=False).to_numpy()
+    in_window = (pos_in_month < first_days) | (from_end < last_days)
+    # erster/letzter (unvollständiger) Monat der Daten nicht werten
+    complete = (months != months.iloc[0]) & (months != months.iloc[-1])
+    in_window &= complete.to_numpy()
+    side_cost = costs.slippage_bps / 10_000
+    rets, active = [], []
+    for t in range(1, len(days)):
+        r = 0.0
+        if in_window[t]:
+            r = close[t] / close[t - 1] - 1
+            if not in_window[t - 1]:
+                r -= side_cost  # Kauf zum Schluss von t-1
+            if t + 1 >= len(days) or not in_window[t + 1]:
+                r -= side_cost + costs.sec_fee_rate  # Verkauf zum Schluss von t
+            active.append(r)
+        rets.append(r)
+    return BacktestResult("turn_of_month", pd.Series(rets, index=pd.Index(days[1:], name="day"), dtype=float),
+                          [], np.array(active, dtype=float))

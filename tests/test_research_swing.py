@@ -143,3 +143,20 @@ def test_multi_asset_weights_monthly_absolute_and_dual():
     changed_days = [day for day, c in changes.items() if c > 0]
     assert all(pd.Timestamp(day).is_month_end or (pd.Timestamp(day) + pd.offsets.BDay(1)).month != pd.Timestamp(day).month
                for day in changed_days)
+
+
+def test_turn_of_month_invests_only_in_window():
+    from tradingbot.research.swing import turn_of_month
+
+    days = pd.bdate_range("2019-01-01", "2019-04-30").date
+    close = 100 * 1.01 ** np.arange(len(days))  # jeden Tag +1 %
+    daily = make_daily(close)
+    daily.index = days
+    res = turn_of_month(daily, last_days=1, costs=NO_COST)
+    invested = res.daily_returns[res.daily_returns != 0]
+    months = {(d.year, d.month) for d in invested.index}
+    # Erster und letzter Datenmonat (Januar, April) werden nicht gewertet;
+    # Februar/März: je erste 3 Handelstage + letzter Handelstag
+    feb = [d for d in invested.index if (d.year, d.month) == (2019, 2)]
+    assert len(feb) == 4 and months == {(2019, 2), (2019, 3)}
+    assert invested.iloc[0] == pytest.approx(0.01)
