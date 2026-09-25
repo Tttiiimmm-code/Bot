@@ -20,7 +20,7 @@ import logging
 import math
 import os
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import numpy as np
@@ -376,6 +376,40 @@ def cmd_crypto_grid(family: str, cost_per_side: float, train_days: int, test_day
                           periods=crypto.PERIODS, benchmark_name="BTC")
 
 
+METALS = ["GLD", "SLV"]
+METALS_GRIDS = {
+    "overnight": [{"trend_filter": f} for f in (False, True)],
+    "trend": [{"lookback": n} for n in (50, 100, 200)],
+}
+
+
+def cmd_metals_grid(family: str, train_days: int, test_days: int) -> None:
+    """Runde 4 (research/PROTOCOL.md): Gold/Silber, Benchmark 50/50 GLD/SLV halten."""
+    from tradingbot.research import swing
+
+    costs = CostModel(slippage_bps=1.0)
+    daily = {s: swing.etf_daily(s) for s in METALS}
+    bench_legs = pd.DataFrame({s: d["close"] / d["close"].shift(1) - 1 for s, d in daily.items()})
+    benchmark = bench_legs.mean(axis=1).dropna()
+    all_returns: dict[str, pd.Series] = {}
+    for symbol in METALS:
+        for params in METALS_GRIDS[family]:
+            if family == "overnight":
+                res = swing.overnight(daily[symbol], params["trend_filter"], costs, symbol)
+            else:
+                res = swing.trend_close_to_close(daily[symbol], params["lookback"], costs, symbol)
+            _log_trial(f"metals_{family}", symbol, params, costs, 1.0, res)
+            label = f"{symbol} {json.dumps(params, sort_keys=True)}"
+            _print_metrics(label, res)
+            print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()})
+            all_returns[label] = res.daily_returns
+    for s in METALS:
+        leg = bench_legs[s].dropna()
+        _print_metrics(f"Vergleich: {s} halten", BacktestResult(s, leg[leg.index >= date(2016, 10, 19)]))
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark,
+                          benchmark_name="50/50 GLD/SLV")
+
+
 def cmd_overnight_portfolio(holdout: bool) -> bool:
     """E-Portfolio (research/PROTOCOL.md): Overnight mit Trendfilter auf allen
     SWING_ETFS, je 1/n des Kapitals, eine feste Variante ohne Auswahl."""
@@ -488,6 +522,10 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
+    mg = sub.add_parser("metals-grid", help="Runde 4: Gold/Silber (Familien K/L).")
+    mg.add_argument("--family", required=True, choices=sorted(METALS_GRIDS))
+    mg.add_argument("--train-days", type=int, default=504)
+    mg.add_argument("--test-days", type=int, default=126)
     cg = sub.add_parser("crypto-grid", help="Runde 3: Krypto-Spot (Familien H/I).")
     cg.add_argument("--family", required=True, choices=sorted(CRYPTO_GRIDS))
     cg.add_argument("--cost", type=float, default=0.0025, help="Kosten je Seite (Standard 0.25 %%)")
@@ -529,6 +567,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "metals-grid":
+            cmd_metals_grid(args.family, args.train_days, args.test_days)
             return
         if args.command == "crypto-grid":
             cmd_crypto_grid(args.family, args.cost, args.train_days, args.test_days)

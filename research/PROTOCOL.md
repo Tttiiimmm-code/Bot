@@ -291,3 +291,36 @@ Quelle: Liu, Tsyvinski & Wu (2022), "Common Risk Factors in Cryptocurrency".
 Über US-Aktien (Intraday und Tage) und Krypto hinweg schlägt keine getestete Regel nach
 Kosten verlässlich das bloße Halten des jeweiligen Markts. Die Trend-Regeln reduzieren
 Drawdowns, liefern aber kein statistisch belastbares Alpha.
+
+# Runde 4: Gold und Silber (2026-09-25)
+
+Auf Wunsch des Nutzers ("weitersuchen, bis eine profitable Strategie gefunden ist"). Gleiche
+Strenge: Vorab-Registrierung, alle Versuche zählen (N startet bei 205), Holdout entscheidet.
+
+- Instrumente: GLD (Gold), SLV (Silber), Alpaca-SIP-Minutendaten 2016-01 bis 2025-09-19.
+- Ausführung wie Runde 2: Signal um 15:50, Ausführung zum Schlusskurs (Market-on-Close),
+  Verkauf beim Overnight-Handel zum nächsten Open. Kosten 1 bp je Seite + SEC-Gebühr.
+- Benchmark: 50/50 GLD/SLV halten (täglich neu gewichtet). Bestehen wie Runde 2: Walk-Forward
+  504/126, >= 60 % positive Fenster, PF (Tage) >= 1,2, Deflated Sharpe >= 0,95 (N = alle
+  Versuche), Alpha ggü. Benchmark > 0 mit t >= 2.
+
+## Vorab-Registrierung: Familie K, Overnight-Effekt bei Edelmetallen
+
+Hypothese (u.a. Studien zu "gold returns occur outside US trading hours"): Gold/Silber steigen
+vor allem während der Asien-/London-Sitzung, also zwischen US-Schluss und US-Open.
+- Kauf zum Schluss, Verkauf zum nächsten Open; Varianten {immer, nur über SMA200} x {GLD, SLV}
+  -> 4 Versuche.
+
+## Vorab-Registrierung: Familie L, Trendfolge auf Edelmetallen
+
+- Investiert (Schluss bis Schluss), solange der 15:50-Kurs über dem SMA(n) der Vortages-
+  Schlüsse liegt. Varianten n {50, 100, 200} x {GLD, SLV} -> 6 Versuche.
+
+## 2026-09-25 -- Ergebnisse Runde 4 (Gold/Silber)
+
+- K Overnight (4 Versuche): GLD über Nacht 5,8 % p.a. vs. GLD halten 12,3 % p.a. -- die
+  Hypothese "Gold steigt vor allem außerhalb der US-Handelszeit" bestätigt sich 2016-2025
+  nicht. Walk-Forward OOS +67 %, Alpha 2,8 % p.a. (t 0,72), PF 1,14 -> NICHT BESTANDEN.
+- L Trendfolge (6 Versuche): GLD Sharpe 0,57-0,75 (halten 0,89), SLV 0,16-0,36 (halten 0,49).
+  Walk-Forward OOS +45 %, Alpha -0,7 % p.a. -> NICHT BESTANDEN.
+- Insgesamt protokollierte Versuche: 215.

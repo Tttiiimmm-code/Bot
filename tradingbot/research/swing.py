@@ -214,3 +214,27 @@ def alpha_vs_benchmark(returns: pd.Series, benchmark: pd.Series, periods: int = 
     cov = sigma2 * np.linalg.inv(X.T @ X)
     t_alpha = coef[0] / np.sqrt(cov[0, 0]) if cov[0, 0] > 0 else 0.0
     return float(coef[0] * periods), float(t_alpha), float(coef[1])
+
+
+def trend_close_to_close(daily: pd.DataFrame, lookback: int, costs: CostModel,
+                         symbol: str = "") -> BacktestResult:
+    """Familie L: investiert von Schluss t bis Schluss t+1, wenn der 15:50-Kurs
+    von Tag t über dem SMA(lookback) der Vortages-Schlüsse liegt. Kosten je
+    Positionswechsel (Kauf: Slippage, Verkauf: Slippage + SEC-Gebühr)."""
+    close, pre = daily["close"].to_numpy(float), daily["pre_close"].to_numpy(float)
+    days = list(daily.index)
+    side_cost = costs.slippage_bps / 10_000
+    out_days, rets, active = [], [], []
+    pos_prev = False
+    for t in range(lookback, len(days) - 1):
+        pos = bool(pre[t] > close[t - lookback:t].mean())
+        r = (close[t + 1] / close[t] - 1) if pos else 0.0
+        if pos != pos_prev:
+            r -= side_cost + (0.0 if pos else costs.sec_fee_rate)
+        pos_prev = pos
+        out_days.append(days[t + 1])
+        rets.append(r)
+        if pos:
+            active.append(r)
+    return BacktestResult("trend", pd.Series(rets, index=pd.Index(out_days, name="day"), dtype=float),
+                          [], np.array(active, dtype=float))

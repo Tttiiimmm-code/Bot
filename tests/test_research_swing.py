@@ -112,3 +112,15 @@ def test_alpha_regression_recovers_known_alpha():
     alpha, t, beta = alpha_vs_benchmark(r, bench)
     assert alpha == pytest.approx(0.0004 * 252, rel=0.15)
     assert beta == pytest.approx(0.5, abs=0.02) and t > 5
+
+
+def test_trend_close_to_close_holds_only_above_sma():
+    from tradingbot.research.swing import trend_close_to_close
+
+    close = [100.0] * 10 + [110.0, 121.0, 100.0, 90.0]
+    res = trend_close_to_close(make_daily(close), lookback=5, costs=NO_COST)
+    r = res.daily_returns
+    # Tag 10: Kurs 110 > SMA 100 -> investiert für 10->11 (+10 %)
+    assert r.iloc[r.index.get_loc(make_daily(close).index[11])] == pytest.approx(0.10)
+    # Tag 12: Kurs 100 < SMA(100,100,100,110,121)=106,2 -> nicht investiert für 12->13
+    assert r.iloc[-1] == 0.0
