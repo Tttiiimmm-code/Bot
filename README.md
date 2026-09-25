@@ -397,6 +397,36 @@ in America/New_York, und zeigt pro Tag sowie insgesamt Trades/Trefferquote/Netto
 Einzeltrade-Tabelle sowie noch offene Positionen. P&L ist brutto (im Paper-Modus ohnehin ohne
 Kommissionen/Slippage).
 
+## Overnight-Portfolio-Bot (Paper-Vorwärtstest)
+
+Bester Kandidat aus der Strategie-Forschung (`research/PROTOCOL.md`): kurz vor Handelsschluss
+jedes der 8 ETFs SPY, QQQ, IWM, DIA, XLK, XLF, XLE, SMH mit je 1/8 des Kapitals kaufen, wenn
+der Kurs über dem 200-Tage-Durchschnitt liegt (Market-on-Close), am nächsten Morgen alles zum
+Eröffnungskurs verkaufen (Market-on-Open).
+
+⚠️ **Nicht als profitabel nachgewiesen.** Im Backtest 2016-2025 +7,75 % p.a., Sharpe 1,0,
+Alpha ggü. SPY 5,3 % p.a. -- nach 191 getesteten Varianten ist das aber statistisch nicht
+von Glück zu unterscheiden. Der Paper-Betrieb ist ein Vorwärtstest auf neuen Daten, keine
+Empfehlung für echtes Geld.
+
+```bash
+python main.py overnight-run --dry-run      # nur Entscheidungen loggen
+python main.py overnight-run                # Paper-Orders (Keys aus overnight.env)
+python main.py overnight-report             # Auswertung von overnight_trades.csv
+```
+
+- **Eigenes Alpaca-Paper-Konto nötig** (Keys in `overnight.env`, gleiche Variablennamen wie
+  `.env.example`): `momentum-run` stellt beim Start alle unbekannten Positionen im Konto glatt
+  und würde die Overnight-Positionen verkaufen.
+- Margin-Konto, aber ohne Hebel: kein Day Trade (keine PDT-Regel), im Cash-Konto wäre der
+  tägliche Wiederkauf mit unabgewickeltem Geld aber eine Good-Faith-Violation.
+- Zeitplan (America/New_York, Frühschluss-Tage über Alpacas Handelskalender): Entscheidung
+  und CLS-Orders 15 Minuten vor Schluss (Alpaca nimmt CLS nur bis 10 Minuten vorher an),
+  OPG-Verkäufe ab 10 Minuten vor Open, nicht gefüllte Reste 5 Minuten nach Open per Market.
+- Zustand in `overnight_state.json` (übersteht Neustarts über Nacht), jede Nacht mit
+  Kauf-/Verkaufskurs und P&L in `overnight_trades.csv`.
+- Dauerbetrieb: `deploy/overnight.service` analog zum Abschnitt unten.
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
