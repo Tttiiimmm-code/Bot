@@ -425,3 +425,38 @@ Month".
   wegarbitriert (plausibel: Spot-ETFs, große Basis-Trade-Fonds wie Ethena).
 - Der Holdout ist hiermit geöffnet. Künftige Kandidaten können nur noch mit neuen Daten
   (Vorwärtstest im Paper-Handel oder bisher ungenutzte Datenquellen) bestätigt werden.
+
+# Runde 7: Historische Validierung 2003-2015 (2026-09-25)
+
+Nutzer lehnt kostenpflichtige Daten ab. Der Holdout ist verbraucht. Neue, unberührte Daten
+gibt es kostenlos nur in der VERGANGENHEIT: Yahoo-Finance-Tagesdaten vor 2016 wurden in keinem
+bisherigen Test verwendet. Die drei Kandidaten, die in den Runden 2, 5 und 6 den Kriterien am
+nächsten kamen, werden dort genau EINMAL mit ihrer auf 2016-2025 festgelegten Variante
+geprüft (keine neue Parameterwahl).
+
+- Daten: Yahoo Finance, Tageswerte (Open, Close, Dividenden, dividendenbereinigter Close),
+  jeweils ab Auflage des jüngsten benötigten ETFs, bis 2015-12-31.
+- Abweichungen von der ursprünglichen Ausführung (mangels Minutendaten): Signal auf dem
+  Schlusskurs statt 15:50-Kurs; Overnight-Rendite = (Open + Dividende am Ex-Tag) / Vortages-
+  schluss - 1; sonst Renditen aus dem dividendenbereinigten Schlusskurs. Kosten wie bisher.
+- Kandidaten und Benchmark:
+  1. E-Portfolio (Overnight, Trendfilter SMA200, 8 ETFs je 1/8), Benchmark SPY halten.
+  2. Multi-Asset-Trendfolge "dual, m12" (vom Walk-Forward zuletzt gewählt), Benchmark 1/9 halten.
+  3. Monatswechsel SPY, last_days 2 (vom Walk-Forward zuletzt gewählt), Benchmark SPY halten.
+- Bestanden, wenn im Validierungszeitraum: Rendite > 0, Sharpe > Sharpe der Benchmark, Alpha ggü.
+  Benchmark > 0 mit t >= 2,4 (Bonferroni-Korrektur für 3 Tests).
+- Wer besteht, wird als Paper-Bot vorwärts getestet (neue Daten ab heute).
+
+## 2026-09-25 -- Ergebnisse Runde 7 (historische Validierung, Yahoo bis 2015)
+
+- E-Portfolio Overnight (2001-03 bis 2015): 3,70 % p.a., Sharpe 0,65, MaxDD -12,3 % (SPY
+  halten 6,15 % p.a., Sharpe 0,40, MaxDD -55,2 %). Alpha 3,07 % p.a. (t 2,13), Beta 0,09
+  -> NICHT BESTANDEN (t knapp unter 2,4).
+- Multi-Asset dual m12 (2007-03 bis 2015): 7,78 % p.a., Sharpe 0,57 (1/9 halten 0,39),
+  Alpha 5,72 % p.a. (t 1,28) -> NICHT BESTANDEN.
+- Monatswechsel SPY (1993 bis 2015): 4,24 % p.a., Sharpe 0,50 (SPY 0,55), Alpha 2,16 %
+  (t 1,29) -> NICHT BESTANDEN.
+- Einordnung (nachträglich, keine Entscheidungsgrundlage): Das E-Portfolio zeigt in zwei
+  unabhängigen Zeiträumen ein positives Alpha mit t > 2 (2016-2025: t 2,23; 2001-2015: t 2,13)
+  bei sehr kleinem Beta und kleinen Drawdowns. Einziger Kandidat mit wiederholtem Signal ->
+  Vorwärtstest als Paper-Bot (overnight-run) ist der angemessene nächste Schritt.

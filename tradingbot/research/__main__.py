@@ -496,6 +496,51 @@ def cmd_carry_grid(train_days: int, test_days: int) -> None:
                           periods=crypto.PERIODS, benchmark_name="BTC")
 
 
+def cmd_validate_history() -> None:
+    """Runde 7 (research/PROTOCOL.md): die drei auf 2016-2025 festgelegten
+    Kandidaten einmalig auf Yahoo-Daten bis 2015 prüfen. Keine Parameterwahl,
+    daher keine neuen Versuche im Protokoll."""
+    from tradingbot.research import crypto, history, swing
+
+    costs = CostModel(slippage_bps=1.0)
+    raw = {s: history.fetch_yahoo(s) for s in set(SWING_ETFS) | set(swing.MULTI_ASSETS)}
+    spy_adj = history.as_daily(raw["SPY"])["close"]
+    spy_ret = (spy_adj / spy_adj.shift(1) - 1).dropna()
+    t_needed = 2.4
+
+    def verdict(name: str, strat: pd.Series, bench: pd.Series, bench_name: str) -> None:
+        bench = bench.reindex(strat.index).fillna(0.0)
+        ms, mb = compute_metrics(BacktestResult(name, strat)), compute_metrics(BacktestResult(bench_name, bench))
+        alpha, t_a, beta = swing.alpha_vs_benchmark(strat, bench)
+        print(f"\n=== {name} ({strat.index[0]} .. {strat.index[-1]}) ===")
+        print(f"Strategie: {ms.cagr:.2%} p.a., Sharpe {ms.sharpe:.2f}, MaxDD {ms.max_drawdown:.1%}")
+        print(f"{bench_name}: {mb.cagr:.2%} p.a., Sharpe {mb.sharpe:.2f}, MaxDD {mb.max_drawdown:.1%}")
+        print(f"Alpha {alpha:.2%} p.a. (t = {t_a:.2f}), Beta {beta:.2f}")
+        print("Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(strat).items()})
+        checks = {"Rendite > 0": ms.total_return > 0, f"Sharpe > {bench_name}": ms.sharpe > mb.sharpe,
+                  f"Alpha > 0 mit t >= {t_needed}": alpha > 0 and t_a >= t_needed}
+        for k, ok in checks.items():
+            print(f"  [{'OK' if ok else 'NEIN'}] {k}")
+        print("BESTANDEN" if all(checks.values()) else "NICHT BESTANDEN")
+
+    # 1. E-Portfolio: Overnight mit Trendfilter, 8 ETFs je 1/8
+    legs = {s: swing.overnight(history.as_daily(raw[s], overnight=True), True, costs, s).daily_returns
+            for s in SWING_ETFS}
+    frame = pd.DataFrame(legs).dropna()
+    verdict("E-Portfolio Overnight", frame.mean(axis=1), spy_ret, "SPY halten")
+
+    # 2. Multi-Asset-Trendfolge dual m12
+    close = pd.DataFrame({s: history.as_daily(raw[s])["close"] for s in swing.MULTI_ASSETS}).dropna()
+    w = swing.multi_asset_weights(close, close, "m12", "dual")
+    res = crypto.run_weights(w, close, 1.0 / 10_000 + 27.8e-6 / 2, "multi_asset")
+    bench = (close / close.shift(1) - 1).mean(axis=1).dropna()
+    verdict("Multi-Asset dual m12", res.daily_returns, bench, "1/9 halten")
+
+    # 3. Monatswechsel SPY, last_days 2
+    tom = swing.turn_of_month(history.as_daily(raw["SPY"]), 2, costs, symbol="SPY")
+    verdict("Monatswechsel SPY", tom.daily_returns, spy_ret, "SPY halten")
+
+
 def cmd_overnight_portfolio(holdout: bool) -> bool:
     """E-Portfolio (research/PROTOCOL.md): Overnight mit Trendfilter auf allen
     SWING_ETFS, je 1/n des Kapitals, eine feste Variante ohne Auswahl."""
@@ -608,6 +653,7 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
+    sub.add_parser("validate-history", help="Runde 7: Kandidaten auf 2003-2015 (Yahoo) prüfen.")
     tg = sub.add_parser("tom-grid", help="Runde 6: Monatswechsel-Effekt (Familie N).")
     tg.add_argument("--train-days", type=int, default=504)
     tg.add_argument("--test-days", type=int, default=126)
@@ -662,6 +708,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "validate-history":
+            cmd_validate_history()
             return
         if args.command == "tom-grid":
             cmd_tom_grid(args.train_days, args.test_days)
