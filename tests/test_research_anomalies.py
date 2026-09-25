@@ -54,3 +54,40 @@ def test_cross_section_picks_top_momentum_monthly():
     assert w.iloc[-1].tolist() == [1.0, 0.0, 0.0]
     lo = cross_section_weights(close, uni, momentum_12_1(close), n=1, highest=False)
     assert lo.iloc[-1].tolist() == [0.0, 1.0, 0.0]
+
+
+def test_parse_fomc_pages():
+    from datetime import date
+
+    from tradingbot.research.anomalies import parse_fomc_current, parse_fomc_historical
+
+    hist = ["January 26-27 Meeting - 2010", "May 9 Conference Call - 2010", "March 16 Meeting - 2010",
+            "January 31-February 1 Meeting - 2012", "July 31-August 1  Meeting - 2012",
+            "Oct/Nov 31-1 Meeting - 2017"]
+    assert parse_fomc_historical(hist) == [date(2010, 1, 27), date(2010, 3, 16), date(2012, 2, 1),
+                                           date(2012, 8, 1), date(2017, 11, 1)]
+    cur = ["2023 FOMC Meetings", "Jan/Feb", "31-1", "Statement:", "March", "21-22*", "Minutes:"]
+    assert parse_fomc_current(cur) == [date(2023, 2, 1), date(2023, 3, 22)]
+
+
+def test_event_day_weights_hold_into_event():
+    from tradingbot.research.anomalies import event_day_weights
+
+    idx = days(5)
+    w = event_day_weights(idx, [idx[2]])
+    assert w.tolist() == [0.0, 1.0, 0.0, 0.0, 0.0]
+
+
+def test_pairs_trading_profits_from_mean_reverting_pair():
+    from tradingbot.research.anomalies import pairs_trading
+
+    n = 400
+    rng = np.random.default_rng(1)
+    common = 100 * np.cumprod(1 + rng.normal(0, 0.01, n))
+    noise = np.sin(np.arange(n) / 5) * 0.03  # stark mean-revertierender Abstand
+    close = pd.DataFrame({"A": common * (1 + noise), "B": common * (1 - noise),
+                          "C": 50 * np.cumprod(1 + rng.normal(0, 0.02, n)),
+                          "D": 80 * np.cumprod(1 + rng.normal(0, 0.02, n))}, index=days(n))
+    uni = pd.DataFrame(True, index=close.index, columns=close.columns)
+    r = pairs_trading(close, uni, n_pairs=1, k=1.0, formation=252, trading=126, cost_per_side=0.0)
+    assert r.sum() > 0.05  # A/B wird gewählt und verdient an der Rückkehr zum Mittel

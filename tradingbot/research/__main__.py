@@ -582,6 +582,75 @@ def cmd_anomalies(train_days: int, test_days: int) -> None:
         evaluate_walk_forward(returns, train_days, test_days, benchmark=bench)
 
 
+def cmd_round9(train_days: int, test_days: int) -> None:
+    """Runde 9 (research/PROTOCOL.md): V Pre-FOMC, W Short-Vola (zwei Zeiträume),
+    U Paarhandel (Walk-Forward auf dem Aktien-Panel ab 2016)."""
+    import re
+    from datetime import date as _date
+
+    from tradingbot.research import anomalies, history, swing
+    from tradingbot.research.universe import UNIVERSE_DIR, load_daily_panel
+
+    split, dev_end = _date(2015, 12, 31), _date(2025, 9, 19)
+    etf_cost = 1.0 / 10_000 + 27.8e-6 / 2
+    costs = CostModel(slippage_bps=1.0)
+
+    def adj(sym: str) -> pd.Series:
+        d = history.fetch_yahoo(sym, until=_date(2025, 9, 20))
+        return d["adjclose"][d.index <= dev_end]
+
+    spy = adj("SPY")
+    spy_ret = spy.pct_change().dropna()
+    candidates = {}
+    fomc = anomalies.fomc_decision_days()
+    w = anomalies.event_day_weights(spy.index, fomc)
+    candidates["V Pre-FOMC"] = ("pre_fomc", anomalies.financed_returns(w, spy, etf_cost), _date(1994, 1, 1))
+    vix, vix3m, svxy = adj("^VIX"), adj("^VIX3M"), adj("SVXY")
+    for label, extra in (("W Contango", None), ("W Contango+VIX<20", 20.0)):
+        idx = svxy.index
+        ok = (vix.reindex(idx) < vix3m.reindex(idx))
+        if extra is not None:
+            ok &= vix.reindex(idx) < extra
+        candidates[label] = ("short_vol", anomalies.financed_returns(ok.astype(float), svxy, etf_cost),
+                             _date(2011, 10, 4))
+    print("Variante                 Zeitraum     p.a.    Sharpe  SPY-Sharpe  MaxDD   Alpha p.a.  t-Wert  investiert")
+    table = {}
+    for label, (family, r, start) in candidates.items():
+        row = {}
+        for period, mask in (("vor 2016", (r.index <= split) & (r.index >= start)), ("2016-2025", r.index > split)):
+            part = r[mask]
+            b = spy_ret.reindex(part.index).fillna(0.0)
+            m, mb = compute_metrics(BacktestResult(label, part)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(part, b)
+            row[period] = t_a
+            print(f"{label:24s} {period:10s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:9.2f}  {m.max_drawdown:6.1%}"
+                  f"  {alpha:9.2%}  {t_a:6.2f}  {(part != 0).mean():6.0%}")
+            if period == "2016-2025":
+                _log_trial(family, "SPY" if family == "pre_fomc" else "SVXY", {"variant": label}, costs, 1.0,
+                           BacktestResult(label, part))
+        table[label] = row
+    for fam in ("V", "W"):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["2016-2025"])
+        ok = table[best]["2016-2025"] >= 2 and table[best]["vor 2016"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t 2016-2025 = {table[best]['2016-2025']:.2f}, "
+              f"vor 2016 = {table[best]['vor 2016']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+    assets = pd.read_pickle(UNIVERSE_DIR / "assets.pkl")
+    funds = set(assets.loc[assets["name"].fillna("").str.contains(re.compile(_FUND_NAME, re.I)), "symbol"])
+    panel = load_daily_panel()
+    panel = panel[panel.index.get_level_values("date") < HOLDOUT_START]
+    bench = panel.xs("SPY", level="symbol")["close"].pct_change().dropna()
+    stocks = panel[~panel.index.get_level_values("symbol").isin(funds)]
+    _, closes, mask = swing.reversal_matrices(stocks)
+    r = anomalies.pairs_trading(closes, mask)
+    res = BacktestResult("pairs", r, [], r[r != 0].to_numpy())
+    _log_trial("pairs_trading", "top500", {"k": 2.0, "n_pairs": 20}, CostModel(slippage_bps=3.0), 1.0, res)
+    _print_metrics("U Paarhandel k=2", res)
+    print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(r).items()})
+    evaluate_walk_forward({"U Paarhandel k=2": r}, train_days, test_days, benchmark=bench)
+
+
 def cmd_validate_history() -> None:
     """Runde 7 (research/PROTOCOL.md): die drei auf 2016-2025 festgelegten
     Kandidaten einmalig auf Yahoo-Daten bis 2015 prüfen. Keine Parameterwahl,
@@ -740,6 +809,9 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
     sub.add_parser("validate-history", help="Runde 7: Kandidaten auf 2003-2015 (Yahoo) prüfen.")
+    r9 = sub.add_parser("round9", help="Runde 9: Pre-FOMC, Short-Vola, Paarhandel (Familien U-W).")
+    r9.add_argument("--train-days", type=int, default=504)
+    r9.add_argument("--test-days", type=int, default=126)
     an = sub.add_parser("anomalies", help="Runde 8: bekannte Anomalien (Familien P-T).")
     an.add_argument("--train-days", type=int, default=504)
     an.add_argument("--test-days", type=int, default=126)
@@ -797,6 +869,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "round9":
+            cmd_round9(args.train_days, args.test_days)
             return
         if args.command == "anomalies":
             cmd_anomalies(args.train_days, args.test_days)

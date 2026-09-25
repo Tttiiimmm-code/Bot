@@ -7,6 +7,7 @@ laufen.
 from __future__ import annotations
 
 import json
+import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -30,7 +31,7 @@ def fetch_yahoo(symbol: str, base: Path = YAHOO_DIR, until: date = date(2016, 1,
         return pd.read_pickle(path)
     p1 = int(datetime(1993, 1, 1, tzinfo=timezone.utc).timestamp())
     p2 = int(datetime(until.year, until.month, until.day, tzinfo=timezone.utc).timestamp())
-    req = urllib.request.Request(_URL.format(sym=symbol, p1=p1, p2=p2), headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(_URL.format(sym=urllib.parse.quote(symbol), p1=p1, p2=p2), headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=60) as r:
         res = json.load(r)["chart"]["result"][0]
     q = res["indicators"]["quote"][0]

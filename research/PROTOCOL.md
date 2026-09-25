@@ -510,3 +510,38 @@ unabhängigen Zeiträumen, wo Daten vorhanden:
   Alpha 11,1 % p.a. (t 1,16), Beta 1,24, PF 1,17 -> NICHT BESTANDEN.
 - T Niedrige Vola: Sharpe 0,62-0,64, Walk-Forward Alpha 0,8 % p.a. (t 0,26) -> NICHT BESTANDEN.
 - Insgesamt protokollierte Versuche: 240.
+
+# Runde 9: Notenbank-Termine, Volatilitätsprämie, Paarhandel (2026-09-26)
+
+Bestehensregeln wie Runde 8 (V, W: zwei unabhängige Zeiträume mit Alpha-t >= 2 für die in
+2016-2025 beste Variante; U: nur Daten ab 2016 -> Walk-Forward + alle Kriterien inkl. DSR).
+
+## Vorab-Registrierung
+
+- V Pre-FOMC-Drift (Lucca & Moench 2015, "The Pre-FOMC Announcement Drift"): SPY nur von
+  Schluss des Vortags bis Schluss des Tages einer planmäßigen FOMC-Zinsentscheidung, sonst
+  Cash. Termine von federalreserve.gov (nur planmäßige Sitzungen, Entscheidungstag = letzter
+  Sitzungstag). 1 Versuch. Zeiträume 1994-2015 und 2016-2025 (Yahoo inkl. Dividenden).
+  Benchmark SPY.
+- W Volatilitätsprämie (Short-Vola): SVXY halten, solange VIX < VIX3M (Contango) zum Schluss,
+  sonst Cash. Varianten {nur Contango, Contango und VIX < 20} -> 2 Versuche. Zeiträume
+  2011-10 bis 2015 und 2016-2025. Benchmark SPY. Hinweis: SVXY wurde im Februar 2018 von -1x
+  auf -0,5x VIX-Futures umgestellt; die Daten zeigen das echte Produkt.
+- U Paarhandel (Gatev, Goetzmann & Rouwenhorst 2006): Top-500-Einzelaktien, Bildung über 252
+  Tage, die 20 Paare mit der kleinsten Summe quadrierter Abstände der normierten Kurse; Handel
+  in den folgenden 126 Tagen: Spread > k Standardabweichungen -> teures Papier short, billiges
+  long (je 1/20 des Kapitals pro Seite), Schließen bei Kreuzung. k {2} -> 1 Versuch, Kosten
+  3 bp je Seite. Short-Leihgebühren nicht modelliert (zugunsten der Strategie, vermerkt).
+
+## 2026-09-26 -- Ergebnisse Runde 9
+
+- FOMC-Termine: 272 planmäßige Entscheidungstage 1994-2027 (federalreserve.gov); Parser um
+  die Formate "Jan/Feb 31-1" und doppelte Leerzeichen ergänzt, bevor ausgewertet wurde.
+- V Pre-FOMC: vor 2016 2,45 % p.a. bei 6 % Investitionsgrad, Alpha 2,15 % (t 2,95); 2016-2025
+  0,44 % p.a., Alpha 0,03 % (t 0,03) -> NICHT BESTANDEN. Effekt nach Veröffentlichung (2015)
+  verschwunden.
+- W Short-Vola: Contango 40,7 % / 28,1 % p.a., MaxDD -44 % / -41 %, Alpha t -0,20 / 1,42;
+  mit VIX<20 schlechter -> NICHT BESTANDEN.
+- U Paarhandel: 0,85 % p.a., Sharpe 0,22, Walk-Forward Alpha 0,36 % p.a. (t 0,20)
+  -> NICHT BESTANDEN.
+- Insgesamt protokollierte Versuche: 244.
