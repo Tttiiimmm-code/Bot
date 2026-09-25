@@ -588,6 +588,141 @@ SCAN_FX = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCHF=X", "USDCAD=X
 SCAN_CRYPTO = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "TRXUSDT", "ETCUSDT"]
 
 
+def cmd_reddit() -> None:
+    """Runde 12 (research/PROTOCOL.md): Ideen aus r/algotrading, zwei Zeiträume."""
+    from datetime import date as _date
+
+    from tradingbot.research import anomalies, history, scan, swing
+
+    split, dev_end = _date(2015, 12, 31), _date(2025, 9, 19)
+    cost = 1.0 / 10_000 + 27.8e-6 / 2
+    families = {}
+    for sym in ("SPY", "QQQ"):
+        df = history.fetch_yahoo_ohlc(sym)
+        df = df[df.index <= dev_end]
+        ret = df["adjclose"].pct_change()
+        families[f"Z1 IBS-Band {sym}"] = (anomalies.ibs_band_positions(df), ret)
+        families[f"Z2 Double 7 {sym}"] = (anomalies.double7_positions(df["adjclose"]), ret)
+    spy = history.fetch_yahoo_ohlc("SPY")
+    spy_up = (spy["adjclose"].pct_change() > 0).astype(float)
+    for target in ("EFA", "EEM", "EWJ", "EWG", "EWU", "FXI", "EWZ"):
+        df = history.fetch_yahoo_ohlc(target)
+        df = df[df.index <= dev_end]
+        families[f"Z3 SPY->{target}"] = (spy_up.reindex(df.index).fillna(0.0), df["adjclose"].pct_change())
+
+    print("Variante             Zeitraum     p.a.    Sharpe  Halten-Sharpe  investiert  Alpha p.a.  t-Wert  t@10bp")
+    table = {}
+    for label, (pos, ret) in families.items():
+        strat = scan.strategy_returns(pos, ret, cost)
+        stress = scan.strategy_returns(pos, ret, 0.001)
+        first = pos.ne(0).idxmax()
+        row = {}
+        for period, mask in (("vor 2016", (strat.index <= split) & (strat.index >= first)),
+                             ("2016-2025", strat.index > split)):
+            s, b = strat[mask], ret.reindex(strat.index)[mask].fillna(0.0)
+            m, mb = compute_metrics(BacktestResult(label, s)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(s, b)
+            _, t_s, _ = swing.alpha_vs_benchmark(stress[mask], b)
+            row[period] = t_a
+            print(f"{label:20s} {period:10s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:12.2f}  "
+                  f"{pos.shift(1).reindex(s.index).mean():9.0%}  {alpha:9.2%}  {t_a:6.2f}  {t_s:6.2f}")
+            if period == "2016-2025":
+                _log_trial("reddit", label.split()[-1], {"variant": label}, CostModel(slippage_bps=1.0), 1.0,
+                           BacktestResult(label, s))
+        table[label] = row
+    for fam in ("Z1", "Z2", "Z3"):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["2016-2025"])
+        ok = table[best]["2016-2025"] >= 2 and table[best]["vor 2016"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t 2016-2025 {table[best]['2016-2025']:.2f}, "
+              f"vor 2016 {table[best]['vor 2016']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+
+def cmd_edgar() -> None:
+    """Runde 11 (research/PROTOCOL.md): Insiderkäufe (X) und Earnings-Drift (Y) mit
+    deutschen Handelsannahmen (nur long, 10 bp je Seite), zwei Zeiträume."""
+    import re
+    from datetime import date as _date
+
+    from tradingbot.research import crypto, edgar, swing
+    from tradingbot.research.universe import UNIVERSE_DIR, load_daily_panel
+
+    disc, conf = (_date(2016, 1, 1), _date(2020, 12, 31)), (_date(2021, 1, 1), _date(2025, 9, 19))
+    assets = pd.read_pickle(UNIVERSE_DIR / "assets.pkl")
+    funds = set(assets.loc[assets["name"].fillna("").str.contains(re.compile(_FUND_NAME, re.I)), "symbol"])
+    panel = load_daily_panel()
+    panel = panel[panel.index.get_level_values("date") < HOLDOUT_START]
+    spy = panel.xs("SPY", level="symbol")["close"]
+    stocks = panel[~panel.index.get_level_values("symbol").isin(funds)]
+    _, closes, mask = swing.reversal_matrices(stocks, universe_size=1000)
+    spy = spy.reindex(closes.index)
+    bench = spy.pct_change().dropna()
+    col = {s: i for i, s in enumerate(closes.columns)}
+    day_pos = {d: i for i, d in enumerate(closes.index)}
+    M = mask.to_numpy()
+
+    def in_universe(events):
+        return [(s, d) for s, d in events if s in col and d in day_pos and M[day_pos[d], col[s]]]
+
+    purchases = edgar.insider_purchases()
+    print(f"Insiderkäufe (Officer/Director, >= 25.000 $): {len(purchases):,}, "
+          f"{purchases['symbol'].nunique():,} Symbole")
+    variants = {}
+    for cluster in (False, True):
+        ev = in_universe(edgar.insider_events(purchases, closes.index, cluster))
+        for hold in (21, 63):
+            variants[f"X {'Cluster' if cluster else 'jeder Kauf'} {hold}T"] = ("insider", ev, hold)
+
+    cik_map = edgar.symbol_to_cik(purchases)
+    symbols = [s for s in closes.columns[M.any(axis=0)] if s in cik_map]
+    print(f"Lade 8-K-Ergebnismeldungen für {len(symbols)} Symbole ...")
+    announcements = {}
+    for i, s in enumerate(symbols, 1):
+        acc = edgar.earnings_8k(cik_map[s])["accepted"]
+        days = [edgar.event_day(a, closes.index) for a in acc]
+        announcements[s] = [d for d in days if d is not None]
+        if i % 250 == 0:
+            logging.info("8-K: %d/%d", i, len(symbols))
+    n_ann = sum(len(v) for v in announcements.values())
+    print(f"Ergebnismeldungen (8-K Item 2.02): {n_ann:,}")
+    for thr in (0.05, 0.10):
+        ev = in_universe(edgar.earnings_events(closes, spy, announcements, thr))
+        for hold in (20, 60):
+            variants[f"Y AR>{thr:.0%} {hold}T"] = ("earnings_drift", ev, hold)
+
+    def sl(x, p):
+        return x[(x.index >= p[0]) & (x.index <= p[1])]
+
+    print("\nVariante                  Ereignisse  Zeitraum     p.a.    Sharpe  SPY-Sharpe  Alpha p.a.  t-Wert  "
+          "Ø Pos.  Alpha@25bp t")
+    table = {}
+    for label, (family, ev, hold) in variants.items():
+        w = edgar.event_weights(closes, ev, hold)
+        res = crypto.run_weights(w, closes, 0.0010, family)
+        stress = crypto.run_weights(w, closes, 0.0025, family).daily_returns
+        npos = (w > 0).sum(axis=1)
+        row = {}
+        for name, p in (("Entdeckung", disc), ("Bestätigung", conf)):
+            r, b = sl(res.daily_returns, p), sl(bench, p)
+            m, mb = compute_metrics(BacktestResult(label, r)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(r, b)
+            _, t_s, _ = swing.alpha_vs_benchmark(sl(stress, p), b)
+            n_ev = sum(1 for _, d in ev if p[0] <= d <= p[1])
+            row[name] = t_a
+            print(f"{label:24s} {n_ev:10,d}  {name:11s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:9.2f}  "
+                  f"{alpha:9.2%}  {t_a:6.2f}  {sl(npos, p).mean():6.1f}  {t_s:10.2f}")
+            if name == "Entdeckung":
+                _log_trial(family, "top1000", {"variant": label}, CostModel(slippage_bps=10.0), 1.0,
+                           BacktestResult(label, r))
+        table[label] = row
+    for fam in ("X", "Y"):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["Entdeckung"])
+        ok = table[best]["Entdeckung"] >= 2.24 and table[best]["Bestätigung"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t Entdeckung {table[best]['Entdeckung']:.2f}, "
+              f"Bestätigung {table[best]['Bestätigung']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+
 def cmd_scan(q: float = 0.10) -> None:
     """Runde 10 (research/PROTOCOL.md): alle Regeln auf allen Assets, Stufe 1
     Benjamini-Hochberg (Entdeckung), Stufe 2 Bonferroni (Bestätigung)."""
@@ -890,6 +1025,8 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--test-days", type=int, default=126)
     sub.add_parser("validate-history", help="Runde 7: Kandidaten auf 2003-2015 (Yahoo) prüfen.")
     sub.add_parser("scan", help="Runde 10: systematischer Scan aller Regeln auf allen Assets.")
+    sub.add_parser("edgar", help="Runde 11: SEC EDGAR -- Insiderkäufe und Earnings-Drift.")
+    sub.add_parser("reddit", help="Runde 12: Ideen aus r/algotrading.")
     r9 = sub.add_parser("round9", help="Runde 9: Pre-FOMC, Short-Vola, Paarhandel (Familien U-W).")
     r9.add_argument("--train-days", type=int, default=504)
     r9.add_argument("--test-days", type=int, default=126)
@@ -953,6 +1090,12 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "scan":
             cmd_scan()
+            return
+        if args.command == "edgar":
+            cmd_edgar()
+            return
+        if args.command == "reddit":
+            cmd_reddit()
             return
         if args.command == "round9":
             cmd_round9(args.train_days, args.test_days)

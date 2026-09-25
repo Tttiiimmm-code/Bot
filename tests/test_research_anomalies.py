@@ -56,6 +56,29 @@ def test_cross_section_picks_top_momentum_monthly():
     assert lo.iloc[-1].tolist() == [0.0, 1.0, 0.0]
 
 
+def test_ibs_band_enters_on_deep_weak_close_and_exits_above_prior_high():
+    from tradingbot.research.anomalies import ibs_band_positions
+
+    n = 40
+    idx = days(n)
+    close = np.full(n, 100.0)
+    close[30] = 90.0   # tiefer Schluss, nahe Tagestief
+    close[31] = 90.5   # unter Vortageshoch (91) -> Position bleibt
+    close[32] = 102.0  # über Vortageshoch
+    df = pd.DataFrame({"high": close + 1, "low": close - 1, "close": close}, index=idx)
+    df.loc[idx[30], "low"] = 89.8
+    pos = ibs_band_positions(df)
+    assert pos.iloc[29] == 0 and pos.iloc[30] == 1 and pos.iloc[31] == 1 and pos.iloc[32] == 0
+
+
+def test_double7_needs_uptrend_and_seven_day_low():
+    from tradingbot.research.anomalies import double7_positions
+
+    up = list(np.linspace(100, 200, 210)) + [195, 190, 185, 186, 187, 188, 189, 190, 191, 200]
+    pos = double7_positions(pd.Series(up, index=days(len(up))))
+    assert pos.iloc[209] == 0 and pos.iloc[212] == 1 and pos.iloc[-1] == 0
+
+
 def test_parse_fomc_pages():
     from datetime import date
 

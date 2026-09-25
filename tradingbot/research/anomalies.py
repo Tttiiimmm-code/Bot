@@ -76,6 +76,38 @@ def low_volatility(close: pd.DataFrame) -> pd.DataFrame:
     return close.pct_change(fill_method=None).rolling(63, min_periods=50).std()
 
 
+# ------------------------------------------------------------ Runde 12 (r/algotrading)
+
+def _entry_exit(entry: np.ndarray, exit_: np.ndarray) -> np.ndarray:
+    pos, out = 0.0, np.zeros(len(entry))
+    for t in range(len(entry)):
+        if pos and exit_[t]:
+            pos = 0.0
+        elif not pos and entry[t]:
+            pos = 1.0
+        out[t] = pos
+    return out
+
+
+def ibs_band_positions(df: pd.DataFrame) -> pd.Series:
+    """Z1: Kauf, wenn Schluss < max(Hoch, 10) - 2,5 x Ø(Hoch-Tief, 25) und IBS < 0,3;
+    Verkauf, sobald Schluss > Hoch des Vortags. df: high, low, close."""
+    h, lo, c = df["high"], df["low"], df["close"]
+    band = h.rolling(10).max() - 2.5 * (h - lo).rolling(25).mean()
+    rng = (h - lo).replace(0, np.nan)
+    ibs = (c - lo) / rng
+    entry = ((c < band) & (ibs < 0.3)).to_numpy()
+    exit_ = (c > h.shift(1)).to_numpy()
+    return pd.Series(_entry_exit(entry, exit_), index=df.index)
+
+
+def double7_positions(close: pd.Series) -> pd.Series:
+    """Z2: Kauf bei Schluss > SMA200 und 7-Tage-Tiefststand, Verkauf bei 7-Tage-Höchststand."""
+    entry = ((close > close.rolling(200).mean()) & (close <= close.rolling(7).min())).to_numpy()
+    exit_ = (close >= close.rolling(7).max()).to_numpy()
+    return pd.Series(_entry_exit(entry, exit_), index=close.index)
+
+
 # ------------------------------------------------------------ Runde 9
 
 _MONTHS = {m: i for i, m in enumerate(

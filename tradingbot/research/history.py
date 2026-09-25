@@ -49,6 +49,28 @@ def fetch_yahoo(symbol: str, base: Path = YAHOO_DIR, until: date = date(2016, 1,
     return df
 
 
+def fetch_yahoo_ohlc(symbol: str, base: Path = YAHOO_DIR, until: date = date(2025, 9, 20)) -> pd.DataFrame:
+    """Wie fetch_yahoo, zusätzlich high/low (split-, nicht dividendenbereinigt)."""
+    path = base / f"{symbol}_ohlc.pkl"
+    if path.exists():
+        return pd.read_pickle(path)
+    p1 = int(datetime(1993, 1, 1, tzinfo=timezone.utc).timestamp())
+    p2 = int(datetime(until.year, until.month, until.day, tzinfo=timezone.utc).timestamp())
+    req = urllib.request.Request(_URL.format(sym=urllib.parse.quote(symbol), p1=p1, p2=p2),
+                                 headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        res = json.load(r)["chart"]["result"][0]
+    q = res["indicators"]["quote"][0]
+    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert("America/New_York").date
+    df = pd.DataFrame({"open": q["open"], "high": q["high"], "low": q["low"], "close": q["close"],
+                       "adjclose": res["indicators"]["adjclose"][0]["adjclose"]}, index=idx)
+    df = df.dropna()
+    df = df[~df.index.duplicated(keep="last")]
+    base.mkdir(parents=True, exist_ok=True)
+    df.to_pickle(path)
+    return df
+
+
 def as_daily(df: pd.DataFrame, overnight: bool = False) -> pd.DataFrame:
     """Format wie swing.etf_daily bis VALIDATION_END. overnight=True: Open um
     die Dividende am Ex-Tag erhöht (der Kursabschlag über Nacht ist kein

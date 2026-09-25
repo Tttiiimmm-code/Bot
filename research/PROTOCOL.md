@@ -586,3 +586,100 @@ Nutzer: "jede mögliche Konfiguration auf jeder Art von Asset". Bei tausenden Te
 - Hinweis zur Methode: long- und long/short-Varianten derselben Regel haben praktisch den
   gleichen Alpha-t-Wert (long/short = 2 x long - Halten), sind also keine unabhängigen Tests;
   die Korrektur ist dadurch eher zu streng als zu locker.
+
+# Runde 11: SEC EDGAR -- Insiderkäufe und Earnings-Drift (2026-09-26)
+
+Auf Wunsch des Nutzers, der aus Deutschland handelt. Daraus folgende Annahmen:
+- Nur Käufe (Leerverkäufe von US-Aktien für Privatkunden deutscher Broker kaum möglich).
+- Kosten 10 bp je Seite (Ordergebühr, EUR/USD-Umtausch, Spread an deutschen Handelsplätzen
+  bzw. IBKR); Stresstest 25 bp je Seite (berichtet, nicht entscheidend).
+- Steuern (25 % Abgeltungsteuer + Soli auf realisierte Gewinne) ändern nicht, ob ein Vorteil
+  existiert, werden aber in der Bewertung berücksichtigt.
+
+## Daten
+
+- SEC "Insider Transactions Data Sets" (Formulare 3/4/5, quartalsweise, 2015Q4-2025Q3).
+- 8-K-Meldungen mit Item 2.02 (Quartalsergebnisse) aus data.sec.gov/submissions, Zeitpunkt
+  aus acceptanceDateTime (vor 9:30 ET -> Ereignistag = Meldetag, sonst nächster Handelstag).
+- Kurse: Alpaca-Tagespanel inkl. delisteter Titel. Universum: Top 1000 nach Ø-Dollar-Volumen
+  der 20 Vortage, Kurs > 5 $, ohne Fonds/ETFs (Namensfilter wie Runde 8).
+
+## Bestehen (zwei unabhängige Zeiträume)
+
+- Entdeckung 2016-01-01 bis 2020-12-31, Bestätigung 2021-01-01 bis 2025-09-19.
+- Je Familie die Variante mit dem höchsten Alpha-t (ggü. SPY) in der Entdeckung wählen;
+  bestanden nur, wenn diese Variante in der Entdeckung t >= 2,24 (Bonferroni über 4
+  Varianten) UND in der Bestätigung t >= 2 hat.
+- Portfolio: alle aktiven Positionen gleichgewichtet, täglich; ohne aktive Position Cash.
+
+## Vorab-Registrierung
+
+- X Insiderkäufe (Lakonishok & Lee 2001; Cohen, Malloy & Pomorski 2012): Käufe am offenen
+  Markt (Code P) von Officers/Directors, Wert >= 25.000 $. Einstieg zum Schluss des
+  Handelstags NACH dem Meldetag. Varianten {jeder Kauf, Cluster: >= 2 verschiedene Insider
+  kaufen innerhalb von 30 Tagen (Ereignis = Meldung des zweiten)} x Haltedauer {21, 63}
+  Handelstage -> 4 Versuche.
+- Y Earnings-Drift (Bernard & Thomas 1989; Chan, Jegadeesh & Lakonishok 1996): Überrendite
+  am Ergebnistag = Aktie minus SPY (Schluss vor dem Ereignistag bis Schluss des Ereignistags).
+  Kauf, wenn Überrendite > Schwelle, zum Schluss des FOLGEtags. Varianten Schwelle {5 %, 10 %}
+  x Haltedauer {20, 60} Handelstage -> 4 Versuche.
+
+# Runde 12: Ideen aus r/algotrading (2026-09-26)
+
+Quelle: Top-Beiträge mit Flair "Strategy" (per Browser gelesen). Regeln exakt wie gepostet,
+keine eigene Parameterwahl. Bestehen wie Runde 8: Variante mit dem höchsten Alpha-t in
+2016-2025 wählen, bestanden nur mit Alpha-t >= 2 in 2016-2025 UND vor 2016 (Yahoo inkl.
+Dividenden, ab Auflage). Kosten 1 bp je Seite + SEC-Gebühr; Stresstest 10 bp (deutscher
+Broker). Nur long. Benchmark: dasselbe ETF halten.
+
+- Z1 IBS-/Band-Rückkehr ("A Mean Reversion Strategy with 2.11 Sharpe", "Found a simple mean
+  reversion setup with 70% win rate"): Kauf zum Schluss, wenn Schluss < höchstes Hoch der
+  letzten 10 Tage - 2,5 x Ø(Hoch - Tief) der letzten 25 Tage UND IBS = (Schluss - Tief) /
+  (Hoch - Tief) < 0,3; Verkauf zum Schluss, sobald Schluss > Hoch des Vortags.
+  Assets {SPY, QQQ} -> 2 Versuche.
+- Z2 Larry Connors "Double 7" ("Backtest results for Larry Connors Double 7"): Kauf zum
+  Schluss, wenn Schluss > SMA200 und Schluss = tiefster Schluss der letzten 7 Tage; Verkauf
+  zum Schluss, wenn Schluss = höchster Schluss der letzten 7 Tage. {SPY, QQQ} -> 2 Versuche.
+- Z3 Asset-übergreifender Vorlauf (Kommentar "cross-asset correlation ... international and
+  thematic ETFs"): Ziel-ETF am Folgetag halten, wenn SPY am Tag t gestiegen ist, sonst Cash.
+  Ziele {EFA, EEM, EWJ, EWG, EWU, FXI, EWZ} -> 7 Versuche.
+
+## 2026-09-26 -- Ergebnisse Runde 12 (r/algotrading)
+
+- Z1 IBS-Band: SPY t 3,68 (vor 2016) / -0,09 (2016-2025); QQQ 3,89 / 0,66 -> NICHT BESTANDEN.
+- Z2 Double 7: SPY 3,05 / 0,52; QQQ 1,14 / 0,77 -> NICHT BESTANDEN.
+  Beide Rückkehr-Regeln stark vor 2016, seither verschwunden (Bekanntheit seit ~2008/2013).
+- Z3 SPY -> Länder-ETFs: in BEIDEN Zeiträumen signifikant NEGATIV (z.B. EEM t -3,40 / -2,53,
+  EWJ -3,40 / -2,22, FXI -4,20 / -3,24) -> NICHT BESTANDEN. Passt zu Levy & Lieberman (2013):
+  US-notierte Länder-ETFs überreagieren auf den US-Markt und korrigieren am Folgetag.
+- Insgesamt protokollierte Versuche (inkl. Runde 11, siehe unten): siehe trials.csv.
+
+## 2026-09-26 -- Vorab-Registrierung: Z3R, Umkehrung (NACHTRÄGLICH motiviert!)
+
+Die Umkehrung von Z3 wurde erst nach Sicht der Daten beider Zeiträume erkannt; dort zählt sie
+nicht als Beleg. Einziger noch ungesehener Zeitraum für diese ETFs: nach 2025-09-19.
+- Regel: die 7 Länder-ETFs (EFA, EEM, EWJ, EWG, EWU, FXI, EWZ) gleichgewichtet am Folgetag
+  halten, wenn SPY am Tag t GEFALLEN ist, sonst Cash. Kosten 1 bp je Seite.
+- Test EINMALIG auf 2025-09-22 bis heute. Bestanden, wenn Alpha ggü. dem gleichgewichteten
+  Halten der 7 ETFs > 0 mit t >= 2. Geringe Teststärke (ein Jahr) ausdrücklich vermerkt.
+- Praktische Einschränkung: US-notierte ETFs sind für Privatanleger in der EU nicht kaufbar
+  (PRIIPs); UCITS-Pendants handeln zu europäischen Zeiten, der Mechanismus ist dort ein anderer.
+
+## 2026-09-26 -- Ergebnis Z3R (einmaliger Test auf 2025-09-22 bis 2026-09-21, 251 Tage)
+
+- Z3R 19,1 % p.a., Sharpe 1,50; 7 ETFs halten 16,6 % p.a., Sharpe 1,02. Alpha 9,0 % p.a.,
+  t 1,10, Beta 0,55 -> NICHT BESTANDEN (t < 2). Richtung und Größe (~9 % p.a.) stimmen mit
+  den beiden früheren Zeiträumen überein; für Signifikanz reicht ein Jahr nicht.
+
+## 2026-09-26 -- Ergebnisse Runde 11 (SEC EDGAR)
+
+- Daten: 64.951 Insiderkäufe (Officer/Director, >= 25.000 $), 6.728 Symbole; 109.906
+  Ergebnismeldungen (8-K Item 2.02) für 2.687 Symbole des Top-1000-Universums.
+- X Insiderkäufe: alle 4 Varianten mit negativem Alpha ggü. SPY in beiden Zeiträumen (absolut
+  6-15 % p.a., aber unter SPY; beste Variante "jeder Kauf 63T" t -0,39 / -0,65)
+  -> NICHT BESTANDEN. Im liquiden Top-1000-Universum kein Insider-Vorteil nach Kosten.
+- Y Earnings-Drift: Entdeckung 2016-2020 bis t 2,06 (AR>10 %, 60T: +11,2 % p.a.), Bestätigung
+  2021-2025 durchgehend signifikant negativ (-11 bis -26 % p.a., t -2,1 bis -2,3)
+  -> NICHT BESTANDEN. Der Effekt hat sich umgekehrt.
+- Bekannte Einschränkung: Ticker->CIK teils über die aktuelle SEC-Liste (umbenannte Ticker
+  können falsch zugeordnet sein); betrifft nur einen Teil der Symbole.
