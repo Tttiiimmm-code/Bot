@@ -592,6 +592,210 @@ def _make_engine() -> MomentumEngine:
     )
 
 
+def _feed(engine: MomentumEngine, bars: list[tuple[float, float, float, float]]) -> list:
+    """Speist (open, high, low, close)-Kerzen im Minutentakt ab 9:30 ein
+    (im Handelsfenster, Trend ok, hohes Rel.Volumen) und gibt alle
+    Ereignisse zurück. Ein BreakoutEvent wird abgelehnt, damit die Engine
+    weiterlaufen kann."""
+    events = []
+    base = pd.Timestamp("2024-01-10 09:30")
+    for i, (o, h, lo, c) in enumerate(bars):
+        for event in engine.process_bar(
+            base + pd.Timedelta(minutes=i), o, h, lo, c, 1000,
+            in_window=True, relative_volume=5.0, daily_trend_ok=True,
+        ):
+            events.append(event)
+            if isinstance(event, BreakoutEvent):
+                engine.decline_entry()
+    return events
+
+
+def _live_like_engine(**overrides) -> MomentumEngine:
+    params = dict(
+        flagpole_min_gain_pct=0.03, flagpole_max_bars=15, min_pullback_bars=2, max_pullback_bars=5,
+        max_pullback_retrace_pct=0.5, reward_risk_ratio=2.0, extension_multiplier=4.0, min_relative_volume=2.0,
+    )
+    params.update(overrides)
+    return MomentumEngine(**params)
+
+
+def test_no_breakout_on_first_weak_candle_after_pole_high_grml_2026_09_23():
+    """Regressionstest mit den echten GRML-Kerzen vom 23.09. (IEX): die
+    alte Logik kaufte 15:45 bei 16.03 -- eine Kerze mit TIEFEREM Hoch und
+    Schluss als die Vorkerze (16.25), also die erste Schwäche nach dem
+    Hoch. 15:44 lief über die Flaggenstange hinaus und wurde trotzdem als
+    "Pullback-Kerze" gezählt."""
+    bars = [
+        (15.335, 15.565, 15.29, 15.40),
+        (15.46, 15.46, 15.25, 15.25),   # Swing-Tief
+        (15.74, 15.83, 15.74, 15.76),   # Flaggenstange (+3.3%)
+        (15.83, 16.25, 15.82, 16.25),   # Fortsetzung -- kein Rücksetzer
+        (16.09, 16.09, 15.96, 16.03),   # erste Schwächekerze -- kein Breakout
+    ]
+    assert _feed(_live_like_engine(), bars) == []
+
+
+def test_no_breakout_on_sideways_bars_without_pullback_mss_2026_09_23():
+    """Regressionstest mit den echten MSS-Kerzen vom 23.09. (IEX): die
+    "Pullback-Kerzen" 2.17/2.16/2.18 liefen seitwärts, ohne je unter die
+    Flaggenstange zurückzugehen -- alte Logik kaufte bei 2.18 mit Stop 2.16
+    (1% unter Einstieg, im Rauschen)."""
+    bars = [
+        (2.19, 2.19, 2.03, 2.06),   # Swing-Tief
+        (2.11, 2.16, 2.11, 2.16),   # Flaggenstange (+4.9%)
+        (2.17, 2.18, 2.17, 2.17),   # neues Hoch -- Stange läuft weiter
+        (2.16, 2.16, 2.16, 2.16),
+        (2.18, 2.18, 2.18, 2.18),
+    ]
+    assert _feed(_live_like_engine(), bars) == []
+
+
+def test_breakout_requires_close_above_previous_candle_high():
+    """Nach 2 echten Rücksetzer-Kerzen löst erst die Kerze aus, die über dem
+    Hoch der VORKERZE schließt -- ein Schluss nur über dem Flaggenstangen-
+    Schluss (alte Regel) reicht nicht."""
+    engine = _make_engine()
+    bars = [
+        (10.00, 10.05, 9.98, 10.05),
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 12.05, 9.99, 12.00),    # Flaggenstange, Hoch 12.05
+        (12.00, 12.00, 11.60, 11.70),   # Rücksetzer 1
+        (11.70, 11.90, 11.30, 11.40),   # Rücksetzer 2, Hoch 11.90
+        (11.40, 11.95, 11.35, 11.85),   # Schluss 11.85 < Vorkerzenhoch 11.90
+    ]
+    assert _feed(engine, bars) == []
+
+    events = _feed(engine, [(11.85, 12.10, 11.80, 12.05)])  # Schluss > Vorkerzenhoch 11.95
+    assert len(events) == 1
+    assert isinstance(events[0], BreakoutEvent)
+    assert events[0].stop_price == pytest.approx(11.30)
+    assert events[0].pullback_bars == 3
+
+
+def test_new_high_during_pullback_extends_pole_and_restarts_pullback():
+    """Eine Kerze mit neuem Hoch über der Flaggenstange (ohne Breakout-
+    Bestätigung) ist die Fortsetzung der Stange: der Rücksetzer beginnt von
+    vorn, der Stop kommt nur aus den Rücksetzer-Kerzen DANACH."""
+    engine = _make_engine()
+    bars = [
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 12.05, 9.99, 12.00),    # Flaggenstange
+        (12.00, 12.00, 11.50, 11.60),   # Rücksetzer 1 (Tief 11.50)
+        (11.60, 12.40, 11.60, 11.65),   # neues Stangen-Hoch 12.40, Schluss < Vorkerzenhoch -> Neustart
+        (11.65, 12.30, 11.70, 12.10),   # Rücksetzer 1 (neu)
+        (12.10, 12.20, 11.90, 12.00),   # Rücksetzer 2 (neu)
+        (12.00, 12.35, 11.95, 12.30),   # Schluss 12.30 > Vorkerzenhoch 12.20 -> Breakout
+    ]
+    events = _feed(engine, bars)
+    assert len(events) == 1
+    assert events[0].stop_price == pytest.approx(11.70)  # nicht 11.50 aus dem ersten Rücksetzer
+
+
+def _entered_engine(weakness_exit: str) -> MomentumEngine:
+    engine = _live_like_engine(weakness_exit=weakness_exit)
+    t = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", t, 10.00, 9.50, 0.50)
+    engine.record_entry(100, 10.00, t)
+    engine.process_bar(t, 9.90, 10.10, 9.90, 10.05, 1000, in_window=True, relative_volume=5.0, daily_trend_ok=True)
+    return engine
+
+
+def test_new_low_exit_ignores_red_candle_without_lower_low():
+    engine = _entered_engine("new_low")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), 10.10, 10.15, 9.95, 10.00, 1000,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert events == []  # rot, aber Tief 9.95 >= Vorkerzentief 9.90
+
+
+def test_new_low_exit_fires_when_low_breaks_previous_low():
+    engine = _entered_engine("new_low")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), 10.00, 10.20, 9.85, 10.15, 1000,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert len(events) == 1
+    assert events[0].reason == ExitReason.NEW_LOW  # grün, aber Tief 9.85 < 9.90
+    assert events[0].reference_price == pytest.approx(10.15)
+
+
+def test_red_candle_exit_remains_default():
+    engine = _entered_engine("red_candle")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), 10.10, 10.15, 9.95, 10.00, 1000,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert [e.reason for e in events] == [ExitReason.RED_CANDLE]
+
+
+@pytest.mark.parametrize(
+    "bar",
+    [
+        (10.10, 10.15, 9.95, 10.00),  # rot schließend
+        (10.00, 10.20, 9.85, 10.15),  # Tief unter dem Vorkerzentief
+        (10.10, 10.15, 9.80, 9.85),   # rot UND neues Tief
+    ],
+)
+def test_weakness_exit_none_holds_through_weakness(bar):
+    engine = _entered_engine("none")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), *bar, 1000, in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert events == []
+    assert engine.in_position
+
+
+def test_weakness_exit_none_still_stops_out():
+    engine = _entered_engine("none")
+    events = engine.process_bar(
+        pd.Timestamp("2024-01-10 09:37"), 9.70, 9.75, 9.40, 9.45, 1000,
+        in_window=True, relative_volume=5.0, daily_trend_ok=True,
+    )
+    assert [e.reason for e in events] == [ExitReason.STOP]
+
+
+def test_invalid_weakness_exit_is_rejected():
+    with pytest.raises(ValueError, match="weakness_exit"):
+        _live_like_engine(weakness_exit="green_candle")
+
+
+def test_record_exit_partial_without_target_does_not_move_stop_to_breakeven():
+    """Regressionstest: ein Teil-Fill, der NICHT von einem TARGET-Treffer
+    stammt (z.B. eine STOP-Order, die bei dünner Liquidität nur teilweise
+    ausgeführt wird, bevor sie storniert wird -- siehe
+    momentum_live.py._record_broker_stop_fill/_reconcile_terminal_exit_order),
+    darf den Stop NICHT auf Breakeven anheben. Der ursprüngliche (bereits
+    verletzte) Stop muss bestehen bleiben, sonst wäre die Restposition bis
+    zum nächsten Balken fälschlich als "abgesichert" markiert, obwohl der
+    Kurs schon unter dem echten Stop liegt."""
+    engine = _make_engine()
+    entry_time = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", entry_time, 12.20, 11.30, 0.90)
+    engine.record_entry(100, 12.20, entry_time)
+
+    fully_closed = engine.record_exit(40, 11.28, is_target_partial=False)
+
+    assert fully_closed is False
+    assert engine.stop_price == pytest.approx(11.30)  # unverändert, NICHT auf Breakeven (12.20)
+    assert engine.shares_open == 60
+
+
+def test_record_exit_target_partial_still_moves_stop_to_breakeven():
+    """Gegenprobe: der Standardfall (TARGET-Teilverkauf, is_target_partial
+    bleibt beim Default True) muss weiterhin wie zuvor auf Breakeven
+    ziehen -- der Fix darf das bestehende Verhalten nicht brechen."""
+    engine = _make_engine()
+    entry_time = pd.Timestamp("2024-01-10 09:35")
+    engine._pending_breakout = BreakoutEvent("BULL_FLAG", entry_time, 12.20, 11.30, 0.90)
+    engine.record_entry(100, 12.20, entry_time)
+
+    fully_closed = engine.record_exit(50, 14.00)
+
+    assert fully_closed is False
+    assert engine.stop_price == pytest.approx(12.20)  # Breakeven
+
+
 def test_breakout_event_and_position_diagnostics_after_entry():
     """Regressionstest für die Nachvollziehbarkeits-Felder auf
     BreakoutEvent (swing_low_price/flagpole_gain_pct/pullback_bars/
@@ -617,8 +821,10 @@ def test_breakout_event_and_position_diagnostics_after_entry():
     assert event is not None
     assert event.pattern == "BULL_FLAG"
     assert event.swing_low_price == pytest.approx(10.00)
-    assert event.flagpole_gain_pct == pytest.approx(0.20)
-    assert event.pullback_bars == 3
+    # Flaggenstange bis zu ihrem HOCH gemessen (12.05), nicht bis zum Schluss.
+    assert event.flagpole_gain_pct == pytest.approx(0.205)
+    # Nur die echten Rücksetzer-Kerzen (bar3, bar4), nicht der Breakout-Balken.
+    assert event.pullback_bars == 2
     assert event.relative_volume == pytest.approx(5.0)
 
     engine.record_entry(77, event.reference_price, event.time)
@@ -771,3 +977,40 @@ def test_relative_volume_reference_aligns_by_clock_minute_not_bar_position():
     assert reference[3] == pytest.approx(100)
     # 9:35 (Minute 5): beide Balken.
     assert reference[5] == pytest.approx(200)
+
+
+def test_breakout_bar_wicking_below_retrace_limit_is_not_traded():
+    """Stange 10 -> 11 (Hoch 11.05), Grenze bei 50% = 10.525. Der Breakout-
+    Balken sticht auf 10.20 durch und schließt über dem Vorkerzen-Hoch --
+    der Stop läge tiefer, als ein gültiger Rücksetzer erlaubt."""
+    engine = _make_engine()
+    bars = [
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 11.05, 9.99, 11.00),    # Flaggenstange
+        (11.00, 11.00, 10.80, 10.85),
+        (10.85, 10.90, 10.80, 10.85),
+        (10.85, 10.95, 10.20, 10.93),   # Docht bis 10.20, Schluss > 10.90
+    ]
+    assert _feed(engine, bars) == []
+    assert engine.state == "SEARCHING"
+
+
+def test_pole_extension_bar_with_deep_wick_invalidates_setup():
+    """Neues Hoch, aber Docht unter die Rücksetzer-Grenze der verlängerten
+    Stange: Umkehrkerze -- das Setup wird verworfen, statt ihr Tief
+    stillschweigend zu ignorieren und später einen zu engen Stop zu setzen."""
+    engine = _make_engine()
+    bars = [
+        (10.05, 10.05, 9.95, 10.00),    # Swing-Tief
+        (10.00, 10.65, 9.99, 10.60),    # Flaggenstange
+        (10.60, 11.00, 10.30, 10.60),   # neues Hoch 11.00, Docht 10.30 < 10.50
+        (10.60, 10.62, 10.55, 10.58),
+        (10.58, 10.60, 10.55, 10.57),
+        (10.57, 10.70, 10.56, 10.68),   # Schluss > Vorkerzen-Hoch
+    ]
+    assert _feed(engine, bars) == []
+
+
+def test_min_pullback_bars_below_one_is_rejected():
+    with pytest.raises(ValueError, match="min_pullback_bars"):
+        _live_like_engine(min_pullback_bars=0)

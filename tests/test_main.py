@@ -190,7 +190,7 @@ def test_momentum_run_dispatches_with_parsed_arguments(monkeypatch):
     )
     monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
     seen_args = []
-    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda config, *a: seen_args.append(a))
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda config, *a, **k: seen_args.append(a))
 
     main_module.main()
 
@@ -231,7 +231,7 @@ def test_momentum_backtest_dispatches_to_multi_when_symbols_given(monkeypatch):
     )
     monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
     seen_args = []
-    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda config, *a: seen_args.append((config, a)))
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda config, *a, **k: seen_args.append((config, a)))
     monkeypatch.setattr(
         main_module, "cmd_momentum_backtest", lambda *a, **k: pytest.fail("darf nicht aufgerufen werden")
     )
@@ -367,3 +367,138 @@ def test_momentum_run_broker_stop_flag(monkeypatch, argv, expected):
     main_module.main()
 
     assert seen == [expected]
+
+
+def test_momentum_backtest_passes_weakness_exit(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-backtest", "--symbols", "AAPL", "--weakness-exit", "new_low"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_backtest_multi", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "new_low"
+
+
+def test_momentum_run_weakness_exit_defaults_to_red_candle(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "red_candle"
+
+
+def test_momentum_run_passes_weakness_exit_none(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", "--weakness-exit", "none"])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen_kwargs = []
+    monkeypatch.setattr(main_module, "cmd_momentum_run", lambda *a, **k: seen_kwargs.append(k))
+
+    main_module.main()
+
+    assert seen_kwargs[0]["weakness_exit"] == "none"
+
+
+# ---------------------------------------------------------------------------
+# momentum-compare
+# ---------------------------------------------------------------------------
+
+
+def _compare_env(tmp_path, name: str, key: str):
+    path = tmp_path / f"{name}.env"
+    path.write_text(f"ALPACA_API_KEY={key}\nALPACA_SECRET_KEY=s-{key}\nALPACA_PAPER=true\n")
+    return str(path)
+
+
+def test_momentum_compare_prints_accounts_side_by_side(tmp_path, monkeypatch, capsys):
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    from alpaca.trading.enums import OrderSide
+
+    import main as main_module
+
+    now = datetime.now(timezone.utc)
+
+    def order(symbol, side, price, minutes_ago):
+        t = now - timedelta(minutes=minutes_ago)
+        return SimpleNamespace(symbol=symbol, side=side, filled_qty="10", filled_avg_price=str(price),
+                               filled_at=t, submitted_at=t)
+
+    orders_by_key = {
+        "k1": [order("SECZ", OrderSide.BUY, 15.74, 60), order("SECZ", OrderSide.SELL, 15.53, 59)],
+        "k2": [order("SECZ", OrderSide.BUY, 15.74, 60), order("SECZ", OrderSide.SELL, 16.11, 40),
+               order("GLND", OrderSide.BUY, 3.70, 30), order("GLND", OrderSide.SELL, 3.94, 20)],
+    }
+
+    class FakeClient:
+        def __init__(self, api_key, secret_key, paper):
+            assert paper is True
+            self.key = api_key
+
+        def get_orders(self, filter):
+            return [o for o in orders_by_key[self.key] if filter.after < o.submitted_at <= filter.until]
+
+        def get_account(self):
+            return SimpleNamespace(equity="100000.00" if self.key == "k1" else "100500.00")
+
+    monkeypatch.setattr("alpaca.trading.client.TradingClient", FakeClient)
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: (_ for _ in ()).throw(AssertionError)))
+    monkeypatch.setattr("sys.argv", [
+        "main.py", "momentum-compare", "--days", "1",
+        "--account", f"red={_compare_env(tmp_path, 'red', 'k1')}",
+        "--account", f"none={_compare_env(tmp_path, 'none', 'k2')}",
+    ])
+
+    main_module.main()
+
+    out = capsys.readouterr().out
+    assert "Konto-Vergleich" in out
+    assert "-2.10" in out  # SECZ red: (15.53 - 15.74) * 10
+    assert "+3.70" in out  # SECZ none: (16.11 - 15.74) * 10
+    assert "100,500.00" in out
+    assert "1 Setup(s) von allen Konten gehandelt, 1 nur von einem Teil" in out
+
+
+def test_momentum_compare_rejects_same_account_twice(tmp_path, monkeypatch, capsys):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", [
+        "main.py", "momentum-compare",
+        "--account", f"a={_compare_env(tmp_path, 'a', 'same')}",
+        "--account", f"b={_compare_env(tmp_path, 'b', 'same')}",
+    ])
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+    assert "dasselbe Konto" in capsys.readouterr().err
+
+
+def test_momentum_compare_requires_two_accounts(tmp_path, monkeypatch, capsys):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-compare", "--account", f"a={_compare_env(tmp_path, 'a', 'k')}"])
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+    assert "mindestens zwei Konten" in capsys.readouterr().err
+
+
+def test_momentum_compare_rejects_missing_env_file(monkeypatch, capsys):
+    import main as main_module
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-compare", "--account", "a=/gibt/es/nicht.env",
+                                     "--account", "b=/auch/nicht.env"])
+
+    with pytest.raises(SystemExit):
+        main_module.main()
+    assert "existiert nicht" in capsys.readouterr().err

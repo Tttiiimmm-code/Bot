@@ -55,6 +55,7 @@ from tradingbot.momentum import (
     BreakoutEvent,
     ExitReason,
     ExitSignal,
+    WEAKNESS_EXITS,
     MomentumEngine,
     _build_relative_volume_reference,
     _cum_volume_by_session_minute,
@@ -84,6 +85,8 @@ class LiveMomentumConfig:
     max_pullback_bars: int = 5
     max_pullback_retrace_pct: float = 0.5
     extension_multiplier: float = 4.0
+    # Schwäche-Ausstieg vor dem Ziel-Teilverkauf, siehe momentum.WEAKNESS_EXITS.
+    weakness_exit: str = "red_candle"
     trading_window_start: dt_time = field(default_factory=lambda: dt_time(9, 30))
     trading_window_end: dt_time = field(default_factory=lambda: dt_time(11, 30))
     # Obergrenze gleichzeitig OFFENER Positionen -- begrenzt das gesamte
@@ -126,6 +129,8 @@ class LiveMomentumConfig:
 
 
 def _validate_live_config(c: LiveMomentumConfig) -> None:
+    if c.weakness_exit not in WEAKNESS_EXITS:
+        raise ValueError(f"weakness_exit muss eines von {WEAKNESS_EXITS} sein, war {c.weakness_exit!r}.")
     if not (math.isfinite(c.min_stop_pct) and 0 <= c.min_stop_pct < 1):
         raise ValueError(f"min_stop_pct muss in [0, 1) liegen, war {c.min_stop_pct}.")
     if not (math.isfinite(c.max_entry_slippage_pct) and 0 <= c.max_entry_slippage_pct < 1):
@@ -317,6 +322,10 @@ class LiveMomentumBot:
         self._day_start_equity: float | None = None
         self._last_scan_time: datetime | None = None
         self._orphans_checked = False
+        # Verkaufs-Orders des Depot-Abgleichs je Symbol (_sell_unmanaged_shares)
+        # -- solange eine davon offen ist, wird für das Symbol nichts
+        # nachgelegt (sonst doppelter Verkauf, bevor der erste gefüllt ist).
+        self._unmanaged_sell_orders: dict[str, str] = {}
 
     def _close_orphaned_positions(self) -> None:
         """Einmalig beim Start: Positionen, die schon im Depot liegen (z.B.
@@ -337,6 +346,55 @@ class LiveMomentumBot:
             self._orphans_checked = True
         except Exception:
             logger.exception("Prüfung auf verwaiste Positionen fehlgeschlagen, nächster Versuch im nächsten Zyklus.")
+
+    def _sell_unmanaged_shares(self) -> None:
+        """Jeden Zyklus während der Sitzung: Aktien im Depot, die keine
+        Engine verwaltet, haben weder Stop noch Flatten vor Handelsschluss.
+        Das kann passieren, wenn eine Kauf-Order nach dem Stornierungsversuch
+        doch noch (weiter) gefüllt wird oder der Order-Status beim Warten
+        wegen eines API-Fehlers unbekannt blieb (siehe _handle_breakout).
+        Der Überschuss über den verwalteten Bestand wird per Market-Order
+        verkauft. Wie beim Start-Abgleich gilt: das Konto gehört dem Bot --
+        auch manuell gekaufte Aktien würden verkauft."""
+        try:
+            positions = self.trading_client.get_all_positions()
+        except Exception:
+            logger.exception("Depot-Abgleich fehlgeschlagen, nächster Versuch im nächsten Zyklus.")
+            return
+        for position in positions:
+            symbol = position.symbol
+            try:
+                qty = int(float(position.qty))
+                if qty < 0:
+                    logger.critical("Short-Position in %s (%s Stück) -- bitte manuell im Alpaca-Dashboard prüfen.", symbol, qty)
+                    continue
+                state = self._symbols.get(symbol)
+                managed = state.engine.shares_open if state is not None and state.engine.in_position else 0
+                if qty <= managed:
+                    continue
+                pending_id = self._unmanaged_sell_orders.get(symbol)
+                if pending_id is not None:
+                    order = self.trading_client.get_order_by_id(pending_id)
+                    if order.status in (OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED, OrderStatus.EXPIRED):
+                        # Erst im nächsten Zyklus mit frischem Depotstand neu
+                        # bewerten -- `qty` stammt von VOR diesem Status.
+                        del self._unmanaged_sell_orders[symbol]
+                    continue
+                excess = qty - managed
+                order = self.trading_client.submit_order(
+                    MarketOrderRequest(symbol=symbol, qty=excess, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
+                )
+                self._unmanaged_sell_orders[symbol] = order.id
+                logger.critical(
+                    "%s: %s Stück im Depot, davon nur %s vom Bot verwaltet -- verkaufe %s unverwaltete Stück (id=%s).",
+                    symbol,
+                    qty,
+                    managed,
+                    excess,
+                    order.id,
+                )
+            except Exception:
+                logger.exception("Depot-Abgleich für %s fehlgeschlagen, nächster Versuch im nächsten Zyklus.", symbol)
 
     def _start_new_day(self, session, now: datetime) -> None:
         # Symbole mit noch offener Position oder unbestätigter Order NICHT
@@ -395,6 +453,13 @@ class LiveMomentumBot:
                     "erneut versucht.",
                     symbol,
                 )
+                # _start_new_day läuft nur einmal pro Handelstag -- den
+                # Verkauf deshalb als zurückgestelltes Signal einreihen, das
+                # _resolve_pending_exits() jeden Zyklus erneut versucht.
+                if state.pending_exit is None and state.engine.in_position and not state.deferred_exits:
+                    retry = state.engine.force_exit(pd.Timestamp(now), state.last_close, reason=ExitReason.END_OF_DAY)
+                    if retry is not None:
+                        state.deferred_exits = [retry]
 
         logger.info("Neuer Handelstag erkannt (%s) -- Bot-Zustand wird zurückgesetzt.", session.date)
         self._trading_day = session.date
@@ -434,6 +499,12 @@ class LiveMomentumBot:
         if now_et < session_open_et:
             logger.debug("Vor Sitzungsbeginn (%s), überspringe Zyklus.", session.date)
             return
+
+        # Nur während der Sitzung: nach Handelsschluss würde eine Market-
+        # Order erst zur nächsten Eröffnung ausgeführt und jeder weitere
+        # Zyklus sähe den Bestand unverändert.
+        if now_et < session_close_et:
+            self._sell_unmanaged_shares()
 
         # WICHTIG: dieser Zweig muss VOR jedem "now_et >= session_close_et
         # -> überspringen"-Check kommen (den gab es hier früher separat) --
@@ -564,6 +635,7 @@ class LiveMomentumBot:
                 reward_risk_ratio=self.live_config.reward_risk_ratio,
                 extension_multiplier=self.live_config.extension_multiplier,
                 min_relative_volume=self.live_config.min_relative_volume,
+                weakness_exit=self.live_config.weakness_exit,
             )
             self._symbols[candidate.symbol] = _SymbolState(
                 engine=engine,
@@ -659,6 +731,7 @@ class LiveMomentumBot:
         # Muster-/Swing-Tief-Erkennung), werden aber nur simuliert nachvollzogen.
         stale_cutoff = now - timedelta(seconds=max(2 * self.live_config.poll_interval_seconds, 120))
 
+        latest_bar_time = bars.index[-1]
         for bar_time, row in bars.iterrows():
             state.cum_volume += float(row["volume"])
             state.last_close = float(row["close"])
@@ -683,11 +756,17 @@ class LiveMomentumBot:
 
             for i, event in enumerate(events):
                 if isinstance(event, BreakoutEvent):
-                    if bar_time < stale_cutoff:
-                        # Balken liegt vor der Aufhol-Schwelle -- kein
-                        # echter Einstieg für ein längst vergangenes
-                        # Signal (siehe stale_cutoff oben); Engine fällt
-                        # zurück auf SEARCHING (decline_entry()).
+                    if bar_time < stale_cutoff or bar_time != latest_bar_time:
+                        # Kein echter Einstieg für ein veraltetes Signal:
+                        # entweder liegt der Balken vor der Aufhol-Schwelle
+                        # (siehe stale_cutoff oben), oder es gibt schon eine
+                        # NEUERE abgeschlossene Kerze -- dann zeigt der Markt
+                        # bereits, wie es weiterging, und ein Kauf zum
+                        # aktuellen Kurs würde auf überholter Information
+                        # beruhen (die neueren Kerzen lägen zudem vor dem
+                        # Fill und würden trotzdem als Positions-Kerzen
+                        # Stop/Ausstieg auslösen). Engine fällt zurück auf
+                        # SEARCHING (decline_entry()).
                         state.engine.decline_entry()
                         continue
                     self._handle_breakout(symbol, state, event)
@@ -704,7 +783,7 @@ class LiveMomentumBot:
                     # bereits gefüllte Position ungeschützt (der Stop
                     # würde nie auslösen), während die Engine intern
                     # schon "flach" wäre.
-                    self._submit_exit(symbol, state, event)
+                    self._submit_exit_or_defer(symbol, state, event)
                 if state.pending_exit is not None or state.deferred_exits:
                     # Eine noch unbestätigte Verkaufs-Order (pending_exit)
                     # ODER ein bereits zurückgestelltes, aber noch nicht
@@ -764,6 +843,22 @@ class LiveMomentumBot:
             state.engine.decline_entry()
             return
 
+        try:
+            order = self._submit_entry_order(symbol, state, event)
+        except Exception:
+            # Ohne Antwort auf das BreakoutEvent bricht process_bar() für
+            # dieses Symbol sonst in JEDEM weiteren Zyklus mit RuntimeError ab.
+            # Kam die Order trotz Fehler (z.B. Timeout nach Annahme) doch bei
+            # Alpaca an und füllt, verkauft der Depot-Abgleich die Aktien.
+            state.engine.decline_entry()
+            raise
+        if order is None:
+            return
+        self._await_entry_fill(symbol, state, event, order)
+
+    def _submit_entry_order(self, symbol: str, state: _SymbolState, event: BreakoutEvent):
+        """Positionsgröße bestimmen und Kauf-Order senden. None, wenn der
+        Einstieg mangels Stückzahl abgelehnt wurde (decline_entry() erfolgt)."""
         account = self.trading_client.get_account()
         cash = max(float(account.cash), 0.0)
         limit_price = _round_stop_price(event.reference_price * (1 + self.live_config.max_entry_slippage_pct))
@@ -785,7 +880,7 @@ class LiveMomentumBot:
                 position_based_shares,
             )
             state.engine.decline_entry()
-            return
+            return None
 
         order = self.trading_client.submit_order(
             LimitOrderRequest(
@@ -804,7 +899,9 @@ class LiveMomentumBot:
             event.pattern,
             order.id,
         )
+        return order
 
+    def _await_entry_fill(self, symbol: str, state: _SymbolState, event: BreakoutEvent, order) -> None:
         try:
             filled = self._wait_for_fill(order.id, self.live_config.order_fill_timeout_seconds)
             if filled is None:
@@ -818,7 +915,13 @@ class LiveMomentumBot:
                     self.trading_client.cancel_order_by_id(order.id)
                 except APIError:
                     pass
-                filled = self.trading_client.get_order_by_id(order.id)
+                # Nach dem Stornieren kann die Order noch PENDING_CANCEL sein
+                # und weiter gefüllt werden -- auf den Endzustand warten statt
+                # einer einzelnen Momentaufnahme. Nach-Fills, die selbst
+                # danach noch eintreffen, verkauft _sell_unmanaged_shares().
+                filled = self._wait_for_fill(
+                    order.id, self.live_config.order_fill_timeout_seconds
+                ) or self.trading_client.get_order_by_id(order.id)
         except Exception:
             # Ein unerwarteter Fehler (z.B. transienter APIError) WÄHREND
             # des Wartens/Stornierens lässt den tatsächlichen Order-Status
@@ -832,10 +935,17 @@ class LiveMomentumBot:
             # manuell im Alpaca-Dashboard geprüft werden.
             logger.critical(
                 "Unerwarteter Fehler beim Warten auf die Kauf-Order für %s (id=%s) -- Order-Status "
-                "unbekannt, ggf. manuell im Alpaca-Dashboard prüfen. Verzichte vorerst auf den Einstieg.",
+                "unbekannt. Verzichte auf den Einstieg; falls die Order doch gefüllt wurde, verkauft "
+                "der Depot-Abgleich (_sell_unmanaged_shares) die Aktien im nächsten Zyklus.",
                 symbol,
                 order.id,
             )
+            # Die Limit-Order wurde evtl. noch gar nicht storniert (Fehler beim
+            # ersten Status-Abruf) -- nicht bei Alpaca offen liegen lassen.
+            try:
+                self.trading_client.cancel_order_by_id(order.id)
+            except Exception:
+                logger.exception("Stornieren der Kauf-Order für %s (id=%s) fehlgeschlagen.", symbol, order.id)
             state.engine.decline_entry()
             return
 
@@ -856,6 +966,7 @@ class LiveMomentumBot:
             return
 
         fill_price = float(filled.filled_avg_price)
+        shares = int(float(order.qty))
         if shares_filled < shares:
             logger.warning(
                 "Kauf-Order für %s nur teilweise gefüllt: %s von %s Stück (Status=%s) -- Position wird "
@@ -875,6 +986,21 @@ class LiveMomentumBot:
             event.stop_price,
             fill_price + self.live_config.reward_risk_ratio * event.risk_per_share,
         )
+        if fill_price <= event.stop_price:
+            # Der Kurs ist zwischen Signal und Fill schon auf/unter den Stop
+            # gefallen -- das Setup ist gescheitert, bevor der Trade beginnt.
+            # Nicht bis zum nächsten Balken warten (und keine Broker-Stop-
+            # Order über dem Marktpreis anlegen, die Alpaca ablehnt).
+            logger.warning(
+                "Kauf von %s bei %.4f gefüllt -- auf/unter dem Stop %.4f, verkaufe sofort.",
+                symbol,
+                fill_price,
+                event.stop_price,
+            )
+            self._submit_exit_or_defer(
+                symbol, state, ExitSignal(ExitReason.STOP, event.time, fill_price, shares_filled)
+            )
+            return
         self._ensure_broker_stop(symbol, state)
 
     # --- Broker-seitige Stop-Order (Sicherheitsnetz) ------------------------
@@ -903,8 +1029,9 @@ class LiveMomentumBot:
         stop_price = _round_stop_price(engine.stop_price)
         if state.last_close and state.last_close <= stop_price:
             # Kurs liegt schon am/unter dem Stop -- Alpaca würde eine Sell-
-            # Stop-Order über dem Marktpreis ablehnen, und der Software-Stop
-            # verkauft ohnehin sofort.
+            # Stop-Order über dem Marktpreis ablehnen. Der Software-Stop
+            # verkauft mit der nächsten verarbeiteten Kerze; ein Fill schon
+            # unter dem Stop wird in _handle_breakout sofort verkauft.
             return
         try:
             order = self.trading_client.submit_order(
@@ -939,7 +1066,13 @@ class LiveMomentumBot:
             return
         filled_qty = min(filled_qty, state.engine.shares_open)
         fill_price = float(order.filled_avg_price)
-        fully_closed = state.engine.record_exit(filled_qty, fill_price)
+        # is_target_partial=False: eine Broker-Stop-Order ist per
+        # Definition ein Stop-Ereignis, nie ein Zieltreffer -- ein
+        # Teil-Fill (z.B. bei dünner Liquidität nur ein Teil der Order
+        # ausgeführt, bevor sie storniert/verworfen wurde) darf den Stop
+        # deshalb NICHT auf Breakeven anheben (siehe record_exit()-
+        # Docstring).
+        fully_closed = state.engine.record_exit(filled_qty, fill_price, is_target_partial=False)
         logger.warning(
             "Stop-Order bei Alpaca für %s ausgelöst: %s Stück @ %.4f verkauft%s",
             symbol,
@@ -1040,7 +1173,14 @@ class LiveMomentumBot:
             return event
 
         fill_price = float(order.filled_avg_price)
-        fully_closed = state.engine.record_exit(filled_qty, fill_price)
+        # is_target_partial: nur ein TARGET-Ereignis rechtfertigt Breakeven
+        # (siehe record_exit()-Docstring) -- STOP/RED_CANDLE/EXTENSION/etc.
+        # fordern immer die volle Restmenge an; füllt eine solche Order bei
+        # dünner Liquidität dennoch nur teilweise, bleibt es ein Stop-
+        # Ereignis, kein Zieltreffer.
+        fully_closed = state.engine.record_exit(
+            filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
+        )
         logger.critical(
             "Verkaufs-Order für %s (Status=%s) vor Abbruch teilweise gefüllt: %s Stück @ %.2f nachträglich verbucht.",
             symbol,
@@ -1055,6 +1195,23 @@ class LiveMomentumBot:
         if remaining_for_event <= 0:
             return None
         return ExitSignal(event.reason, event.time, event.reference_price, remaining_for_event)
+
+    def _submit_exit_or_defer(self, symbol: str, state: _SymbolState, event: ExitSignal) -> None:
+        """_submit_exit für ein frisches Engine-Signal: scheitert es mit einem
+        Fehler (z.B. APIError beim Senden), wird das Signal zurückgestellt
+        und von _resolve_pending_exits() im nächsten Zyklus erneut versucht.
+        Ein Stop- oder Schwäche-Signal kommt mit der nächsten Kerze nicht
+        zwingend wieder -- ohne Zurückstellen ginge der Verkauf verloren."""
+        try:
+            self._submit_exit(symbol, state, event)
+        except Exception:
+            logger.exception(
+                "Verkauf von %s (Grund=%s) fehlgeschlagen -- Signal zurückgestellt, neuer Versuch im nächsten Zyklus.",
+                symbol,
+                event.reason,
+            )
+            if state.pending_exit is None and state.engine.in_position:
+                state.deferred_exits.append(event)
 
     def _submit_exit(self, symbol: str, state: _SymbolState, event: ExitSignal, _retries_left: int = 1) -> None:
         # Broker-Stop zuerst stornieren (hält sonst die Aktien zurück) --
@@ -1121,7 +1278,9 @@ class LiveMomentumBot:
         if filled is not None and filled.status == OrderStatus.FILLED:
             filled_qty = int(float(filled.filled_qty))
             fill_price = float(filled.filled_avg_price)
-            fully_closed = state.engine.record_exit(filled_qty, fill_price)
+            fully_closed = state.engine.record_exit(
+                filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
+            )
             logger.info(
                 "Verkauf gefüllt: %s %s Stück @ %.2f (Grund=%s)%s",
                 symbol,
@@ -1214,7 +1373,9 @@ class LiveMomentumBot:
             if order.status == OrderStatus.FILLED:
                 filled_qty = int(float(order.filled_qty))
                 fill_price = float(order.filled_avg_price)
-                fully_closed = state.engine.record_exit(filled_qty, fill_price)
+                fully_closed = state.engine.record_exit(
+                    filled_qty, fill_price, is_target_partial=(pending.event.reason == ExitReason.TARGET)
+                )
                 logger.info(
                     "Zuvor ausstehende Verkaufs-Order für %s nun gefüllt: %s Stück @ %.2f%s",
                     symbol,
@@ -1242,7 +1403,16 @@ class LiveMomentumBot:
 
         if state.pending_exit is None and state.deferred_exits and state.engine.in_position:
             next_event = state.deferred_exits.pop(0)
-            self._submit_exit(symbol, state, next_event)
+            try:
+                self._submit_exit(symbol, state, next_event)
+            except Exception:
+                # Keine Order zustande gekommen (z.B. APIError beim Senden) --
+                # Signal wieder vorn einreihen, sonst ginge der Verkauf
+                # verloren. _submit_exit begrenzt die Stückzahl beim nächsten
+                # Versuch selbst auf den dann noch offenen Bestand.
+                if state.pending_exit is None and state.engine.in_position:
+                    state.deferred_exits.insert(0, next_event)
+                raise
 
         # Sicherheitsnetz nach Auflösung einer ausstehenden Order (bzw. nach
         # verfallener/ausgelöster Stop-Order) wiederherstellen.

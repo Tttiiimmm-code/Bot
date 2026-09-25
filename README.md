@@ -210,6 +210,18 @@ Historischer Backtest einer regelbasierten Näherung der öffentlich bekannten
 Ziel mit hälftigem Teilverkauf, Breakeven-Stop, Ausstieg bei erster roter Kerze oder
 "Extension Bar".
 
+**Muster-Definition:** Flaggenstange = Anstieg vom Swing-Tief um mindestens
+`--flagpole-min-gain-pct` bei erhöhtem Relativvolumen; Kerzen mit neuem Hoch verlängern die Stange.
+Danach braucht es mindestens `--min-pullback-bars` echte Rücksetzer-Kerzen (Hoch nicht über der
+Stange). Einstieg erst, wenn eine Kerze über dem Hoch der Vorkerze schließt ("first candle to make a
+new high"); Stop = Tief des Rücksetzers. Ausstieg bei Schwäche vor dem Ziel über
+`--weakness-exit`: `red_candle` (Standard, erste rot schließende Kerze), `new_low` (erste Kerze
+mit Tief unter dem der Vorkerze) oder `none` (kein Schwäche-Ausstieg -- nur Stop, Ziel und
+Extension Bar). Bei dünn gehandelten Small Caps liefert der IEX-Feed oft nur einzelne Abschlüsse
+pro Minute; eine "rote Kerze" ist dann häufig Rauschen. Im Backtest über 22 Symbole/250 Tage
+(Stand 24.09.) erreichten mit `none` 18 statt 12 Trades das Ziel (Ø R −0,14 statt −0,40) --
+weiterhin nicht profitabel, aber deutlich weniger negativ.
+
 ```bash
 python main.py momentum-backtest --symbol TSLA --days 200 \
   --daily-trend-window 20 --lookback-days 10 --flagpole-min-gain-pct 0.015 --min-relative-volume 1.5
@@ -361,6 +373,14 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   der echten Historie erkannt werden -- Signale aus diesem Rückstand lösen aber KEINE echte Order
   mehr aus, sondern werden nur simuliert nachgezogen. Nur ein Signal auf einem aktuellen Balken
   (innerhalb der letzten `2 * --poll-interval-seconds`, mind. 120s) kann real ausgeführt werden.
+  Außerdem muss der Breakout auf der neuesten abgerufenen Kerze liegen -- gibt es schon eine
+  neuere, ist das Signal überholt.
+- **Fill auf/unter dem Stop:** Ist der Kurs zwischen Signal und Kauf schon auf den Stop gefallen,
+  verkauft der Bot sofort wieder, statt bis zur nächsten Kerze zu warten.
+- **Depot-Abgleich in jedem Zyklus:** Liegen während der Sitzung mehr Aktien im Depot, als der
+  Bot verwaltet (z.B. eine stornierte Kauf-Order, die doch noch gefüllt wurde), verkauft er den
+  Überschuss per Market-Order. **Das Konto muss deshalb dem Bot allein gehören** -- manuell
+  gekaufte Aktien würden ebenfalls verkauft.
 
 **Wichtige Einschränkungen -- vor Einsatz unbedingt lesen:**
 
@@ -396,6 +416,33 @@ Fasst Kauf-/Verkaufs-Orders pro Symbol von "flach" bis wieder "flach" zu einem T
 in America/New_York, und zeigt pro Tag sowie insgesamt Trades/Trefferquote/Netto-P&L, eine
 Einzeltrade-Tabelle sowie noch offene Positionen. P&L ist brutto (im Paper-Modus ohnehin ohne
 Kommissionen/Slippage).
+
+### Mehrere Bots vergleichen (`momentum-compare`)
+
+Mehrere Bots mit unterschiedlichen Einstellungen (z.B. `--weakness-exit red_candle` gegen
+`none`) laufen parallel -- **jeder auf einem eigenen Alpaca-Paper-Konto**: der Bot hält das
+Konto für seins und verkauft beim Start sowie in jedem Zyklus Aktien, die er nicht selbst
+verwaltet; auch der Tages-Maximalverlust bezieht sich auf das ganze Konto. Die Keys des
+zweiten Kontos in eine eigene Datei (z.B. `~/bot2.env`) und vor dem Start in der Shell laden
+(Umgebungsvariablen haben Vorrang vor `.env`):
+
+```bash
+set -a; source ~/bot2.env; set +a
+python main.py momentum-run --weakness-exit none
+```
+
+Der Vergleich liest jede Order-Historie mit den Keys aus der jeweiligen Datei (ändert die
+Umgebung nicht, platziert keine Orders):
+
+```bash
+python main.py momentum-compare --days 5 --account red=.env --account none=~/bot2.env
+```
+
+Zeigt je Konto Equity, Trades, Trefferquote, Netto-P&L, Ø Gewinn/Verlust, Profit-Faktor und
+Ø Haltedauer, den P&L pro Handelstag und eine Setup-Tabelle: Trades desselben Symbols mit
+Einstieg innerhalb von `--tolerance-minutes` (Standard 3) stehen nebeneinander -- so wird
+direkt sichtbar, wie unterschiedliche Regeln dasselbe Setup behandelt haben. Zweimal dasselbe
+Konto (gleiche API-Keys) wird abgelehnt.
 
 ## Overnight-Portfolio-Bot (Paper-Vorwärtstest)
 
@@ -490,7 +537,7 @@ pytest
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report)
+main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report / momentum-compare)
 tradingbot/
   config.py            Konfiguration aus Umgebungsvariablen
   broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
@@ -502,7 +549,7 @@ tradingbot/
   momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten (experimentell)
   scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
   momentum_live.py       Live-Momentum-Bot: Scanner + Momentum-Engine + echte Orders (experimentell)
-  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report)
+  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report/-compare)
 tests/                 Unit-Tests (kein API-Zugriff nötig)
 ```
 

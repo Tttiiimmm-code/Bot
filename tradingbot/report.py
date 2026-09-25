@@ -201,3 +201,93 @@ def group_by_trading_day(trades: list[MatchedTrade]) -> dict[date, DaySummary]:
     for t in trades:
         by_day[t.trading_day].append(t)
     return {day: DaySummary(day=day, trades=by_day[day]) for day in sorted(by_day)}
+
+
+# --- Konto-Vergleich (momentum-compare) ---------------------------------------
+#
+# Mehrere Bots laufen je auf einem EIGENEN Paper-Konto (der Live-Bot verkauft
+# fremde Aktien im Depot, siehe momentum_live._sell_unmanaged_shares) -- der
+# Vergleich liest die Order-Historie jedes Kontos getrennt und stellt sie
+# nebeneinander, z.B. um zwei Ausstiegsregeln unter identischen Marktbedingungen
+# zu vergleichen.
+
+_TRUE = {"true", "1", "yes"}
+_FALSE = {"false", "0", "no"}
+
+
+def read_account_env(path: str) -> tuple[str, str, bool]:
+    """Liest ALPACA_API_KEY/ALPACA_SECRET_KEY/ALPACA_PAPER aus einer
+    .env-Datei, OHNE die Umgebung des laufenden Prozesses zu verändern (jedes
+    Konto braucht seine eigenen Keys)."""
+    from dotenv import dotenv_values
+
+    values = dotenv_values(path)
+    api_key = (values.get("ALPACA_API_KEY") or "").strip()
+    secret_key = (values.get("ALPACA_SECRET_KEY") or "").strip()
+    if not api_key or not secret_key:
+        raise ValueError(f"{path}: ALPACA_API_KEY und ALPACA_SECRET_KEY müssen gesetzt sein.")
+    paper_raw = (values.get("ALPACA_PAPER") or "true").strip().lower()
+    if paper_raw not in _TRUE | _FALSE:
+        raise ValueError(f"{path}: ALPACA_PAPER muss true/false (oder 1/0, yes/no) sein, nicht {paper_raw!r}.")
+    return api_key, secret_key, paper_raw in _TRUE
+
+
+@dataclass
+class AccountStats:
+    num_trades: int
+    wins: int
+    net_pnl: float
+    avg_win: float | None
+    avg_loss: float | None
+    # Summe Gewinne / |Summe Verluste|; None ohne Verlust-Trade (unendlich).
+    profit_factor: float | None
+    avg_duration: timedelta | None
+
+    @property
+    def win_rate(self) -> float:
+        return self.wins / self.num_trades if self.num_trades else 0.0
+
+
+def account_stats(trades: list[MatchedTrade]) -> AccountStats:
+    wins = [t.pnl for t in trades if t.pnl > 0]
+    losses = [t.pnl for t in trades if t.pnl <= 0]
+    gross_loss = -sum(losses)
+    return AccountStats(
+        num_trades=len(trades),
+        wins=len(wins),
+        net_pnl=sum(t.pnl for t in trades),
+        avg_win=sum(wins) / len(wins) if wins else None,
+        avg_loss=sum(losses) / len(losses) if losses else None,
+        profit_factor=sum(wins) / gross_loss if gross_loss > 0 else None,
+        avg_duration=sum((t.duration for t in trades), timedelta()) / len(trades) if trades else None,
+    )
+
+
+def group_parallel_trades(
+    trades_by_account: dict[str, list[MatchedTrade]], tolerance: timedelta = timedelta(minutes=3)
+) -> list[dict[str, MatchedTrade]]:
+    """Fasst Trades verschiedener Konten zum SELBEN Setup zusammen: gleiches
+    Symbol, Einstieg höchstens `tolerance` nach dem ersten Einstieg der
+    Gruppe, je Konto höchstens ein Trade. Gruppen mit nur einem Konto zeigen
+    Setups, die nur ein Bot gehandelt hat (z.B. Kauf nicht gefüllt oder
+    Positionslimit erreicht). Chronologisch nach erstem Einstieg sortiert."""
+    entries = sorted(
+        ((t.symbol, t.entry_time, account, t) for account, trades in trades_by_account.items() for t in trades),
+        key=lambda e: (e[0], e[1]),
+    )
+    groups: list[tuple[datetime, dict[str, MatchedTrade]]] = []
+    current: dict[str, MatchedTrade] | None = None
+    current_symbol = current_start = None
+    for symbol, entry_time, account, trade in entries:
+        if (
+            current is None
+            or symbol != current_symbol
+            or entry_time - current_start > tolerance
+            or account in current
+        ):
+            current = {}
+            current_symbol, current_start = symbol, entry_time
+            groups.append((entry_time, current))
+        current[account] = trade
+    groups.sort(key=lambda g: g[0])
+    return [g for _, g in groups]
