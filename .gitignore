@@ -7,3 +7,5 @@ venv/
 *.egg-info/
 data_cache/
 *.env
+overnight_state.json
+overnight_trades.csv

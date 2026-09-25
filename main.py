@@ -620,6 +620,44 @@ def _format_duration(td) -> str:
     return f"{minutes}:{seconds:02d}"
 
 
+def cmd_overnight_run(env_file: str, dry_run: bool, allow_live_trading: bool):
+    """Overnight-Portfolio als Paper-Bot (tradingbot/overnight_live.py). Liest
+    die Keys bewusst NUR aus `env_file` (eigenes Alpaca-Konto), nicht aus .env."""
+    from pathlib import Path
+
+    from alpaca.data.historical import StockHistoricalDataClient
+    from alpaca.trading.client import TradingClient
+    from dotenv import dotenv_values
+
+    from tradingbot.overnight_live import OvernightBot, OvernightConfig
+
+    if not Path(env_file).exists():
+        raise RuntimeError(
+            f"{env_file} nicht gefunden. Der Overnight-Bot braucht ein EIGENES Alpaca-Paper-Konto "
+            "(der Momentum-Bot stellt fremde Positionen beim Start glatt): Keys dort eintragen."
+        )
+    values = dotenv_values(env_file)
+    key, secret = values.get("ALPACA_API_KEY"), values.get("ALPACA_SECRET_KEY")
+    if not key or not secret:
+        raise RuntimeError(f"ALPACA_API_KEY/ALPACA_SECRET_KEY fehlen in {env_file}.")
+    paper_raw = (values.get("ALPACA_PAPER") or "true").strip().lower()
+    if paper_raw not in ("1", "true", "yes", "0", "false", "no"):
+        raise ValueError(f"ALPACA_PAPER in {env_file} muss true/false sein, nicht {paper_raw!r}.")
+    paper = paper_raw in ("1", "true", "yes")
+    if not paper and not allow_live_trading:
+        raise RuntimeError(
+            "overnight-run ist nur für Paper-Trading gedacht, aber ALPACA_PAPER=false ist gesetzt. "
+            "Für echtes Geld zusätzlich --allow-live-trading angeben (auf eigenes Risiko)."
+        )
+    bot = OvernightBot(
+        OvernightConfig(dry_run=dry_run),
+        TradingClient(key, secret, paper=paper),
+        StockHistoricalDataClient(key, secret),
+        paper=paper,
+    )
+    bot.run_forever()
+
+
 def cmd_momentum_report(config: Config, days: int):
     from datetime import datetime, timedelta, timezone
     from zoneinfo import ZoneInfo
@@ -1331,9 +1369,42 @@ def main():
         help="Wie viele Kalendertage rückwirkend die Order-Historie abgefragt wird (Standard: 1).",
     )
 
+    overnight_parser = subparsers.add_parser(
+        "overnight-run",
+        help="Overnight-Portfolio (Paper): Kauf zum Schluss bei Kurs > SMA200, Verkauf zum nächsten Open. "
+        "Braucht ein EIGENES Alpaca-Konto (Keys in --env-file).",
+    )
+    overnight_parser.add_argument("--env-file", default="overnight.env",
+                                  help="Datei mit den Keys des eigenen Overnight-Kontos (Standard: overnight.env).")
+    overnight_parser.add_argument("--dry-run", action="store_true",
+                                  help="Nur Entscheidungen loggen, keine Orders platzieren.")
+    overnight_parser.add_argument("--allow-live-trading", action="store_true",
+                                  help="Erlaubt Echtgeld, falls ALPACA_PAPER=false (nicht empfohlen).")
+    subparsers.add_parser("overnight-report", help="Auswertung von overnight_trades.csv.")
+
     args = parser.parse_args()
 
     setup_logging()
+
+    # Der Overnight-Bot nutzt ein eigenes Konto und braucht die .env des
+    # Momentum-Bots nicht -- daher vor Config.from_env() behandeln.
+    if args.command in ("overnight-run", "overnight-report"):
+        try:
+            if args.command == "overnight-run":
+                cmd_overnight_run(args.env_file, args.dry_run, args.allow_live_trading)
+            else:
+                from pathlib import Path
+
+                from tradingbot.overnight_live import summarize_trade_log
+
+                print(summarize_trade_log(Path("overnight_trades.csv")))
+        except (RuntimeError, ValueError) as e:
+            print(f"Fehler: {e}", file=sys.stderr)
+            sys.exit(1)
+        except APIError as e:
+            print(f"Fehler bei der Alpaca-API (Keys/Netzwerk prüfen): {e}", file=sys.stderr)
+            sys.exit(1)
+        return
 
     try:
         config = Config.from_env()

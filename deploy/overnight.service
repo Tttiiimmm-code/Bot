@@ -1,0 +1,32 @@
+[Unit]
+Description=Overnight-Portfolio-Bot (Alpaca, Paper-Trading, eigenes Konto)
+After=network-online.target
+Wants=network-online.target
+# Verhindert ein Crash-Loop bei einem dauerhaft falsch konfigurierten Start
+# (z.B. fehlende .env): nach 5 Neustarts in 10 Minuten hält systemd an,
+# statt endlos alle 30s neu zu versuchen.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py overnight-run --env-file overnight.env
+
+# Keys des EIGENEN Overnight-Kontos liegen in overnight.env im Repo (nicht in .env,
+# siehe tradingbot/overnight_live.py) -- kein zusätzliches EnvironmentFile nötig.
+
+Restart=on-failure
+RestartSec=30
+
+# Kein Netzwerkzugriff auf lokale Dienste nötig, keine Schreibrechte
+# außerhalb des Arbeitsverzeichnisses (Logs gehen an journald, nicht in
+# eine Datei im Repo).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
+
+[Install]
+WantedBy=multi-user.target
