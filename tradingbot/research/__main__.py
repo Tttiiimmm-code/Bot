@@ -90,8 +90,9 @@ def _sessions(symbol: str, allow_holdout: bool = False):
     return split_sessions(bars)
 
 
-def _log_trial(family, symbol, params, costs, max_exposure, result: BacktestResult) -> None:
-    m = compute_metrics(result)
+def _log_trial(family, symbol, params, costs, max_exposure, result: BacktestResult,
+               periods: int = TRADING_DAYS) -> None:
+    m = compute_metrics(result, periods)
     r = result.daily_returns
     daily_sr = float(r.mean() / r.std(ddof=1)) if len(r) > 1 and r.std(ddof=1) > 0 else 0.0
     TRIALS_LOG.parent.mkdir(exist_ok=True)
@@ -117,8 +118,8 @@ def _trial_stats() -> tuple[int, float]:
     return max(len(df), 1), float(df["daily_sharpe"].var(ddof=1)) if len(df) > 1 else 0.0
 
 
-def _print_metrics(label: str, result: BacktestResult) -> None:
-    m = compute_metrics(result)
+def _print_metrics(label: str, result: BacktestResult, periods: int = TRADING_DAYS) -> None:
+    m = compute_metrics(result, periods)
     print(f"{label:<58} Sharpe {m.sharpe:5.2f} | CAGR {m.cagr:7.2%} | MaxDD {m.max_drawdown:7.2%} "
           f"| Trades {m.n_trades:5d} | PF {m.profit_factor:4.2f} | Ø {m.avg_trade_bps:5.1f} bp")
 
@@ -193,7 +194,8 @@ def cmd_grid(family: str, symbols: list[str], costs: CostModel, max_exposure: fl
 
 
 def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, test_days: int,
-                          benchmark: pd.Series | None = None) -> bool:
+                          benchmark: pd.Series | None = None, periods: int = TRADING_DAYS,
+                          benchmark_name: str = "SPY") -> bool:
     """Walk-Forward über alle Varianten und Prüfung der Bestehenskriterien.
     Mit `benchmark` (Runde 2) zusätzlich: Alpha gegenüber dem Benchmark mit t >= 2."""
     n_trials, sr_var = _trial_stats()
@@ -207,12 +209,12 @@ def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, te
         return False
     pos_share = float(np.mean([w[3] > 0 for w in windows]))
     oos_total = float(np.prod(1 + oos) - 1)
-    oos_sharpe = sharpe_ratio(oos)
+    oos_sharpe = sharpe_ratio(oos, periods)
     dsr = deflated_sharpe(oos, n_trials, sr_var)
     trade_days = oos[oos != 0]
     wins, losses = trade_days[trade_days > 0].sum(), -trade_days[trade_days < 0].sum()
     pf = wins / losses if losses > 0 else math.inf
-    years = len(oos) / TRADING_DAYS
+    years = len(oos) / periods
     print(f"\nOOS verkettet: {oos_total:.2%} ({(1 + oos_total) ** (1 / years) - 1:.2%} p.a.), Sharpe "
           f"{oos_sharpe:.2f}, positive Fenster {pos_share:.0%}, Handelstage mit Trade {len(trade_days)}, "
           f"PF (Tage) {pf:.2f}, Deflated Sharpe {dsr:.3f}")
@@ -227,12 +229,12 @@ def evaluate_walk_forward(all_returns: dict[str, pd.Series], train_days: int, te
     if benchmark is not None:
         from tradingbot.research.swing import alpha_vs_benchmark
 
-        alpha, t_alpha, beta = alpha_vs_benchmark(oos, benchmark)
+        alpha, t_alpha, beta = alpha_vs_benchmark(oos, benchmark, periods)
         bench_oos = benchmark.reindex(oos.index).fillna(0.0)
-        print(f"Gegenüber SPY: Alpha {alpha:.2%} p.a. (t = {t_alpha:.2f}), Beta {beta:.2f}; "
-              f"SPY im selben Zeitraum: Sharpe {sharpe_ratio(bench_oos):.2f}, "
+        print(f"Gegenüber {benchmark_name}: Alpha {alpha:.2%} p.a. (t = {t_alpha:.2f}), Beta {beta:.2f}; "
+              f"{benchmark_name} im selben Zeitraum: Sharpe {sharpe_ratio(bench_oos, periods):.2f}, "
               f"{float(np.prod(1 + bench_oos) - 1):.1%} gesamt")
-        checks["Alpha ggü. SPY > 0 mit t >= 2"] = alpha > 0 and t_alpha >= 2
+        checks[f"Alpha ggü. {benchmark_name} > 0 mit t >= 2"] = alpha > 0 and t_alpha >= 2
     for name, ok in checks.items():
         print(f"  [{'OK' if ok else 'NEIN'}] {name}")
     print("BESTANDEN (vor Robustheits-/Holdout-Prüfung)" if all(checks.values()) else "NICHT BESTANDEN")
@@ -336,6 +338,42 @@ def cmd_swing_grid(family: str, train_days: int, test_days: int) -> None:
             print("   Jahre:", {y: f"{v:.1%}" for y, v in yearly_returns(res.daily_returns).items()})
             all_returns[label] = res.daily_returns
     evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark)
+
+
+CRYPTO_GRIDS = {
+    "trend": [{"lookback": n, "asset": a} for n in (20, 50, 100) for a in ("BTCUSDT", "ETHUSDT")],
+    "xsmom": [{"lookback": lb, "k": k, "btc_filter": f} for lb in (7, 28) for k in (3, 5) for f in (False, True)],
+}
+
+
+def cmd_crypto_grid(family: str, cost_per_side: float, train_days: int, test_days: int) -> None:
+    """Runde 3 (research/PROTOCOL.md): Krypto-Spot, Walk-Forward und Alpha ggü. BTC."""
+    from tradingbot.research import crypto
+
+    close, vol = crypto.load_panel()
+    btc = close["BTCUSDT"].dropna()
+    benchmark = (btc / btc.shift(1) - 1).dropna()
+    universe = crypto.universe_mask(close, vol) if family == "xsmom" else None
+    costs = CostModel(slippage_bps=cost_per_side * 10_000 / 2)  # nur für das Versuchsprotokoll
+    all_returns: dict[str, pd.Series] = {}
+    for params in CRYPTO_GRIDS[family]:
+        if family == "trend":
+            px = close[[params["asset"]]].dropna()
+            w = crypto.trend_weights(px[params["asset"]], params["lookback"]).to_frame(params["asset"])
+            res = crypto.run_weights(w, px, cost_per_side, "crypto_trend")
+        else:
+            w = crypto.momentum_weights(close, universe, params["lookback"], params["k"], params["btc_filter"])
+            res = crypto.run_weights(w, close, cost_per_side, "crypto_xsmom")
+        _log_trial(f"crypto_{family}", "binance", {**params, "cost_per_side": cost_per_side}, costs, 1.0,
+                   res, crypto.PERIODS)
+        label = json.dumps(params, sort_keys=True)
+        _print_metrics(label, res, crypto.PERIODS)
+        print("   Jahre:", {y: f"{v:.0%}" for y, v in yearly_returns(res.daily_returns).items()})
+        all_returns[label] = res.daily_returns
+    bench = BacktestResult("btc", benchmark[benchmark.index >= min(r.index[0] for r in all_returns.values())])
+    _print_metrics("Vergleich: BTC Buy-and-Hold", bench, crypto.PERIODS)
+    evaluate_walk_forward(all_returns, train_days, test_days, benchmark=benchmark,
+                          periods=crypto.PERIODS, benchmark_name="BTC")
 
 
 def cmd_overnight_portfolio(holdout: bool) -> bool:
@@ -450,6 +488,11 @@ def main(argv: list[str] | None = None) -> None:
     sw.add_argument("--family", required=True, choices=["overnight", "rsi2", "reversal"])
     sw.add_argument("--train-days", type=int, default=504)
     sw.add_argument("--test-days", type=int, default=126)
+    cg = sub.add_parser("crypto-grid", help="Runde 3: Krypto-Spot (Familien H/I).")
+    cg.add_argument("--family", required=True, choices=sorted(CRYPTO_GRIDS))
+    cg.add_argument("--cost", type=float, default=0.0025, help="Kosten je Seite (Standard 0.25 %%)")
+    cg.add_argument("--train-days", type=int, default=730)
+    cg.add_argument("--test-days", type=int, default=182)
     op = sub.add_parser("overnight-portfolio", help="E-Portfolio: Overnight mit Trendfilter auf allen ETFs.")
     op.add_argument("--holdout", action="store_true", help="Holdout EINMALIG öffnen (nur nach Bestehen)")
     for name in ("grid", "run", "holdout", "portfolio"):
@@ -486,6 +529,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-grid":
             cmd_swing_grid(args.family, args.train_days, args.test_days)
+            return
+        if args.command == "crypto-grid":
+            cmd_crypto_grid(args.family, args.cost, args.train_days, args.test_days)
             return
         if args.command == "overnight-portfolio":
             cmd_overnight_portfolio(args.holdout)

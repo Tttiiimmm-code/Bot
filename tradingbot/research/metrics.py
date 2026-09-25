@@ -35,12 +35,12 @@ class Metrics:
     avg_trade_bps: float
 
 
-def sharpe_ratio(daily_returns: pd.Series) -> float:
-    """Annualisiert, Tage ohne Trade zählen als 0 % Rendite."""
+def sharpe_ratio(daily_returns: pd.Series, periods: int = TRADING_DAYS) -> float:
+    """Annualisiert (`periods` Tage je Jahr, Krypto: 365), Tage ohne Trade zählen als 0 %."""
     r = np.asarray(daily_returns, dtype=float)
     if len(r) < 2 or r.std(ddof=1) == 0:
         return 0.0
-    return float(r.mean() / r.std(ddof=1) * math.sqrt(TRADING_DAYS))
+    return float(r.mean() / r.std(ddof=1) * math.sqrt(periods))
 
 
 def max_drawdown(daily_returns: pd.Series) -> float:
@@ -51,11 +51,11 @@ def max_drawdown(daily_returns: pd.Series) -> float:
     return float((equity / peak - 1).min())
 
 
-def compute_metrics(result: BacktestResult) -> Metrics:
+def compute_metrics(result: BacktestResult, periods: int = TRADING_DAYS) -> Metrics:
     r = result.daily_returns
     n = len(r)
     total = float(np.prod(1 + r.to_numpy()) - 1) if n else 0.0
-    years = n / TRADING_DAYS
+    years = n / periods
     cagr = (1 + total) ** (1 / years) - 1 if years > 0 and total > -1 else 0.0
     tr = result.trade_net_returns
     wins, losses = tr[tr > 0].sum(), -tr[tr < 0].sum()
@@ -63,8 +63,8 @@ def compute_metrics(result: BacktestResult) -> Metrics:
         days=n,
         total_return=total,
         cagr=cagr,
-        ann_vol=float(r.std(ddof=1) * math.sqrt(TRADING_DAYS)) if n > 1 else 0.0,
-        sharpe=sharpe_ratio(r),
+        ann_vol=float(r.std(ddof=1) * math.sqrt(periods)) if n > 1 else 0.0,
+        sharpe=sharpe_ratio(r, periods),
         max_drawdown=max_drawdown(r),
         n_trades=len(tr),
         win_rate=float((tr > 0).mean()) if len(tr) else 0.0,

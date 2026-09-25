@@ -232,3 +232,62 @@ strenge Kriterien, und der Holdout entscheidet am Ende.
 191 protokollierte Versuche in 7 Familien plus einem Folgetest, keiner besteht. Bestes
 Ergebnis: Overnight-Portfolio mit Trendfilter (Alpha t = 2,23), statistisch aber nicht von
 Glück zu unterscheiden. Jede weitere Suche auf denselben Daten erhöht N und damit die Hürde.
+
+# Runde 3: Krypto (2026-09-25)
+
+Auf Wunsch des Nutzers (nicht an US-Aktien gebunden). Neuer, unabhängiger Datensatz. Nur
+Spot, nur long (kein Leerverkauf, kein Hebel), Haltedauer Tage bis Wochen (Börsengebühren
+schließen kurzfristigen Handel aus).
+
+## Daten und Universum
+
+- Binance-Spot, USDT-Paare, Tages-Kerzen (UTC), öffentliche Daten: REST (data-api.binance.vision)
+  für aktive, Monatsarchive (data.binance.vision) für delistete Paare.
+- Universum je Tag (point-in-time): Top 20 nach Ø-Quote-Volumen (USDT) der 30 Vortage, ohne
+  Stablecoins, Fiat-Paare, gehebelte Tokens (UP/DOWN/BULL/BEAR) und Wrapped-Tokens. Mindestens
+  60 Tage Historie.
+- Entwicklungszeitraum bis 2025-09-21, Holdout ab 2025-09-22 gesperrt (wie Runde 1/2).
+
+## Ausführung, Kosten, Kriterien
+
+- Signal zum Tagesschluss (00:00 UTC), Ausführung zum selben Kurs (24/7-Markt, Schluss = Open
+  des Folgetags). Kosten 0,25 % je Seite (Taker-Gebühr einer EU-Börse inkl. Slippage) auf den
+  Umschlag. Zusätzlich berichtet: 0,10 % (Binance-Niveau) -- nicht entscheidend.
+- Annualisierung mit 365 Tagen.
+- Walk-Forward: Training 730, Test 182 Kalendertage.
+- Bestehen: OOS-Rendite > 0, >= 60 % positive Fenster, PF (Tage) >= 1,2, Deflated Sharpe
+  >= 0,95 mit N = ALLE protokollierten Versuche aller Runden (konservativ), Alpha gegenüber
+  BTC-Buy-and-Hold > 0 mit t >= 2.
+
+## Vorab-Registrierung: Familie H, Trendfolge auf BTC und ETH
+
+Quelle: u.a. Liu & Tsyvinski (2021), "Risks and Returns of Cryptocurrency" (Zeitreihen-Momentum).
+- Voll investiert, solange der Schlusskurs über dem SMA(n) liegt, sonst Cash (USDT).
+- Varianten: n {20, 50, 100} x Asset {BTC, ETH} -> 6 Versuche.
+
+## Vorab-Registrierung: Familie I, Querschnitts-Momentum im Top-20-Universum
+
+Quelle: Liu, Tsyvinski & Wu (2022), "Common Risk Factors in Cryptocurrency".
+- Wöchentlich (alle 7 Tage) die k Coins mit der höchsten Rendite der letzten L Tage kaufen,
+  gleichgewichtet, bis zur nächsten Umschichtung halten.
+- Varianten: L {7, 28} x k {3, 5} x Filter {keiner, nur investiert wenn BTC > SMA50} -> 8
+  Versuche.
+
+## 2026-09-25 -- Ergebnisse Runde 3 (Krypto)
+
+- Daten: 658 handelbare USDT-Paare, davon 136 delistet (z.B. LUNA-Crash, FTM, WAVES) -- die
+  REST-Schnittstelle liefert auch delistete Historie. Filterlücke vor der Auswertung behoben:
+  BULL/BEAR (gehebelte BTC-Tokens 2019/20) und USDSB (Stablecoin) waren anfangs enthalten.
+- H Trendfolge BTC/ETH (6 Versuche): einzeln Sharpe 0,89-1,30, geringerer MaxDD als Halten
+  (-65 % statt -83 %). Walk-Forward OOS +819 %, BTC halten im selben Zeitraum +966 %.
+  Alpha 22 % p.a. (t 1,39), 58 % positive Fenster, DSR 0,000 -> NICHT BESTANDEN.
+- I Querschnitts-Momentum Top 20 (8 Versuche): ohne BTC-Filter MaxDD bis -99 %. Walk-Forward
+  OOS +198 %, fast vollständig aus H1 2021 (+495 %), danach überwiegend negativ; BTC halten
+  +1.359 %. Alpha t 0,42 -> NICHT BESTANDEN.
+- Insgesamt protokollierte Versuche: 205. Holdout weiterhin ungeöffnet.
+
+## 2026-09-25 -- Fazit nach drei Runden
+
+Über US-Aktien (Intraday und Tage) und Krypto hinweg schlägt keine getestete Regel nach
+Kosten verlässlich das bloße Halten des jeweiligen Markts. Die Trend-Regeln reduzieren
+Drawdowns, liefern aber kein statistisch belastbares Alpha.

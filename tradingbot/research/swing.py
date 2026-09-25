@@ -201,7 +201,7 @@ def weekly_reversal(opens: pd.DataFrame, closes: pd.DataFrame, universe: pd.Data
     return BacktestResult("weekly_reversal", series, trades, np.array(trade_rets, dtype=float))
 
 
-def alpha_vs_benchmark(returns: pd.Series, benchmark: pd.Series) -> tuple[float, float, float]:
+def alpha_vs_benchmark(returns: pd.Series, benchmark: pd.Series, periods: int = 252) -> tuple[float, float, float]:
     """OLS r = a + b * bench. Liefert (Alpha p.a., t-Wert Alpha, Beta)."""
     df = pd.concat([returns.rename("r"), benchmark.rename("b")], axis=1, join="inner").dropna()
     if len(df) < 30:
@@ -213,4 +213,4 @@ def alpha_vs_benchmark(returns: pd.Series, benchmark: pd.Series) -> tuple[float,
     sigma2 = resid @ resid / (len(df) - 2)
     cov = sigma2 * np.linalg.inv(X.T @ X)
     t_alpha = coef[0] / np.sqrt(cov[0, 0]) if cov[0, 0] > 0 else 0.0
-    return float(coef[0] * 252), float(t_alpha), float(coef[1])
+    return float(coef[0] * periods), float(t_alpha), float(coef[1])
