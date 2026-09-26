@@ -1095,3 +1095,13 @@ Stunden verkaufen, täglich. Daten: Binance BTCUSDT Stundenkerzen (kostenlos).
 - Ergebnis Runde 27: brutto nur 1,5 bp/Tag in beiden Zeiträumen (Binance-Daten; Studie nutzte
   Gemini). Maker 0,02 %: -2,5 bp/Tag netto (t -0,75 / -1,48, ca. -10 % p.a.); Taker 0,10 %:
   ca. -50 % p.a. -> NICHT BESTANDEN.
+
+# Runde 28: Bitcoin an N-Tage-Hoch/-Tief (Padyšák & Vojtko 2022)
+
+- BTC am Folgetag halten, wenn der Tagesschluss (UTC) ein N-Tage-Hoch ODER ein N-Tage-Tief ist
+  (Trend am Maximum, Rückprall am Minimum), sonst Cash. N {10, 20} -> 2 Versuche.
+- Kosten 0,10 % je Seite (Taker, EU-Börse günstig) auf den Umschlag. Benchmark: BTC halten.
+- Zeiträume 2018-2021 (Studie) und 2022-01 bis heute (nach Veröffentlichung).
+- Bestanden: beste Variante nach Veröffentlichung Alpha-t >= 2,24, im Studienzeitraum > 0.
+- Ergebnis Runde 28: N=10 2018-2021 +65,5 % p.a. (Alpha t 2,17), 2022-heute -8,2 % p.a.
+  (t -1,20); N=20 1,50 / -0,90 -> NICHT BESTANDEN. Deutlicher Veröffentlichungseffekt.
