@@ -1016,3 +1016,18 @@ Concretum Group: Faber-GTAA knapp 20 Jahre nach Veröffentlichung robust.
 - Ergebnis Runde 24: GEM 2015-2025 6,34 % p.a., Sharpe 0,46, MaxDD -33,7 %; SPY 13,51 %, 0,80,
   -33,7 %. Alpha -3,92 % p.a. (t -1,69), ~2 Wechsel/Jahr -> NICHT BESTANDEN. Nach der
   Veröffentlichung deutlich schlechter als SPY bei gleichem Maximalverlust.
+
+# Ideen-Warteschlange aus Quantpedia (2026-09-27, per Suchmaschine gesammelt)
+
+Noch nicht getestet und mit freien Daten prüfbar:
+- Runde 25 (Kalender/ETF, Yahoo, zwei Zeiträume): Optionsverfall-Woche, Vor-Feiertag,
+  Zahltag-Effekt, Januar-Effekt (Nebenwerte), Paired Switching (SPY/TLT), Rohöl sagt Aktien
+  voraus, Umkehr bei internationalen Aktien-ETFs.
+- Runde 26 (Aktien, Alpaca-Panel + SEC): Residual Momentum, Earnings-Announcement-Premium,
+  Accrual-Anomalie, ROA-Effekt.
+- Runde 27 (Krypto, Binance stündlich): Overnight-Saisonalität bei Bitcoin.
+- Danach: Paarhandel mit Länder-ETFs, Momentum bei REITs, Länder-Saisonalität, FED-Modell
+  (Shiller-Daten), Momentum-Varianten (konsistentes Momentum).
+Bereits getestet (übersprungen): Value, PEAD, Asset Growth, Zeitreihen-Momentum, Monatswechsel,
+Short-Term-Reversal, Momentum, Low Vol, Sektor-Momentum, FX-Carry/-Value, 12-Monats-Zyklus,
+52-Wochen-Hoch, Momentum-Allokation, Asset-Class-Trend, Paarhandel Aktien, VIX-Laufzeit.
