@@ -1140,3 +1140,20 @@ Ergebnis Runde 30:
 - AY Wochenende: 2020-2022 -13,9 % p.a., Alpha t -1,30; 2023-heute +0,4 %, t -0,63 -> NICHT BESTANDEN.
 - AZ Funding-Gegensignal: 2020-2022 +11,0 % (BTC 38 %), t -0,41; 2023-heute +26,5 % (BTC 55 %),
   t 0,08 -> NICHT BESTANDEN. Funding enthält keine verwertbare Information über die nächste Tagesrendite.
+
+# Runde 31: Momentum-Varianten bei Aktien (2026-09-27)
+
+Universum Top 1000 (ohne Fonds), nur long, 10 bp je Seite, monatlich, Alpha ggü. SPY, n {20, 100}.
+Entdeckung 2016-2020 (Warm-up 2016), Bestätigung 2021-2025-09-19. Bestehen (2 Familien): beste
+Variante Entdeckung t >= 2,24 UND Bestätigung t >= 2.
+- BA Konsistentes Momentum (Chen/Kadan/Kose): nur Titel im oberen Dezil sowohl der Rendite t-126..t-21
+  als auch t-252..t-147; daraus die n mit höchster 12-1-Rendite (weniger als n -> alle, gleichgewichtet
+  1/n, Rest Cash).
+- BB Frog-in-the-Pan (Da/Gurun/Warachka 2014): oberes Quintil 12-1-Momentum; ID = sign(PRET) *
+  (Anteil negativer - Anteil positiver Tage) über t-252..t-21; daraus die n mit NIEDRIGSTEM ID
+  (kontinuierlichste Information).
+
+Ergebnis Runde 31 (Alpha-t Entdeckung / Bestätigung):
+- BA konsistentes Momentum: n=20 +25,4 % / +22,3 % p.a., t 1,16 / 0,66; n=100 (nur 16-19 % investiert,
+  zu wenige Kandidaten) 0,90 / 0,66 -> NICHT BESTANDEN.
+- BB Frog-in-the-Pan: n=20 0,98 / -0,59; n=100 1,09 / -0,95 -> NICHT BESTANDEN.
