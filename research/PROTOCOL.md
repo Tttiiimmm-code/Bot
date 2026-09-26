@@ -1219,3 +1219,46 @@ Ergebnis Runde 35 (Alpha-t Entdeckung / Bestätigung):
   -> NICHT BESTANDEN. Plausibilitätsprüfung (9.576 Ex-Tage mit Rendite 0,5-5 %, 2017-2024,
   Überrendite ggü. SPY): Tag -3 +0,03 %, -2 -0,02 %, -1 +0,03 %, Ex-Tag -1,09 % (= Dividende;
   bestätigt korrekte Ex-Daten), +1 -0,10 %. Kein Vorlauf vorhanden; Verlust = Umschlagskosten.
+
+# Runde 36: Klassische Anomalien bei europäischen Aktien (2026-09-27)
+
+Motivation: Jacobs & Müller (2020, JFE, 241 Anomalien in 39 Ländern): verlässlicher Rückgang nach
+Veröffentlichung NUR in den USA. Alle bisherigen Aktientests waren US-Daten.
+Daten: heutige Mitglieder von DAX, MDAX, CAC 40, FTSE 100, AEX, SMI, IBEX 35, FTSE MIB, OMXS30 laut
+Wikipedia (379 Titel, Yahoo adjclose inkl. Dividenden, data_cache/europe), in EUR umgerechnet
+(GBPEUR, CHFEUR, SEKEUR). Survivorship-Verzerrung: nur heutige Mitglieder -> Benchmark ist das
+GLEICHGEWICHTETE Universum derselben Titel (täglich), Alpha-t per Regression dagegen.
+Datenbereinigung (vorab festgelegt): Tagesrendite > +50 % oder < -50 %, auf die am Folgetag eine
+Gegenbewegung von mehr als der Hälfte folgt, wird als Datenfehler auf 0 gesetzt (beide Tage).
+Universum an Tag t: Titel mit >= 252 Tagen Kurshistorie. Monatliche Umschichtung, n {20, 40},
+gleichgewichtet, 10 bp je Seite, zusätzlich 0,5 % Stempelsteuer auf Käufe von .L-Titeln.
+Entdeckung 2003-2013, Bestätigung 2014-2025-09-19. Bestehen (3 Familien): beste Variante
+Entdeckung t >= 2,39 UND Bestätigung t >= 2.
+- BK Momentum 12-1: höchste Rendite t-252..t-21.
+- BL Niedrige Volatilität: niedrigste Std. der Tagesrenditen über 252 Tage.
+- BM Kurzfrist-Umkehr: niedrigste Rendite der letzten 21 Tage.
+
+## 2026-09-27 -- Ergebnisse Runde 36 (Alpha-t ggü. gleichgewichtetem Universum, Entdeckung / Bestätigung)
+
+- BK Momentum 12-1: n=20 23,6 % / 19,7 % p.a. (EW 15,2 % / 11,3 %), Alpha 9,2 % / 8,4 % p.a.,
+  t 2,70 / 2,20, MaxDD -50 % / -45 %; n=40 1,22 / 1,57 -> BESTANDEN (erste bestandene Familie
+  nach 36 Runden) -- ABER unter Survivorship-Vorbehalt: Universum = HEUTIGE Indexmitglieder. Das
+  begünstigt gerade Momentum (frühere Gewinner, die weiter stiegen, sind heute im Index; Gewinner,
+  die danach einbrachen, fehlen). Der EW-Benchmark gleicht das nur teilweise aus.
+- BL Niedrige Vola: n=20 0,79 / 0,88; n=40 0,94 / 0,26 -> NICHT BESTANDEN.
+- BM Kurzfrist-Umkehr: n=20 -2,67 / -1,80; n=40 -2,81 / -2,27 -> NICHT BESTANDEN (negativ:
+  Verlierer der letzten 21 Tage laufen weiter schlechter -- passt zu Momentum).
+
+# Runde 37: Robustheitsprüfung Europa-Momentum BK n=20 (vorregistriert vor jeder weiteren Analyse)
+
+Regel unverändert (12-1, monatlich, Top 20, gleichgewichtet, EUR, 10 bp + 0,5 % UK-Stempelsteuer).
+- R1 Zeitpunktgenaues Universum: Mitgliederlisten aus alten Wikipedia-Revisionen der Indexseiten
+  (je Index eine Revision pro Jahr zum 1. Januar, soweit vorhanden); gehandelt werden nur Titel,
+  die zum letzten Jahreswechsel laut dieser Revision Mitglied waren (heute nicht mehr gelistete
+  Titel fehlen bei Yahoo; ihr Anteil wird berichtet). Benchmark: EW desselben zeitpunktgenauen
+  Universums. Bestehen: Alpha-t >= 1,65 (einseitig 5 %) in BEIDEN Zeiträumen, soweit Revisionen
+  reichen.
+- R2 Unberührtes Jahr 2025-09-22 bis 2026-09-25 (Yahoo-Daten nach VALIDATION_END, bisher nie
+  geladen): Alpha ggü. EW-Universum muss POSITIV sein (nur Vorzeichen; ein Jahr hat keine Macht).
+- R3 Kostenstress 25 bp je Seite: Alpha-t in beiden Zeiträumen berichtet (kein Kriterium).
+- Zusätzlich berichtet: Umschlag p.a., Anteil UK-Titel, Jahresrenditen.
