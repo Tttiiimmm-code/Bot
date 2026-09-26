@@ -1082,3 +1082,16 @@ Bestehen: beste Variante in der Entdeckung t >= 2,24 UND Bestätigung t >= 2.
   ungenaue Terminschätzung) -> NICHT BESTANDEN.
 - AU Accruals: n=100 1,34 / -1,33 (n=20 2021-2025 -11,7 % p.a., MaxDD -80 %) -> NICHT BESTANDEN.
 - AV ROA: n=100 0,33 / -1,11 -> NICHT BESTANDEN.
+
+# Runde 27: Bitcoin-Intraday-Saisonalität (2026-09-27)
+
+Quelle: Padyšák & Vojtko (2022, SSRN 4081000), Quantpedia: BTC um 22:00 UTC kaufen, nach 2
+Stunden verkaufen, täglich. Daten: Binance BTCUSDT Stundenkerzen (kostenlos).
+- Rendite je Tag = Open 00:00 / Open 22:00 - 1 (Kerzen 22:00 und 23:00 gehalten).
+- Kosten je Seite: Szenario Maker 0,02 % (Limit-Orders, bester Fall) und Taker 0,10 %.
+- Zeiträume: 2018-2021 (Studienzeitraum) und 2022-01 bis heute (nach Veröffentlichung).
+- Bestanden, wenn im Maker-Szenario beide Zeiträume Ø-Nettorendite > 0 und nach
+  Veröffentlichung t >= 2 (1 Versuch).
+- Ergebnis Runde 27: brutto nur 1,5 bp/Tag in beiden Zeiträumen (Binance-Daten; Studie nutzte
+  Gemini). Maker 0,02 %: -2,5 bp/Tag netto (t -0,75 / -1,48, ca. -10 % p.a.); Taker 0,10 %:
+  ca. -50 % p.a. -> NICHT BESTANDEN.
