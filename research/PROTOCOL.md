@@ -1363,3 +1363,33 @@ konsistentesten Befunde (positives Alpha in beiden Zeiträumen, höheres Sharpe 
 2003-2007 schwach (netto -0,1 bis -9 % bei stark steigendem DAX) und nicht signifikant.
 Offene Punkte, falls weiterverfolgt: echte FDXS-Kurse um 17:30/9:00 statt Indexwerte; Verhalten
 der Abendsitzung bis 22:00.
+
+# Runde 42: DAX-Daytrading per CFD mit Minutendaten (2026-09-27)
+
+Daten: Dukascopy DEUIDXEUR (DAX-CFD) Minutenkerzen Bid 2013-01 bis 2025-09-19 (data_cache/dukascopy/
+dax), Zeiten Europe/Berlin. Kosten 1,5 Indexpunkte je Round-Trip (Spread ~1 + Schlupf 0,5), Position
+1 x Kapital, Short erlaubt (CFD). Kennzahl: Tagesrenditen (0 an Tagen ohne Trade), t-Wert des
+Mittelwerts gegen 0 (kein Übernacht-Marktrisiko). Entdeckung 2013-2018, Bestätigung 2019-2025-09-19.
+Bestehen (2 Familien): beste Variante t >= 2,24 Entdeckung UND >= 2 Bestätigung.
+- BU "Early Bird" Range-Ausbruch 8-9 Uhr: Spanne 08:00-08:59, ab 09:00 erster Ausbruch über Hoch
+  (long) bzw. unter Tief (short), Stop auf der Gegenseite, Ausstieg spätestens 17:00 (letzte Kerze
+  16:59); Ziel {kein, 1 x Spannenhöhe}. Logik wie gold.day_trade (Stop vor Ziel bei gleicher Kerze).
+- BV Intraday-Momentum (Gao, Han, Li & Zhou 2018, auf DAX übertragen): Richtung = Vorzeichen der
+  Rendite vom Vortages-Schluss 17:30 bis 09:30; Position in diese Richtung von 17:00 bis 17:30.
+
+Ergebnis Runde 42 (Dukascopy-Daten beginnen erst 2013-09-30; t Entdeckung / Bestätigung):
+- BU Early Bird: ohne Ziel +2,45 bp/Tag (5,9 % p.a.) / -0,17 bp, t 1,37 / -0,11; Ziel 1x 0,33 / -0,17
+  -> NICHT BESTANDEN.
+- BV Intraday-Momentum: -0,41 / -0,04 -> NICHT BESTANDEN.
+
+## Kontrolle zu Runde 41 mit handelbaren CFD-Kursen (vorregistriert, kein neuer Versuch)
+
+Gleiche Regel wie Runde 41, aber Einstieg = Dukascopy-CFD-Kurs 17:30 (erste Minute ab 17:30),
+Ausstieg = CFD-Kurs 09:00 (Bid, Spread in den 0,5 bp je Seite enthalten), 2013-10 bis 2025-09-19.
+Frage: Bleibt der Nachteffekt mit echten handelbaren Kursen bestehen (Ø brutto > 2 bp/Nacht und
+netto t > 0)? Zusätzlich Aufteilung: 17:30-22:00 (Abendsitzung) und 22:00-09:00.
+Ergebnis Kontrolle: 2013-2018 brutto 5,75 bp/Nacht, netto 4,73 bp (11,7 % p.a.), t 1,89; 2019-2025
+brutto 3,56, netto 2,03 bp (4,3 % p.a.), t 1,02; gesamt netto 3,05 bp (7,1 % p.a.), t 1,97.
+-> Der Nachteffekt ist mit handelbaren CFD-Kursen vorhanden (kein Artefakt veralteter Eröffnungs-
+werte), aber seit 2019 schwächer und nicht signifikant. (Aufteilung Abend/Nacht nur auf Tagen mit
+Kurs um 22:00 -- Teilmenge, nicht additiv.)
