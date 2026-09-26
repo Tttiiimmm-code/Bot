@@ -1329,3 +1329,37 @@ Ergebnis Runde 39 (Alpha-t ggü. gleichgewichtetem Halten, Entdeckung 1990-2005 
 - BQ Halloween: +8,6 % / +4,9 % p.a. (Halten 6,2 % / 4,1 %), MaxDD -32 % / -37 % (Halten -63 % /
   -55 %), t 2,57 / 1,27 -> NICHT BESTANDEN. Positiv in beiden Zeiträumen bei halber Marktzeit,
   nach Veröffentlichung (2002) aber nicht signifikant -- gleiches Muster wie USA (Runde 8 Q).
+
+# Runde 40: DAX-Nachteffekt per CFD (2026-09-27)
+
+Long DAX nur vom Xetra-Schluss bis zur nächsten Eröffnung (Yahoo ^GDAXI Open/Close; FTSE-Opens bei
+Yahoo unbrauchbar -- ab 2000 fast immer = Vortagesschluss). Umsetzung per DAX-CFD: Kosten 1 bp je
+Seite (Spread ~1-2 Punkte) + Finanzierung (EUR-3M-Zins [FRED IR3TIB01EZM156N, vor 1999 DEM-Wert
+nicht verfügbar -> 3M-Zins des ersten verfügbaren Monats] + 2,5 %) / 360 je Kalendernacht (Fr->Mo 3).
+Cash-Zins nicht gutgeschrieben (CFD-Margin). Benchmark: DAX halten (Performanceindex).
+Entdeckung 1993-2008, Bestätigung 2009-2025-09-19. 1 Variante. Bestehen: Alpha-t >= 2 in BEIDEN.
+Hinweis: Der DAX-Eröffnungswert enthält teils veraltete Vortageskurse (Titel ohne ersten Handel);
+das verschiebt Nachtrendite in den Tag und macht den Test eher konservativ.
+
+Ergebnis Runde 40: brutto 4,43 / 4,42 bp je Nacht (11,4 % / 11,0 % p.a. -- mehr als DAX halten
+7,4 % / 9,9 %; der Handelstag ist netto negativ). Netto nach CFD-Kosten -1,0 % / +2,3 % p.a.,
+Alpha t -1,08 / -0,42 -> NICHT BESTANDEN. Die CFD-Finanzierung (Ø 2,7 / 1,3 bp je Nacht) frisst den
+Effekt.
+
+# Runde 41: DAX-Nachteffekt per Micro-DAX-Future (2026-09-27) -- NACHTRÄGLICH motiviert
+
+Motivation aus dem Ergebnis von Runde 40 (Bruttoeffekt gesehen; daher kein blinder Test, als
+eigener Versuch gezählt). Umsetzung mit Micro-DAX-Future FDXS (1 EUR/Punkt, ~24.000 EUR Nennwert,
+passt zu 20k-Konto; seit 2023 handelbar, vorher nur FDAX/Mini): Kosten 0,5 bp je Seite (Spread ~1
+Punkt + ~0,50 EUR Gebühr) + Carry des Performanceindex-Futures = EUR-3M-Zins/360 je Kalendernacht
+(kein Aufschlag). Sonst identisch zu Runde 40. Bestehen: Alpha-t >= 2,24 in BEIDEN Zeiträumen
+(verschärft wegen nachträglicher Motivation). Zusätzlich berichtet: Jahresrenditen, Anteil
+positiver Jahre.
+
+Ergebnis Runde 41: netto 4,2 % / 7,4 % p.a. (DAX halten 7,4 % / 9,9 %), MaxDD -45 % / -22 % (DAX
+-73 % / -39 %), Sharpe 0,54 / 0,67 (DAX 0,42 / 0,57), Alpha 3,0 % / 3,9 % p.a., t 1,62 / 1,71,
+Beta 0,14 / 0,34; 64 % positive Jahre -> NICHT BESTANDEN (Schwelle 2,24). Vorgemerkt als einer der
+konsistentesten Befunde (positives Alpha in beiden Zeiträumen, höheres Sharpe als Halten), aber
+2003-2007 schwach (netto -0,1 bis -9 % bei stark steigendem DAX) und nicht signifikant.
+Offene Punkte, falls weiterverfolgt: echte FDXS-Kurse um 17:30/9:00 statt Indexwerte; Verhalten
+der Abendsitzung bis 22:00.
