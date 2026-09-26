@@ -56,6 +56,52 @@ def day_trade(day: pd.DataFrame, tp_mult: float | None, cost_per_side: float = 1
     return None
 
 
+FX_DIR = Path("data_cache") / "dukascopy" / "fx"
+
+
+def load_fx(pair: str, base: Path = FX_DIR) -> pd.Series:
+    """Minuten-Open eines Paares (UTC-Index)."""
+    frames = [pd.read_csv(p) for p in sorted(base.glob(f"{pair}_*.csv"))]
+    df = pd.concat(frames)
+    s = pd.Series(df["open"].to_numpy(float), index=pd.to_datetime(df["timestamp"], unit="ms", utc=True))
+    return s[~s.index.duplicated()].sort_index()
+
+
+def price_at(series: pd.Series, ts: pd.Timestamp, tolerance_min: int = 5) -> float | None:
+    """Open der ersten Minute ab ts (höchstens tolerance_min später)."""
+    pos = series.index.searchsorted(ts)
+    if pos >= len(series) or series.index[pos] - ts > pd.Timedelta(minutes=tolerance_min):
+        return None
+    return float(series.iloc[pos])
+
+
+def month_end_fix_returns(pairs: dict[str, pd.Series], usd_quote: dict[str, bool], start_h: int, end_h: int,
+                          usd_long: bool, cost_per_side: float = 0.5e-4) -> pd.Series:
+    """Je Monat (letzter Werktag): Rendite einer USD-Position von start_h bis end_h
+    (Uhrzeit London), gleichgewichtet über die Paare. usd_quote[pair] = True, wenn
+    USD die Kurswährung ist (EURUSD), False bei USDJPY."""
+    days = sorted({d for s in pairs.values() for d in s.index.tz_convert("Europe/London").date})
+    by_month: dict[tuple, object] = {}
+    for d in days:
+        if pd.Timestamp(d).weekday() < 5:
+            by_month[(d.year, d.month)] = d  # letzter Werktag mit Daten
+    out = {}
+    for (y, m), d in sorted(by_month.items()):
+        t0 = pd.Timestamp(f"{d} {start_h:02d}:00", tz="Europe/London").tz_convert("UTC")
+        t1 = pd.Timestamp(f"{d} {end_h:02d}:00", tz="Europe/London").tz_convert("UTC")
+        rets = []
+        for pair, s in pairs.items():
+            p0, p1 = price_at(s, t0), price_at(s, t1)
+            if p0 is None or p1 is None:
+                continue
+            r = p1 / p0 - 1  # Wertänderung der Basiswährung
+            usd_ret = -r if usd_quote[pair] else r
+            rets.append((usd_ret if usd_long else -usd_ret) - 2 * cost_per_side)
+        if rets:
+            out[d] = sum(rets) / len(rets)
+    return pd.Series(out, dtype=float)
+
+
 def backtest(minutes: pd.DataFrame, tp_mult: float | None) -> pd.Series:
     """Tagesrenditen (UTC-Tag), 0 an Tagen ohne Trade; Wochenenden entfallen."""
     out = {}

@@ -949,3 +949,29 @@ XAUUSD-Minutenkerzen (Bid), 24 h, kostenlos (dukascopy-node).
 - Ziel 1x Range: 2016-2025 -1,1 % p.a. (Alpha t -0,33), 2008-2015 +4,4 % (t 1,34).
 - Ohne Ziel: 2016-2025 +2,2 % p.a. (t 0,95), 2008-2015 +8,9 % (t 1,87)
   -> NICHT BESTANDEN. Gold halten 2016-2025 deutlich besser (Sharpe 0,82).
+
+# Runde 21: Monatsend-Fixing im Devisenmarkt (2026-09-26)
+
+Quellen: Melvin & Prins (2015), "Equity hedging and exchange rates at the London 4 p.m. fix";
+Evans, O'Neill, Rime & Saakvitne (2018), "Fixing the Fix?". Struktureller Fluss: Absicherungs-
+Umschichtungen großer Investoren zum WM/Reuters-Fixing (16:00 London) am letzten Handelstag
+des Monats; Kursbewegung vor dem Fixing, Umkehr danach.
+Daten: Dukascopy-Minuten (Bid) EURUSD, GBPUSD, USDJPY 2008-2025. Uhrzeit 16:00 Europe/London
+(Sommerzeit berücksichtigt). Ereignisse: letzter Werktag (Mo-Fr) jedes Monats.
+- AQ Vor dem Fixing: USD long gegen die 3 Währungen gleichgewichtet von 14:00 bis 16:00 London.
+- AR Nach dem Fixing (Umkehr): USD short von 16:00 bis 20:00 London.
+  -> 2 Versuche (je eine feste Regel, Richtung laut Literatur: USD-Stärke vor dem Monatsend-
+  Fixing, Umkehr danach).
+- Kosten 0,5 bp je Seite und Währungspaar (Spread der Hauptpaare ~0,1-0,3 Pips, CFD aus
+  Deutschland). Kennzahl: mittlere Rendite je Ereignis, t-Wert über die Ereignisse.
+- Bestanden: t >= 2,24 (Bonferroni über 2) in 2016-2025 UND t >= 2 in 2008-2015, gleiches
+  Vorzeichen.
+
+## 2026-09-26 -- Ergebnis Runde 21 (Monatsend-Fixing, Dukascopy EURUSD/GBPUSD/USDJPY)
+
+- AQ USD long 14-16 Uhr London: 2016-2025 Ø -4,94 bp je Monatsende (t -2,62, Vorzeichen
+  ENTGEGEN der Vorab-Richtung), 2008-2015 +1,85 bp (t 0,75) -> NICHT BESTANDEN.
+- AR USD short 16-20 Uhr (Umkehr): -3,48 bp (t -1,84) / -1,77 bp (t -1,02) -> NICHT BESTANDEN;
+  keine Umkehr nach dem Fixing.
+- Wirtschaftliche Größe ohnehin gering (~0,4-0,6 % p.a.). Die Umkehrung der Richtung wäre
+  nachträglich und zählt nicht.
