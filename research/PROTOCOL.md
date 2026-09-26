@@ -1282,3 +1282,29 @@ Survivorship-Artefakt (Alpha halbiert sich mit zeitpunktgenauem Universum, obwoh
 Titel fehlen) und das unberührte Jahr ist negativ. KEIN bestätigter Kandidat. Europa-Momentum bleibt
 der stärkste Aktienbefund (positives Alpha auch zeitpunktgenau 2014-2025), aber nicht signifikant.
 Skripte: research/scripts/r36.py, r37_common.py, r37_wiki.py, r37_r1.py, r37_r2r3.py.
+
+# Runde 38: Gehebelte Indexfonds mit Trendfilter ("LETF + SMA200") (2026-09-27)
+
+Populäre Reddit-/YouTube-Idee; in der EU umsetzbar mit UCITS-Hebel-ETFs (z.B. Amundi Nasdaq-100
+Daily 2x, Xtrackers S&P 500 2x). Simulation: Tagesrendite = L x Indexrendite - (L-1) x (T-Bill +
+0,5 %)/252 - 0,6 %/252 (TER); außerhalb des Markts T-Bill-Zins. Signal: Schluss > SMA200 des
+Index zum Schluss t -> investiert ab t+1. 10 bp je Wechsel. T-Bill: FRED TB3MS (monatlich).
+Indexdaten Yahoo ^GSPC (ab 1928) und ^NDX (ab 1985), nur Kursindex (ohne Dividenden, in beiden
+Armen gleich).
+- BN S&P 500: Entdeckung 1934-1979, Bestätigung 1980-2025-09-19. L {2, 3}.
+- BO Nasdaq-100: Entdeckung 1986-2005, Bestätigung 2006-2025-09-19. L {2, 3}.
+Bestehen (2 Familien): Alpha-t ggü. Index halten >= 2,24 in der Entdeckung UND >= 2 in der
+Bestätigung (beste Variante). Berichtet: CAGR, MaxDD, Sharpe vs. Halten, und L-fach OHNE Filter.
+
+## 2026-09-27 -- Ergebnisse Runde 38 (Alpha-t ggü. Index halten, Entdeckung / Bestätigung)
+
+- BN S&P 500: 2x 10,7 % / 10,8 % p.a. (Halten 5,3 % / 9,4 %), MaxDD -63 % / -53 % (Halten -60 % /
+  -57 %), Sharpe 0,59 / 0,56 (Halten 0,41 / 0,59), t 2,88 / 1,54; 3x 2,56 / 1,11 -> NICHT BESTANDEN.
+- BO Nasdaq-100: 2x 14,6 % / 18,5 % (Halten 13,4 % / 14,7 %), MaxDD -85 % / -50 %, t 0,88 / 1,31;
+  3x 0,68 / 1,25 (MaxDD -95 % 2000-2002) -> NICHT BESTANDEN.
+- Ohne Filter: 2x/3x mit MaxDD -83 % bis -100 %; der Filter verhindert den Totalverlust.
+Einordnung: In allen 8 Zeilen positives Alpha, aber das Sharpe-Verhältnis liegt ab 1980 auf dem
+Niveau des Haltens -- der Filter macht Hebel ÜBERLEBBAR (Drawdown wie 1x bei höherer CAGR), er
+ist keine eigenständige Überrendite pro Risiko. Für einen Anleger, der mehr Rendite bei gleichem
+maximalem Verlust will, ist 2x S&P 500 + SMA200 die ehrlichste Variante (vorgemerkt, kein
+Bestehen). Steuer: jeder Ausstieg realisiert Gewinne (25 % Abgeltungsteuer) -- nicht simuliert.
