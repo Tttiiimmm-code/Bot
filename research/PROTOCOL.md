@@ -892,3 +892,27 @@ Standardkombination (keine eigene Parameterwahl).
 - Ergebnis AN: 2016-2020 14,0 % p.a. (Alpha -2,5 %, t -0,52), 2021-2025 13,8 % p.a. (Alpha
   -0,5 %, t -0,08), Beta 1,22 -> NICHT BESTANDEN. Stabil über beide Zeiträume, aber nur
   Marktrendite mit etwas mehr Risiko.
+
+# Runde 19: Saisonalität einzelner Aktien, niedriges Beta (2026-09-26)
+
+Universum, Kosten (10 bp), nur long, Alpha ggü. SPY wie Runde 13.
+
+- AO Saisonalität (Heston & Sadka 2008): am Monatsende für jede Aktie der Mittelwert ihrer
+  Renditen im KOMMENDEN Kalendermonat aus den Vorjahren (höchstens 5, mindestens 3 Jahre).
+  Die n Aktien mit dem höchsten Wert für einen Monat halten. n {20, 100}.
+  Wegen des Datenbeginns 2016 abweichende Zeiträume: Entdeckung 2019-01 bis 2021-12,
+  Bestätigung 2022-01 bis 2025-09-19. Bestehen: t >= 2,24 / t >= 2.
+- AP Niedriges Beta, nur long (Frazzini & Pedersen 2014 ohne Hebel): Beta ggü. SPY aus den
+  Tagesrenditen der letzten 252 Tage; monatlich die n Aktien mit dem NIEDRIGSTEN Beta.
+  n {20, 100}. Entdeckung 2016-2020, Bestätigung 2021-2025, t >= 2,24 / t >= 2.
+
+## 2026-09-26 -- Ergebnisse Runde 19
+
+- AO Saisonalität: n=20 t 0,14 (2019-2021) / -0,21 (2022-2025); n=100 -0,68 / -0,28
+  -> NICHT BESTANDEN.
+- AP Niedriges Beta: n=20 t 0,36 / -2,05 (2021-2025 -16,1 % p.a., MaxDD -67 %); n=100 0,14 /
+  -1,09 -> NICHT BESTANDEN. Prüfung der Auswahl: Mitte 2021 wählte das naive 252-Tage-Beta
+  Meme-Aktien (AMC, GME, BNGO), deren chaotische Kurse kaum mit dem Markt korrelierten; danach
+  defensive Werte (Clorox, General Mills, Hershey, Goldminen). Das robustere Beta des Originals
+  (5-Jahres-Korrelation) ist mit Daten ab 2016 für die Entdeckung nicht berechenbar; die kaum
+  betroffene Variante n=100 besteht ebenfalls nicht.
