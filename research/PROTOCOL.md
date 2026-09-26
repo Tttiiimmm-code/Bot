@@ -848,3 +848,10 @@ Bestätigung 2021-2025 t >= 2, Alpha ggü. SPY, nur long, 10 bp je Seite).
   n=100 -0,52 / -0,65 -> NICHT BESTANDEN.
 - Gleiches Muster wie Runden 13 und 15: gute Absolutrenditen 2016-2020 durch Beta > 1 im
   Bullenmarkt, kein eigenständiges Alpha, Einbruch 2021-2025.
+
+## 2026-09-26 -- Gesichtet, nicht getestet
+
+- "Good vs Bad COVOL in Crypto" (Pham et al., besprochen von Aligrithm): Schwellen der
+  Hebel-Regel brauchen Rückschau, Kopfzahl (Sharpe 0,56 vs 0,40) aus einer Variante, die der
+  eigenen Deutung des Papiers widerspricht; zudem GARCH-Schätzung über 25 Coins nötig.
+  Kein Versuch gezählt.
