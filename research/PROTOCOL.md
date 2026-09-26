@@ -1262,3 +1262,23 @@ Regel unverändert (12-1, monatlich, Top 20, gleichgewichtet, EUR, 10 bp + 0,5 %
   geladen): Alpha ggü. EW-Universum muss POSITIV sein (nur Vorzeichen; ein Jahr hat keine Macht).
 - R3 Kostenstress 25 bp je Seite: Alpha-t in beiden Zeiträumen berichtet (kein Kriterium).
 - Zusätzlich berichtet: Umschlag p.a., Anteil UK-Titel, Jahresrenditen.
+
+## 2026-09-27 -- Ergebnisse Runde 37 (R2, R3; R1 folgt)
+
+- R3 Kostenstress 25 bp je Seite: Alpha 7,4 % / 6,4 % p.a., t 2,16 / 1,68. Umschlag 12,6x / 13,4x
+  p.a. (beide Seiten gezählt); 30 % der Positionstage UK-Titel.
+- Jahresrenditen Momentum vs. EW: schwächer 2004, 2009 (+22 % vs. +59 %, Momentum-Crash nach der
+  Krise), 2011, 2021, 2022 (-21 % vs. -11 %), 2023; stärker u.a. 2010, 2017, 2020, 2024, 2025.
+- R2 unberührtes Jahr 2025-09-22..2026-09-25 (260 Tage): Momentum +6,5 % (MaxDD -24 %), EW +16,9 %,
+  Alpha -12,8 % p.a. (t -0,60) -> NEGATIV -> R2 NICHT BESTANDEN. (Kontrolle: neu geladene Daten
+  2024-2025 decken sich mit den alten, Korrelation 1,0.)
+- R1 zeitpunktgenaues Universum (198 Wikipedia-Revisionen, Mitgliederlisten ab 2008; 744 historische
+  Mitglieder, davon 292 bei Yahoo nicht auffindbar -- Abdeckung 60-92 % je Jahr):
+  2008-2013 3,0 % p.a. (EW 19,7 %), Alpha 2,2 %, t 0,25; 2014-2025 10,5 % (EW 7,3 %), Alpha 4,3 %,
+  t 1,25 -> R1 NICHT BESTANDEN.
+
+Fazit Runde 36/37: Das Bestehen von Europa-Momentum in Runde 36 war zum großen Teil ein
+Survivorship-Artefakt (Alpha halbiert sich mit zeitpunktgenauem Universum, obwohl auch dort noch
+Titel fehlen) und das unberührte Jahr ist negativ. KEIN bestätigter Kandidat. Europa-Momentum bleibt
+der stärkste Aktienbefund (positives Alpha auch zeitpunktgenau 2014-2025), aber nicht signifikant.
+Skripte: research/scripts/r36.py, r37_common.py, r37_wiki.py, r37_r1.py, r37_r2r3.py.
