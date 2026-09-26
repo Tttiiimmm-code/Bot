@@ -1211,3 +1211,11 @@ Ergebnis Runde 34 (Alpha-t Entdeckung / Bestätigung):
 Befund Runde 33+34: Sowohl die stärksten als auch die schwächsten Altcoins schneiden schlechter ab
 als das Universum -- Extrembeweger verlieren in beide Richtungen (hohe Volatilität, Volatilitäts-
 Abzug), nach Kosten stark negativ. Kein Kurzfrist-Querschnittssignal bei Krypto.
+
+Ergebnis Runde 35 (Alpha-t Entdeckung / Bestätigung):
+- BI Dividendenmonat (Gesamtrendite, ~190 Titel): m-3 -1,59 / -0,52; m-12 -1,40 / -0,18
+  -> NICHT BESTANDEN.
+- BJ Anstieg vor Ex-Tag (~15.000 Ereignisse): K=5 -3,52 / -4,19; K=10 -2,85 / -1,25
+  -> NICHT BESTANDEN. Plausibilitätsprüfung (9.576 Ex-Tage mit Rendite 0,5-5 %, 2017-2024,
+  Überrendite ggü. SPY): Tag -3 +0,03 %, -2 -0,02 %, -1 +0,03 %, Ex-Tag -1,09 % (= Dividende;
+  bestätigt korrekte Ex-Daten), +1 -0,10 %. Kein Vorlauf vorhanden; Verlust = Umschlagskosten.
