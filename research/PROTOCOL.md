@@ -872,3 +872,12 @@ Universum, Plätze, Kosten, Bestehen wie Runde 17.
   Monatlich höchste B/M, n {20, 100}.
 - 2026-09-26: Auswertung von Runde 18 pausiert -- Alpaca-Keys in bottest.env ungültig
   ("unauthorized"), unbereinigte Kurse noch nicht geladen. Noch KEINE Ergebnisse gesehen.
+
+## 2026-09-26 -- Ergebnisse Runde 18 (Value)
+
+- Unbereinigte Kurse (Alpaca RAW) für 2.795 Symbole; Abdeckung E/P 53 %, B/M 71 %.
+- AL E/P: n=20 2016-2020 2,6 % p.a., MaxDD -72 %, Alpha -14,4 % (t -1,37); 2021-2025 10,1 %,
+  Alpha -3,2 % (t -0,43). n=100 -1,13 / -0,41 -> NICHT BESTANDEN.
+- AM B/M: n=20 -0,95 / -0,16 (2016-2020 MaxDD -78 %); n=100 -1,02 / -0,20 -> NICHT BESTANDEN.
+- Spiegelbild von Momentum: Value schwach 2016-2020 ("verlorenes Jahrzehnt", Corona-Crash),
+  besser 2021-2025, aber in keinem Zeitraum über SPY.
