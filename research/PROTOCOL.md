@@ -926,3 +926,26 @@ Universum, Kosten (10 bp), nur long, Alpha ggü. SPY wie Runde 13.
   Historien) und Dukascopy (Devisen/CFD-Ticks). Stooq-CSV per Automatisierung blockiert
   (JS-Prüfung, Download bricht ab); nur seitenweises Auslesen der HTML-Tabellen möglich.
   Dukascopy (Gold 24 h, z.B. für Asien-Range-Ausbruch) als nächster Kandidat notiert.
+
+# Runde 20: Gold-Range-Ausbruch nach der Asien-Sitzung (2026-09-26)
+
+Idee aus r/algotrading ("YouTube, René Balke, range breakout xauusd"); Daten: Dukascopy
+XAUUSD-Minutenkerzen (Bid), 24 h, kostenlos (dukascopy-node).
+- Range = Hoch/Tief von 00:00 bis 06:59 UTC. Ab 07:00 bis 19:59 UTC Stop-Einstieg: Kauf über
+  dem Range-Hoch bzw. Verkauf unter dem Range-Tief; nur der erste ausgelöste Trade je Tag.
+  Stop-Loss an der gegenüberliegenden Range-Grenze. Ausstieg: Variante {Ziel = 1 x Range-Höhe,
+  kein Ziel} und spätestens 20:00 UTC. Wochenenden entfallen.
+- Ausführung auf Minutenbasis: Einstieg zum Stop-Kurs bzw. schlechteren Minuten-Open; Stop und
+  Ziel in derselben Minute -> Stop zählt (konservativ). Kosten 1 bp je Seite (Spread ~0,3 $ bei
+  ~4.000 $ plus Ask-Aufschlag, da Bid-Daten). Long und short (aus Deutschland per Gold-CFD
+  möglich); Positionsgröße: 1 x Kapital, kein Hebel.
+- Zwei unabhängige Zeiträume: Entdeckung 2016-01-01 bis 2025-09-19, Bestätigung 2008-2015.
+  Bestanden: beste Variante in der Entdeckung Alpha-t >= 2,24 (ggü. Gold halten), Bestätigung
+  t >= 2.
+
+## 2026-09-26 -- Ergebnis Runde 20 (Gold-Range-Ausbruch, Dukascopy)
+
+- 7,45 Mio. Minutenkerzen 2008-01 bis 2025-09; 2.385 Trades (2016-2025), 1.938 (2008-2015).
+- Ziel 1x Range: 2016-2025 -1,1 % p.a. (Alpha t -0,33), 2008-2015 +4,4 % (t 1,34).
+- Ohne Ziel: 2016-2025 +2,2 % p.a. (t 0,95), 2008-2015 +8,9 % (t 1,87)
+  -> NICHT BESTANDEN. Gold halten 2016-2025 deutlich besser (Sharpe 0,82).
