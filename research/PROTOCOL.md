@@ -1157,3 +1157,22 @@ Ergebnis Runde 31 (Alpha-t Entdeckung / Bestätigung):
 - BA konsistentes Momentum: n=20 +25,4 % / +22,3 % p.a., t 1,16 / 0,66; n=100 (nur 16-19 % investiert,
   zu wenige Kandidaten) 0,90 / 0,66 -> NICHT BESTANDEN.
 - BB Frog-in-the-Pan: n=20 0,98 / -0,59; n=100 1,09 / -0,95 -> NICHT BESTANDEN.
+
+# Runde 32: S&P-500-Indexänderungen (2026-09-27)
+
+Daten: Änderungstabelle aus Wikipedia "List of S&P 500 companies" (Revision 2025-12-23, 388 Zeilen,
+data_cache/sp500_changes.csv), Kurse Alpaca-Tagespanel (nur heute noch vorhandene Symbole;
+Survivorship-Verzerrung zugunsten der Strategie, v.a. bei Streichungen). Einstieg zum Schluss des
+letzten Handelstags VOR dem Stichtag (dann handeln Indexfonds), H Handelstage halten, je Ereignis
+10 % Gewicht, Summe höchstens 100 % (sonst anteilig gekürzt), 10 bp je Seite, Alpha ggü. SPY.
+Entdeckung 2016-2020, Bestätigung 2021-2025-09-19. Bestehen (2 Familien): beste Variante
+Entdeckung t >= 2,24 UND Bestätigung t >= 2.
+- BC Streichungs-Erholung: gestrichene Titel ohne Übernahme/Fusion/Abspaltung/Insolvenz (Grund
+  enthält nicht acqui|merg|spin|spun|bankrupt|private|split|reorgan), H {20, 60}.
+- BD Aufnahme-Drift: neu aufgenommene Titel, H {20, 60}.
+
+Ergebnis Runde 32 (Alpha-t Entdeckung / Bestätigung; 63 Streichungen, 163 Aufnahmen im Panel):
+- BC Streichungs-Erholung: H=20 0,46 / -1,99; H=60 0,44 / -0,80 -> NICHT BESTANDEN (trotz
+  Survivorship-Vorteil).
+- BD Aufnahme-Drift: H=20 0,31 / -2,17; H=60 0,20 / -1,03 -> NICHT BESTANDEN. Nach Aufnahme eher
+  Rückgang (bekannter Umkehreffekt), long-only nicht nutzbar.
