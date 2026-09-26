@@ -774,3 +774,29 @@ nur mit t >= 2,24 (2 Varianten) bzw. 2,5 (4 Varianten, Bonferroni) dort UND t >=
 
 - AF IEF 3T: -3,10 % p.a. (IEF halten -1,94 %), Alpha -2,41 % p.a., t -1,06 -> NICHT BESTANDEN.
   Im ungesehenen Jahr negativ; der Auktionseffekt ist damit nicht bestätigt.
+
+# Runde 15: Eigenständige Recherche per Browser (2026-09-26)
+
+Quellen: Quantocracy (Aggregator von Quant-Blogs). Gelesen u.a.:
+- Quanter Lab, "The overnight gain is real, no trade keeps it" (2026): Overnight-Prämie real,
+  aber reines Overnight-Halten verdient schon vor Kosten weniger als Halten; zwei NightShares-
+  ETFs (2022) nach 14 Monaten geschlossen, beide hinter ihrem Index. Relevant für den
+  Overnight-Paper-Bot: dessen "Alpha" stammt aus geringem Beta, nicht aus höherer Rendite.
+- Aligrithm zu Avramov, Kaplanski & Subrahmanyam: Moving Average Distance (MA21/MA200),
+  Alpha 9,05 % p.a. (t 3,02), vollständig auf der Long-Seite; Korrelation 0,58 mit Momentum.
+
+## Vorab-Registrierung: AG Moving Average Distance
+
+- Universum wie Runde 13 (Top 1000, Kurs > 5 $, ohne Fonds, inkl. delisteter Titel).
+- Monatlich die Aktien mit dem höchsten MRAT = SMA21 / SMA200 kaufen, gleichgewichtet bis
+  zum nächsten Monatsende. Varianten {Top 100 (~oberstes Dezil), Top 20 (Kontogröße)} -> 2.
+- Nur long, Kosten 10 bp je Seite. Bestehen: Entdeckung 2016-2020 t >= 2,24, Bestätigung
+  2021-2025 t >= 2, Alpha ggü. SPY.
+
+## 2026-09-26 -- Ergebnis AG (Moving Average Distance)
+
+- Top 100: 2016-2020 24,1 % p.a., Alpha 8,9 % (t 1,12); 2021-2025 5,8 % p.a., Alpha -6,3 %
+  (t -0,58), MaxDD -44 %.
+- Top 20: 2016-2020 30,4 % p.a. (t 1,14); 2021-2025 -17,7 % p.a., MaxDD -85 % (t -1,31)
+  -> NICHT BESTANDEN. Gleiches Muster wie Runde 13: Momentum-/Trend-Aktienauswahl stark im
+  Wachstums-Bullenmarkt 2016-2020, Einbruch ab 2021.
