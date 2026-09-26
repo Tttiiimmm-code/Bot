@@ -76,6 +76,57 @@ def low_volatility(close: pd.DataFrame) -> pd.DataFrame:
     return close.pct_change(fill_method=None).rolling(63, min_periods=50).std()
 
 
+# ------------------------------------------------------------ Runde 13 (Swing mit Einzelaktien)
+
+def slot_weights(close: pd.DataFrame, entry: pd.DataFrame, exit_: pd.DataFrame, rank: pd.DataFrame,
+                 max_positions: int = 20, stop: float | None = None, max_hold: int = 126) -> pd.DataFrame:
+    """Konto mit festen Plätzen: je Position 1/max_positions des Kapitals, freie
+    Plätze Cash. Ausstieg zum Schluss bei exit_, Stop (Schluss <= Einstieg x
+    (1 - stop)), Haltedauer max_hold oder fehlendem Kurs. Neue Einstiege nach
+    `rank` (höchster zuerst), solange Plätze frei sind."""
+    C = close.to_numpy(float)
+    E, X, R = entry.to_numpy(bool), exit_.to_numpy(bool), rank.to_numpy(float)
+    W = np.zeros(C.shape)
+    held: dict[int, tuple[int, float]] = {}  # Spalte -> (Einstiegstag, Einstiegskurs)
+    w = 1.0 / max_positions
+    for t in range(C.shape[0]):
+        for j in list(held):
+            t0, px = held[j]
+            c = C[t, j]
+            if (not np.isfinite(c) or X[t, j] or t - t0 >= max_hold
+                    or (stop is not None and c <= px * (1 - stop))):
+                del held[j]
+        free = max_positions - len(held)
+        if free > 0:
+            cand = [j for j in np.flatnonzero(E[t] & np.isfinite(C[t])) if j not in held]
+            if cand:
+                order = sorted(cand, key=lambda j: -np.nan_to_num(R[t, j], nan=-np.inf))
+                for j in order[:free]:
+                    held[j] = (t, C[t, j])
+        for j in held:
+            W[t, j] = w
+    return pd.DataFrame(W, index=close.index, columns=close.columns)
+
+
+def minervini_entry(close: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
+    """AB: Trendvorlage + frisches 20-Tage-Schlusshoch (Vortag noch keins) mit
+    Volumen > 1,5 x Ø50."""
+    s50, s150, s200 = (close.rolling(n, min_periods=n).mean() for n in (50, 150, 200))
+    hi252, lo252 = close.rolling(252, min_periods=200).max(), close.rolling(252, min_periods=200).min()
+    template = ((close > s50) & (s50 > s150) & (s150 > s200) & (s200 > s200.shift(21))
+                & (close >= 1.25 * lo252) & (close >= 0.75 * hi252))
+    breakout = close >= close.rolling(20).max()
+    fresh = close.shift(1) < close.shift(1).rolling(20).max()
+    vol_ok = volume > 1.5 * volume.rolling(50, min_periods=40).mean()
+    return template & breakout & fresh & vol_ok
+
+
+def pullback_entry(close: pd.DataFrame) -> pd.DataFrame:
+    """AC: im Aufwärtstrend erstmals unter SMA50 (Vortag darüber)."""
+    s50, s200 = close.rolling(50, min_periods=50).mean(), close.rolling(200, min_periods=200).mean()
+    return (close > s200) & (s50 > s200) & (close < s50) & (close.shift(1) >= s50.shift(1))
+
+
 # ------------------------------------------------------------ Runde 12 (r/algotrading)
 
 def _entry_exit(entry: np.ndarray, exit_: np.ndarray) -> np.ndarray:

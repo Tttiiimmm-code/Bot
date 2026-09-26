@@ -79,6 +79,29 @@ def test_double7_needs_uptrend_and_seven_day_low():
     assert pos.iloc[209] == 0 and pos.iloc[212] == 1 and pos.iloc[-1] == 0
 
 
+def test_slot_weights_respects_max_positions_rank_stop_and_hold():
+    from tradingbot.research.anomalies import slot_weights
+
+    idx = days(6)
+    close = pd.DataFrame({"A": [10, 10, 9, 9, 9, 9.0], "B": [10.0] * 6, "C": [10.0] * 6}, index=idx)
+    entry = pd.DataFrame(False, index=idx, columns=close.columns)
+    entry.iloc[0] = [True, True, True]
+    no_exit = pd.DataFrame(False, index=idx, columns=close.columns)
+    rank = pd.DataFrame({"A": 3.0, "B": 2.0, "C": 1.0}, index=idx)
+    w = slot_weights(close, entry, no_exit, rank, max_positions=2, stop=0.08, max_hold=3)
+    assert w.iloc[0].tolist() == [0.5, 0.5, 0.0]   # nur 2 Plätze, A und B nach Rang
+    assert w.iloc[2].tolist() == [0.0, 0.5, 0.0]   # A: -10 % -> Stop
+    assert w.iloc[3].tolist() == [0.0, 0.0, 0.0]   # B: Haltedauer 3 erreicht
+
+
+def test_pullback_entry_first_close_below_sma50_in_uptrend():
+    from tradingbot.research.anomalies import pullback_entry
+
+    up = list(np.linspace(50, 150, 260)) + [120.0]
+    e = pullback_entry(pd.DataFrame({"X": up}, index=days(len(up))))
+    assert e["X"].iloc[-1] and not e["X"].iloc[-2]
+
+
 def test_parse_fomc_pages():
     from datetime import date
 

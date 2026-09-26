@@ -683,3 +683,38 @@ nicht als Beleg. Einziger noch ungesehener Zeitraum für diese ETFs: nach 2025-0
   -> NICHT BESTANDEN. Der Effekt hat sich umgekehrt.
 - Bekannte Einschränkung: Ticker->CIK teils über die aktuelle SEC-Liste (umbenannte Ticker
   können falsch zugeordnet sein); betrifft nur einen Teil der Symbole.
+
+# Runde 13: Swing-Trading mit Einzelaktien, 2 Wochen bis 6 Monate (2026-09-26)
+
+Auf Frage des Nutzers. Umsetzbar für ~20.000 EUR aus Deutschland: höchstens 20 gleichzeitige
+Positionen (je 1/20 des Kapitals, freie Plätze = Cash), nur long, Kosten 10 bp je Seite,
+Stresstest 25 bp. Universum: Top 1000 nach Liquidität, Kurs > 5 $, ohne Fonds/ETFs, inkl.
+delisteter Titel. Signal und Ausführung zum Schlusskurs. Mehrere Signale am selben Tag:
+Rangfolge nach 6-Monats-Rendite (stärkste zuerst).
+Bestehen wie Runde 11: je Familie die Variante mit dem höchsten Alpha-t (ggü. SPY) in der
+Entdeckung 2016-2020 wählen; bestanden nur mit t >= 2,24 dort UND t >= 2 in der Bestätigung
+2021-2025.
+
+## Vorab-Registrierung
+
+- AA 52-Wochen-Hoch (George & Hwang 2004): monatlich die 20 Aktien mit dem höchsten Verhältnis
+  Schluss / 252-Tage-Hoch (Schluss), gleichgewichtet bis zum nächsten Monatsende.
+  Varianten {nur Aktien über SMA200, ohne Filter} -> 2 Versuche.
+- AB Minervini-Trendvorlage mit Ausbruch: Schluss > SMA50 > SMA150 > SMA200, SMA200 höher als
+  vor 21 Tagen, Schluss >= 1,25 x 252-Tage-Tief und >= 0,75 x 252-Tage-Hoch; Einstieg bei neuem
+  20-Tage-Schlusshoch mit Volumen > 1,5 x Ø50. Ausstieg: Schluss 8 % unter Einstieg oder
+  Haltedauer 126 Tage oder Varianten {Schluss < SMA50, Schluss < SMA20} -> 2 Versuche.
+- AC Rücksetzer im Aufwärtstrend: Schluss > SMA200 und SMA50 > SMA200; Einstieg, wenn der
+  Schluss erstmals unter SMA50 fällt (Vortag darüber). Ausstieg: neues 20-Tage-Schlusshoch,
+  Schluss < SMA200 oder Haltedauer {20, 60} Tage -> 2 Versuche.
+
+## 2026-09-26 -- Ergebnisse Runde 13 (Swing mit Einzelaktien)
+
+- AA 52-Wochen-Hoch: 6,7-10,3 % p.a., Alpha t -0,39 bis 0,39 in beiden Zeiträumen
+  -> NICHT BESTANDEN.
+- AB Minervini: Ausstieg<SMA50 2016-2020 16,7 % p.a. (Alpha 10,2 %, t 1,19), 2021-2025
+  -4,7 % p.a., MaxDD -51 % (t -1,33); Ausstieg<SMA20 ähnlich -> NICHT BESTANDEN.
+- AC Rücksetzer: max 60T 2016-2020 25,0 % p.a. (t 1,26), 2021-2025 1,9 % p.a., MaxDD -49 %
+  (t -0,86) -> NICHT BESTANDEN.
+- Muster: Trend-/Ausbruchs-Swing lief 2016-2020 (starker Wachstums-Bullenmarkt) gut und brach
+  2021-2025 (Bärenmarkt 2022, Rotationen) ein; kein stabiles Alpha.

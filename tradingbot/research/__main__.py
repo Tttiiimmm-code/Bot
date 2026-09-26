@@ -588,6 +588,72 @@ SCAN_FX = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCHF=X", "USDCAD=X
 SCAN_CRYPTO = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "TRXUSDT", "ETCUSDT"]
 
 
+def cmd_swing_stocks() -> None:
+    """Runde 13 (research/PROTOCOL.md): Swing-Trading mit Einzelaktien, 20 Plätze,
+    nur long, 10 bp je Seite, zwei Zeiträume."""
+    import re
+    from datetime import date as _date
+
+    from tradingbot.research import anomalies, crypto, swing
+    from tradingbot.research.universe import UNIVERSE_DIR, load_daily_panel
+
+    disc, conf = (_date(2016, 1, 1), _date(2020, 12, 31)), (_date(2021, 1, 1), _date(2025, 9, 19))
+    assets = pd.read_pickle(UNIVERSE_DIR / "assets.pkl")
+    funds = set(assets.loc[assets["name"].fillna("").str.contains(re.compile(_FUND_NAME, re.I)), "symbol"])
+    panel = load_daily_panel()
+    panel = panel[panel.index.get_level_values("date") < HOLDOUT_START]
+    bench = panel.xs("SPY", level="symbol")["close"].pct_change().dropna()
+    stocks = panel[~panel.index.get_level_values("symbol").isin(funds)]
+    _, closes, mask = swing.reversal_matrices(stocks, universe_size=1000)
+    volume = stocks["volume"].unstack("symbol").reindex(index=closes.index, columns=closes.columns)
+    rank = closes / closes.shift(126) - 1
+    s20, s50, s200 = (closes.rolling(n, min_periods=n).mean() for n in (20, 50, 200))
+
+    variants = {}
+    score = closes / closes.rolling(252, min_periods=200).max()
+    variants["AA 52W-Hoch +SMA200"] = anomalies.cross_section_weights(closes, mask & (closes > s200), score, 20, True)
+    variants["AA 52W-Hoch ohne Filter"] = anomalies.cross_section_weights(closes, mask, score, 20, True)
+    entry_ab = anomalies.minervini_entry(closes, volume) & mask
+    for name, sma in (("SMA50", s50), ("SMA20", s20)):
+        variants[f"AB Minervini Ausstieg<{name}"] = anomalies.slot_weights(
+            closes, entry_ab, closes < sma, rank, stop=0.08, max_hold=126)
+    entry_ac = anomalies.pullback_entry(closes) & mask
+    exit_ac = (closes >= closes.rolling(20).max()) | (closes < s200)
+    for hold in (20, 60):
+        variants[f"AC Rücksetzer max {hold}T"] = anomalies.slot_weights(
+            closes, entry_ac, exit_ac, rank, stop=None, max_hold=hold)
+
+    def sl(x, p):
+        return x[(x.index >= p[0]) & (x.index <= p[1])]
+
+    print("Variante                    Zeitraum     p.a.    Sharpe  SPY-Sharpe  MaxDD   Alpha p.a.  t-Wert  "
+          "Ø Pos.  t@25bp")
+    table = {}
+    for label, w in variants.items():
+        res = crypto.run_weights(w, closes, 0.0010, "swing_stocks").daily_returns
+        stress = crypto.run_weights(w, closes, 0.0025, "swing_stocks").daily_returns
+        npos = (w > 0).sum(axis=1)
+        row = {}
+        for name, p in (("Entdeckung", disc), ("Bestätigung", conf)):
+            r, b = sl(res, p), sl(bench, p)
+            m, mb = compute_metrics(BacktestResult(label, r)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(r, b)
+            _, t_s, _ = swing.alpha_vs_benchmark(sl(stress, p), b)
+            row[name] = t_a
+            print(f"{label:27s} {name:11s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:9.2f}  {m.max_drawdown:6.1%}"
+                  f"  {alpha:9.2%}  {t_a:6.2f}  {sl(npos, p).mean():6.1f}  {t_s:6.2f}")
+            if name == "Entdeckung":
+                _log_trial("swing_stocks", "top1000", {"variant": label}, CostModel(slippage_bps=10.0), 1.0,
+                           BacktestResult(label, r))
+        table[label] = row
+    for fam in ("AA", "AB", "AC"):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["Entdeckung"])
+        ok = table[best]["Entdeckung"] >= 2.24 and table[best]["Bestätigung"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t Entdeckung {table[best]['Entdeckung']:.2f}, "
+              f"Bestätigung {table[best]['Bestätigung']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+
 def cmd_reddit() -> None:
     """Runde 12 (research/PROTOCOL.md): Ideen aus r/algotrading, zwei Zeiträume."""
     from datetime import date as _date
@@ -1027,6 +1093,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("scan", help="Runde 10: systematischer Scan aller Regeln auf allen Assets.")
     sub.add_parser("edgar", help="Runde 11: SEC EDGAR -- Insiderkäufe und Earnings-Drift.")
     sub.add_parser("reddit", help="Runde 12: Ideen aus r/algotrading.")
+    sub.add_parser("swing-stocks", help="Runde 13: Swing-Trading mit Einzelaktien.")
     r9 = sub.add_parser("round9", help="Runde 9: Pre-FOMC, Short-Vola, Paarhandel (Familien U-W).")
     r9.add_argument("--train-days", type=int, default=504)
     r9.add_argument("--test-days", type=int, default=126)
@@ -1096,6 +1163,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "reddit":
             cmd_reddit()
+            return
+        if args.command == "swing-stocks":
+            cmd_swing_stocks()
             return
         if args.command == "round9":
             cmd_round9(args.train_days, args.test_days)
