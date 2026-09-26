@@ -881,3 +881,14 @@ Universum, Plätze, Kosten, Bestehen wie Runde 17.
 - AM B/M: n=20 -0,95 / -0,16 (2016-2020 MaxDD -78 %); n=100 -1,02 / -0,20 -> NICHT BESTANDEN.
 - Spiegelbild von Momentum: Value schwach 2016-2020 ("verlorenes Jahrzehnt", Corona-Crash),
   besser 2021-2025, aber in keinem Zeitraum über SPY.
+
+## Vorab-Registrierung: AN Value + Momentum kombiniert (Asness, Moskowitz & Pedersen 2013)
+
+Hinweis: nach Sicht der Einzelergebnisse registriert, aber als in der Literatur vorgegebene
+Standardkombination (keine eigene Parameterwahl).
+- 50 % Kapital: Top 100 nach B/M (wie AM), 50 % Kapital: Top 100 nach 12-1-Momentum (wie
+  Runde 8 S, Universum Top 1000), jeweils monatlich, gleichgewichtet. 1 Variante.
+- Bestehen: Entdeckung 2016-2020 t >= 2, Bestätigung 2021-2025 t >= 2 (Alpha ggü. SPY).
+- Ergebnis AN: 2016-2020 14,0 % p.a. (Alpha -2,5 %, t -0,52), 2021-2025 13,8 % p.a. (Alpha
+  -0,5 %, t -0,08), Beta 1,22 -> NICHT BESTANDEN. Stabil über beide Zeiträume, aber nur
+  Marktrendite mit etwas mehr Risiko.
