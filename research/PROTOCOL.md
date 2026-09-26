@@ -1308,3 +1308,24 @@ Niveau des Haltens -- der Filter macht Hebel ÜBERLEBBAR (Drawdown wie 1x bei h�
 ist keine eigenständige Überrendite pro Risiko. Für einen Anleger, der mehr Rendite bei gleichem
 maximalem Verlust will, ist 2x S&P 500 + SMA200 die ehrlichste Variante (vorgemerkt, kein
 Bestehen). Steuer: jeder Ausstieg realisiert Gewinne (25 % Abgeltungsteuer) -- nicht simuliert.
+
+# Runde 39: Kalendereffekte an europäischen Indizes (2026-09-27)
+
+Motivation: Monatswechsel-Effekt in 31 von 35 Ländern (McConnell & Xu 2008); Halloween-Effekt
+international stärker als in den USA (Bouman & Jacobsen 2002). Daten Yahoo ^GDAXI (Performance-
+index inkl. Dividenden), ^FCHI, ^FTSE, ^STOXX50E (Kursindizes), gleichgewichtet gepoolt; außerhalb
+des Markts 0 % (konservativ). 10 bp je Seite. Entdeckung ab gemeinsamem Datenbeginn bis 2005,
+Bestätigung 2006-2025-09-19. Alpha-t ggü. gleichgewichtetem Halten der 4 Indizes. Bestehen
+(2 Familien): t >= 2,24 Entdeckung UND >= 2 Bestätigung.
+- BP Monatswechsel: investiert vom letzten Handelstag des Monats (Kauf zum Schluss des vorletzten)
+  bis Schluss des 3. Handelstags des Folgemonats.
+- BQ Halloween: investiert November bis April, Mai bis Oktober Cash.
+Änderung VOR jeder Auswertung (Programmlauf brach ohne Ergebnis ab): ^STOXX50E hat bei Yahoo erst
+Daten ab 2007-03-30, "gemeinsamer Datenbeginn" wäre 2007. Stattdessen: Pool der jeweils verfügbaren
+Indizes (gleichgewichtet, fehlende ausgelassen), Entdeckung 1990-03-01 bis 2005.
+
+Ergebnis Runde 39 (Alpha-t ggü. gleichgewichtetem Halten, Entdeckung 1990-2005 / Bestätigung 2006-2025):
+- BP Monatswechsel: +3,9 % / -1,3 % p.a. (19 % investiert), t 1,42 / -1,23 -> NICHT BESTANDEN.
+- BQ Halloween: +8,6 % / +4,9 % p.a. (Halten 6,2 % / 4,1 %), MaxDD -32 % / -37 % (Halten -63 % /
+  -55 %), t 2,57 / 1,27 -> NICHT BESTANDEN. Positiv in beiden Zeiträumen bei halber Marktzeit,
+  nach Veröffentlichung (2002) aber nicht signifikant -- gleiches Muster wie USA (Runde 8 Q).
