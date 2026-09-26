@@ -1055,3 +1055,30 @@ Je Familie 1 feste Regel, Yahoo inkl. Dividenden, Kosten 1 bp je Seite + SEC-Geb
   Q4 Januar-Nebenwerte 0,67 / -1,01; Q5 Paired Switching 1,37 / -0,44; Q6 Rohöl -0,13 / 0,22;
   Q7 Umkehr Länder-ETFs 4,98 (Alpha 12,9 % p.a.) / -0,34 -> alle NICHT BESTANDEN.
   Q7: stark bis 2015, danach verschwunden (gleiches Muster wie IBS/Double 7).
+
+# Runde 26: Quantpedia-Aktienanomalien (2026-09-27)
+
+Universum Top 1000 (ohne Fonds), nur long, 10 bp je Seite, Alpha ggü. SPY. Je Familie n {20, 100};
+Bestehen: beste Variante in der Entdeckung t >= 2,24 UND Bestätigung t >= 2.
+- AS Residual Momentum (Blitz, Huij & Martens 2011): Beta ggü. SPY aus 252 Tagen, Summe der
+  Residualrenditen t-252..t-21 geteilt durch deren Std. Monatlich höchste Werte.
+  Entdeckung 2017-2020 (Warm-up), Bestätigung 2021-2025.
+- AT Earnings-Announcement-Premium (Frazzini & Lamont 2007): erwarteter nächster Termin =
+  letzte 8-K-Item-2.02-Meldung + 91 Tage; Aktie von 5 Handelstagen vor bis 1 Tag nach dem
+  erwarteten Termin halten (nur Information aus der Vergangenheit), alle aktiven gleichgewichtet.
+  Varianten {5, 10} Tage Vorlauf statt n. Entdeckung 2016-2020, Bestätigung 2021-2025.
+- AU Accrual-Anomalie (Sloan 1996): (Jahresüberschuss - operativer Cashflow) / Bilanzsumme aus
+  Jahres-Frames; verfügbar ab 30. April des Folgejahres. Monatlich NIEDRIGSTE Accruals.
+- AV ROA-Effekt: Jahresüberschuss / Bilanzsumme (Jahresende), verfügbar ab 30. April des
+  Folgejahres. Monatlich HÖCHSTE ROA. AU/AV: Entdeckung 2016-2020, Bestätigung 2021-2025.
+
+## 2026-09-27 -- Ergebnisse Runde 26 (Alpha-t Entdeckung / Bestätigung)
+
+- AS Residual Momentum: n=20 +24,7 % / +25,3 % p.a., Alpha +10,2 % / +12,1 % (t 1,04 / 1,01);
+  n=100 1,07 / 0,13 -> NICHT BESTANDEN. Einziges Aktiensignal mit positivem Alpha in BEIDEN
+  Zeiträumen, aber zu volatil für Signifikanz (vorgemerkt).
+- AT Earnings-Premium: 5 Tage -2,07 / -2,21; 10 Tage -1,69 / -2,04 (signifikant negativ;
+  vermutlich Umschlagskosten durch ständige Neugewichtung vieler kurzer Positionen und
+  ungenaue Terminschätzung) -> NICHT BESTANDEN.
+- AU Accruals: n=100 1,34 / -1,33 (n=20 2021-2025 -11,7 % p.a., MaxDD -80 %) -> NICHT BESTANDEN.
+- AV ROA: n=100 0,33 / -1,11 -> NICHT BESTANDEN.

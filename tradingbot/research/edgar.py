@@ -150,10 +150,11 @@ def event_day(accepted: pd.Timestamp, trading_days) -> date | None:
 
 # ------------------------------------------------------------ XBRL-Fundamentaldaten (Runde 17)
 
-def xbrl_frame(concept: str, year: int, quarter: int, instant: bool, base: Path = EDGAR_DIR,
+def xbrl_frame(concept: str, year: int, quarter: int | None, instant: bool, base: Path = EDGAR_DIR,
                taxonomy: str = "us-gaap", unit: str = "USD") -> pd.DataFrame:
-    """Alle Firmen für ein Kalenderquartal: Spalten cik, end (Datum), val."""
-    period = f"CY{year}Q{quarter}" + ("I" if instant else "")
+    """Alle Firmen für ein Kalenderquartal (quarter=None: Kalenderjahr, nur
+    Zeitraumwerte): Spalten cik, end (Datum), val."""
+    period = f"CY{year}" + (f"Q{quarter}" if quarter else "") + ("I" if instant else "")
     path = base / "frames" / f"{concept}_{period}.pkl"
     if path.exists():
         return pd.read_pickle(path)
