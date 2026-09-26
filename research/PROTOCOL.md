@@ -1176,3 +1176,38 @@ Ergebnis Runde 32 (Alpha-t Entdeckung / Bestätigung; 63 Streichungen, 163 Aufna
   Survivorship-Vorteil).
 - BD Aufnahme-Drift: H=20 0,31 / -2,17; H=60 0,20 / -1,03 -> NICHT BESTANDEN. Nach Aufnahme eher
   Rückgang (bekannter Umkehreffekt), long-only nicht nutzbar.
+
+# Runde 33: Querschnitts-Umkehr bei Kryptowährungen (2026-09-27)
+
+Binance-Spot-Tageskerzen (UTC, nur heute noch gelistete Paare -> Survivorship-Verzerrung zugunsten
+der Strategie), Universum Top-N nach 30-Tage-Quote-Volumen (crypto.universe_mask), nur long,
+0,10 % je Seite. Benchmark: gleichgewichtetes Universum (täglich neu gewichtet), Alpha-t per
+Regression. Entdeckung 2018-2021, Bestätigung 2022-2025-09-21. Bestehen (2 Familien): beste
+Variante Entdeckung t >= 2,24 UND Bestätigung t >= 2.
+- BE Wochen-Umkehr: jeden Sonntag zum Schluss die 5 schwächsten der letzten 7 Tage, 7 Tage halten;
+  Universum Top {20, 50}.
+- BF Tages-Umkehr: täglich die 5 schwächsten des Vortags aus Top 20 bzw. Top 50, 1 Tag halten.
+
+Ergebnis Runde 33 (Alpha-t ggü. gleichgewichtetem Universum, Entdeckung / Bestätigung):
+- BE Wochen-Umkehr: Top20 -2,49 / -1,91; Top50 -2,29 / -1,68 -> NICHT BESTANDEN.
+- BF Tages-Umkehr: Top20 -3,91 / -4,85; Top50 -4,21 / -5,16 -> NICHT BESTANDEN.
+Befund: Verlierer fallen weiter (auch über einen Tag), trotz Survivorship-Vorteil. Die Umkehrung
+(Gewinner kaufen) ist ein NEUER Test und wird in Runde 34 separat vorregistriert. (Technik:
+btc_1h.pkl aus data_cache/crypto nach data_cache/crypto_hourly verschoben, da load_panel alle
+.pkl im Verzeichnis liest.)
+
+# Runde 34: Kurzfrist-Momentum bei Kryptowährungen (2026-09-27)
+
+Gleiche Daten, Kosten, Zeiträume und Benchmark wie Runde 33. Zusätzlich Kosten-Stresstest 0,20 %.
+Bestehen (2 Familien, zusätzlich Runde 33 bereits verbraucht): beste Variante Entdeckung t >= 2,5
+UND Bestätigung t >= 2, UND Bestätigungs-CAGR > gleichgewichtetes Universum UND > BTC halten.
+- BG Tages-Gewinner: täglich die 5 stärksten des Vortags aus Top {20, 50}, 1 Tag halten.
+- BH Wochen-Gewinner: jeden Sonntag die 5 stärksten der letzten 7 Tage aus Top {20, 50}, 7 Tage.
+
+Ergebnis Runde 34 (Alpha-t Entdeckung / Bestätigung):
+- BG Tages-Gewinner: Top20 -0,97 / -3,73; Top50 -1,81 / -4,57 -> NICHT BESTANDEN.
+- BH Wochen-Gewinner: Top20 -0,66 / 0,36; Top50 0,71 / -0,93 (Bestätigung -62,5 % p.a., BTC +27,8 %)
+  -> NICHT BESTANDEN.
+Befund Runde 33+34: Sowohl die stärksten als auch die schwächsten Altcoins schneiden schlechter ab
+als das Universum -- Extrembeweger verlieren in beide Richtungen (hohe Volatilität, Volatilitäts-
+Abzug), nach Kosten stark negativ. Kein Kurzfrist-Querschnittssignal bei Krypto.
