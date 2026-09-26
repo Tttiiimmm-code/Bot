@@ -349,3 +349,5 @@ logged_at,family,symbol,params,slippage_bps,max_exposure,start,end,days,sharpe,d
 2026-09-27T00:24:10,country_etfs,17 Laender,"{""variant"": ""AW Paarhandel Laender-ETFs""}",1.0,1.0,2016-01-04,2025-09-19,2443,0.4325,0.027246,0.01992,-0.11212,0,0.0
 2026-09-27T00:24:10,country_etfs,17 Laender,"{""variant"": ""AX Laender-Saisonalitaet""}",1.0,1.0,2016-01-04,2025-09-19,2443,0.0,0.0,0.0,0.0,0,0.0
 2026-09-27T00:24:30,country_etfs,17 Laender,"{""variant"": ""AX Laender-Saisonalitaet""}",1.0,1.0,2016-01-04,2025-09-19,2443,0.4117,0.025938,0.06459,-0.42344,0,0.0
+2026-09-27T00:25:08,crypto_timing,BTCUSDT,"{""variant"": ""AY Wochenende""}",10.0,1.0,2023-01-01,2026-09-25,1364,0.1094,0.005725,0.00441,-0.34041,0,0.0
+2026-09-27T00:25:08,crypto_timing,BTCUSDT,"{""variant"": ""AZ Funding-Gegensignal""}",10.0,1.0,2023-01-01,2026-09-25,1364,0.8677,0.045417,0.2647,-0.32918,0,0.0

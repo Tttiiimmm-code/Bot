@@ -1125,3 +1125,18 @@ Universum: EWJ, EWG, EWU, EWQ, EWC, EWA, EWH, EWS, EWZ, EWW, EWY, EWT, EWI, EWP,
 - AX Länder-Saisonalität: erster Lauf ungültig (Programmfehler: Gewichte wurden wegen
   "chained assignment" nicht gesetzt, 0 Positionen), korrigiert und neu gerechnet:
   vor 2016 t -0,45, 2016-2025 t -1,09 -> NICHT BESTANDEN.
+
+# Runde 30: Krypto-Wochenende, Funding als Gegensignal (2026-09-27)
+
+BTC (Binance, Tagesschluss UTC), Kosten 0,10 % je Seite, Benchmark BTC halten, 365 Tage.
+Zeiträume: 2020-01 bis 2022-12 und 2023-01 bis heute (Funding erst ab 2019-09). Bestehen (2
+Familien): t >= 2,24 im jüngeren UND t >= 2 im älteren Zeitraum.
+- AY Wochenende: BTC nur für die Renditen von Samstag und Sonntag halten (Kauf Freitag-Schluss,
+  Verkauf Sonntag-Schluss).
+- AZ Funding-Gegensignal: BTC am Folgetag halten, wenn das Ø-Funding der letzten 7 Tage unter
+  seinem Median der letzten 365 Tage liegt, sonst Cash.
+
+Ergebnis Runde 30:
+- AY Wochenende: 2020-2022 -13,9 % p.a., Alpha t -1,30; 2023-heute +0,4 %, t -0,63 -> NICHT BESTANDEN.
+- AZ Funding-Gegensignal: 2020-2022 +11,0 % (BTC 38 %), t -0,41; 2023-heute +26,5 % (BTC 55 %),
+  t 0,08 -> NICHT BESTANDEN. Funding enthält keine verwertbare Information über die nächste Tagesrendite.
