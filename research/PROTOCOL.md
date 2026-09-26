@@ -824,3 +824,27 @@ beste Variante in 2016-2025 mit t >= 2,24 bei 2 Varianten bzw. 2 bei 1 Variante,
 - AI Airlines vor Feiertagen (Feiertage selbst berechnet: Neujahr, Memorial Day, 4. Juli, Labor
   Day, Thanksgiving, Weihnachten): vor 2016 Alpha -2,96 % (t -1,28), 2016-2025 +5,77 % (t 1,79)
   -> NICHT BESTANDEN; nur im jüngeren (vermutlich Entdeckungs-)Zeitraum positiv.
+
+# Runde 17: Fundamentaldaten aus SEC XBRL (2026-09-26)
+
+Daten: data.sec.gov/api/xbrl/frames (alle Firmen je Kalenderquartal, us-gaap). Point-in-time
+konservativ: Werte eines Quartals erst 3 Monate nach Quartalsende verwendbar (10-Q-Frist 40-45,
+10-K 60-90 Tage). CIK -> Ticker über Insider-Daten und SEC-Tickerliste (Rest-Fehler vermerkt).
+Universum, Kosten, Plätze-Logik und Bestehen wie Runde 13 (Entdeckung 2016-2020 t >= 2,24,
+Bestätigung 2021-2025 t >= 2, Alpha ggü. SPY, nur long, 10 bp je Seite).
+
+- AJ Bruttoprofitabilität (Novy-Marx 2013): GP/A = Bruttogewinn (letztes Quartal x 4) /
+  Bilanzsumme. Monatlich die n Aktien mit der höchsten GP/A, gleichgewichtet. n {20, 100}.
+- AK Vermögenswachstum (Cooper, Gulen & Schill 2008): Wachstum der Bilanzsumme ggü. Vorjahres-
+  quartal. Monatlich die n Aktien mit dem NIEDRIGSTEN Wachstum. n {20, 100}.
+
+## 2026-09-26 -- Ergebnisse Runde 17 (XBRL-Fundamentaldaten)
+
+- Abdeckung im Universum: GP/A 44 % (viele Firmen melden keinen GrossProfit-Tag), Vermögens-
+  wachstum 87 %.
+- AJ GP/A: n=20 2016-2020 21,2 % p.a. (t 0,92), 2021-2025 1,6 % p.a. (t -1,51); n=100 0,77 /
+  -1,26 -> NICHT BESTANDEN.
+- AK niedriges Vermögenswachstum: n=20 0,38 / -1,77 (2021-2025 -6,9 % p.a., MaxDD -66 %);
+  n=100 -0,52 / -0,65 -> NICHT BESTANDEN.
+- Gleiches Muster wie Runden 13 und 15: gute Absolutrenditen 2016-2020 durch Beta > 1 im
+  Bullenmarkt, kein eigenständiges Alpha, Einbruch 2021-2025.

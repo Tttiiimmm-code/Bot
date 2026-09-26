@@ -148,6 +148,58 @@ def event_day(accepted: pd.Timestamp, trading_days) -> date | None:
     return days[pos] if pos < len(days) else None
 
 
+# ------------------------------------------------------------ XBRL-Fundamentaldaten (Runde 17)
+
+def xbrl_frame(concept: str, year: int, quarter: int, instant: bool, base: Path = EDGAR_DIR) -> pd.DataFrame:
+    """Alle Firmen für ein Kalenderquartal: Spalten cik, end (Datum), val."""
+    period = f"CY{year}Q{quarter}" + ("I" if instant else "")
+    path = base / "frames" / f"{concept}_{period}.pkl"
+    if path.exists():
+        return pd.read_pickle(path)
+    try:
+        raw = json.loads(_get(f"https://data.sec.gov/api/xbrl/frames/us-gaap/{concept}/USD/{period}.json"))
+        df = pd.DataFrame(raw["data"])[["cik", "end", "val"]]
+    except urllib.error.HTTPError:
+        df = pd.DataFrame(columns=["cik", "end", "val"])
+    df["cik"] = df["cik"].astype(str).str.zfill(10)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_pickle(path)
+    return df
+
+
+def fundamental_scores(cik_to_symbol: dict[str, str], trading_days, start_year: int = 2014,
+                       end_year: int = 2025, lag_months: int = 3) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(GP/A, Vermögenswachstum) als Tage x Symbole. Ein Quartalswert gilt ab
+    Quartalsende + lag_months bis zum nächsten verfügbaren Wert."""
+    gpa_rows, ag_rows = [], []
+    for y in range(start_year, end_year + 1):
+        for q in range(1, 5):
+            avail = (pd.Timestamp(year=y, month=3 * q, day=1) + pd.offsets.MonthEnd(0)
+                     + pd.DateOffset(months=lag_months)).date()
+            if avail > trading_days[-1]:
+                continue
+            gp = xbrl_frame("GrossProfit", y, q, False).set_index("cik")["val"]
+            assets = xbrl_frame("Assets", y, q, True).set_index("cik")["val"]
+            prev = xbrl_frame("Assets", y - 1, q, True).set_index("cik")["val"]
+            gp, assets, prev = (s[~s.index.duplicated()] for s in (gp, assets, prev))
+            gpa = (gp * 4 / assets).dropna()
+            ag = (assets / prev - 1).dropna()
+            for s, rows in ((gpa, gpa_rows), (ag, ag_rows)):
+                s = s.copy()
+                s.index = [cik_to_symbol.get(c) for c in s.index]
+                s = s[pd.notna(s.index)]
+                s = s[~s.index.duplicated()]
+                rows.append(s.rename(avail))
+    days = pd.Index(trading_days)
+
+    def to_daily(rows):
+        frame = pd.DataFrame(rows).sort_index()
+        frame = frame[~frame.index.duplicated(keep="last")]
+        return frame.reindex(days.union(frame.index)).ffill().reindex(days)
+
+    return to_daily(gpa_rows), to_daily(ag_rows)
+
+
 # ------------------------------------------------------------ Ereignis-Portfolio
 
 def event_weights(close: pd.DataFrame, events: list[tuple[str, date]], hold: int) -> pd.DataFrame:
