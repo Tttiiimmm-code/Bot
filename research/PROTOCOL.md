@@ -916,3 +916,13 @@ Universum, Kosten (10 bp), nur long, Alpha ggü. SPY wie Runde 13.
   defensive Werte (Clorox, General Mills, Hershey, Goldminen). Das robustere Beta des Originals
   (5-Jahres-Korrelation) ist mit Daten ab 2016 für die Entdeckung nicht berechenbar; die kaum
   betroffene Variante n=100 besteht ebenfalls nicht.
+
+## 2026-09-26 -- Recherche r/quant (keine Versuche)
+
+- "Does being a quant help you in personal trading?": meistbewertete Antworten (377, 181
+  Punkte): Profis halten privat nur breite Indizes ("long only indices", "long SPX only"), weil
+  ihr beruflicher Vorteil an Technik und Daten der Firma hängt.
+- "List of free or affordable alternative datasets": Hinweise auf Stooq (lange Futures-/Index-
+  Historien) und Dukascopy (Devisen/CFD-Ticks). Stooq-CSV per Automatisierung blockiert
+  (JS-Prüfung, Download bricht ab); nur seitenweises Auslesen der HTML-Tabellen möglich.
+  Dukascopy (Gold 24 h, z.B. für Asien-Range-Ausbruch) als nächster Kandidat notiert.
