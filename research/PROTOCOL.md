@@ -1031,3 +1031,27 @@ Noch nicht getestet und mit freien Daten prüfbar:
 Bereits getestet (übersprungen): Value, PEAD, Asset Growth, Zeitreihen-Momentum, Monatswechsel,
 Short-Term-Reversal, Momentum, Low Vol, Sektor-Momentum, FX-Carry/-Value, 12-Monats-Zyklus,
 52-Wochen-Hoch, Momentum-Allokation, Asset-Class-Trend, Paarhandel Aktien, VIX-Laufzeit.
+
+# Runde 25: Quantpedia-Kalender- und ETF-Strategien (2026-09-27)
+
+Je Familie 1 feste Regel, Yahoo inkl. Dividenden, Kosten 1 bp je Seite + SEC-Gebühr. Bestehen
+(Bonferroni über 7 Familien): Alpha-t >= 2,69 in 2016-2025 UND >= 2 vor 2016 (ab Datenbeginn).
+- Q1 Optionsverfall-Woche: SPY nur Montag-Freitag der Woche mit dem 3. Freitag. Bench SPY.
+- Q2 Vor-Feiertag: SPY nur am letzten Handelstag vor US-Börsenfeiertagen (Neujahr, MLK, Presidents,
+  Karfreitag, Memorial, 4. Juli, Labor, Thanksgiving, Weihnachten; aus Handelskalender-Lücken
+  abgeleitet: Tag vor einem Werktag ohne Handel). Bench SPY.
+- Q3 Zahltag: SPY am letzten Handelstag vor dem 15. und am ersten ab dem 15. Bench SPY.
+- Q4 Januar-Effekt: im Januar IWM statt SPY, sonst SPY. Bench SPY.
+- Q5 Paired Switching: am Quartalsende das bessere von SPY/TLT (Quartalsrendite) für das nächste
+  Quartal. Bench 50/50 SPY/TLT.
+- Q6 Rohöl: am Monatsende SPY für den Folgemonat, wenn USO im abgelaufenen Monat gefallen ist,
+  sonst Cash. Bench SPY.
+- Q7 Umkehr Länder-ETFs: jeden Freitag die 3 schwächsten der letzten 5 Tage aus EWJ, EWG, EWU,
+  EWQ, EWC, EWA, EWH, EWS, EWZ, EWW, EWY, EWT, eine Woche halten. Bench: alle 12 gleichgewichtet.
+
+## 2026-09-27 -- Ergebnisse Runde 25 (Alpha-t vor 2016 / 2016-2025)
+
+- Q1 Optionsverfall-Woche 0,57 / -1,40; Q2 Vor-Feiertag 0,27 / 1,12; Q3 Zahltag 0,51 / 1,26;
+  Q4 Januar-Nebenwerte 0,67 / -1,01; Q5 Paired Switching 1,37 / -0,44; Q6 Rohöl -0,13 / 0,22;
+  Q7 Umkehr Länder-ETFs 4,98 (Alpha 12,9 % p.a.) / -0,34 -> alle NICHT BESTANDEN.
+  Q7: stark bis 2015, danach verschwunden (gleiches Muster wie IBS/Double 7).
