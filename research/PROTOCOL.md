@@ -989,3 +989,30 @@ t >= 2.
 - EURUSD: Ziel 1x t -1,90 / -1,00; ohne Ziel -0,34 / -0,07.
 - GBPUSD: Ziel 1x 1,04 / -2,59; ohne Ziel +4,1 % p.a. (t 2,09) 2016-2025, aber -6,6 % p.a.
   (t -2,81) 2008-2015 -> NICHT BESTANDEN. Vorzeichenwechsel zwischen den Zeiträumen.
+
+# Runde 23: Faber-GTAA als reiner Nach-Veröffentlichungs-Test (2026-09-27)
+
+Recherche: "The long-term efficiency of tactical asset allocation: Evidence from 86 strategies"
+(2026): TAA über 30 Jahre risikobereinigt besser als 60/40, auf kurzen Horizonten instabil;
+Concretum Group: Faber-GTAA knapp 20 Jahre nach Veröffentlichung robust.
+- Regel exakt wie Faber (2007): 5 Anlageklassen (SPY, EFA, IEF, DBC, VNQ), je 1/5; am
+  Monatsende investiert, wenn Schluss > 10-Monats-Durchschnitt der Monatsschlüsse, sonst Cash
+  (hier 0 % Zins, konservativ). Yahoo inkl. Dividenden, Kosten 1 bp je Seite.
+- Test: 2008-01 bis 2025-09 (komplett NACH der Veröffentlichung, 1 Versuch).
+- Bestanden, wenn Sharpe > gleichgewichtetes Halten der 5 UND Alpha ggü. diesem Halten > 0
+  mit t >= 2. Maximaler Verlust wird berichtet.
+- Ergebnis Runde 23: GTAA 4,44 % p.a., Sharpe 0,58, MaxDD -15,5 %; 1/5 halten 5,77 %, 0,45,
+  -45,7 %; SPY 10,99 %, 0,62, -52,3 %. Alpha 2,38 % p.a. (t 1,60), Beta 0,34 -> NICHT
+  BESTANDEN. Bestätigt die Literatur: deutlich weniger Verlust, aber keine signifikante
+  Überrendite; Rendite weit unter Aktien.
+
+# Runde 24: Dual Momentum (Antonacci 2014) als Nach-Veröffentlichungs-Test (2026-09-27)
+
+- Regel wie "Global Equities Momentum" (GEM): am Monatsende 12-Monats-Rendite von SPY mit der
+  von Cash (hier: SHY) vergleichen; ist SPY besser, das stärkere von SPY und EFA halten (nach
+  12-Monats-Rendite), sonst AGG (Anleihen). Yahoo inkl. Dividenden, 1 bp je Seite.
+- Test: 2015-01 bis 2025-09 (nach Veröffentlichung, 1 Versuch). Bestanden, wenn Alpha ggü.
+  SPY > 0 mit t >= 2.
+- Ergebnis Runde 24: GEM 2015-2025 6,34 % p.a., Sharpe 0,46, MaxDD -33,7 %; SPY 13,51 %, 0,80,
+  -33,7 %. Alpha -3,92 % p.a. (t -1,69), ~2 Wechsel/Jahr -> NICHT BESTANDEN. Nach der
+  Veröffentlichung deutlich schlechter als SPY bei gleichem Maximalverlust.
