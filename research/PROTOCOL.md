@@ -1105,3 +1105,23 @@ Stunden verkaufen, täglich. Daten: Binance BTCUSDT Stundenkerzen (kostenlos).
 - Bestanden: beste Variante nach Veröffentlichung Alpha-t >= 2,24, im Studienzeitraum > 0.
 - Ergebnis Runde 28: N=10 2018-2021 +65,5 % p.a. (Alpha t 2,17), 2022-heute -8,2 % p.a.
   (t -1,20); N=20 1,50 / -0,90 -> NICHT BESTANDEN. Deutlicher Veröffentlichungseffekt.
+
+# Runde 29: Paarhandel mit Länder-ETFs, Länder-Saisonalität (2026-09-27)
+
+Universum: EWJ, EWG, EWU, EWQ, EWC, EWA, EWH, EWS, EWZ, EWW, EWY, EWT, EWI, EWP, EWN, EWL, EWD
+(Yahoo inkl. Dividenden). Kosten 1 bp je Seite + SEC. Bestehen (2 Familien): t >= 2,24 in
+2016-2025 UND t >= 2 vor 2016; Benchmark: alle gleichgewichtet.
+- AW Paarhandel (Quantpedia "Pairs Trading with Country ETFs"; Gatev et al.): Bildung 252 Tage,
+  Handel 126 Tage, 5 Paare, Einstieg bei 2 Std., Ausstieg bei Kreuzung (Funktion aus Runde 9).
+  Hinweis: braucht Leerverkäufe (aus Deutschland nur per CFD) -- hier zunächst Beleg des Effekts.
+- AX Länder-Saisonalität (Quantpedia "Market Seasonality Effect in World Equity Indexes"): am
+  Monatsende die 3 Länder mit der höchsten Durchschnittsrendite im kommenden Kalendermonat über
+  die letzten (höchstens) 10 Jahre (mindestens 5), je 1/3, einen Monat halten.
+
+## 2026-09-27 -- Ergebnisse Runde 29
+
+- AW Paarhandel Länder-ETFs: vor 2016 +3,6 % p.a., Alpha t 2,03; 2016-2025 +2,0 %, t 1,03
+  -> NICHT BESTANDEN (in beiden Zeiträumen positiv, aber schwach; braucht Leerverkäufe).
+- AX Länder-Saisonalität: erster Lauf ungültig (Programmfehler: Gewichte wurden wegen
+  "chained assignment" nicht gesetzt, 0 Positionen), korrigiert und neu gerechnet:
+  vor 2016 t -0,45, 2016-2025 t -1,09 -> NICHT BESTANDEN.
