@@ -150,14 +150,15 @@ def event_day(accepted: pd.Timestamp, trading_days) -> date | None:
 
 # ------------------------------------------------------------ XBRL-Fundamentaldaten (Runde 17)
 
-def xbrl_frame(concept: str, year: int, quarter: int, instant: bool, base: Path = EDGAR_DIR) -> pd.DataFrame:
+def xbrl_frame(concept: str, year: int, quarter: int, instant: bool, base: Path = EDGAR_DIR,
+               taxonomy: str = "us-gaap", unit: str = "USD") -> pd.DataFrame:
     """Alle Firmen für ein Kalenderquartal: Spalten cik, end (Datum), val."""
     period = f"CY{year}Q{quarter}" + ("I" if instant else "")
     path = base / "frames" / f"{concept}_{period}.pkl"
     if path.exists():
         return pd.read_pickle(path)
     try:
-        raw = json.loads(_get(f"https://data.sec.gov/api/xbrl/frames/us-gaap/{concept}/USD/{period}.json"))
+        raw = json.loads(_get(f"https://data.sec.gov/api/xbrl/frames/{taxonomy}/{concept}/{unit}/{period}.json"))
         df = pd.DataFrame(raw["data"])[["cik", "end", "val"]]
     except urllib.error.HTTPError:
         df = pd.DataFrame(columns=["cik", "end", "val"])
@@ -198,6 +199,42 @@ def fundamental_scores(cik_to_symbol: dict[str, str], trading_days, start_year: 
         return frame.reindex(days.union(frame.index)).ffill().reindex(days)
 
     return to_daily(gpa_rows), to_daily(ag_rows)
+
+
+def value_inputs(cik_to_symbol: dict[str, str], trading_days, start_year: int = 2014,
+                 end_year: int = 2025, lag_months: int = 3) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """(EPS verwässert TTM, Eigenkapital, ausstehende Aktien) als Tage x Symbole,
+    point-in-time wie fundamental_scores."""
+    eps_rows, eq_rows, sh_rows = [], [], []
+    for y in range(start_year, end_year + 1):
+        for q in range(1, 5):
+            avail = (pd.Timestamp(year=y, month=3 * q, day=1) + pd.offsets.MonthEnd(0)
+                     + pd.DateOffset(months=lag_months)).date()
+            if avail > trading_days[-1]:
+                continue
+            quarters = [(y, q)]
+            for _ in range(3):
+                py, pq = quarters[-1]
+                quarters.append((py - 1, 4) if pq == 1 else (py, pq - 1))
+            parts = [xbrl_frame("EarningsPerShareDiluted", a, b, False, unit="USD-per-shares")
+                     .drop_duplicates("cik").set_index("cik")["val"] for a, b in quarters]
+            eps = pd.concat(parts, axis=1).sum(axis=1, min_count=4)
+            eq = xbrl_frame("StockholdersEquity", y, q, True).drop_duplicates("cik").set_index("cik")["val"]
+            sh = xbrl_frame("EntityCommonStockSharesOutstanding", y, q, True, taxonomy="dei",
+                            unit="shares").drop_duplicates("cik").set_index("cik")["val"]
+            for s, rows in ((eps, eps_rows), (eq, eq_rows), (sh, sh_rows)):
+                s = s.dropna().copy()
+                s.index = [cik_to_symbol.get(c) for c in s.index]
+                s = s[pd.notna(s.index)]
+                rows.append(s[~s.index.duplicated()].rename(avail))
+    days = pd.Index(trading_days)
+
+    def to_daily(rows):
+        frame = pd.DataFrame(rows).sort_index()
+        frame = frame[~frame.index.duplicated(keep="last")]
+        return frame.reindex(days.union(frame.index)).ffill().reindex(days)
+
+    return to_daily(eps_rows), to_daily(eq_rows), to_daily(sh_rows)
 
 
 # ------------------------------------------------------------ Ereignis-Portfolio

@@ -855,3 +855,20 @@ Bestätigung 2021-2025 t >= 2, Alpha ggü. SPY, nur long, 10 bp je Seite).
   Hebel-Regel brauchen Rückschau, Kopfzahl (Sharpe 0,56 vs 0,40) aus einer Variante, die der
   eigenen Deutung des Papiers widerspricht; zudem GARCH-Schätzung über 25 Coins nötig.
   Kein Versuch gezählt.
+
+# Runde 18: Value-Faktor aus SEC XBRL (2026-09-26)
+
+Bewertungskennzahlen brauchen UNBEREINIGTE Kurse (XBRL-Werte sind nicht split-bereinigt; mit
+split-bereinigten Kursen würden später gesplittete Aktien -- oft spätere Gewinner -- künstlich
+billig wirken = versteckter Blick in die Zukunft). Daher separater Abruf der Tageskurse mit
+Adjustment.RAW für alle Symbole, die je im Top-1000-Universum waren. Renditen weiter aus den
+bereinigten Kursen. Point-in-time wie Runde 17 (Quartalswerte ab Quartalsende + 3 Monate).
+Universum, Plätze, Kosten, Bestehen wie Runde 17.
+
+- AL Gewinnrendite (Basu 1977; Fama & French 1992): E/P = verwässerter Gewinn je Aktie der
+  letzten 4 Quartale / unbereinigter Schluss. Nur E/P > 0. Monatlich höchste E/P, n {20, 100}.
+- AM Buchwert/Marktwert: Eigenkapital (StockholdersEquity) / (ausstehende Aktien laut
+  Deckblatt, dei:EntityCommonStockSharesOutstanding x unbereinigter Schluss). Nur B/M > 0.
+  Monatlich höchste B/M, n {20, 100}.
+- 2026-09-26: Auswertung von Runde 18 pausiert -- Alpaca-Keys in bottest.env ungültig
+  ("unauthorized"), unbereinigte Kurse noch nicht geladen. Noch KEINE Ergebnisse gesehen.
