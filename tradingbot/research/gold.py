@@ -12,8 +12,8 @@ import pandas as pd
 DATA_DIR = Path("data_cache") / "dukascopy" / "xau"
 
 
-def load_minutes(base: Path = DATA_DIR) -> pd.DataFrame:
-    frames = [pd.read_csv(p) for p in sorted(base.glob("xau_*.csv"))]
+def load_minutes(base: Path = DATA_DIR, pattern: str = "xau_*.csv") -> pd.DataFrame:
+    frames = [pd.read_csv(p) for p in sorted(base.glob(pattern))]
     df = pd.concat(frames)
     df.index = pd.to_datetime(df.pop("timestamp"), unit="ms", utc=True)
     return df[~df.index.duplicated()].sort_index()
@@ -102,12 +102,12 @@ def month_end_fix_returns(pairs: dict[str, pd.Series], usd_quote: dict[str, bool
     return pd.Series(out, dtype=float)
 
 
-def backtest(minutes: pd.DataFrame, tp_mult: float | None) -> pd.Series:
+def backtest(minutes: pd.DataFrame, tp_mult: float | None, cost_per_side: float = 1e-4) -> pd.Series:
     """Tagesrenditen (UTC-Tag), 0 an Tagen ohne Trade; Wochenenden entfallen."""
     out = {}
     for d, g in minutes.groupby(minutes.index.date):
         if pd.Timestamp(d).weekday() >= 5:
             continue
-        r = day_trade(g, tp_mult)
+        r = day_trade(g, tp_mult, cost_per_side)
         out[d] = 0.0 if r is None else r
     return pd.Series(out, dtype=float).sort_index()

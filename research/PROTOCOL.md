@@ -975,3 +975,17 @@ Daten: Dukascopy-Minuten (Bid) EURUSD, GBPUSD, USDJPY 2008-2025. Uhrzeit 16:00 E
   keine Umkehr nach dem Fixing.
 - Wirtschaftliche Größe ohnehin gering (~0,4-0,6 % p.a.). Die Umkehrung der Richtung wäre
   nachträglich und zählt nicht.
+
+# Runde 22: London-Open-Ausbruch bei Devisen (2026-09-27)
+
+Häufig empfohlene Forex-Strategie; gleiche Regeln wie Runde 20 (Range 00:00-06:59 UTC, Stop-
+Einstieg 07:00-19:59 UTC, Stop an der Gegenseite, Ziel {1x Range, keins}, Ausstieg spätestens
+20:00 UTC). Paare {EURUSD, GBPUSD} -> 4 Versuche. Kosten 0,5 bp je Seite. Benchmark: Halten
+des Paares. Bestanden: beste Variante 2016-2025 t >= 2,5 (Bonferroni über 4) und 2008-2015
+t >= 2.
+
+## 2026-09-27 -- Ergebnis Runde 22 (London-Open-Ausbruch Devisen)
+
+- EURUSD: Ziel 1x t -1,90 / -1,00; ohne Ziel -0,34 / -0,07.
+- GBPUSD: Ziel 1x 1,04 / -2,59; ohne Ziel +4,1 % p.a. (t 2,09) 2016-2025, aber -6,6 % p.a.
+  (t -2,81) 2008-2015 -> NICHT BESTANDEN. Vorzeichenwechsel zwischen den Zeiträumen.
