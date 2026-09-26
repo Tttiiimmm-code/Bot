@@ -800,3 +800,27 @@ Quellen: Quantocracy (Aggregator von Quant-Blogs). Gelesen u.a.:
 - Top 20: 2016-2020 30,4 % p.a. (t 1,14); 2021-2025 -17,7 % p.a., MaxDD -85 % (t -1,31)
   -> NICHT BESTANDEN. Gleiches Muster wie Runde 13: Momentum-/Trend-Aktienauswahl stark im
   Wachstums-Bullenmarkt 2016-2020, Einbruch ab 2021.
+
+# Runde 16: Europäische Länderrotation, Airline-Feiertagseffekt (2026-09-26)
+
+Bestehen wie Runde 8 (zwei unabhängige Zeiträume vor 2016 / 2016-2025, Yahoo inkl. Dividenden;
+beste Variante in 2016-2025 mit t >= 2,24 bei 2 Varianten bzw. 2 bei 1 Variante, vor 2016 t >= 2).
+
+- AH Europäische Länderrotation (Richards 1997; Asness, Moskowitz & Pedersen 2013): 10 Länder-
+  ETFs EWG, EWQ, EWU, EWI, EWP, EWN, EWL, EWD, EWK, EWO (als Datenquelle; handelbar aus
+  Deutschland über UCITS-Länder-ETFs). Monatlich die 3 mit der höchsten Rendite der letzten L
+  Monate (nur bei positiver Rendite, sonst Cash-Anteil), je 1/3. L {6, 12} -> 2 Versuche.
+  Kosten 10 bp je Seite. Benchmark: die 10 Länder gleichgewichtet.
+- AI Airline-Aktien vor US-Feiertagen (Quantpedia 2026): DAL, LUV, ALK, UAL gleichgewichtet
+  (Datenverfügbarkeit, Rest-Survivorship-Bias vermerkt) von Schluss 5 Handelstage vor bis
+  Schluss des letzten Handelstags vor Neujahr, Memorial Day, 4. Juli, Labor Day, Thanksgiving
+  und Weihnachten, sonst Cash. 1 Versuch. Kosten 10 bp je Seite. Benchmark: dieselben 4 Aktien
+  gleichgewichtet halten.
+
+## 2026-09-26 -- Ergebnisse Runde 16
+
+- AH Länderrotation: 6M t 1,56 (vor 2016) / 0,01; 12M 0,77 / 0,05; MaxDD -42 bis -49 %
+  -> NICHT BESTANDEN.
+- AI Airlines vor Feiertagen (Feiertage selbst berechnet: Neujahr, Memorial Day, 4. Juli, Labor
+  Day, Thanksgiving, Weihnachten): vor 2016 Alpha -2,96 % (t -1,28), 2016-2025 +5,77 % (t 1,79)
+  -> NICHT BESTANDEN; nur im jüngeren (vermutlich Entdeckungs-)Zeitraum positiv.
