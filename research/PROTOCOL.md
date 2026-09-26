@@ -718,3 +718,59 @@ Entdeckung 2016-2020 wählen; bestanden nur mit t >= 2,24 dort UND t >= 2 in der
   (t -0,86) -> NICHT BESTANDEN.
 - Muster: Trend-/Ausbruchs-Swing lief 2016-2020 (starker Wachstums-Bullenmarkt) gut und brach
   2021-2025 (Bärenmarkt 2022, Rotationen) ein; kein stabiles Alpha.
+
+# Runde 14: Strukturelle Prämien -- Devisen-Carry, Devisen-Momentum, Anleihe-Auktionen (2026-09-26)
+
+Per Browser recherchiert: Quantpedia-Strategieliste und "Out-of-Sample Alphas Post
+Publication" (2025, 177 Aktien-Anomalien: nach Veröffentlichung Alpha im Mittel ~0). Daher
+Fokus auf Prämien mit struktureller Ursache außerhalb von Aktien-Anomalien.
+Bestehen wie Runde 8: Variante mit höchstem Alpha-t (ggü. SPY) in 2016-2025 wählen; bestanden
+nur mit t >= 2,24 (2 Varianten) bzw. 2,5 (4 Varianten, Bonferroni) dort UND t >= 2 vor 2016.
+
+## Vorab-Registrierung
+
+- AD Devisen-Carry (Quantpedia #0005; Lustig, Roussanov & Verdelhan 2011): 8 Währungen (USD,
+  EUR, GBP, JPY, AUD, CHF, CAD, NZD). Monatlich nach 3-Monats-Zins (FRED IR3TIB01, Vormonat,
+  um Veröffentlichungsverzug zu meiden) sortieren. Rendite je Währung ggü. USD = Kassakurs-
+  änderung (Yahoo) + Zinsdifferenz (täglich anteilig). Varianten {Top 3 long / Bottom 3 short,
+  Top 3 long gegen USD} -> 2 Versuche. Kosten: 2 bp je Seite bei Umschichtung + 1 % p.a.
+  Finanzierungsaufschlag auf die Brutto-Nominale (typischer Broker-Swap-Aufschlag).
+  Umsetzbar aus Deutschland über Devisen-CFDs/Spot mit Swap.
+- AE Devisen-Momentum (Quantpedia #0008; Menkhoff et al. 2012): gleiche 8 Währungen,
+  monatlich Top 3 long / Bottom 3 short nach Überschussrendite (inkl. Zins) der letzten L
+  Monate, L {1, 3} -> 2 Versuche, Kosten wie AD.
+- AF Anleihe-Auktionszyklus (Lou, Yan & Zhang 2013): Auktionen 5-, 7-, 10-Jahres-Notes inkl.
+  Aufstockungen (TreasuryDirect). IEF bzw. TLT vom Schluss des Auktionstags an k Handelstage
+  halten, sonst Cash. {IEF, TLT} x k {3, 5} -> 4 Versuche. Kosten 1 bp je Seite. Benchmark
+  für den Alpha-Test: SPY (Regression enthält den Anleihe-Beta-Effekt nicht; zusätzlich wird
+  Alpha ggü. dem Halten des jeweiligen ETFs berichtet).
+- Zeiträume: vor 2016 ab Datenverfügbarkeit (FX ab 2004/2006, Auktionen ab 2004), 2016-01-01
+  bis 2025-09-19.
+- Korrektur vor der Auswertung (AF): entscheidend ist Alpha ggü. dem Halten des jeweiligen
+  ETFs (IEF bzw. TLT), nicht ggü. SPY -- sonst würde die normale Anleiherendite als Vorteil
+  gewertet. Strenger als ursprünglich formuliert.
+
+## 2026-09-26 -- Ergebnisse Runde 14
+
+- AD Devisen-Carry: long/short t -0,92 (vor 2016) / -1,24; long ggü. USD -0,18 / -1,44
+  -> NICHT BESTANDEN (mit 1 % p.a. Swap-Aufschlag; Carry seit 2008 bei Nullzinsen tot).
+- AE Devisen-Momentum: 1M -0,46 / -2,01; 3M -0,04 / -2,57 -> NICHT BESTANDEN (negativ).
+- AF Auktionszyklus (703 Auktionen 5/7/10 Jahre inkl. Aufstockungen), Alpha ggü. Halten des ETFs:
+  IEF 3T: vor 2016 +3,23 % p.a. (t 3,61), 2016-2025 +2,22 % p.a. (t 2,15);
+  IEF 5T: 2,33 / 1,67; TLT 3T: 3,12 / 1,86; TLT 5T: 1,98 / 1,50.
+  Gewählt IEF 3T: t 2,15 < 2,5 (Bonferroni über 4) -> NICHT BESTANDEN, aber alle 4 Varianten in
+  beiden Zeiträumen positiv; stärkstes konsistentes Ergebnis der gesamten Suche.
+
+## 2026-09-26 -- Vorab-Registrierung: AF-Bestätigung auf ungesehenem Jahr
+
+- Regel unverändert: IEF 3 Handelstage nach jeder Auktion (5/7/10 Jahre inkl. Aufstockungen)
+  halten, sonst Cash; 1 bp je Seite.
+- Zeitraum 2025-09-22 bis heute (für diese Regel noch nie ausgewertet). EINMALIG.
+- Bestanden, wenn Alpha ggü. IEF-Halten > 0 mit t >= 2. Geringe Teststärke (ein Jahr, ~35
+  Auktionen) ausdrücklich vermerkt; positives Alpha ohne Signifikanz gilt als "konsistent,
+  nicht bestätigt".
+
+## 2026-09-26 -- Ergebnis AF-Bestätigung (2025-09-22 bis 2026-09-21, 251 Tage, 38 Auktionen)
+
+- AF IEF 3T: -3,10 % p.a. (IEF halten -1,94 %), Alpha -2,41 % p.a., t -1,06 -> NICHT BESTANDEN.
+  Im ungesehenen Jahr negativ; der Auktionseffekt ist damit nicht bestätigt.

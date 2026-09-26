@@ -102,6 +102,33 @@ def test_pullback_entry_first_close_below_sma50_in_uptrend():
     assert e["X"].iloc[-1] and not e["X"].iloc[-2]
 
 
+def test_fx_excess_returns_add_rate_differential_with_one_month_lag():
+    from tradingbot.research.anomalies import fx_excess_returns
+
+    idx = pd.bdate_range("2020-01-01", "2020-03-31").date
+    spot = {"AUD": pd.Series(0.7, index=idx)}  # USD je AUD, konstant
+    rates = {"USD": pd.Series([1.0, 1.0, 1.0], index=pd.to_datetime(["2019-12-01", "2020-01-01", "2020-02-01"])),
+             "AUD": pd.Series([3.52, 1.0, 1.0], index=pd.to_datetime(["2019-12-01", "2020-01-01", "2020-02-01"]))}
+    ex = fx_excess_returns(spot, rates)
+    jan = ex.loc[[d for d in idx if d.month == 1], "AUD"].iloc[1:]
+    feb = ex.loc[[d for d in idx if d.month == 2], "AUD"]
+    assert jan.iloc[0] == pytest.approx((3.52 - 1.0) / 100 / 252)  # Dezember-Zins gilt im Januar
+    assert feb.iloc[0] == pytest.approx(0.0)
+    assert (ex["USD"] == 0).all()
+
+
+def test_rank_long_short_and_auction_positions():
+    from tradingbot.research.anomalies import auction_positions, rank_long_short
+
+    idx = pd.bdate_range("2020-01-27", periods=10).date
+    score = pd.DataFrame([[1, 2, 3, 4, 5, 6]] * 10, index=idx, columns=list("ABCDEF"), dtype=float)
+    w = rank_long_short(score, k=2)
+    assert w.iloc[-1].tolist() == [-0.5, -0.5, 0, 0, 0.5, 0.5]
+    assert w.iloc[0].abs().sum() == 0  # vor dem ersten Monatsende noch leer
+    pos = auction_positions(idx, [idx[2]], k=3)
+    assert pos.tolist() == [0, 0, 1, 1, 1, 0, 0, 0, 0, 0]
+
+
 def test_parse_fomc_pages():
     from datetime import date
 

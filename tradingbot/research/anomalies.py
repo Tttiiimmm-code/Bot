@@ -76,6 +76,107 @@ def low_volatility(close: pd.DataFrame) -> pd.DataFrame:
     return close.pct_change(fill_method=None).rolling(63, min_periods=50).std()
 
 
+# ------------------------------------------------------------ Runde 14 (Devisen, Auktionen)
+
+FX_PAIRS = {"EUR": ("EURUSD=X", False), "GBP": ("GBPUSD=X", False), "JPY": ("USDJPY=X", True),
+            "AUD": ("AUDUSD=X", False), "CHF": ("USDCHF=X", True), "CAD": ("USDCAD=X", True),
+            "NZD": ("NZDUSD=X", False)}
+FRED_3M = {"USD": "IR3TIB01USM156N", "EUR": "IR3TIB01EZM156N", "GBP": "IR3TIB01GBM156N",
+           "JPY": "IR3TIB01JPM156N", "AUD": "IR3TIB01AUM156N", "CHF": "IR3TIB01CHM156N",
+           "CAD": "IR3TIB01CAM156N", "NZD": "IR3TIB01NZM156N"}
+
+
+def fetch_fred(series: str, cache_dir: str = "data_cache/fred") -> pd.Series:
+    """Monatsreihe von FRED (Prozent p.a.), Index = Monatsanfang."""
+    import urllib.request
+    from pathlib import Path
+
+    path = Path(cache_dir) / f"{series}.pkl"
+    if path.exists():
+        return pd.read_pickle(path)
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
+    raw = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}),
+                                 timeout=60).read().decode()
+    df = pd.read_csv(__import__("io").StringIO(raw))
+    s = pd.to_numeric(df.iloc[:, 1], errors="coerce")
+    s.index = pd.to_datetime(df.iloc[:, 0])
+    s = s.dropna()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    s.to_pickle(path)
+    return s
+
+
+def fx_excess_returns(spot: dict[str, pd.Series], rates: dict[str, pd.Series]) -> pd.DataFrame:
+    """Tägliche Überschussrendite je Währung aus USD-Sicht: Kursänderung der
+    Währung ggü. USD + (Zins Währung - Zins USD)/252. Zins des Vormonats
+    (vermeidet Veröffentlichungsverzug). USD selbst: 0."""
+    idx = sorted(set().union(*[set(s.index) for s in spot.values()]))
+    idx = pd.Index(idx)
+    out = {}
+    for cur, s in spot.items():
+        s = s.reindex(idx).ffill()
+        out[cur] = s.pct_change()
+    fx = pd.DataFrame(out)
+    months = pd.DatetimeIndex([pd.Timestamp(d) for d in idx]).to_period("M")
+    def daily_rate(cur):
+        r = rates[cur].copy()
+        r.index = r.index.to_period("M")
+        return pd.Series(r.shift(1).reindex(months).to_numpy(), index=idx) / 100
+    usd = daily_rate("USD")
+    for cur in spot:
+        fx[cur] = fx[cur] + (daily_rate(cur) - usd) / 252
+    fx["USD"] = 0.0
+    return fx
+
+
+def fx_rate_levels(rates: dict[str, pd.Series], index) -> pd.DataFrame:
+    months = pd.DatetimeIndex([pd.Timestamp(d) for d in index]).to_period("M")
+    cols = {}
+    for cur, r in rates.items():
+        r = r.copy()
+        r.index = r.index.to_period("M")
+        cols[cur] = r.shift(1).reindex(months).to_numpy()
+    return pd.DataFrame(cols, index=index)
+
+
+def rank_long_short(score: pd.DataFrame, k: int = 3, short: bool = True) -> pd.DataFrame:
+    """Monatlich: Top k long (+1/k), Bottom k short (-1/k) bzw. nur long."""
+    is_end = _month_ends(score.index)
+    W = np.zeros(score.shape)
+    cur = np.zeros(score.shape[1])
+    S = score.to_numpy(float)
+    for t in range(len(score.index)):
+        if is_end[t] and np.isfinite(S[t]).sum() >= 2 * k:
+            order = np.argsort(np.where(np.isfinite(S[t]), S[t], -np.inf))
+            cur = np.zeros(score.shape[1])
+            cur[order[-k:]] = 1.0 / k
+            if short:
+                valid = [j for j in order if np.isfinite(S[t, j])]
+                cur[valid[:k]] = -1.0 / k
+        W[t] = cur
+    return pd.DataFrame(W, index=score.index, columns=score.columns)
+
+
+def fx_portfolio_returns(weights: pd.DataFrame, excess: pd.DataFrame, cost_per_side: float = 2e-4,
+                         financing: float = 0.01) -> pd.Series:
+    held = weights.shift(1).fillna(0.0)
+    gross_non_usd = held.drop(columns="USD").abs().sum(axis=1)
+    turnover = (weights - held).drop(columns="USD").abs().sum(axis=1).shift(1).fillna(0.0)
+    r = (held * excess.fillna(0.0)).sum(axis=1) - financing / 252 * gross_non_usd - cost_per_side * turnover
+    return r.iloc[1:]
+
+
+def auction_positions(index, auction_days, k: int) -> pd.Series:
+    """AF: investiert für die Renditen der k Handelstage nach dem Auktionstag."""
+    days = pd.Index(index)
+    pos = np.zeros(len(days))
+    for d in auction_days:
+        t = days.searchsorted(d)
+        if t < len(days) and days[t] == d:
+            pos[t:t + k] = 1.0  # Position zum Schluss t .. t+k-1 -> Renditen t+1 .. t+k
+    return pd.Series(pos, index=index)
+
+
 # ------------------------------------------------------------ Runde 13 (Swing mit Einzelaktien)
 
 def slot_weights(close: pd.DataFrame, entry: pd.DataFrame, exit_: pd.DataFrame, rank: pd.DataFrame,

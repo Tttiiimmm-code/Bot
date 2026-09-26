@@ -588,6 +588,78 @@ SCAN_FX = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCHF=X", "USDCAD=X
 SCAN_CRYPTO = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "TRXUSDT", "ETCUSDT"]
 
 
+def cmd_structural() -> None:
+    """Runde 14 (research/PROTOCOL.md): Devisen-Carry, Devisen-Momentum, Anleihe-Auktionen."""
+    import json as _json
+    import urllib.request
+    from datetime import date as _date
+
+    from tradingbot.research import anomalies as an
+    from tradingbot.research import history, scan, swing
+
+    split, dev_end = _date(2015, 12, 31), _date(2025, 9, 19)
+    spot = {}
+    for cur, (sym, inverted) in an.FX_PAIRS.items():
+        px = history.fetch_yahoo(sym, until=_date(2025, 9, 20))["close"]
+        spot[cur] = (1 / px) if inverted else px
+    rates = {cur: an.fetch_fred(sid) for cur, sid in an.FRED_3M.items()}
+    excess = an.fx_excess_returns(spot, rates)
+    excess = excess[excess.index <= dev_end]
+    levels = an.fx_rate_levels(rates, excess.index)
+    spy = history.fetch_yahoo("SPY", until=_date(2025, 9, 20))["adjclose"]
+    spy_ret = spy.pct_change()
+
+    candidates = {
+        "AD Carry long/short": (an.fx_portfolio_returns(an.rank_long_short(levels, 3, True), excess), spy_ret),
+        "AD Carry long ggü. USD": (an.fx_portfolio_returns(an.rank_long_short(levels, 3, False), excess), spy_ret),
+    }
+    for months in (1, 3):
+        mom = excess.rolling(21 * months, min_periods=15 * months).sum()
+        candidates[f"AE Momentum {months}M"] = (
+            an.fx_portfolio_returns(an.rank_long_short(mom, 3, True), excess), spy_ret)
+
+    url = ("https://www.treasurydirect.gov/TA_WS/securities/search?format=json&type=Note"
+           "&startDate=01/01/2004&endDate=09/30/2025&dateFieldName=auctionDate")
+    raw = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=120)
+    auctions = _json.load(raw)
+    terms = ("5-Year", "7-Year", "10-Year", "6-Year", "9-Year", "4-Year")
+    days = sorted({_date.fromisoformat(a["auctionDate"][:10]) for a in auctions
+                   if a["securityTerm"].startswith(terms) and not a["securityTerm"].startswith(("2-", "3-"))})
+    print(f"Auktionen 5/7/10 Jahre inkl. Aufstockungen: {len(days)}")
+    for etf in ("IEF", "TLT"):
+        px = history.fetch_yahoo(etf, until=_date(2025, 9, 20))["adjclose"]
+        px = px[px.index <= dev_end]
+        ret = px.pct_change()
+        for k in (3, 5):
+            pos = an.auction_positions(px.index, days, k)
+            candidates[f"AF {etf} {k}T nach Auktion"] = (scan.strategy_returns(pos, ret, 1e-4), ret)
+
+    print("Variante                   Zeitraum     p.a.    Sharpe  Bench-Sharpe  MaxDD   Alpha p.a.  t-Wert")
+    table = {}
+    for label, (r, bench) in candidates.items():
+        r = r[r.index <= dev_end]
+        first = r.ne(0).idxmax()
+        row = {}
+        for period, mask in (("vor 2016", (r.index <= split) & (r.index >= first)), ("2016-2025", r.index > split)):
+            part = r[mask]
+            b = bench.reindex(part.index).fillna(0.0)
+            m, mb = compute_metrics(BacktestResult(label, part)), compute_metrics(BacktestResult("b", b))
+            alpha, t_a, _ = swing.alpha_vs_benchmark(part, b)
+            row[period] = t_a
+            print(f"{label:26s} {period:10s} {m.cagr:7.2%}  {m.sharpe:6.2f}  {mb.sharpe:11.2f}  {m.max_drawdown:6.1%}"
+                  f"  {alpha:9.2%}  {t_a:6.2f}")
+            if period == "2016-2025":
+                _log_trial("structural", label.split()[0], {"variant": label}, CostModel(slippage_bps=2.0), 1.0,
+                           BacktestResult(label, part))
+        table[label] = row
+    for fam, need in (("AD", 2.24), ("AE", 2.24), ("AF", 2.5)):
+        labels = [k for k in table if k.startswith(fam)]
+        best = max(labels, key=lambda k: table[k]["2016-2025"])
+        ok = table[best]["2016-2025"] >= need and table[best]["vor 2016"] >= 2
+        print(f"Familie {fam}: gewählt {best} (t 2016-2025 {table[best]['2016-2025']:.2f} [>= {need}], "
+              f"vor 2016 {table[best]['vor 2016']:.2f}) -> {'BESTANDEN' if ok else 'NICHT BESTANDEN'}")
+
+
 def cmd_swing_stocks() -> None:
     """Runde 13 (research/PROTOCOL.md): Swing-Trading mit Einzelaktien, 20 Plätze,
     nur long, 10 bp je Seite, zwei Zeiträume."""
@@ -1094,6 +1166,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("edgar", help="Runde 11: SEC EDGAR -- Insiderkäufe und Earnings-Drift.")
     sub.add_parser("reddit", help="Runde 12: Ideen aus r/algotrading.")
     sub.add_parser("swing-stocks", help="Runde 13: Swing-Trading mit Einzelaktien.")
+    sub.add_parser("structural", help="Runde 14: Devisen-Carry/-Momentum, Anleihe-Auktionen.")
     r9 = sub.add_parser("round9", help="Runde 9: Pre-FOMC, Short-Vola, Paarhandel (Familien U-W).")
     r9.add_argument("--train-days", type=int, default=504)
     r9.add_argument("--test-days", type=int, default=126)
@@ -1166,6 +1239,9 @@ def main(argv: list[str] | None = None) -> None:
             return
         if args.command == "swing-stocks":
             cmd_swing_stocks()
+            return
+        if args.command == "structural":
+            cmd_structural()
             return
         if args.command == "round9":
             cmd_round9(args.train_days, args.test_days)
