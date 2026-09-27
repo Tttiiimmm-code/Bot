@@ -1871,3 +1871,19 @@ Nicht getestet (Literatur): "Overnight Drift" (Boyarchenko, Larsen & Whelan, RFS
 futures 02:00-03:00 ET, stärker nach Ausverkäufen) -- laut NY Fed (Liberty Street Economics,
 2026-07, "The Disappearing Overnight Drift") seit 2021 im Mittel ~0. Ein weiterer Fall von
 Verfall nach Veröffentlichung.
+
+# Runde 63: Heimatstunden-Effekt im Devisenmarkt (Breedon & Ranaldo, JMCB 2013) (2026-09-27)
+
+Befund (EBS-Daten 1997-2007): Währungen werten in ihren eigenen Handelsstunden ab (Kundenfluss
+kauft Fremdwährung); EUR/USD nach Kosten profitabel (Sharpe 1,3 Morgen-Short, 0,9 Nachmittag-Long).
+Alle unsere Daten (ab 2008) liegen nach der Stichprobe des Papiers.
+Regel (Sitzungen laut Tabelle 1 des Papiers): je Werktag Mo-Fr
+- Bein 1: Paar SHORT von 07:00 London (Europa-Eröffnung) bis 08:00 New York (US-Eröffnung),
+- Bein 2: Paar LONG von 08:00 New York bis 16:00 New York.
+Tagesrendite = Summe beider Beine. Familien: EUR/USD, GBP/USD (2 -> Schwelle 2,24).
+Kosten: echte Dukascopy-Bid/Ask-Minuten (Short zum Bid eröffnen, zum Ask schließen; Long zum Ask
+kaufen, zum Bid verkaufen) + 0,25 bp je Seite Kommission (4 Seiten je Tag). Preis = Open der ersten
+Minute ab Zeitpunkt (max. 5 min später, sonst Tag verworfen).
+Zeiträume: Entdeckung 2008-01..2016-12, Bestätigung 2017-01..2025-09-19, unberührt 2025-09-22..
+2026-09-25. Bestehen je Familie: t >= 2,24 Entdeckung UND t >= 2 Bestätigung UND Ø > 0 unberührt.
+Zusätzlich berichtet: Brutto (Bid) je Bein.
