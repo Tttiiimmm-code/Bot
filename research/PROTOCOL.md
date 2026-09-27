@@ -2291,3 +2291,8 @@ Kennzahl: Alpha-t ggü. SPY (Überrenditen, Beta geschätzt).
 Zeiträume: Entdeckung 2012-05..2017-12 (Papierzeitraum, nach 1 Jahr Vorlauf), Bestätigung 2018-01..
 2025-09-19, unberührt 2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 /
 Alpha > 0.
+Ergebnis Runde 80 (Alpha-t ggü. SPY):
+- DA DIX hoch: Entdeckung Alpha -0,1 % p.a. (t -0,07; 68 % investiert), Bestätigung -0,0 % (t -0,01),
+  unberührt +11,2 % (t 1,81) -> NICHT BESTANDEN. Kein Vorhersagewert über das Marktbeta hinaus.
+- DB GEX niedrig: Entdeckung +4,8 % (t 2,15 < 2,24), Bestätigung -3,1 % (t -1,14), unberührt +5,0 %
+  (t 0,80) -> NICHT BESTANDEN.
