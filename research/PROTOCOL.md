@@ -1813,3 +1813,24 @@ Nachträgliche Beobachtung (nicht vorregistriert, NICHT gewertet): Die Gegenseit
 Das ist mit denselben, bereits gesehenen Daten gefunden und dürfte nur in einem echten
 Vorwärtstest (Märkte, die nach 2026-09-27 schließen) gewertet werden; Liquidität/Spread bei 0,10-
 Preisen und Zugang aus Deutschland sind ungeprüft.
+Nachtrag: Laut Nutzer ist Polymarket in Deutschland illegal -> Prognosemärkte werden nicht weiter
+verfolgt, die nachträgliche Außenseiter-Beobachtung entfällt.
+
+# Runde 61: Gold -- Asien-Nacht und Nachmittags-Fixing (2026-09-27)
+
+Quellen: Abrantes-Metz & Metz (2014/2018): große Kursbewegungen beim Londoner PM-Fixing
+(15:00 London) 2004-2013 überwiegend nach unten; seit 2015 elektronische LBMA-Auktion (Bruch).
+Verbreitete Behauptung: Gold steigt außerhalb der US-Handelszeiten (Asien-Nacht).
+Daten: Dukascopy XAUUSD-Minuten (Bid), 2008-01..2025-09 im Cache; unberührt 2025-09-22..2026-09-25
+wird erst NACH dieser Vorregistrierung geladen.
+Familien (2 -> Schwelle t >= 2,24 in der Entdeckung):
+- GA Asien-Nacht long: Kauf 18:00 New York (Wiedereröffnung nach der Tagespause), Verkauf 08:00
+  London am nächsten Morgen. Nächte So->Mo bis Do->Fr; Einstieg/Ausstieg = Open der ersten Minute
+  ab dem Zeitpunkt (max. 5 min später, sonst Nacht verworfen).
+- GF Fixing short: Leerverkauf 14:55 London, Eindeckung 15:10 London, an jedem Werktag Mo-Fr mit
+  Daten. (Umsetzung per Gold-CFD, short erlaubt.)
+Kosten: 1 bp je Seite (wie Runde 20). Kennzahl: Ø Nettorendite je Trade, t = Mittel/SE.
+Zeiträume: Entdeckung 2008-01..2014-12 (Fixing-Ära), Bestätigung 2015-01..2025-09-19 (Auktion),
+unberührt 2025-09-22..2026-09-25.
+Bestehen je Familie: Entdeckung t >= 2,24 UND Bestätigung t >= 2 UND unberührt Ø > 0 (alles netto).
+Zusätzlich berichtet (nicht gewertet): Bruttowerte, Jahreswerte.
