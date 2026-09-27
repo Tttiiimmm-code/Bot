@@ -2330,3 +2330,11 @@ Kosten (Indizes rechnen zu Mittelkursen): Abzug 1,0 % p.a. (monatliche Strategie
 Zeiträume: Entdeckung Indexbeginn..2009, Bestätigung 2010..2025-09-19, unberührt 2025-09-22..2026-09-25.
 4 Familien -> Bestehen je Familie: Alpha-t >= 2,50 Entdeckung UND >= 2 Bestätigung UND Alpha > 0
 unberührt. Umsetzbarkeit DE: SPX/XSP-Optionen über IBKR (XSP = 1/10 SPX); mit 20k EUR nur XSP.
+Ergebnis Runde 82 (Beginn 1993 wegen ^SP500TR bei Yahoo; nach Kostenabzug):
+- WPUT: 2006-2009 Alpha 0,5 % (t 0,12); 2010-2025 1,1 % p.a. vs S&P TR 14,2 %, Alpha -7,3 % (t -5,31).
+- BXMD: 1993-2009 Alpha 1,3 % (t 1,29); 2010-2025 Alpha -2,8 % (t -2,78).
+- CNDR (Iron Condor): 1993-2009 7,2 % p.a., MaxDD -17 %, Alpha 2,9 % (t 1,69); 2010-2025 -1,4 % p.a.,
+  Alpha -4,4 % (t -2,48); unberührt +10,8 %.
+- BFLY: 1993-2009 Alpha 3,2 % (t 1,25); 2010-2025 -5,5 % p.a., MaxDD -61 %, Alpha -7,1 % (t -2,47).
+-> alle NICHT BESTANDEN. Nach realistischen Kosten ist Optionsverkauf auf den S&P 500 seit 2010
+klar unterlegen (Volatilitätsprämie zu klein bzw. durch Kosten und Crash-Tage aufgezehrt).
