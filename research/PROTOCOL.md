@@ -2391,3 +2391,12 @@ Ergebnis Runde 84: Walk-forward 2017-2025-09 (1.678 Nächte, 56 % gehandelt): im
 gehandelt): 19,11 vs 15,93 bp, t -0,69 -> NICHT BESTANDEN. Der Filter senkt das Risiko etwas (höheres
 Sharpe bei halber Marktzeit), verbessert den Ertrag aber nicht; die Nacht ist nicht vorhersagbar
 über ihren Durchschnitt hinaus.
+
+# Runde 85: Gotobi in EUR/JPY und AUD/JPY (Bestätigung des Mechanismus, Diversifikation) (2026-09-27)
+
+Mechanismus Gotobi: Importeure kaufen vor dem 9:55-Fixing Fremdwährung -> Yen schwächt sich
+allgemein ab; Yen-Kreuze sollten mitlaufen. Regel exakt wie Runde 49/Vorwärtstest: long 05:00 ->
+09:55 JST an Gotobi-Tagen, Kauf zum Ask, Verkauf zum Bid (Dukascopy-Minuten), + 0,35 bp/Seite.
+Familien: EUR/JPY, AUD/JPY (2 -> Schwelle 2,24). Zeiträume: 2017-01..2025-09-19 (Ask-Daten wie
+Runde 49), unberührt 2025-09-22..2026-09-25. Bestehen je Familie: t >= 2,24 in 2017-2025 UND Ø > 0
+unberührt. Berichtet: Korrelation mit USD/JPY-Gotobi-Trades.
