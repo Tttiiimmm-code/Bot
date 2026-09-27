@@ -1493,3 +1493,6 @@ Veröffentlichung, positiv im unberührten Jahr, spezifisch für Gotobi-Tage, pl
 aber wirtschaftlich dünn und kostensensitiv: ~3 bp brutto je Trade, ~70 Trades/Jahr, nur mit
 ECN-Kosten und Hebel (z.B. 5-10x) lohnend; letzte zwei Kalenderjahre schwach. Empfehlung:
 Papierhandel mit echten Kursen/Spreads eines ECN-Brokers, bevor Geld eingesetzt wird.
+Größenordnung (beschreibend, 2017-2025, Regel unverändert): Kosten 0,3 bp je Seite: 3x 5,3 % p.a.
+(MaxDD -10 %), 5x 8,9 % (-16 %), 10x 17,8 % (-31 %); Kosten 0,5 bp: 3x 4,4 %, 5x 7,3 % (-18 %),
+10x 14,5 % (-33 %). Schlechtester Einzeltrade bei 10x -8,8 %.
