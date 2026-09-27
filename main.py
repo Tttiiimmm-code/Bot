@@ -18,7 +18,9 @@ import argparse
 import dataclasses
 import logging
 import math
+import subprocess
 import sys
+from datetime import date
 
 from alpaca.common.exceptions import APIError
 
@@ -1542,6 +1544,19 @@ def main():
                                   help="Erlaubt Echtgeld, falls ALPACA_PAPER=false (nicht empfohlen).")
     subparsers.add_parser("overnight-report", help="Auswertung von overnight_trades.csv.")
 
+    forward_parser = subparsers.add_parser(
+        "forward-run",
+        help="Vorwärtstest ohne Broker: Nikkei-Nachteffekt und Gotobi (USD/JPY) aus Dukascopy-Minutendaten "
+        "(braucht Node.js/npx). Schreibt forward_trades.csv, sendet keine Orders.",
+    )
+    forward_parser.add_argument("--start", type=date.fromisoformat, default=date(2026, 9, 28),
+                                help="Erster Tag des Vorwärtstests (Standard: 2026-09-28); frühere Trades zählen nicht.")
+    forward_parser.add_argument("--ledger", default="forward_trades.csv", help="CSV mit den Trades.")
+    forward_parser.add_argument("--lookback-days", type=_positive_int, default=10,
+                                help="Wie viele Tage je Lauf neu geladen werden (Standard: 10).")
+    forward_report = subparsers.add_parser("forward-report", help="Auswertung von forward_trades.csv.")
+    forward_report.add_argument("--ledger", default="forward_trades.csv", help="CSV mit den Trades.")
+
     compare_parser = subparsers.add_parser(
         "momentum-compare",
         help="Vergleicht mehrere Bot-Konten (je ein Alpaca-Paper-Konto mit eigener .env-Datei) "
@@ -1564,6 +1579,24 @@ def main():
     args = parser.parse_args()
 
     setup_logging()
+
+    # Der Vorwärtstest braucht keine Alpaca-Keys.
+    if args.command in ("forward-run", "forward-report"):
+        from pathlib import Path
+
+        from tradingbot import forward_test
+
+        try:
+            if args.command == "forward-run":
+                cfg = forward_test.ForwardConfig(first_day=args.start, ledger=Path(args.ledger),
+                                                 lookback_days=args.lookback_days)
+                print(forward_test.run(cfg))
+            else:
+                print(forward_test.summarize(Path(args.ledger)))
+        except (RuntimeError, OSError, subprocess.SubprocessError) as e:
+            print(f"Fehler: {e}", file=sys.stderr)
+            sys.exit(1)
+        return
 
     # Der Overnight-Bot nutzt ein eigenes Konto und braucht die .env des
     # Momentum-Bots nicht -- daher vor Config.from_env() behandeln.

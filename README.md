@@ -474,6 +474,35 @@ python main.py overnight-report             # Auswertung von overnight_trades.cs
   Kauf-/Verkaufskurs und P&L in `overnight_trades.csv`.
 - Dauerbetrieb: `deploy/overnight.service` analog zum Abschnitt unten.
 
+### Vorwärtstest: Nikkei-Nachteffekt und Gotobi (ohne Broker)
+
+Die zwei Befunde, die in der Strategie-Forschung (Branch `research/ideas`, `research/PROTOCOL.md`
+Runden 46-49 und 53) alle vorregistrierten Prüfungen bestanden haben, beide klein und stark
+kostenabhängig:
+
+- **nikkei_night**: Nikkei 225 long vom Schluss der OSE-Tagessitzung (15:45 JST) bis zur
+  Eröffnung am nächsten Handelstag (08:45 JST). Backtest 2013-2025 Ø +4,2 bp je Nacht netto.
+- **gotobi**: USD/JPY long 05:00 -> 09:55 JST am 5./10./15./20./25. und Monatsletzten
+  (Wochenende -> Freitag). Mit echten Bid/Ask-Kursen Ø +1,0 bp je Trade.
+
+```bash
+python main.py forward-run      # lädt die letzten 10 Tage (Dukascopy), trägt Trades ein
+python main.py forward-report   # Auswertung von forward_trades.csv
+```
+
+- Sendet **keine Orders** und braucht keine Keys; nur Node.js (`npx dukascopy-node`).
+- Erfasst Trades ab `--start` (Standard 2026-09-28). Jeder Lauf ist idempotent (gleicher
+  Tag wird ersetzt) -- einmal täglich reicht, verpasste Tage holt der nächste Lauf nach
+  (bis `--lookback-days` zurück).
+- Kosten wie im Backtest: Nikkei 0,5 bp je Seite (Handel in den Auktionen) + JPY-Zins je
+  Nacht, Gotobi Kauf zum Ask/Verkauf zum Bid + 0,35 bp Kommission je Seite.
+- Japanische Börsenfeiertage stehen fest in `tradingbot/forward_test.py`
+  (`JP_MARKET_HOLIDAYS`, 2026-2027) und müssen jährlich ergänzt werden.
+- Erwartung: Selbst ein Jahr reicht statistisch kaum (Nikkei ~245 Trades -> t ~1,6 bei
+  4 bp); der Test zeigt vor allem, ob die Richtung stimmt und die Kostenannahmen halten.
+- Täglich auf dem VPS: `deploy/forward-test.service` + `deploy/forward-test.timer`
+  (06:00 UTC), aktivieren mit `sudo systemctl enable --now forward-test.timer`.
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter

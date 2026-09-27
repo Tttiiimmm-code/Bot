@@ -1,0 +1,18 @@
+[Unit]
+Description=Vorwärtstest Nikkei-Nacht + Gotobi (Dukascopy-Daten, keine Orders)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+# Braucht Node.js (npx) für dukascopy-node, z.B. `sudo apt install nodejs npm`.
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py forward-run
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+# npx schreibt seinen Paket-Cache nach ~/.npm
+ReadWritePaths=/home/tradingbot/Bot /home/tradingbot/.npm

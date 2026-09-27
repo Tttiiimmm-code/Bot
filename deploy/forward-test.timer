@@ -1,0 +1,11 @@
+[Unit]
+Description=Vorwärtstest Nikkei-Nacht + Gotobi täglich ausführen
+
+[Timer]
+# 06:00 UTC: Nikkei-Ausstieg (08:45 JST = 23:45 UTC) und Gotobi-Ausstieg
+# (09:55 JST = 00:55 UTC) liegen dann Stunden zurück.
+OnCalendar=*-*-* 06:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
