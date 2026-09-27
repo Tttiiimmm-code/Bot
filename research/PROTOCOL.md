@@ -2208,3 +2208,19 @@ Positionen) liegt nahe, wäre aber auf gesehenen Daten gewählt -> nur als Vorw�
 Offene Kostenrisiken: Funding bei gehypten Listings für Shorts teils -0,1 %/8 h und mehr (hier 3 bp/Tag
 angenommen); Perp oft nicht am Listingtag verfügbar. Verzerrung durch fehlende delistete Token
 spricht FÜR die Strategie (echte Ergebnisse eher besser).
+Nutzerpräferenz (2026-09-27): keine Strategien mit unbegrenztem Verlustrisiko (Short neuer Listings
+wird nicht weiterverfolgt).
+
+# Runde 78: FOMC-Zyklus -- Aktienrenditen in "geraden Wochen" (Cieslak, Morse & Vissing-Jorgensen, JF 2019) (2026-09-27)
+
+Befund 1994-2016: Die gesamte US-Aktienprämie fällt in den Wochen 0, 2, 4, 6 des FOMC-Zyklus an
+(Woche 0 = Handelstage -1..+3 um die geplante Sitzung, Woche 1 = +4..+8, usw.); Erklärung:
+informelle Fed-Kommunikation im Zweiwochenrhythmus. Umsetzung DE: US500-CFD/MES-Future long.
+Daten: data_cache/fomc.json (geplante Sitzungen), Yahoo SPY adjclose, FRED TB3MS.
+Regel: Handelstag k relativ zur letzten Sitzung (Sitzungstag = 0; der Tag vor der nächsten Sitzung
+zählt als -1 der nächsten); Woche = floor((k+1)/5). Gerade Wochen (0, 2, 4, 6): SPY long, sonst Cash.
+Kennzahl: Ø tägliche Überrendite gerade minus ungerade Wochen (Welch-t). Kosten vernachlässigt
+bei der Kennzahl; Strategie p.a. mit 1 bp je Seite berichtet.
+Zeiträume: Replikation 1994-2016 (Stichprobe des Papiers, berichtet), Bestätigung 2017-2025-09-19
+(nach Veröffentlichung), unberührt 2025-09-22..2026-09-25.
+1 Familie. Bestehen: Bestätigung t >= 2 UND unberührt Differenz > 0.
