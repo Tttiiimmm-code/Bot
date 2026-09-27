@@ -8,6 +8,11 @@ siehe research/PROTOCOL.md (Branch research/ideas) Runden 46-49 und 53:
 - gotobi: USD/JPY long von 05:00 bis 09:55 JST an Gotobi-Tagen (5., 10., 15.,
   20., 25. und Monatsletzter; Wochenende -> vorheriger Freitag). Kauf zum
   Dukascopy-ASK, Verkauf zum BID, zusätzlich 0,35 bp Kommission je Seite.
+- gotobi_eurjpy: dieselbe Regel für EUR/JPY (Runde 85).
+- bond_month_end: US-Staatsanleihen 7-10 J. (IEF, Yahoo-Tagesschlüsse) long vom
+  Schluss des 4.-letzten bis zum Schluss des letzten Handelstags jedes Monats
+  (Runden 73/88); netto 2 bp Kosten und T-Bill-Zins (Überrendite wie im Backtest).
+  Ein Monat wird erst erfasst, wenn er abgeschlossen ist.
 
 Es werden keine Orders gesendet. Jeder Lauf lädt die letzten Tage Minutendaten
 per `npx dukascopy-node`, berechnet die Trades und schreibt sie in eine
@@ -36,7 +41,7 @@ TOKYO = "Asia/Tokyo"
 LEDGER_FIELDS = ["strategy", "date", "entry_time", "entry_price", "exit_time", "exit_price", "net_bp"]
 # Erwartung aus dem Backtest (Ø netto je Trade in bp, 2013-2025 bzw. 2017-2025;
 # gotobi = USD/JPY, gotobi_eurjpy = EUR/JPY aus Runde 85)
-EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84}
+EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84, "bond_month_end": 22.3}
 OSE_CLOSE_CHANGE = date(2024, 11, 5)
 # Börsenfreie Tage in Japan (Nationalfeiertage + Jahreswechsel). Der Dukascopy-CFD
 # notiert auch an diesen Tagen, die OSE-Futures nicht -> für nikkei_night
@@ -63,6 +68,9 @@ class ForwardConfig:
     nikkei_cost_per_side: float = 0.5e-4
     jpy_rate: float = 0.0075  # p.a., für den Future-Carry
     gotobi_commission: float = 0.35e-4
+    bond_symbol: str = "IEF"
+    bond_cost_per_trade: float = 2e-4  # Round-Trip
+    tbill_rate: float = 0.037  # p.a., für die Überrendite (bei Bedarf anpassen)
 
 
 # ------------------------------------------------------------ Daten
@@ -81,6 +89,21 @@ def fetch_minutes(instrument: str, side: str, start: date, end: date, base: Path
     if not path.exists():
         raise RuntimeError(f"dukascopy-node hat keine Datei erzeugt: {path}")
     return path
+
+
+def fetch_daily_yahoo(symbol: str, start: date, end: date) -> pd.Series:
+    """Dividendenbereinigte Tagesschlüsse (adjclose) von Yahoo, Index = New-York-Datum."""
+    import json
+    import urllib.request
+    p1 = int(datetime(start.year, start.month, start.day, tzinfo=timezone.utc).timestamp())
+    p2 = int(datetime(end.year, end.month, end.day, tzinfo=timezone.utc).timestamp())
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?period1={p1}&period2={p2}&interval=1d"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        res = json.load(r)["chart"]["result"][0]
+    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert("America/New_York").date
+    s = pd.Series(res["indicators"]["adjclose"][0]["adjclose"], index=idx, dtype=float).dropna()
+    return s[~s.index.duplicated(keep="last")].sort_index()
 
 
 def load_open_prices(path: Path) -> pd.Series:
@@ -164,6 +187,30 @@ def gotobi_trades(bid: pd.Series, ask: pd.Series, start: date, end: date, commis
     return rows
 
 
+def bond_month_end_trades(adjclose: pd.Series, start: date, end: date, cost: float, tbill_rate: float,
+                          today: date, strategy: str = "bond_month_end") -> list[dict]:
+    """Je abgeschlossenem Monat: Kauf zum Schluss des 4.-letzten, Verkauf zum Schluss des letzten
+    Handelstags. Monate, die `today` noch nicht vollständig hinter sich haben, entfallen."""
+    rows = []
+    s = adjclose.sort_index()
+    by_month: dict[tuple[int, int], list[date]] = {}
+    for d in s.index:
+        by_month.setdefault((d.year, d.month), []).append(d)
+    for (y, m), days in sorted(by_month.items()):
+        month_end = date(y, m, calendar.monthrange(y, m)[1])
+        if month_end >= today or len(days) < 4:
+            continue
+        buy_day, sell_day = days[-4], days[-1]
+        if not (start <= buy_day and sell_day <= end):  # nur Trades, die nach Testbeginn eröffnet werden
+            continue
+        a, b = float(s[buy_day]), float(s[sell_day])
+        net = b / a - 1 - cost - tbill_rate / 360 * (sell_day - buy_day).days
+        rows.append({"strategy": strategy, "date": sell_day.isoformat(), "entry_time": buy_day.isoformat(),
+                     "entry_price": a, "exit_time": sell_day.isoformat(), "exit_price": b,
+                     "net_bp": round(net * 1e4, 3)})
+    return rows
+
+
 # ------------------------------------------------------------ Ledger
 
 def read_ledger(path: Path) -> list[dict]:
@@ -229,6 +276,8 @@ def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None 
     ej_ask = load_open_prices(fetch_minutes("eurjpy", "ask", start, end, cfg.data_dir))
     rows += gotobi_trades(ej_bid, ej_ask, cfg.first_day, today, cfg.gotobi_commission, now,
                           strategy="gotobi_eurjpy")
+    bond = fetch_daily_yahoo(cfg.bond_symbol, min(start, cfg.first_day - timedelta(days=40)), end)
+    rows += bond_month_end_trades(bond, cfg.first_day, today, cfg.bond_cost_per_trade, cfg.tbill_rate, today)
     new = update_ledger(cfg.ledger, rows)
     logger.info("Vorwärtstest: %d Trades berechnet, %d neu.", len(rows), new)
     return summarize(cfg.ledger)

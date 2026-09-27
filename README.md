@@ -486,6 +486,9 @@ kostenabhängig:
   (Wochenende -> Freitag). Mit echten Bid/Ask-Kursen Ø +1,0 bp je Trade.
 - **gotobi_eurjpy**: dieselbe Regel für EUR/JPY (Runde 85, 2017-2025 Ø +1,84 bp, t 2,70;
   Korrelation mit USD/JPY 0,81).
+- **bond_month_end**: IEF (US-Staatsanleihen 7-10 J., Yahoo-Tagesschlüsse) long in den letzten
+  3 Handelstagen jedes Monats (Runden 73/88; 2019-2025 Ø +22 bp je Monat über T-Bill, im letzten
+  Jahr negativ). Erfasst ab dem ersten Monat, dessen Einstieg nach `--start` liegt (Oktober 2026).
 
 ```bash
 python main.py forward-run      # lädt die letzten 10 Tage (Dukascopy), trägt Trades ein

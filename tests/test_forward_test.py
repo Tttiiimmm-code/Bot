@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from tradingbot.forward_test import (
+    bond_month_end_trades,
     gotobi_days,
     gotobi_trades,
     nikkei_trades,
@@ -97,3 +98,14 @@ def test_gotobi_strategy_label_for_second_pair():
     ask = pd.Series(170.01, index=idx)
     rows = gotobi_trades(bid, ask, date(2026, 10, 1), date(2026, 10, 31), 0.0, now=NOW, strategy="gotobi_eurjpy")
     assert rows and all(r["strategy"] == "gotobi_eurjpy" for r in rows)
+
+
+def test_bond_month_end_uses_last_four_trading_days_and_skips_open_month():
+    days = [d.date() for d in pd.bdate_range("2026-09-01", "2026-10-15")]
+    px = pd.Series([100 + i for i in range(len(days))], index=days, dtype=float)
+    rows = bond_month_end_trades(px, date(2026, 9, 1), date(2026, 12, 31), cost=0.0, tbill_rate=0.0,
+                                 today=date(2026, 10, 15))
+    assert len(rows) == 1  # Oktober noch nicht abgeschlossen
+    r = rows[0]
+    assert r["exit_time"] == "2026-09-30" and r["entry_time"] == "2026-09-25"
+    assert r["net_bp"] == round((r["exit_price"] / r["entry_price"] - 1) * 1e4, 3)
