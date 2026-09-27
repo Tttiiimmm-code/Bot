@@ -2296,3 +2296,17 @@ Ergebnis Runde 80 (Alpha-t ggü. SPY):
   unberührt +11,2 % (t 1,81) -> NICHT BESTANDEN. Kein Vorhersagewert über das Marktbeta hinaus.
 - DB GEX niedrig: Entdeckung +4,8 % (t 2,15 < 2,24), Bestätigung -3,1 % (t -1,14), unberührt +5,0 %
   (t 0,80) -> NICHT BESTANDEN.
+
+# Runde 81: Extreme Spekulantenpositionen (CFTC COT) als Umkehrsignal (Tornell & Yuan 2012) (2026-09-27)
+
+Befund: Spitzen der Netto-Spekulantenposition in Devisenfutures gehen Umkehrbewegungen voraus.
+Daten: CFTC Legacy Futures-only (deacot{Jahr}.zip, 2006-2026), Märkte EURO FX, JAPANESE YEN, BRITISH
+POUND (CME), GOLD (COMEX). Kurse Dukascopy-Minuten (EURUSD, GBPUSD, USDJPY, XAUUSD; Bid).
+Signal je Markt und Woche: Netto-Nichtkommerzielle (long - short) / Open Interest; Perzentil in den
+letzten 156 Berichtswochen. >= 90. Perzentil -> Instrument SHORT (gegen die Spekulanten), <= 10. ->
+LONG, sonst flach (Instrument = Fremdwährung ggü. USD bzw. Gold; bei JPY: USDJPY umgekehrt).
+Zeitpunkt: Bericht mit Stand Dienstag, veröffentlicht Freitag; Einstieg Montag 07:00 UTC danach,
+Halten eine Woche (Neubewertung wöchentlich). Kosten 1 bp (FX) bzw. 2 bp (Gold) je Seite bei Wechsel.
+Portfolio gleichgewichtet über aktive Positionen der 4 Märkte (Tagesdurchschnitt, flach = 0).
+Zeiträume: Entdeckung 2009-2016, Bestätigung 2017-2025-09-19, unberührt 2025-09-22..2026-09-25.
+1 Familie. Bestehen: Wochenrendite-t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
