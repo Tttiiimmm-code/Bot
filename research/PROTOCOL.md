@@ -2472,3 +2472,12 @@ letzten Jahr in ALLEN Segmenten negativ. Das sind 12 gemeinsame Monatsbeobachtun
 also eher EIN schlechtes Jahr als fünf unabhängige Widerlegungen. Möglicher Bruch (z.B. veränderte
 Rebalancing-Praxis, vgl. NY Fed 2026-09 "Treasury Trading at the Close") ungeklärt.
 Einordnung: stärkster und breitester Befund außerhalb Japans -> Vorwärtstest-Kandidat (monatlich).
+
+# Runde 89: Gotobi-Fenster im Nikkei (Yen-Schwäche -> Exporteure steigen) (2026-09-27)
+
+Übertragung des Gotobi-Mechanismus: Wenn der Yen vor dem 9:55-Fixing schwächer wird, sollten
+Exporteure und damit der Nikkei im selben Fenster steigen. Daten: Dukascopy JPNIDXJPY-Minuten (Bid).
+Regel: Nikkei long 05:00 -> 09:55 JST an Gotobi-Tagen (gleiche Tagesliste wie Vorwärtstest),
+Kosten 1 bp je Seite (Nachtsitzung/CFD). Kontrolle: gleiches Fenster an allen anderen Werktagen.
+Zeiträume: Entdeckung 2013-10..2019, Bestätigung 2020..2025-09-19, unberührt 2025-09-22..2026-09-25.
+1 Familie. Bestehen: t >= 2 in beiden UND Ø > 0 unberührt.
