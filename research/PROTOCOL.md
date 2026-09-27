@@ -1730,3 +1730,21 @@ Ergebnis Runde 57 (33 Ereignisse 2009-2025):
 Programmfehler (ohne Einfluss aufs Urteil): Sept. 2026 wurde als Ereignis gezählt, obwohl die Daten
 vor dem echten Monatsende enden (Prüfung "Tag >= 25" nach Datumskorrektur zu schwach). Der Effekt ist
 erst seit 2017 sichtbar (+100 bp bei K=10) -- nachträglich betrachtet, kein Beleg.
+
+# Runde 58: Rohstoff-Saisonalität "vorweggenommen" (Quantpedia, 2024-12-05) (2026-09-27)
+
+Regel (Paper, Stichprobe 2007-01..2024-06): 4 Sektoren (Agrar, Industriemetalle, Energie,
+Edelmetalle); für Monat X Signal = Rendite des Monats X-11 (Vorjahres-Folgemonat); die 2 besten
+long, die 2 schlechtesten short, je 25 %, 1 Monat. (Achtung: Die X-12-Variante versagte im Paper,
+X-11 wurde also nach Ansicht der Ergebnisse gewählt.)
+Prüfung außerhalb der Paper-Stichprobe:
+- Vorher 2001-09..2006-12: IMF-Monatsindizes via FRED (PNRGINDEXM Energie, PMETAINDEXM Metalle,
+  PFOODINDEXM Nahrung als Agrar-Näherung; Monatsdurchschnitte) + Gold (Yahoo GC=F Monatsende).
+  Keine Roll-Sprünge (ausser gering bei Gold).
+- Nachher 2024-07..2026-08: DB-ETFs DBA, DBB, DBE, DBP (Yahoo adjclose, Monatsende).
+- Replikation 2007-01..2024-06 mit den ETFs nur berichtet.
+Kosten 10 bp je Seite. 1 Familie. Bestehen: vorher t >= 2 UND nachher Ø > 0.
+Hinweis: Macht gering (erwartetes t vorher ~1,3 bei Paper-Sharpe 0,55).
+Ergebnis Runde 58: vorher 2001-2006 (64 Monate) Ø -0,3 bp/Monat, t -0,01; Replikation 2008-2024-06
+Ø +18 bp/Monat, Sharpe 0,25, t 1,01 (Paper: 0,55); nachher 2024-07..2026-08 (26 Monate) -7,8 % p.a.,
+t -0,99 -> NICHT BESTANDEN. Außerhalb der Paper-Stichprobe keine Spur des Effekts.
