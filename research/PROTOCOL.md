@@ -2310,3 +2310,9 @@ Halten eine Woche (Neubewertung wöchentlich). Kosten 1 bp (FX) bzw. 2 bp (Gold)
 Portfolio gleichgewichtet über aktive Positionen der 4 Märkte (Tagesdurchschnitt, flach = 0).
 Zeiträume: Entdeckung 2009-2016, Bestätigung 2017-2025-09-19, unberührt 2025-09-22..2026-09-25.
 1 Familie. Bestehen: Wochenrendite-t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
+Ergebnis Runde 81 (vor dem Urteil korrigiert: CFTC führte das Pfund bis 2021 als "BRITISH POUND
+STERLING" -> Namen vereinheitlicht):
+- 2009-2016: Ø -5,0 bp/Woche (t -0,72; 67 % der Wochen mit Position); Gold -10,1 bp je aktive Woche.
+- 2017-2025-09: Ø -0,3 bp (t -0,05); unberührt +7,9 bp (t 0,59).
+-> NICHT BESTANDEN. Gegen extreme Spekulantenpositionen zu handeln bringt nichts; bei Gold eher
+Verlust (Spekulanten lagen mit Extrempositionen häufig richtig).
