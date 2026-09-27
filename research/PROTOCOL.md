@@ -1914,3 +1914,18 @@ Zeiträume: Entdeckung 2013-2019, Bestätigung 2020-2025-09-19, unberührt 2025-
 Ergebnis Runde 64: Entdeckung n 1546, Ø 1,14 bp netto (brutto 2,64), t 1,79; Bestätigung n 1418,
 Ø 1,07 bp (brutto 2,57), t 1,42; unberührt Ø -2,51 bp (t -1,28) -> NICHT BESTANDEN. Brutto
 schwach positiv wie im Papier, aber zu klein für Kosten; im unberührten Jahr negativ.
+
+# Runde 65: Bitcoin "10-Uhr-Dump" zur US-Börseneröffnung (2026-09-27)
+
+Behauptung (Medien/Trader 2025-2026, u.a. "Jane Street"-These): BTC fällt in der ersten Stunde des
+US-Aktienhandels; Mechanismus angeblich ETF-Flüsse seit den Spot-Bitcoin-ETFs (2024-01-11).
+Kennzahlen dort nur aus Nov. 2025-Feb. 2026 (Bärenphase) -> genau dort ansetzen ist Datenschnüffelei;
+daher Test über die ganze ETF-Ära plus Kontrolle vor den ETFs.
+Daten: Binance BTCUSDT 1-Minuten-Kerzen (data.binance.vision, kostenlos).
+Regel: an US-Werktagen (Mo-Fr, NYSE-Feiertage aus der Liste unten ausgenommen) BTC SHORT von 09:30
+bis 10:30 New York (Open der Minute). Kosten 5 bp je Seite (CFD/Krypto-Future für DE-Privatanleger).
+Zeiträume: Entdeckung 2024-01-11..2025-06-30 (ETF-Ära, bevor das Muster populär wurde), Bestätigung
+2025-07-01..2026-09-25 (enthält den Medienzeitraum -> Bestätigung ist hier weniger streng).
+Kontrolle (berichtet, nicht gewertet): 2020-01..2024-01-10 (vor ETFs).
+1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung (netto).
+NYSE-Feiertage: aus Yahoo-SPY-Handelstagen abgeleitet (Werktage ohne SPY-Kurs entfallen).
