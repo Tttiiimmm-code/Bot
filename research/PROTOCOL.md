@@ -1660,3 +1660,25 @@ Ergebnis Runde 54 (netto 0,5 bp je Seite, t; 2008-2018 / 2019-2025 / unberührt)
 - Quantpedia "Sectoral Intramonth Momentum Cycle" (veröffentlicht 2026-08-17, Stichprobe bis 2026-06,
   Sharpe 0,55 ohne Kosten): keine Daten nach der Stichprobe verfügbar; drei nachträglich gewählte
   Teilfenster mit Vorzeichenwechsel -> hohes Überanpassungsrisiko. Frühestens als Vorwärtstest.
+
+# Runde 55: Aktien-Impuls -> FX-Nachzügler (Idee aus r/algotrading, "an edge is a reason someone pays you") (2026-09-27)
+
+Hypothese: Nach einer großen Übernacht-Bewegung des S&P 500 ziehen Devisenpaare, die ihrer üblichen
+Sensitivität noch nicht gefolgt sind, in den nächsten Stunden nach (langsamerer FX-Fluss zahlt).
+Daten: Dukascopy-Minuten (Bid) usa500idxusd, EURUSD, GBPUSD, USDJPY, 2013-10 bis 2026-09-25.
+Definition je Handelstag d (New-York-Zeit):
+- Impuls: S&P-Rendite 16:00 (Vortag) -> 03:00 (Europa-Eröffnung). Bedingung |Impuls| > 1 x Std. dieser
+  Fensterrendite der letzten 60 Tage (ohne d).
+- Beta je Paar: OLS-Steigung der Paarrendite (Kurs, z.B. EURUSD) auf die S&P-Rendite im selben
+  Fenster über die letzten 250 Tage (ohne d); erwartete Bewegung = Beta x Impuls.
+- Nachzügler: Paar hat im Fenster weniger als die Hälfte der erwarteten Bewegung gemacht (in
+  Richtung der Erwartung). Dann Position in Richtung der Erwartung von 03:00 bis 07:00 New York.
+- Kosten 0,5 bp je Seite. Portfolio: Mittel der Trades eines Tages (0 an Tagen ohne Trade).
+Entdeckung 2013-10..2018, Bestätigung 2019..2025-09-19, unberührt 2025-09-22..2026-09-25.
+1 Familie, keine Varianten. Bestehen: t >= 2 in Entdeckung UND Bestätigung UND Ø > 0 unberührt.
+Ergebnis Runde 55 (Trades = Paar-Tage; Ø netto je Trade; Portfolio-t):
+- 2013-2018: 194 Trades, Ø -2,80 bp, 47 % Treffer, t -0,23; 2019-2025: 550 Trades, Ø -2,44 bp, 46 %,
+  t -1,22; unberührt: 84 Trades, Ø -0,76 bp, 51 %, t -0,56 -> NICHT BESTANDEN.
+- Je Paar 2019-2025: EURUSD -4,3 bp, GBPUSD -5,0 bp, USDJPY +1,6 bp. Kein Nachziehen erkennbar;
+  FX verarbeitet den Aktienimpuls bis zur Europa-Eröffnung bereits vollständig.
+(Anzeige-Korrektur vor Eintrag: erster Lauf zählte leere Einträge als Trades; Urteil unverändert.)
