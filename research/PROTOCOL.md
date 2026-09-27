@@ -1957,3 +1957,16 @@ Ergebnis Runde 66 (118 Feiertage 2008-2026; EUR/USD 2008-2016 nur 36 mit Ask-Kur
 - GBP/USD: Entdeckung Ø 16,2 bp (t 2,34); Bestätigung -4,0 bp (t -1,01); unberührt -10,4 bp.
 -> NICHT BESTANDEN. Bis 2016 deutlich (passt zum Papier), seit 2017 verschwunden -- wieder Verfall
 nach Veröffentlichung (2013).
+
+# Runde 67: Japanischer Monatswechsel (Ziemba 1991) am Nikkei (2026-09-27)
+
+Befund (Ziemba 1991, Japan and the World Economy, Daten bis 1988): In Japan liegt der Monatswechsel-
+Effekt auf den Handelstagen -5 bis +2 (Tag -1 = letzter Handelstag); Gehälter werden am 25. gezahlt.
+Daten: Yahoo ^N225 (Kursindex) 1993-01..2026-09-24 (Tagesschlüsse).
+Regel: Tagesrenditen (Schluss/Schluss) der Handelstage -5..-1 und +1..+2 eines jeden Monats = TOM-
+Tage; alle übrigen = Rest. Kennzahl: Ø Tagesrendite TOM minus Ø Rest (Welch-t). Umsetzung: long
+Micro-Nikkei vom Schluss des Tages -6 bis Schluss Tag +2 (1 bp je Seite ~ 0,25 bp je TOM-Tag,
+von der TOM-Rendite abgezogen).
+Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-09-24.
+1 Familie. Bestehen: Welch-t >= 2 in Entdeckung UND Bestätigung UND Differenz > 0 unberührt.
+Berichtet: TOM-Strategie p.a. vs Halten.
