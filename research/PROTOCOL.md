@@ -1512,3 +1512,18 @@ Ergebnis Runde 48: 2003-2014 Ø 0,30 bp je aktivem Tag, t -0,08; 2015-2025 Ø 2,
 Veröffentlichung (2025-02..2026-09, 100 aktive Tage) Ø -16,7 bp, t -1,96 -> NICHT BESTANDEN. Das
 Kalendersignal allein repliziert mit SPY/TLT nicht (Kopfzahlen des Papiers/Blogs: kombiniertes
 Schwellen- + Kalendersignal, auf S&P-Vola skaliert, Futures); nach Veröffentlichung deutlich negativ.
+
+# Runde 49: Gotobi mit echten Dukascopy-Bid/Ask-Kursen (vorregistriert, Teil der Gotobi-Prüfung)
+
+Kauf zum ASK (Open der Minute ab 05:00 JST), Verkauf zum BID (Open der Minute ab 09:55 JST), keine
+weiteren Kosten (Dukascopy ist ein ECN-Anbieter; Kommission dort ~0,35 bp je Seite wird zusätzlich
+abgezogen). 2017-2025-09-19 und unberührtes Jahr. Kriterium: Ø netto > 0 und t >= 1,65 für
+2017-2025. Zusätzlich berichtet: mittlerer Spread um 05:00 und 09:55 JST.
+Ergebnis Runde 49: Spread 05:00 JST Ø 1,29 bp (Median 0,34 -- einzelne sehr breite Minuten), 09:55
+Ø 0,35 bp. 2017-2025: 626 Trades, Ø netto 1,00 bp, 55 % Treffer, Summe +6,3 %, t 1,38 -> NICHT
+ok (Schwelle 1,65); unberührtes Jahr Ø +1,21 bp, t 0,67.
+Endurteil Gotobi: Der Effekt ist statistisch real (brutto ~3 bp, signifikant vor und nach
+Veröffentlichung, Umkehr nach dem Fixing), aber mit echten ECN-Bid/Ask-Kursen bleibt ~1 bp je Trade
+(~0,7 % p.a. bei 1x) und die Signifikanz geht verloren. Nur mit passiven Limit-Orders (Spread
+verdienen statt zahlen) wäre mehr möglich -- nicht mit Minutendaten prüfbar. Kein handelbarer
+Kandidat nach den Kriterien; bester Befund der Suche für einen Papierhandel.
