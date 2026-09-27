@@ -557,6 +557,11 @@ Passe in `deploy/tradingbot.service` `User=`/`WorkingDirectory=`/`ExecStart=` an
 anderen User oder Pfad verwendest. Neu starten nach einer `.env`-Änderung:
 `sudo systemctl restart tradingbot`. Dauerhaft stoppen: `sudo systemctl disable --now tradingbot`.
 
+Genauso gibt es `deploy/momentum.service` (Momentum-Bot, `.env`) und `deploy/overnight.service`
+(Overnight-Bot mit eigenem Konto in `overnight.env`, zunächst `--dry-run`). Wichtig: `tradingbot`
+und `momentum` NICHT gleichzeitig mit derselben `.env` betreiben -- beide würden im selben
+Alpaca-Konto handeln und sich gegenseitig Positionen verändern.
+
 ## Konfiguration (`.env`)
 
 | Variable                | Beschreibung                                             | Default |

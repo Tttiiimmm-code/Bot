@@ -1,0 +1,29 @@
+[Unit]
+Description=Momentum-Bot (Alpaca, Paper-Trading)
+After=network-online.target
+Wants=network-online.target
+# Kein endloser Neustart bei dauerhaftem Konfigurationsfehler (z.B. fehlende .env):
+# nach 5 Neustarts in 10 Minuten hält systemd an.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+# Gleiche Einstellungen wie der bisher per tmux gestartete Bot.
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py momentum-run --max-risk-dollars 500 --daily-max-loss-pct 0.1 --weakness-exit none
+
+# .env (Keys des Momentum-Kontos) liegt im Repo und wird beim Start geladen.
+# Offene Positionen werden nach einem Neustart übernommen (carried over).
+
+Restart=on-failure
+RestartSec=30
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
+
+[Install]
+WantedBy=multi-user.target
