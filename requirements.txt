@@ -5,4 +5,5 @@ alpaca-py>=0.33,<0.45
 pandas>=2.0,<4
 numpy>=1.24,<3
 python-dotenv>=1.0,<2
+websockets>=12,<18
 pytest>=8.0,<10

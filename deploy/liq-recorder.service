@@ -1,0 +1,23 @@
+[Unit]
+Description=Krypto-Liquidationen aufzeichnen (Binance/Bybit-Websockets, keine Orders)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python -m tradingbot.liquidations data_cache/liquidations
+Restart=always
+RestartSec=30
+# Braucht ~30-40 MB (lädt weder pandas noch alpaca); harte Grenze, damit er den Trading-Bot nie verdrängt.
+MemoryHigh=80M
+MemoryMax=120M
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot/data_cache
+
+[Install]
+WantedBy=multi-user.target

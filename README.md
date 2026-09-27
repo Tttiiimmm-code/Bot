@@ -503,6 +503,26 @@ python main.py forward-report   # Auswertung von forward_trades.csv
 - Täglich auf dem VPS: `deploy/forward-test.service` + `deploy/forward-test.timer`
   (06:00 UTC), aktivieren mit `sudo systemctl enable --now forward-test.timer`.
 
+### Liquidations-Recorder (Krypto-Perpetuals, nur Datensammlung)
+
+Historische Liquidationsdaten gibt es nicht kostenlos. Um Liquidationskaskaden später
+testen zu können, zeichnet `tradingbot/liquidations.py` sie ab jetzt selbst auf:
+
+```bash
+python -m tradingbot.liquidations data_cache/liquidations
+```
+
+- **Binance** USDⓈ-M `!forceOrder@arr`: alle Symbole, aber je Symbol höchstens die größte
+  Liquidation pro Sekunde (unvollständig). **Bybit** `allLiquidation.<SYMBOL>`: jede
+  Liquidation, aber nur für die 20 Symbole in `BYBIT_SYMBOLS`.
+- Ausgabe je Börse und UTC-Tag: `<exchange>_<YYYY-MM-DD>.csv` mit
+  `recv_ms,trade_ms,symbol,liquidated,price,qty` (`liquidated` = Seite der zwangsgeschlossenen
+  Position). Verbindungsabbrüche stehen in `gaps.csv`.
+- Keine Keys, keine Orders, ~30-40 MB RAM (wird bewusst nicht über `main.py` gestartet, das
+  pandas/alpaca lädt). Kurse für die spätere Auswertung gibt es kostenlos auf
+  data.binance.vision.
+- Dauerbetrieb: `deploy/liq-recorder.service` (`Restart=always`, `MemoryMax=120M`).
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
