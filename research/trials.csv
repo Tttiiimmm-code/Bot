@@ -388,3 +388,4 @@ logged_at,family,symbol,params,slippage_bps,max_exposure,start,end,days,sharpe,d
 2026-09-27T01:49:28,dax_intraday,DEUIDXEUR,"{""variant"": ""BU TP=None""}",1.0,1.0,2013-09-30,2018-12-28,1127,0.648,0.040823,0.05892,-0.08728,0,0.0
 2026-09-27T01:49:28,dax_intraday,DEUIDXEUR,"{""variant"": ""BU TP=1.0""}",1.0,1.0,2013-09-30,2018-12-28,1127,0.1566,0.009866,0.00771,-0.08077,0,0.0
 2026-09-27T01:49:28,dax_intraday,DEUIDXEUR,"{""variant"": ""BV Intraday-Momentum""}",1.0,1.0,2013-09-30,2018-12-28,1198,-0.1885,-0.011871,-0.00739,-0.09874,0,0.0
+2026-09-27T02:40:35,night_replication,5 index CFDs,"{""cost"": ""future""}",0.5,1.0,2013-01-02,2025-09-19,3287,0.38,0.023936,0.0324,-0.26498,0,0.0

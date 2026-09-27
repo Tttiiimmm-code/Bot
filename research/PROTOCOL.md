@@ -1393,3 +1393,24 @@ brutto 3,56, netto 2,03 bp (4,3 % p.a.), t 1,02; gesamt netto 3,05 bp (7,1 % p.a
 -> Der Nachteffekt ist mit handelbaren CFD-Kursen vorhanden (kein Artefakt veralteter Eröffnungs-
 werte), aber seit 2019 schwächer und nicht signifikant. (Aufteilung Abend/Nacht nur auf Tagen mit
 Kurs um 22:00 -- Teilmenge, nicht additiv.)
+
+# Runde 43: Replikation des Nachteffekts an 5 weiteren Indizes (2026-09-27)
+
+Frage: Ist der DAX-Nachteffekt (Runden 40-42) ein allgemeines Phänomen? Die 5 Indizes wurden
+bisher NICHT auf Nachtrenditen angesehen (echter Replikationstest). Daten: Dukascopy-CFD-Minuten
+(Bid) usa500idxusd, usatechidxusd (Kassaschluss 16:00 -> Eröffnung 09:30 New York),
+gbridxgbp (16:30 -> 08:00 London), fraidxeur (17:30 -> 09:00 Berlin), jpnidxjpy (15:00 -> 09:00
+Tokio). Kurs = Open der ersten Minute ab dem Zeitpunkt (max. 5 Min. später). Kosten wie Future:
+0,5 bp je Seite + 3M-Zins der Währung/360 je Kalendernacht (FRED IR3TIB01*). 2013-10 bis 2025-09-19.
+Portfolio: gleichgewichtet über die an einem Kalendertag verfügbaren Nächte.
+Bestehen: Portfolio netto t >= 2 über 2013-2025 UND positiver Mittelwert in beiden Hälften
+(2013-2018, 2019-2025) UND mindestens 4 der 5 Indizes einzeln netto positiv.
+
+Ergebnis Runde 43 (netto je Nacht, t; 2013-2018 / 2019-2025):
+- S&P 500 1,81 bp (t 1,29) / 0,56 (0,28); Nasdaq-100 2,93 (1,80) / -0,26 (-0,11); FTSE 100 1,52
+  (0,99) / -1,10 (-0,62); CAC 40 1,92 (1,11) / -0,17 (-0,09); Nikkei 225 5,23 (1,74) / 4,73 (1,85),
+  gesamt t 2,54.
+- Portfolio: 2,24 bp (5,4 % p.a., t 1,65) / 0,75 bp (1,3 % p.a., t 0,47); gesamt t 1,37; 5/5
+  Indizes gesamt positiv -> NICHT BESTANDEN (t < 2).
+Befund: Der Nachteffekt repliziert qualitativ (alle 5 positiv), ist aber seit 2019 außer in Japan
+praktisch verschwunden. Japan fällt auf, ist aber nachträglich aus 5 ausgewählt (kein Beleg).
