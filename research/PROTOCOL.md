@@ -1887,3 +1887,10 @@ Minute ab Zeitpunkt (max. 5 min später, sonst Tag verworfen).
 Zeiträume: Entdeckung 2008-01..2016-12, Bestätigung 2017-01..2025-09-19, unberührt 2025-09-22..
 2026-09-25. Bestehen je Familie: t >= 2,24 Entdeckung UND t >= 2 Bestätigung UND Ø > 0 unberührt.
 Zusätzlich berichtet: Brutto (Bid) je Bein.
+Ergebnis Runde 63 (Ask-Minuten EUR/USD, GBP/USD 2008-2026 geladen):
+- EUR/USD: Entdeckung Ø 2,62 bp netto (t 1,85), Bestätigung 1,51 bp (t 1,66), unberührt -2,15 bp
+  (t -1,16). Brutto beide Beine weiter positiv (2008-2016 +2,9/+1,5 bp, 2017-2025 +1,7/+1,3 bp),
+  aber schwächer als 1997-2007 und seit 2024 negativ.
+- GBP/USD: 0,69 (t 0,55) / 0,51 (t 0,47) / -1,88 bp.
+-> NICHT BESTANDEN. Richtung des Papiers hält brutto 2008-2025, nach Kosten zu schwach; im
+unberührten Jahr verschwunden.
