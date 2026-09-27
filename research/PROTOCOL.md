@@ -2481,3 +2481,6 @@ Regel: Nikkei long 05:00 -> 09:55 JST an Gotobi-Tagen (gleiche Tagesliste wie Vo
 Kosten 1 bp je Seite (Nachtsitzung/CFD). Kontrolle: gleiches Fenster an allen anderen Werktagen.
 Zeiträume: Entdeckung 2013-10..2019, Bestätigung 2020..2025-09-19, unberührt 2025-09-22..2026-09-25.
 1 Familie. Bestehen: t >= 2 in beiden UND Ø > 0 unberührt.
+Ergebnis Runde 89: Gotobi-Tage 2013-2019 Ø -2,98 bp (t -0,97), 2020-2025 Ø -0,32 bp (t -0,11), unberührt
++8,73 bp (t 0,80); andere Tage -1,1 / -1,4 / -8,8 bp -> NICHT BESTANDEN. Die Yen-Schwäche vor dem
+Fixing überträgt sich nicht messbar auf den Nikkei; der Gotobi-Effekt bleibt ein reiner Devisen-Effekt.
