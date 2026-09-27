@@ -484,6 +484,8 @@ kostenabhängig:
   Eröffnung am nächsten Handelstag (08:45 JST). Backtest 2013-2025 Ø +4,2 bp je Nacht netto.
 - **gotobi**: USD/JPY long 05:00 -> 09:55 JST am 5./10./15./20./25. und Monatsletzten
   (Wochenende -> Freitag). Mit echten Bid/Ask-Kursen Ø +1,0 bp je Trade.
+- **gotobi_eurjpy**: dieselbe Regel für EUR/JPY (Runde 85, 2017-2025 Ø +1,84 bp, t 2,70;
+  Korrelation mit USD/JPY 0,81).
 
 ```bash
 python main.py forward-run      # lädt die letzten 10 Tage (Dukascopy), trägt Trades ein

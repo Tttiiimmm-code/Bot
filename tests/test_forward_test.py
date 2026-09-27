@@ -89,3 +89,11 @@ def test_ledger_replaces_same_day_and_summarizes(tmp_path):
     assert [(r["date"], float(r["net_bp"])) for r in rows] == [("2026-10-05", 3.0), ("2026-10-09", -1.0)]
     text = summarize(path)
     assert "gotobi: 2 Trades" in text and "nikkei_night: noch keine Trades" in text
+
+
+def test_gotobi_strategy_label_for_second_pair():
+    idx = pd.date_range("2026-10-04 19:00", "2026-10-05 02:00", freq="min", tz="UTC")
+    bid = pd.Series(170.0, index=idx)
+    ask = pd.Series(170.01, index=idx)
+    rows = gotobi_trades(bid, ask, date(2026, 10, 1), date(2026, 10, 31), 0.0, now=NOW, strategy="gotobi_eurjpy")
+    assert rows and all(r["strategy"] == "gotobi_eurjpy" for r in rows)

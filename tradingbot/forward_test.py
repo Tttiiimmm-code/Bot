@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 
 TOKYO = "Asia/Tokyo"
 LEDGER_FIELDS = ["strategy", "date", "entry_time", "entry_price", "exit_time", "exit_price", "net_bp"]
-# Erwartung aus dem Backtest (Ø netto je Trade in bp, 2013-2025 bzw. 2017-2025)
-EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00}
+# Erwartung aus dem Backtest (Ø netto je Trade in bp, 2013-2025 bzw. 2017-2025;
+# gotobi = USD/JPY, gotobi_eurjpy = EUR/JPY aus Runde 85)
+EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84}
 OSE_CLOSE_CHANGE = date(2024, 11, 5)
 # Börsenfreie Tage in Japan (Nationalfeiertage + Jahreswechsel). Der Dukascopy-CFD
 # notiert auch an diesen Tagen, die OSE-Futures nicht -> für nikkei_night
@@ -145,7 +146,7 @@ def nikkei_trades(bid: pd.Series, start: date, end: date, cost_per_side: float, 
 
 
 def gotobi_trades(bid: pd.Series, ask: pd.Series, start: date, end: date, commission: float,
-                  now: pd.Timestamp) -> list[dict]:
+                  now: pd.Timestamp, strategy: str = "gotobi") -> list[dict]:
     rows = []
     for d in sorted(gotobi_days(start.year, end.year)):
         exit_ts = _tokyo(d, 9, 55)
@@ -154,10 +155,10 @@ def gotobi_trades(bid: pd.Series, ask: pd.Series, start: date, end: date, commis
         entry_ts = _tokyo(d, 5, 0)
         buy, sell = price_at(ask, entry_ts), price_at(bid, exit_ts)
         if buy is None or sell is None:
-            logger.warning("Gotobi %s: keine Kurse um 05:00/09:55 JST (Feiertag/Datenlücke).", d)
+            logger.warning("%s %s: keine Kurse um 05:00/09:55 JST (Feiertag/Datenlücke).", strategy, d)
             continue
         net = sell / buy - 1 - 2 * commission
-        rows.append({"strategy": "gotobi", "date": d.isoformat(), "entry_time": entry_ts.isoformat(),
+        rows.append({"strategy": strategy, "date": d.isoformat(), "entry_time": entry_ts.isoformat(),
                      "entry_price": buy, "exit_time": exit_ts.isoformat(), "exit_price": sell,
                      "net_bp": round(net * 1e4, 3)})
     return rows
@@ -193,7 +194,7 @@ def summarize(path: Path) -> str:
     if not rows:
         return f"Noch keine Trades in {path}."
     lines = [f"Vorwärtstest ({path})", ""]
-    for strat in ("nikkei_night", "gotobi"):
+    for strat in EXPECTED_BP:
         bp = [float(r["net_bp"]) for r in rows if r["strategy"] == strat]
         if not bp:
             lines.append(f"{strat}: noch keine Trades")
@@ -224,6 +225,10 @@ def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None 
     fx_ask = load_open_prices(fetch_minutes("usdjpy", "ask", start, end, cfg.data_dir))
     rows = nikkei_trades(nk, cfg.first_day, today, cfg.nikkei_cost_per_side, cfg.jpy_rate, now)
     rows += gotobi_trades(fx_bid, fx_ask, cfg.first_day, today, cfg.gotobi_commission, now)
+    ej_bid = load_open_prices(fetch_minutes("eurjpy", "bid", start, end, cfg.data_dir))
+    ej_ask = load_open_prices(fetch_minutes("eurjpy", "ask", start, end, cfg.data_dir))
+    rows += gotobi_trades(ej_bid, ej_ask, cfg.first_day, today, cfg.gotobi_commission, now,
+                          strategy="gotobi_eurjpy")
     new = update_ledger(cfg.ledger, rows)
     logger.info("Vorwärtstest: %d Trades berechnet, %d neu.", len(rows), new)
     return summarize(cfg.ledger)
