@@ -2228,3 +2228,5 @@ Ergebnis Runde 78: Replikation 1994-2016 gerade Wochen Ø 8,8 bp/Tag vs ungerade
 Strategie 12,4 % p.a. vs SPY 9,1 % bei halber Marktzeit) -- bestätigt das Papier.
 Nach Veröffentlichung 2017-2025-09: gerade 3,3 bp vs ungerade 7,8 bp (t -0,90; Strategie 4,3 % vs
 SPY 15,2 %); unberührt 4,2 vs 6,3 bp (t -0,20) -> NICHT BESTANDEN. Klarer Verfall nach 2016.
+Präzisierung der Nutzerpräferenz (2026-09-27): Hohes Risiko ist akzeptabel, wenn der Ertrag es
+überwiegt; ausgeschlossen sind nur neue Memecoins/Listings (long wie short).
