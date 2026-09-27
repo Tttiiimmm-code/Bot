@@ -2117,3 +2117,14 @@ die korrigierte Abgrenzung.
 außerhalb Japans (t 3,00 über 80 Monate nach 2019, Mechanismus Index-Rebalancing belegt). Das
 unberührte Jahr ist mit 12 Beobachtungen schwach aussagekräftig -> Kandidat für den Vorwärtstest
 (monatlich, 3 Tage, per 10Y-T-Note-Future oder UCITS-Treasury-ETF).
+
+# Runde 74: Monatsend-Effekt bei Euro-Staatsanleihen (unabhängiger Markt, gleicher Mechanismus) (2026-09-27)
+
+Mechanismus wie Runde 73: Rentenindizes (Bloomberg Euro Treasury, iBoxx) werden am letzten Handels-
+tag des Monats umgestellt; Indexfonds/Versicherer kaufen Duration. Unabhängiger Markt, direkt aus DE
+handelbar (UCITS-ETF oder Bund-Future).
+Daten: Yahoo SXRQ.DE (iShares EUR Govt Bond 7-10yr, thesaurierend, Xetra) ab 2009-12; berichtet
+zusätzlich EXX6.DE (Bund 10,5+ J.). Überrendite ggü. FRED IR3TIB01EZM156N (3M-Euro-Zins).
+Regel wie Runde 73: letzte 3 Handelstage des Monats long, 2 bp je Monat Kosten.
+Zeiträume: Entdeckung 2010-01..2018-12, Bestätigung 2019-01..2025-08, unberührt 2025-09..2026-08.
+1 Familie. Bestehen: t >= 2 Entdeckung UND t >= 2 Bestätigung UND Ø > 0 unberührt (netto).
