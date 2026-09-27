@@ -1445,3 +1445,51 @@ Gesamtbild Nachteffekt (Runden 40-45): real vorhanden (brutto positiv in fast al
 Zeiträumen), netto nach Future-Kosten klein und instabil; der einzige über alle Prüfungen
 durchgehend positive Markt ist Japan -- das ist aber nachträglich ausgewählt. Kein Kandidat, der
 die vorregistrierten Kriterien erfüllt.
+
+# Runde 46: Gotobi-Effekt bei USD/JPY (2026-09-27)
+
+Hypothese (Ito & Yamada 2017; Bessho et al.): An Gotobi-Tagen (5., 10., 15., 20., 25. und letzter
+Tag des Monats; fällt er auf ein Wochenende, gilt der vorherige Freitag -- japanische Feiertage
+nicht berücksichtigt) kaufen japanische Importeure USD vor dem Tokio-Fixing um 9:55 JST; der Yen
+schwächt sich vorher ab. Daten Dukascopy USDJPY m1 (Bid, data_cache/dukascopy/fx), Zeiten Asia/Tokyo.
+Kosten 0,5 bp je Seite (Spread ~0,2-0,5 Pips). Tagesrendite, 0 an Tagen ohne Position.
+Entdeckung 2008-2016 (vor Veröffentlichung), Bestätigung 2017-2025-09-19, plus unberührtes Jahr
+2025-09-22..2026-09-25 (neu geladen) als Vorzeichentest.
+- BX Gotobi: long USDJPY 05:00 -> 09:55 JST an Gotobi-Tagen.
+- BY Kontrolle / Alle-Tage-Variante: long USDJPY 05:00 -> 09:55 JST an allen ANDEREN Werktagen.
+Bestehen (2 Familien): t >= 2,24 Entdeckung UND >= 2 Bestätigung UND unberührtes Jahr positiv.
+
+## 2026-09-27 -- Ergebnisse Runde 46
+
+- BX Gotobi: 2008-2016 639 Trades, Ø 4,64 bp, 59 % Treffer, t 4,68; 2017-2025 627 Trades, Ø 2,05 bp,
+  58 % Treffer, t 2,80; unberührtes Jahr 70 Trades, Ø +2,05 bp (Summe +1,43 %) -> BESTANDEN.
+  (Erste Familie, die alle drei Hürden inkl. unberührtem Jahr nimmt; auch NACH der Veröffentlichung
+  2017 signifikant.) Wirtschaftlich klein: ~70 Trades/Jahr, 1,4 % p.a. bei 1x; Jahres-Sharpe grob
+  t/sqrt(Jahre) = 2,80/sqrt(8,7) ~ 0,95.
+- BY andere Tage (Kontrolle): t 1,57 / -0,49, unberührt -1,73 bp -> NICHT BESTANDEN. Der Effekt ist
+  spezifisch für Gotobi-Tage (passt zur Fixing-Nachfrage-Erklärung).
+
+# Runde 47: Robustheit Gotobi (vorregistriert vor weiterer Analyse)
+
+Kriterien (alle für 2017-2025-09-19, dem Zeitraum nach Veröffentlichung):
+- R1 Kostenstress 1,5 bp je Seite (breitere Retail-Spreads): t >= 1,65.
+- R2 Einstiegszeit 03:00, 07:00, 08:00 JST (Ausstieg 09:55): alle drei Ø > 0.
+- R3 Jahre 2008-2025 (jeweils Kalenderjahr, 2025 bis 09-19): mindestens 60 % positiv.
+- R4 Ausstieg 10:30 statt 09:55 (nach dem Fixing): berichtet, erwartet kleiner (Umkehr nach Fix).
+- R5 Swap: long USDJPY erhält i.d.R. positiven Swap (USD-Zins > JPY-Zins) -- nicht einbezogen
+  (konservativ), nur erwähnt.
+
+## 2026-09-27 -- Ergebnisse Runde 47 (2017-2025, Gotobi)
+
+- R1 Kostenstress 1,5 bp je Seite: Ø 0,05 bp, t 0,07 -> NICHT ok. Brutto ~3 bp je Trade; nur mit
+  ECN-Kosten (<= ~1 bp Round-Trip, z.B. IBKR: ~0,2 Pip Spread + 0,2 bp Kommission je Seite) sinnvoll.
+- R2 Einstieg 03:00 / 07:00 / 08:00: Ø 2,51 / 2,22 / 1,16 bp, t 2,87 / 3,27 / 1,86 -> ok.
+- R3 Jahre positiv 15/18 = 83 % -> ok; aber 2024 -0,09 %, 2025 (bis 09-19) -1,85 %; unberührtes Jahr
+  2025-09..2026-09 +1,43 %.
+- R4 Ausstieg 10:30: Ø -0,67 bp (t -0,82) -> nach dem Fixing Umkehr; stützt die Erklärung
+  (Fixing-Nachfrage), der Gewinn muss VOR 9:55 realisiert werden.
+Gesamturteil Gotobi: statistisch der robusteste Befund der gesamten Suche (signifikant vor UND nach
+Veröffentlichung, positiv im unberührten Jahr, spezifisch für Gotobi-Tage, plausibler Mechanismus),
+aber wirtschaftlich dünn und kostensensitiv: ~3 bp brutto je Trade, ~70 Trades/Jahr, nur mit
+ECN-Kosten und Hebel (z.B. 5-10x) lohnend; letzte zwei Kalenderjahre schwach. Empfehlung:
+Papierhandel mit echten Kursen/Spreads eines ECN-Brokers, bevor Geld eingesetzt wird.
