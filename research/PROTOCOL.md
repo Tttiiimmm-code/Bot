@@ -2056,3 +2056,9 @@ Kalendertag t+1 für 24 h: long wenn F > 0, short wenn F < 0 (Perp/CFD). Kosten 
 Zeiträume: Entdeckung 2024-01-11..2025-04-30 (Stichprobe des Papiers), Bestätigung 2025-05-01..
 2026-09-25 (nach der Stichprobe). 1 Familie. Bestehen: t >= 2 in beiden Zeiträumen (netto).
 Berichtet: nur große Flüsse (|F| > 200 Mio.), Korrelation F mit gleichzeitiger Rendite.
+Ergebnis Runde 71 (695 Flusstage 2024-01-11..2026-09-25): Fluss korreliert mit der GLEICHZEITIGEN
+Rendite der US-Sitzung (r = 0,27), aber nicht mit der handelbaren Folgeperiode:
+- Entdeckung: n 326, Ø netto 5,3 bp (brutto 15,3), t 0,42, Treffer 52 %; |F|>200: t 0,20.
+- Bestätigung: n 352, Ø netto 2,0 bp, t 0,18, Treffer 46 %; |F|>200: t 0,52.
+-> NICHT BESTANDEN. Die "Vorhersage" des Papiers entsteht vermutlich aus Überlappung von
+Flussmeldung und Kursbewegung (Flüsse folgen dem Kurs), nicht aus handelbarer Information.
