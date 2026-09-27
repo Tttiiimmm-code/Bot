@@ -1682,3 +1682,28 @@ Ergebnis Runde 55 (Trades = Paar-Tage; Ø netto je Trade; Portfolio-t):
 - Je Paar 2019-2025: EURUSD -4,3 bp, GBPUSD -5,0 bp, USDJPY +1,6 bp. Kein Nachziehen erkennbar;
   FX verarbeitet den Aktienimpuls bis zur Europa-Eröffnung bereits vollständig.
 (Anzeige-Korrektur vor Eintrag: erster Lauf zählte leere Einträge als Trades; Urteil unverändert.)
+
+# Runde 56: Nachteffekt an weiteren asiatisch-pazifischen Indizes (2026-09-27)
+
+Frage: Ist der robuste Nikkei-Nachteffekt (Runde 53) ein asiatisches Phänomen? Hang Seng und ASX 200
+wurden nie auf Nachtrenditen angesehen. Daten Dukascopy-CFD (Bid): hkgidxhkd (16:00 -> 09:30
+Hongkong), ausidxaud (16:00 -> 10:00 Sydney). Kosten 0,5 bp je Seite + 3M-Zins/360 je Kalendernacht
+(HKD: USD-Zins wegen Dollarbindung; AUD: IR3TIB01AUM156N). 2013-10..2025-09-19 und unberührtes Jahr.
+Bestehen: Portfolio (gleichgewichtet) netto t >= 2 für 2013-2025 UND beide Indizes einzeln Ø > 0
+UND Portfolio im unberührten Jahr Ø > 0.
+
+## 2026-09-27 -- Literatur zu den zwei robusten Befunden
+
+- Nikkei-Nacht: "Stock prices in Japan rise at night" (Pacific-Basin Finance Journal 2002; Nikkei
+  1986-1998: Handelszeit Ø negativ, Nacht signifikant positiv). Damit liegen unsere Prüfungen
+  1994-2013 (t 2,97) und 2013-2025 (t 2,54) überwiegend NACH der Veröffentlichung -- der Effekt
+  hat die Veröffentlichung überlebt. Ursache laut Literatur ungeklärt.
+- Gotobi: Bessho, Sugimoto & Suzuki (2023, Stichprobe 2018-2020, 03:00 -> 09:55) und arXiv
+  2301.13204; kommerzielle MT4/MT5-"Gotobi-EAs" verbreitet -> Risiko, dass der Effekt zunehmend
+  vorweggenommen wird (passt zu den schwachen Jahren 2024/2025, unberührtes Jahr wieder positiv).
+Ergebnis Runde 56 (ASX-Daten erst ab 2014; leere Datei 2013 entfernt):
+- Hang Seng: 2013-2018 Ø 1,85 bp (t 0,81), 2019-2025 0,91 (0,35), unberührt -0,21 (-0,04).
+- ASX 200: -2,43 (-1,06) / 0,34 (0,17), gesamt Ø -0,58 bp, unberührt 1,20 (0,30).
+- Portfolio 2013-2025 Ø 0,76 bp, t 0,56 -> NICHT BESTANDEN.
+Befund: Der Nachteffekt ist kein allgemeines asiatisch-pazifisches Phänomen; Japan ist ein
+Sonderfall (passt zur Literatur, die es als japanspezifisches Rätsel beschreibt).
