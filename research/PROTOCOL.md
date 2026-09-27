@@ -1856,3 +1856,14 @@ Gleiche Zeiträume wie Runde 61. Alle drei Prüfungen müssen bestehen:
   t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
 - R3 Keine Punktlandung: 9 Varianten Einstieg {18, 19, 20 Uhr NY} x Ausstieg {07, 08, 09 Uhr
   London}, Kosten wie R1. Bestehen: alle 9 mit Ø > 0 in der Bestätigung.
+Ergebnis Runde 62 (Ask-Minuten 2008-2026 geladen, 7,75 Mio.):
+- R1 echte Kosten: Entdeckung Ø +0,89 bp (t 0,60), Bestätigung Ø -3,20 bp (t -3,92), unberührt
+  +5,87 bp (t 0,89) -> NICHT bestanden. Dukascopy-Spread um 18:00 NY frisst die ~5 bp brutto auf.
+- R2 Nacht minus Tag: 17,1 bp (t 4,56) / 5,6 bp (t 2,96) / 29,7 bp (t 2,45) -> bestanden; die
+  Tagessitzung ist in allen Zeiträumen negativ (-5,8 / -1,6 / -9,7 bp). Der Effekt ist echt,
+  nicht nur Trend.
+- R3: alle 9 Varianten in der Bestätigung netto negativ (-1,5 bis -3,2 bp) -> NICHT bestanden.
+-> Runde 62 NICHT BESTANDEN: Gold-Nachteffekt existiert (brutto), ist aber per CFD mit
+Dukascopy-Spreads nicht handelbar. Nachträglich (nicht gewertet): Mit COMEX-Micro-Gold-Futures
+(MGC, Tick 0,10 $ ~ 0,25 bp) wären die Kosten evtl. ~1-1,5 bp Round-Trip -- ungeprüft, keine
+kostenlosen Futures-Quotes; wie beim Nikkei nur per Futures-Broker (IBKR) denkbar.
