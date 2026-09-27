@@ -2386,3 +2386,8 @@ Regel: Nacht handeln, wenn Vorhersage > 0, sonst flach.
 Kennzahl: tägliche Differenz (ML-gefiltert minus immer investiert), t-Wert gepaart.
 Zeiträume: Walk-forward 2017-01..2025-09-19, unberührt 2025-09-22..2026-09-25.
 1 Familie. Bestehen: Differenz-t >= 2 im Walk-forward UND Differenz > 0 unberührt.
+Ergebnis Runde 84: Walk-forward 2017-2025-09 (1.678 Nächte, 56 % gehandelt): immer investiert Ø 3,53 bp
+(Sharpe 0,51), ML-gefiltert Ø 3,28 bp (Sharpe 0,63), Differenz t -0,14; unberührt (220 Nächte, 87 %
+gehandelt): 19,11 vs 15,93 bp, t -0,69 -> NICHT BESTANDEN. Der Filter senkt das Risiko etwas (höheres
+Sharpe bei halber Marktzeit), verbessert den Ertrag aber nicht; die Nacht ist nicht vorhersagbar
+über ihren Durchschnitt hinaus.
