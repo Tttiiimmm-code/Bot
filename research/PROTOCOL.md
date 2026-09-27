@@ -2128,3 +2128,10 @@ zusätzlich EXX6.DE (Bund 10,5+ J.). Überrendite ggü. FRED IR3TIB01EZM156N (3M
 Regel wie Runde 73: letzte 3 Handelstage des Monats long, 2 bp je Monat Kosten.
 Zeiträume: Entdeckung 2010-01..2018-12, Bestätigung 2019-01..2025-08, unberührt 2025-09..2026-08.
 1 Familie. Bestehen: t >= 2 Entdeckung UND t >= 2 Bestätigung UND Ø > 0 unberührt (netto).
+Ergebnis Runde 74:
+- SXRQ.DE (EUR 7-10 J.): 2010-2018 Ø +12,9 bp je Monat (t 3,00, 65 %); 2019-2025-08 Ø +7,5 bp
+  (t 1,03, 54 %); unberührt +7,2 bp (t 0,57, 58 %) -> NICHT BESTANDEN.
+- EXX6.DE (Bund 10,5+): +34,1 (t 3,65) / +16,9 (t 1,35) / +4,6 bp.
+In allen Zeiträumen positiv, seit 2019 aber schwächer und nicht signifikant. Zusammen mit Runde 73:
+Der Monatsend-Effekt bei Staatsanleihen ist in zwei unabhängigen Märkten vorhanden, aber seit etwa
+2019 (EUR) bzw. im letzten Jahr (USD) schwächer -- kein Kandidat nach den Kriterien.
