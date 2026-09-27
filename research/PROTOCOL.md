@@ -1936,3 +1936,18 @@ Ergebnis Runde 65 (Binance BTCUSDT 1m 2020-01..2026-09-25):
   51-53 %. Halbjahre brutto stark schwankend (2026-H1 +11,5 bp, 2026-H2 -25,2 bp).
 -> NICHT BESTANDEN. Der "10-Uhr-Dump" ist brutto kaum messbar (~3 bp bei ~70 bp Stunden-Vola)
 und nach Kosten klar negativ; die Medienzahlen stammen aus einem ausgewählten Bärenmarkt-Fenster.
+
+# Runde 66: US-Feiertagseffekt im Devisenmarkt (Ranaldo 2009; Breedon & Ranaldo 2013, Fußnote 6) (2026-09-27)
+
+Mechanismus: Inländer kaufen in ihren Arbeitsstunden Fremdwährung (Runde 63). An US-Feiertagen, an
+denen Europa arbeitet, fehlt der US-Fluss -> USD wertet auf (Fußnote: USD stieg ggü. EUR am
+4. Juli in 15 von 20 Jahren).
+Feiertage (nach Regel berechnet, nur wenn Europa geöffnet): MLK (3. Mo Jan), Presidents Day
+(3. Mo Feb), Memorial Day (letzter Mo Mai), Juneteenth (19.6., Sa->Fr, So->Mo; ab 2022), Independence
+Day (4.7., gleiche Verschiebung), Labor Day (1. Mo Sep), Thanksgiving (4. Do Nov). Tage, an denen
+laut SPY-Kalender doch gehandelt wurde, entfallen (Plausibilitätsprüfung).
+Regel: USD long = Paar SHORT von 07:00 London bis 16:00 New York am Feiertag. Echte Dukascopy-
+Bid/Ask-Minuten (Short zum Bid, Eindeckung zum Ask) + 0,25 bp je Seite.
+Familien: EUR/USD, GBP/USD (2 -> 2,24). Zeiträume: Entdeckung 2008-2016, Bestätigung 2017-2025-09-19,
+unberührt 2025-09-22..2026-09-25 (nur ~6 Feiertage, Vorzeichen). Bestehen: t >= 2,24 / >= 2 / Ø > 0.
+Wenige Beobachtungen (~7 je Jahr) -> geringe Teststärke, vorab bekannt.
