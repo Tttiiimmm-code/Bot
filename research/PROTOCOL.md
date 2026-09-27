@@ -1844,3 +1844,15 @@ Vorbehalte vor jeder Umsetzung (-> Runde 62): (1) Gold stieg 2008-2026 stark; di
 den Gesamttrend einsammeln -> Vergleich mit der Tagessitzung. (2) Spread direkt nach der
 Wiedereröffnung 18:00 NY ist breiter als 1 bp -> echte Bid/Ask-Kurse. (3) Kein Swap, da Einstieg
 nach und Ausstieg vor dem Rollover 17:00 NY -- beim Broker prüfen.
+
+# Runde 62: Robustheit Gold-Asien-Nacht (vorregistriert vor Laden der Ask-Kurse, 2026-09-27)
+
+Gleiche Zeiträume wie Runde 61. Alle drei Prüfungen müssen bestehen:
+- R1 Echte Kosten: Kauf zum ASK (Dukascopy XAUUSD Ask-Minuten, Open) 18:00 NY, Verkauf zum BID
+  08:00 London, zusätzlich 0,5 bp je Seite (Broker-Aufschlag/Kommission). Bestehen: t >= 2 in
+  Entdeckung UND Bestätigung, Ø > 0 unberührt.
+- R2 Nicht nur Trend: je Handelstag Nachtrendite (brutto, 18:00 NY -> 08:00 London) minus
+  Tagesrendite (brutto, 08:00 London -> 17:00 NY desselben Tages, Bid). Bestehen: Ø Differenz
+  t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
+- R3 Keine Punktlandung: 9 Varianten Einstieg {18, 19, 20 Uhr NY} x Ausstieg {07, 08, 09 Uhr
+  London}, Kosten wie R1. Bestehen: alle 9 mit Ø > 0 in der Bestätigung.
