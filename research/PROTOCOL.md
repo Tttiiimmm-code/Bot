@@ -2275,3 +2275,19 @@ Ergebnis Runde 79 (mit korrigiertem Datum; 13-20 Feiertage je Jahr):
 - 1993-2008: Vor-Feiertag n 182, Ø +1,0 bp vs übrige -0,7 bp (t 0,14).
 - 2009-2025-09: n 205, Ø -5,1 bp vs +5,3 bp (t -1,23); unberührt n 14, -19,9 bp vs +19,1 bp.
 -> NICHT BESTANDEN. Der Vor-Feiertags-Effekt ist in Japan schon seit 1993 nicht mehr vorhanden.
+
+# Runde 80: SqueezeMetrics DIX (Dark-Pool-Käufe) und GEX (Dealer-Gamma) als Marktsignal (2026-09-27)
+
+Quelle: SqueezeMetrics-White-Papers (DIX 2017, "Short is Long"; GEX 2017, "The Implied Order Book"):
+hoher DIX (Kaufdruck in Dark Pools) -> höhere S&P-Renditen in den Folgewochen; niedriges/negatives
+GEX (Dealer short Gamma) -> höhere Vola, oft Tiefpunkte. Daten: squeezemetrics.com/monitor/static/
+DIX.csv (kostenlos, täglich 2011-05..2026-09-25). Umsetzung DE: US500-CFD/MES-Future long.
+Signale (rollierend, keine Vorausschau): Perzentil des heutigen Werts in den letzten 252 Handelstagen.
+- DA DIX hoch: DIX >= 80. Perzentil -> Signal.
+- DB GEX niedrig: GEX <= 20. Perzentil -> Signal.
+Position: SPY long vom Schluss des Folgetags nach dem Signal für 20 Handelstage (überlappende Signale
+verlängern; Engagement 1x solange ein Signal aktiv), sonst Cash (T-Bill). Kosten 1 bp je Seite.
+Kennzahl: Alpha-t ggü. SPY (Überrenditen, Beta geschätzt).
+Zeiträume: Entdeckung 2012-05..2017-12 (Papierzeitraum, nach 1 Jahr Vorlauf), Bestätigung 2018-01..
+2025-09-19, unberührt 2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 /
+Alpha > 0.
