@@ -1867,3 +1867,7 @@ Ergebnis Runde 62 (Ask-Minuten 2008-2026 geladen, 7,75 Mio.):
 Dukascopy-Spreads nicht handelbar. Nachträglich (nicht gewertet): Mit COMEX-Micro-Gold-Futures
 (MGC, Tick 0,10 $ ~ 0,25 bp) wären die Kosten evtl. ~1-1,5 bp Round-Trip -- ungeprüft, keine
 kostenlosen Futures-Quotes; wie beim Nikkei nur per Futures-Broker (IBKR) denkbar.
+Nicht getestet (Literatur): "Overnight Drift" (Boyarchenko, Larsen & Whelan, RFS 2023; US-Aktien-
+futures 02:00-03:00 ET, stärker nach Ausverkäufen) -- laut NY Fed (Liberty Street Economics,
+2026-07, "The Disappearing Overnight Drift") seit 2021 im Mittel ~0. Ein weiterer Fall von
+Verfall nach Veröffentlichung.
