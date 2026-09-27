@@ -1615,3 +1615,12 @@ Schlussauktion (15:45 JST), Tagessitzung beginnt mit Eröffnungsauktion (08:45 J
 Auktionen ohne Spread, nur Kommission (~0,2 bp) -> 0,5 bp je Seite realistisch. Abweichung: Future-
 Zeiten 15:45/08:45 statt Index 15:00(15:30)/09:00; Micro-Kontrakt ~2.500-4.000 EUR Nennwert passt
 zu 20k EUR. Nächster Schritt wäre ein Vorwärtstest (Papierhandel).
+
+## Kontrolle zu Runde 53: Future-Sitzungszeiten (vorregistriert, kein neuer Versuch)
+
+Dukascopy jpnidxjpy (2013-10..2026-09-25, inkl. unberührtem Jahr): Einstieg zur Schlusszeit der
+OSE-Tagessitzung (15:15 JST, ab 2024-11-05 15:45), Ausstieg 08:45 JST (Eröffnungsauktion), Kosten
+0,5 bp je Seite + JPY-Zins. Frage: bleibt Ø netto > 0 mit t >= 1,65 für 2013-2025?
+Ergebnis Kontrolle: 2013-2018 (nur 508 Nächte mit Kurs um 15:15 -- Datenlücken) Ø netto 4,19 bp, t 1,05;
+2019-2025 4,22 bp (9,8 % p.a.), t 1,69; 2013-2025 4,21 bp (9,9 % p.a.), t 1,98 -> ok (>= 1,65);
+unberührtes Jahr 13,67 bp, t 1,46. Der Effekt besteht auch zu handelbaren Future-Sitzungszeiten.
