@@ -1951,3 +1951,9 @@ Bid/Ask-Minuten (Short zum Bid, Eindeckung zum Ask) + 0,25 bp je Seite.
 Familien: EUR/USD, GBP/USD (2 -> 2,24). Zeiträume: Entdeckung 2008-2016, Bestätigung 2017-2025-09-19,
 unberührt 2025-09-22..2026-09-25 (nur ~6 Feiertage, Vorzeichen). Bestehen: t >= 2,24 / >= 2 / Ø > 0.
 Wenige Beobachtungen (~7 je Jahr) -> geringe Teststärke, vorab bekannt.
+Ergebnis Runde 66 (118 Feiertage 2008-2026; EUR/USD 2008-2016 nur 36 mit Ask-Kurs):
+- EUR/USD: Entdeckung Ø 12,3 bp netto (t 1,87, 64 % Treffer); Bestätigung -0,3 bp (t -0,09);
+  unberührt -7,2 bp (7 Tage).
+- GBP/USD: Entdeckung Ø 16,2 bp (t 2,34); Bestätigung -4,0 bp (t -1,01); unberührt -10,4 bp.
+-> NICHT BESTANDEN. Bis 2016 deutlich (passt zum Papier), seit 2017 verschwunden -- wieder Verfall
+nach Veröffentlichung (2013).
