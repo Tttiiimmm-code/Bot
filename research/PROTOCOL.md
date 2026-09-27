@@ -2352,3 +2352,16 @@ nur teilweise vor -> Position ab Schluss von d).
 Kosten 2 bp je Round-Trip. Kennzahl: Ø Rendite je Signal (t über Signale), plus Vergleich mit allen
 Tagen (Kontrolle). Zeiträume: Entdeckung 2017-2021, Bestätigung 2022-2025-09-19, unberührt
 2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 / Ø > 0.
+Runde 83 nicht durchführbar: GDELT-API sperrt unsere IP (HTTP 429) nach wenigen Anfragen; Abruf
+abgebrochen, keine Daten gesehen.
+
+# Runde 83b: Nachrichtenstimmung (SF Fed Daily News Sentiment Index) -> SPY kurzfristig (2026-09-27)
+
+Ersatzquelle für Runde 83 (vor Sicht der Daten festgelegt): Shapiro, Sudhof & Wilson, SF Fed,
+täglich 1980-01..2026-08-09 (news-sentiment-chart-1.csv). Index ist geglättet -> Signal = tägliche
+Änderung D_t = S_t - S_{t-1}; z = (D_t - Mittel) / Std über die 250 Vortage; pessimistisch z <= -1,5.
+Zuordnung, Regeln NA (Folgetag short) / NB (Umkehr long d+1..d+5), Kosten, Kontrolle wie Runde 83.
+Wird wöchentlich veröffentlicht -> prüft Vorhersagekraft der Nachrichtenlage (Umsetzung bräuchte eigene
+Echtzeit-Stimmungsmessung).
+Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-08-09.
+2 Familien -> t >= 2,24 / >= 2 / Ø > 0.
