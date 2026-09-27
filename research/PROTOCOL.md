@@ -1414,3 +1414,14 @@ Ergebnis Runde 43 (netto je Nacht, t; 2013-2018 / 2019-2025):
   Indizes gesamt positiv -> NICHT BESTANDEN (t < 2).
 Befund: Der Nachteffekt repliziert qualitativ (alle 5 positiv), ist aber seit 2019 außer in Japan
 praktisch verschwunden. Japan fällt auf, ist aber nachträglich aus 5 ausgewählt (kein Beleg).
+
+# Runde 44: Volatilitätsprämie per Put-Verkauf -- CBOE PutWrite-Index (2026-09-27)
+
+CBOE PUT: monatlich verkaufte ATM-SPX-Puts, voll besichert in T-Bills (Gesamtrendite). Yahoo ^PUT
+ab 1996-08 vs. ^SP500TR. Alpha-t per Regression. Entdeckung 1996-08 bis 2009 (CBOE-Veröffentlichung
+2007), Bestätigung 2010-2025-09-19. 1 Familie, keine Varianten. Bestehen: t >= 2 in BEIDEN.
+Umsetzbarkeit (nicht simuliert): SPX/XSP/SPY-Optionen haben 65.000-650.000 USD Nennwert je
+Kontrakt -> mit 20k EUR nicht voll besichert handelbar; Euro-Stoxx-50-Optionen ~55.000 EUR.
+Ergebnis Runde 44: 1996-2009 PUT 8,9 % p.a. (S&P TR 5,8 %), Sharpe 0,68 vs. 0,37, Alpha 4,9 %,
+t 2,78; 2010-2025 PUT 7,8 % (S&P TR 14,2 %), Sharpe 0,54 vs. 0,85, Alpha -1,8 %, t -0,65
+-> NICHT BESTANDEN. Gleiches Muster wie fast alle Prämien: stark vor der Veröffentlichung, danach weg.
