@@ -1894,3 +1894,20 @@ Ergebnis Runde 63 (Ask-Minuten EUR/USD, GBP/USD 2008-2026 geladen):
 - GBP/USD: 0,69 (t 0,55) / 0,51 (t 0,47) / -1,88 bp.
 -> NICHT BESTANDEN. Richtung des Papiers hält brutto 2008-2025, nach Kosten zu schwach; im
 unberührten Jahr verschwunden.
+Gelesen, nicht testbar: Zhao (arXiv 2608.03703, 2026-08) "Preying on Leveraged ETFs" -- koreanische
+Einzelaktien-LETFs seit 2026-05 (Samsung, SK Hynix), Umkehr nach dem Schluss; zu kurz, nicht
+zugänglich. arXiv 2609.12227 (Rohstoff-Saisonalität 2016-2024 mit Kosten): kein Vorteil ggü.
+Gleichgewicht nach Holm-Korrektur -- bestätigt Runde 58.
+
+# Runde 64: Intraday-Momentum am Nikkei (Baltussen, Da, Lammers & Martens, JFE 2021) (2026-09-27)
+
+Mechanismus: Gamma-Absicherung von Options-Market-Makern -> Rendite des Tages bis 30 min vor
+Schluss setzt sich in den letzten 30 min fort (in ~60 Futures-Märkten). US (Runde 1) und DAX
+(Runde 42) nicht bestanden; Japan war bisher zweimal die Ausnahme -> ein fairer Einzeltest.
+Daten: Dukascopy JPNIDXJPY (Nikkei-CFD, Bid) 2013-2025-09 + unberührtes Jahr (neu zu laden).
+Regel: Schluss S = OSE-Tagessitzung (15:15 JST bis 2024-11-04, 15:45 JST ab 2024-11-05).
+Signal = Vorzeichen(Kurs S-30min heute / Kurs S am Vortag - 1); Position in Signalrichtung von
+S-30min bis S (long und short, CFD/Micro-Future). Nur japanische Handelstage mit Kurs zu allen drei
+Zeitpunkten (max. 5 min Toleranz). Kosten 0,75 bp je Seite.
+Zeiträume: Entdeckung 2013-2019, Bestätigung 2020-2025-09-19, unberührt 2025-09-22..2026-09-25.
+1 Familie, keine Varianten. Bestehen: t >= 2 in beiden Zeiträumen UND Ø > 0 unberührt (netto).
