@@ -2400,3 +2400,23 @@ allgemein ab; Yen-Kreuze sollten mitlaufen. Regel exakt wie Runde 49/Vorwärtste
 Familien: EUR/JPY, AUD/JPY (2 -> Schwelle 2,24). Zeiträume: 2017-01..2025-09-19 (Ask-Daten wie
 Runde 49), unberührt 2025-09-22..2026-09-25. Bestehen je Familie: t >= 2,24 in 2017-2025 UND Ø > 0
 unberührt. Berichtet: Korrelation mit USD/JPY-Gotobi-Trades.
+
+# Runde 86: "Lazy Prices" -- Textänderungen im 10-K (Cohen, Malloy & Nguyen, JF 2020) (2026-09-27)
+
+Befund (1995-2014): Firmen, die den Wortlaut ihres Jahresberichts gegenüber dem Vorjahr stark ändern
+("Changer"), schneiden in den Folgemonaten schlechter ab als "Non-Changer"; kein Umkehreffekt.
+Umsetzung als LLM-freie Basis (Ähnlichkeitsmaß ohne Vorwissen über Kursverläufe).
+Daten: SEC EDGAR (data.sec.gov/submissions, primäres 10-K-Dokument; 10-K/A ausgeschlossen),
+Alpaca-Tagespanel 2016-2025-09-19 (inkl. delisteter Titel). CIK<->Ticker wie Runde 11 (aktuelle
+SEC-Liste + historische Kürzel aus Insiderdaten).
+Universum: je Jahresende die 500 liquidesten Aktien (Ø-Dollarvolumen 60 Tage, Kurs >= 5 USD,
+ohne Fonds), Vereinigung über 2015-2024 (Rechenaufwand: 10-K-Dateien bis ~10 MB).
+Text: HTML entfernen, Kleinbuchstaben, nur Wörter aus Buchstaben mit >= 3 Zeichen; Häufigkeiten.
+Ähnlichkeit = Kosinus der Worthäufigkeiten zum vorherigen 10-K derselben Firma.
+Portfolio: an jedem Monatsende alle Universums-Firmen mit einer Ähnlichkeit aus einem 10-K der
+letzten 12 Monate (bekannt ab Einreichungstag + 1); Quintile nach Ähnlichkeit; gleichgewichtet,
+1 Monat halten. Kosten 10 bp je Seite auf Umschlag.
+- LP Long-Short: Q5 (ähnlichste) minus Q1 (Changer) -- Test des Effekts (Short per CFD/IBKR).
+- berichtet: Long-only Q5 minus gleichgewichtetes Universum (für DE-Privatanleger umsetzbar).
+Zeiträume: Entdeckung 2016-2020, Bestätigung 2021-2025-09 (nach Veröffentlichung im JF).
+1 Familie. Bestehen: Monats-t >= 2 in beiden Zeiträumen (netto).
