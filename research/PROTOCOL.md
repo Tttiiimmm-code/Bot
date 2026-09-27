@@ -1973,3 +1973,29 @@ Berichtet: TOM-Strategie p.a. vs Halten.
 Ergebnis Runde 67: Entdeckung 1993-2008 TOM Ø 10,4 bp vs Rest -6,3 bp, Diff 16,6 bp (t 3,28);
 Bestätigung 2009-2025 TOM 1,7 bp vs Rest 6,4 bp, Diff -4,7 bp (t -1,06); unberührt Diff +9,8 bp
 (t 0,41) -> NICHT BESTANDEN. Stark bis 2008, danach verschwunden.
+
+# Überprüfung früherer Runden (2026-09-27, auf Wunsch des Nutzers)
+
+Durchgesehen: alle "nicht getestet / keine Daten / ungeprüft"-Vermerke. Ergebnis:
+- Pre-EZB-Drift (Runde 52: "Termine nicht abrufbar"): EZB-Termine jetzt per Browser von
+  ecb.europa.eu (Jahreslisten 2000-2026, "Monetary policy decisions") -> Runde 68.
+- Nikkei-Nachteffekt mit echten OSE-Auktionskursen: JPX-Historie kostenpflichtig (auch Nikkei-
+  Datensatz, Barchart nur 1 Download/Tag) -> bleibt offen; CFD-Kurse leiten sich vom Future ab.
+- Gold per COMEX-Micro-Future (Runde 62), DAX per FDXS (Runde 41): keine kostenlosen
+  Futures-Quotes -> offen.
+- Aus der Quantpedia-Warteschlange nie getestet: REIT-Momentum, FED-Modell (beide Monats-
+  Allokation, kein Day-Trading, niedrige Priorität).
+- Stooq (lange Historien) war per Automatisierung blockiert; per Browser lesbar, aber bisher kein
+  Test, der davon abhängt.
+
+# Runde 68: Pre-EZB-Drift am DAX (2026-09-27)
+
+Analog Lucca & Moench (2015) für die Fed; Brusa, Savor & Wilson (2020) fanden KEINEN Pre-EZB-Drift
+(Erwartung daher: nicht bestanden). Termine: ecb.europa.eu, geplante und Sondersitzungen mit
+Zinsentscheid (Liste "Monetary policy decisions"; 2016-12-08 fehlt dort und wird ergänzt).
+Regel: DAX-CFD long vom Xetra-Schluss 17:30 Berlin am Vortag bis 5 min vor der Bekanntgabe am
+Sitzungstag (13:40 bis 2021, 14:10 ab 2022). Daten: Dukascopy DEUIDXEUR-Minuten (ab 2013-09-30).
+Kosten: 1,5 Punkte Round-Trip + 1 bp Übernacht-Finanzierung.
+Zeiträume: Entdeckung 2013-10..2019, Bestätigung 2020..2025-09-19, unberührt 2025-09-22..2026-09-25.
+Berichtet zum Vergleich: gleiche Zeitfenster an allen anderen Tagen (Kontrolle).
+1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt (netto).
