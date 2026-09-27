@@ -1775,3 +1775,27 @@ Ergebnis Runde 59 (Überrendite je Tag, netto 2 bp):
 Die Ankündigungsprämie ist nach der Veröffentlichung weitgehend verschwunden (Abstand zu übrigen
 Tagen nur noch ~2 bp); die starke FOMC-Prämie vor 2013 passt zum Pre-FOMC-Drift (Runde 9), der
 ebenfalls verschwand.
+
+# Runde 60: Favoriten-Außenseiter-Verzerrung auf Polymarket (2026-09-27)
+
+Hypothese (Wettmärkte, u.a. Thaler & Ziemba 1988; Snowberg & Wolfers 2010): Außenseiter sind zu
+teuer, Favoriten zu billig. Daten: Polymarket Gamma-API (geschlossene, eindeutig aufgelöste Ja/Nein-
+Märkte, Volumen >= 50.000 USD) und CLOB-Preisverlauf (Tagesauflösung).
+Regel: 7 Tage vor Schluss (closedTime) Preis q des Favoriten (= max(p_ja, 1-p_ja)); kaufen, wenn
+0,80 <= q <= 0,97; Einstieg zu q + 0,01 (Spread/Schlupf); Auszahlung 1 bei Gewinn.
+Rendite je Trade = 1/(q+0,01) - 1 bzw. -1. Märkte desselben Ereignisses (Gamma "events") werden zu
+EINEM Ereignis-Mittelwert zusammengefasst (korrelierte Ausgänge); t über Ereignisse.
+Zeiträume nach Schlussdatum: 2023-01..2024-12 (Entdeckung), 2025-01..2025-09-19 (Bestätigung),
+2025-09-22..2026-09-25 (unberührt). Berichtet: Kalibrierung (Trefferquote vs. Preis je Klasse).
+Bestehen (1 Familie): Ø Rendite je Ereignis t >= 2 in Entdeckung UND Bestätigung UND Ø > 0 unberührt.
+Umsetzbarkeit DE (nicht simuliert): Polymarket-Zugang/Rechtslage aus Deutschland prüfen; Einsatz in
+USDC (Krypto), Gebühren je Markt unterschiedlich.
+Stand Runde 60 (unvollständig, kein Urteil):
+- Erster Lauf hatte einen Paginierungsfehler (Gamma liefert max. 100 je Seite, Versatz um 500 ->
+  nur jede 5. Seite; zudem Obergrenze ~2.100 Treffer je Abfrage, älteste zuerst) -> fast nur
+  Märkte bis Anfang 2025. Vorläufiges Ergebnis darauf (NICHT gewertet): Kalibrierung nahezu perfekt
+  (z.B. Preis 0,85 -> Trefferquote 0,84; 0,93 -> 0,95), 2023-2024 Ø Rendite je Ereignis -2,95 %
+  (t -1,57, 295 Ereignisse) -- kein Favoriten-Vorteil erkennbar.
+- Korrigierter Abruf monatsweise: Marktliste vollständig (45.385 Märkte 2023-01..2026-09), Preis-
+  verläufe bei ~10.400 vom System wegen Speichermangel gestoppt. Fortsetzung mit
+  research/scripts/r60_fetch.py (überspringt Vorhandenes), dann r60.py.
