@@ -2181,3 +2181,17 @@ Ergebnis Runde 76 (1.715 IPOs nach Filter, 650 Ereignisse mit Panel-Daten und Li
 - IPO 2020-2025-02: n 394, Ø -1,13 % (brutto -0,43 %), t -1,59; Monats-t -1,01; 46 % positiv.
 -> NICHT BESTANDEN. Bis 2019 wie in der Literatur, seit dem IPO-Boom 2020/21 verschwunden bzw.
 umgekehrt (erwartete Verkäufe vorab eingepreist, teils frühere Lockup-Freigaben).
+
+# Runde 77: Leerverkauf neu gelisteter Krypto-Token (2026-09-27)
+
+Mechanismus: Neue Token starten mit kleinem Streubesitz und hoher voll verwässerter Bewertung;
+Airdrop-/Launchpool-Empfänger und spätere Freigaben verkaufen -> Abwärtsdrift nach dem Listing
+(verbreitete Beobachtung 2024-2025). Umsetzung: Perp-Short (Hyperliquid/Bybit), Kurse hier Binance-Spot.
+Daten: data_cache/crypto (Binance-Spot-Tageskerzen USDT, 662 heute gehandelte Paare; erster Tag =
+Listing). Delistete Token fehlen -> Verzerrung GEGEN die Short-Strategie (konservativ).
+Regel: Listingtag L >= 2020-01-01; Einstieg short zum Schluss L+1, Ausstieg Schluss L+30.
+Nur wenn Quote-Volumen an L+1 >= 5 Mio. USD. Überrendite = -(Token - BTC) (marktneutral).
+Kosten: 10 bp Round-Trip + Funding 3 bp je Tag (Shorts zahlen bei neuen Listings oft).
+Zeiträume: Listings 2020-2023 (Entdeckung), 2024-01..2025-08-20 (Bestätigung), 2025-08-21..
+2026-08-26 (unberührt). Bestehen: t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
+Berichtet: reiner Short ohne BTC-Absicherung, Median, schlimmster Einzelverlust.
