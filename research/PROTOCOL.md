@@ -2316,3 +2316,17 @@ STERLING" -> Namen vereinheitlicht):
 - 2017-2025-09: Ø -0,3 bp (t -0,05); unberührt +7,9 bp (t 0,59).
 -> NICHT BESTANDEN. Gegen extreme Spekulantenpositionen zu handeln bringt nichts; bei Gold eher
 Verlust (Spekulanten lagen mit Extrempositionen häufig richtig).
+
+# Runde 82: Optionsverkauf jenseits von PutWrite -- CBOE-Strategieindizes (2026-09-27)
+
+Runde 44 prüfte nur PUT (monatlich ATM-Puts). Hier vier weitere, bisher ungetestete Strukturen
+(CBOE-Indexhistorien, cdn.cboe.com, kostenlos, Gesamtrendite inkl. T-Bill-Besicherung):
+- WPUT wöchentlicher Put-Verkauf (ab 2006), BXMD Covered Call 30-Delta (ab 1986) -> gerichtet:
+  Kennzahl Alpha ggü. S&P 500 TR (Yahoo ^SP500TR), Überrenditen über T-Bill.
+- CNDR Iron Condor monatlich, BFLY Iron Butterfly monatlich (ab 1986, begrenztes Risiko) ->
+  marktneutral gedacht: Kennzahl ebenfalls Alpha ggü. S&P 500 TR (Beta wird geschätzt).
+Kosten (Indizes rechnen zu Mittelkursen): Abzug 1,0 % p.a. (monatliche Strategien) bzw. 3,0 % p.a.
+(WPUT) gleichmäßig je Handelstag.
+Zeiträume: Entdeckung Indexbeginn..2009, Bestätigung 2010..2025-09-19, unberührt 2025-09-22..2026-09-25.
+4 Familien -> Bestehen je Familie: Alpha-t >= 2,50 Entdeckung UND >= 2 Bestätigung UND Alpha > 0
+unberührt. Umsetzbarkeit DE: SPX/XSP-Optionen über IBKR (XSP = 1/10 SPX); mit 20k EUR nur XSP.
