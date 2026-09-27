@@ -1496,3 +1496,19 @@ Papierhandel mit echten Kursen/Spreads eines ECN-Brokers, bevor Geld eingesetzt 
 Größenordnung (beschreibend, 2017-2025, Regel unverändert): Kosten 0,3 bp je Seite: 3x 5,3 % p.a.
 (MaxDD -10 %), 5x 8,9 % (-16 %), 10x 17,8 % (-31 %); Kosten 0,5 bp: 3x 4,4 %, 5x 7,3 % (-18 %),
 10x 14,5 % (-33 %). Schlechtester Einzeltrade bei 10x -8,8 %.
+
+# Runde 48: Monatsend-Rebalancing von Pensionsfonds (Harvey, Mazzoleni & Melone 2025) (2026-09-27)
+
+Kalender-Signal (NBER w33554, Febr. 2025; Beschreibung laut QuantReturns): an den letzten 5
+Handelstagen des Monats Position im Spread Aktien minus Anleihen = -Vorzeichen(Monatsrendite bis
+Vortag SPY - TLT); am LETZTEN Handelstag umgekehrt (+Vorzeichen). Sonst keine Position.
+P&L = w x (r_SPY - r_TLT) (Yahoo adjclose, TLT ab 2002-07). Kosten 2 bp je Seite und Bein bei jeder
+Positionsänderung (Futures wären günstiger). Umsetzung für DE: Micro-E-mini S&P (MES) + 10Y-
+Treasury-Future (bzw. FDXS + Bund-Future), IBKR.
+Zeiträume: Entdeckung 2003-2014, Bestätigung 2015-2025-09-19 (beide im Stichprobenzeitraum des
+Papiers 1997-2023!), plus nach Veröffentlichung 2025-02-01..2026-09-25 (einzig echt neue Daten).
+1 Familie, keine Varianten. Bestehen: t >= 2 in beiden Zeiträumen UND Ø > 0 nach Veröffentlichung.
+Ergebnis Runde 48: 2003-2014 Ø 0,30 bp je aktivem Tag, t -0,08; 2015-2025 Ø 2,67 bp, t 0,33; nach
+Veröffentlichung (2025-02..2026-09, 100 aktive Tage) Ø -16,7 bp, t -1,96 -> NICHT BESTANDEN. Das
+Kalendersignal allein repliziert mit SPY/TLT nicht (Kopfzahlen des Papiers/Blogs: kombiniertes
+Schwellen- + Kalendersignal, auf S&P-Vola skaliert, Futures); nach Veröffentlichung deutlich negativ.
