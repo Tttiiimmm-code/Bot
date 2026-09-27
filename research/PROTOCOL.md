@@ -2511,3 +2511,6 @@ letzte 3 Handelstage long, Überrendite ggü. FRED IR3TIB01GBM156N, 2 bp je Mona
 (iShares Core UK Gilts, ausschüttend -> adjclose). Japanische Anleihe-ETFs erst ab 2017-12 -> nicht getestet.
 Zeiträume: Entdeckung 2008-2018, Bestätigung 2019-2025-08, unberührt 2025-09..2026-08.
 1 Familie. Bestehen: t >= 2 / >= 2 / Ø > 0.
+Ergebnis Runde 91 (IGLT.L): 2008-2018 +8,7 bp je Monat (t 1,19, 63 %), 2019-2025 +5,4 bp (t 0,39),
+unberührt +5,2 bp -> NICHT BESTANDEN. Positiv, aber schwach -- wie bei Euro-Staatsanleihen (Runde 74).
+Der Monatsend-Effekt ist in US-Anleihen deutlich stärker als in Europa/UK.
