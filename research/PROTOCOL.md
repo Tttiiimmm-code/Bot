@@ -1591,3 +1591,27 @@ etwa die Hälfte per OpenFIGI einem US-Ticker zuordenbar; 85.558 Meldungen mit T
 Die gebündelten "besten Ideen" sind so breit gestreut, dass sie den Markt nachbilden (Beta 1,05-1,10);
 kein Informationsvorsprung erkennbar.
 Nicht getestet (vermerkt): Pre-ECB-Drift -- ECB-Sitzungstermine nicht als statische Liste abrufbar.
+
+# Runde 53: Nikkei-Nachteffekt 1994-2013 (Test der in Runde 43 nachträglich aufgefallenen Hypothese)
+
+Die Nikkei-Nachtrenditen vor 2013-10 wurden bisher nie angesehen (Dukascopy beginnt 2013-10).
+Yahoo ^N225 Open/Close (Opens geprüft: nie = Vortagesschluss). Nacht = Open_t / Close_t-1 - 1,
+Kosten wie Runde 43 (0,5 bp je Seite + JPY-3M-Zins/360 je Kalendernacht, negative Zinsen = 0).
+Zeitraum 1994-01-01 bis 2013-09-29. 1 Variante. Bestehen: netto t >= 2 und Ø > 0.
+Hinweis: Eröffnungswert des Index enthält teils veraltete Kurse (konservativ, s. Runde 40).
+
+## 2026-09-27 -- Ergebnis Runde 53
+
+- 1994-2003: brutto 3,13 bp, netto 2,09 bp/Nacht (5,2 % p.a.), t 2,45; tagsüber Ø -4,17 bp.
+- 2004-2013: brutto 4,39, netto 3,23 bp (7,7 % p.a.), t 2,03; tagsüber -2,12 bp.
+- 1994-2013 gesamt: netto 2,65 bp (6,4 % p.a.), t 2,97 -> BESTANDEN.
+- Kostenstress (nur berichtet): 1,0 bp je Seite 3,7 % p.a., t 1,85; 1,5 bp je Seite 1,2 %, t 0,73.
+Gesamtbild Nikkei-Nacht über 32 Jahre: 1994-2013 t 2,97 (unabhängige Prüfung), 2013-2025 t 2,54
+(Dukascopy, Runde 43), unberührtes Jahr 2025/26 +11,98 bp (t 1,21). Während der Nikkei 1994-2013
+praktisch nicht stieg, lag die Nachtrendite bei +6 % p.a. und die Tagesrendite deutlich negativ.
+Zweiter robuster Befund neben Gotobi (Runden 46-49) -- ebenfalls kostensensitiv.
+Umsetzung (nicht simuliert): OSE-Nikkei-225-Mini/Micro-Futures (IBKR). Tagessitzung endet mit
+Schlussauktion (15:45 JST), Tagessitzung beginnt mit Eröffnungsauktion (08:45 JST) -> Handel in den
+Auktionen ohne Spread, nur Kommission (~0,2 bp) -> 0,5 bp je Seite realistisch. Abweichung: Future-
+Zeiten 15:45/08:45 statt Index 15:00(15:30)/09:00; Micro-Kontrakt ~2.500-4.000 EUR Nennwert passt
+zu 20k EUR. Nächster Schritt wäre ein Vorwärtstest (Papierhandel).
