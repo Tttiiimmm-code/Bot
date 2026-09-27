@@ -2092,3 +2092,16 @@ Ergebnis Runde 72:
   Ø 0,90 bp netto (t 0,70); Bestätigung n 1341, Ø 1,98 bp (t 2,02); unberührt -2,42 bp -> NICHT BESTANDEN.
 - HB Spät-Momentum: -1,17 (t -1,84) / -0,24 (t -0,31) / -0,45 bp -> NICHT BESTANDEN.
 Brutto beide Richtungen wie im Papier nur 1-3 bp; nach Kosten und im unberührten Jahr nichts.
+
+# Runde 73: Monatsend-Rendite von US-Staatsanleihen (Hartley & Schwarz 2019) (2026-09-27)
+
+Befund (1990-2018): Die gesamte Laufzeitprämie fällt in den letzten Handelstagen des Monats an
+(10 Jahre, letzte 3 Tage: +0,25 % je Monat, Sharpe ~1); Ursache Index-Rebalancing/Window-Dressing
+(Lebensversicherer kaufen am Index-Stichtag). Veröffentlicht 2019 -> 2019-2026 ist echt neu.
+Regel: IEF (7-10 J., Yahoo adjclose) long vom Schluss des 4.-letzten bis Schluss des letzten
+Handelstags des Monats (= Renditen der letzten 3 Handelstage). Überrendite = Rendite minus T-Bill
+(FRED TB3MS, anteilig je Kalendertag). Kosten 1 bp je Seite (Umsetzung DE: 10Y-T-Note-Future
+über IBKR, günstiger). Kennzahl je Monat: Überrendite im Fenster; zusätzlich übrige Tage.
+Zeiträume: Replikation 2003-2018 (Stichprobe des Papiers, nur berichtet), Bestätigung
+2019-01..2025-09-19 (nach Veröffentlichung), unberührt 2025-09-22..2026-09-25.
+1 Familie. Bestehen: Bestätigung t >= 2 UND unberührt Ø > 0 (netto). Berichtet: TLT (20+ J.).
