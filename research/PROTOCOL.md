@@ -2158,3 +2158,20 @@ Ergebnis Runde 75 (40 Aufnahmen mit Yahoo-Daten; ohne Daten: 4795, 8815):
 -> NICHT BESTANDEN. Seit 2017 kein Vorlauf mehr zwischen Ankündigung und Stichtag -- der Nachfrage-
 effekt wird offenbar vorab gehandelt (Kandidaten werden von Brokern Wochen vorher prognostiziert).
 Hinweis: 2005 Stichtage aus dem uneinheitlichen PDF-Layout einheitlich 27.09. angenommen.
+
+# Runde 76: Leerverkauf zum Ablauf der IPO-Haltefrist (Lockup) (2026-09-27)
+
+Nutzerwunsch: Short-Strategien. Befund (Field & Hanka 2001; Brav & Gompers 2003): um den Ablauf der
+Insider-Haltefrist (meist 180 Kalendertage nach dem IPO) fallen die Kurse um 1-3 % (Angebotsüberhang).
+Umsetzung DE: Leerverkauf US-Aktien über IBKR (Leihe nötig) oder Aktien-CFD.
+Daten: Nasdaq-IPO-Kalender (api.nasdaq.com, "priced", monatlich 2016-01..2025-02), Alpaca-Tagespanel
+(inkl. delisteter Titel, bis 2025-09-19), SPY.
+Filter: Emissionsvolumen >= 50 Mio. USD; keine SPACs/Fonds (Name enthält Acquisition, Merger, SPAC,
+Capital Corp, Trust, Fund, Units). Erster Handelstag = erster Panel-Tag ab Preisdatum (max. 5 Tage
+später, sonst verworfen). Stichtag E = erster Handelstag ab (erster Handelstag + 180 Kalendertage).
+Regel: short vom Schluss E-5 bis Schluss E+5 (Handelstage). Überrendite = -(Aktie - SPY). Nur
+Einstiegskurs >= 5 USD und Ø-Dollarvolumen der 20 Vortage >= 1 Mio. USD.
+Kosten: 20 bp Round-Trip + Leihgebühr 0,5 % je Trade (~18 % p.a. für 10 Tage, IPO-typisch hoch).
+Zeiträume: IPO 2016-2019 (Entdeckung), IPO 2020-2025-02 (Bestätigung). 1 Familie.
+Bestehen: Ø Überrendite netto t >= 2 in beiden Zeiträumen (Ereignisse; zusätzlich berichtet:
+t über Monatsmittel wegen Häufung).
