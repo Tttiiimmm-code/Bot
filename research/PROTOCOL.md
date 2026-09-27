@@ -2371,3 +2371,18 @@ Ergebnis Runde 83b (Signale ~20 je Jahr):
   (umgekehrt zu Tetlock); eine Long-Regel wäre nachträglich gewählt (nicht gewertet).
 - NB Umkehr long d+1..d+5: -3,4 bp (t -0,26) / +31,6 bp (t 3,00, Kontrolle alle Tage 24,0 bp) /
   -23,5 bp -> NICHT BESTANDEN (Bestätigung kaum über der Kontrolle).
+
+# Runde 84: Maschinelles Lernen als Filter für den Nikkei-Nachteffekt (2026-09-27)
+
+Frage: Verbessert ein streng vorwärts geschätztes Modell den robusten Nachteffekt, indem es
+schlechte Nächte auslässt? (ML-Kombination schwacher Signale, auf den besten Befund angewandt.)
+Nächte: Logik wie tradingbot/forward_test.nikkei_trades (Dukascopy-CFD, 0,5 bp/Seite + JPY-Zins),
+2013-10..2026-09-25. Merkmale (zum Einstieg bekannt): Nikkei-Tagessitzung 08:45->Schluss, Vornacht,
+SPY-Rendite des letzten US-Tages vor dem Tokio-Tag, USDJPY 05:00 JST->Schluss, VIX-Schluss des
+Vortags (z über 250 Tage), Nikkei-20-Tage-Vola, Wochentag (Fr), Monatsende (letzte 2 Handelstage),
+Gotobi am Folgetag. Modell: Ridge-Regression (alpha 10) auf standardisierten Merkmalen, Ziel =
+Netto-Nachtrendite; jährlich neu geschätzt auf allen Vorjahren (expandierend), Vorhersagen ab 2017.
+Regel: Nacht handeln, wenn Vorhersage > 0, sonst flach.
+Kennzahl: tägliche Differenz (ML-gefiltert minus immer investiert), t-Wert gepaart.
+Zeiträume: Walk-forward 2017-01..2025-09-19, unberührt 2025-09-22..2026-09-25.
+1 Familie. Bestehen: Differenz-t >= 2 im Walk-forward UND Differenz > 0 unberührt.
