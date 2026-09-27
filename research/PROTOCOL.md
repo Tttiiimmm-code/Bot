@@ -2514,3 +2514,11 @@ Zeiträume: Entdeckung 2008-2018, Bestätigung 2019-2025-08, unberührt 2025-09.
 Ergebnis Runde 91 (IGLT.L): 2008-2018 +8,7 bp je Monat (t 1,19, 63 %), 2019-2025 +5,4 bp (t 0,39),
 unberührt +5,2 bp -> NICHT BESTANDEN. Positiv, aber schwach -- wie bei Euro-Staatsanleihen (Runde 74).
 Der Monatsend-Effekt ist in US-Anleihen deutlich stärker als in Europa/UK.
+Ergebnis Runde 86 (871 Firmen, 8.709 10-K, 7.908 Vorjahresvergleiche; Median-Kosinus 0,998;
+Ø 438 Titel je Monat, Q5-Umschlag ~10 % je Monat):
+- 2016-2020 (47 Monate): Long-Short Q5-Q1 +0,52 % je Monat (t 1,84); Long-only Q5 - Universum
+  +0,18 % (t 1,16).
+- 2021-2025-09 (57 Monate): Long-Short +0,04 % (t 0,13); Long-only +0,02 % (t 0,16).
+-> NICHT BESTANDEN. Bis 2020 in Richtung und Größe wie im Papier (knapp nicht signifikant), nach der
+Veröffentlichung im JF (2020) verschwunden. Einschränkung: nur die 500 liquidesten Titel (Effekt im
+Papier bei kleineren Firmen stärker); ein LLM-basiertes Maß wurde nicht getestet (Vorwissens-Problem).
