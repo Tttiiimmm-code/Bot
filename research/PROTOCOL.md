@@ -2151,3 +2151,10 @@ Börsenschluss), Verkauf zum Schlusskurs des letzten Handelstags VOR dem Stichta
 Aktie minus ^N225 im selben Fenster (Open->Close). Kosten 20 bp Round-Trip.
 Zeiträume: Entdeckung Ankündigungen 2005-2016, Bestätigung 2017-2026-03. Bestehen: Ø Überrendite je
 Ereignis t >= 2 in beiden (über Ereignisse). Berichtet: Umkehr vom Stichtag bis +10 Handelstage.
+Ergebnis Runde 75 (40 Aufnahmen mit Yahoo-Daten; ohne Daten: 4795, 8815):
+- Entdeckung 2005-2016: n 14, Ø Überrendite ggü. ^N225 netto +2,79 % je Ereignis (t 0,82, 64 %
+  positiv); Umkehr in den 10 Handelstagen nach dem Stichtag Ø -6,40 %.
+- Bestätigung 2017-2026-03: n 26, Ø -0,89 % (t -0,68, 54 %); Umkehr +1,35 %.
+-> NICHT BESTANDEN. Seit 2017 kein Vorlauf mehr zwischen Ankündigung und Stichtag -- der Nachfrage-
+effekt wird offenbar vorab gehandelt (Kandidaten werden von Brokern Wochen vorher prognostiziert).
+Hinweis: 2005 Stichtage aus dem uneinheitlichen PDF-Layout einheitlich 27.09. angenommen.
