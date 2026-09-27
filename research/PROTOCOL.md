@@ -2365,3 +2365,9 @@ Wird wöchentlich veröffentlicht -> prüft Vorhersagekraft der Nachrichtenlage 
 Echtzeit-Stimmungsmessung).
 Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-08-09.
 2 Familien -> t >= 2,24 / >= 2 / Ø > 0.
+Ergebnis Runde 83b (Signale ~20 je Jahr):
+- NA Folgetag short: 1993-2008 Ø -11,1 bp (t -1,49), 2009-2025 Ø -15,4 bp (t -2,67), unberührt -7,2 bp
+  -> NICHT BESTANDEN. Nach pessimistischen Nachrichtentagen steigt der Markt am Folgetag eher
+  (umgekehrt zu Tetlock); eine Long-Regel wäre nachträglich gewählt (nicht gewertet).
+- NB Umkehr long d+1..d+5: -3,4 bp (t -0,26) / +31,6 bp (t 3,00, Kontrolle alle Tage 24,0 bp) /
+  -23,5 bp -> NICHT BESTANDEN (Bestätigung kaum über der Kontrolle).
