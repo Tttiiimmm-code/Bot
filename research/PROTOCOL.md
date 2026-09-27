@@ -2429,3 +2429,19 @@ erster Lauf mit unvollständigen EUR/JPY-Ask-Daten verworfen):
 Einordnung: bestätigt den Gotobi-Mechanismus (Yen-Schwäche vor dem Fixing) in einem zweiten Paar;
 EUR/JPY netto sogar besser als USD/JPY. Wegen Korrelation 0,81 nur begrenzte Diversifikation;
 Kandidat für den Vorwärtstest neben USD/JPY.
+
+# Runde 87: Merger-Arbitrage über Übernahmeangebote (SC TO-T) (2026-09-27)
+
+Klassische Prämie (Mitchell & Pulvino 2001: ~4 % p.a. über T-Bill, marktneutral bis auf Crash-Risiko).
+Umsetzung ohne Angebotspreis: Kauf der Zielaktie nach dem ersten Übernahmeangebot, Halten bis zum
+letzten Handelstag (Delisting nach Vollzug) bzw. höchstens 120 Handelstage.
+Daten: EDGAR-Volltextsuche (efts.sec.gov), Formular "SC TO-T" (nur Erstmeldungen, keine /A),
+2016-01..2025-06; Zielgesellschaft = erster CIK des Eintrags. CIK -> Ticker: aktuelle SEC-Liste +
+historische Kürzel aus Insiderdaten (Runde 11); nicht zuordenbare Ziele entfallen (vermerkt).
+Kurse: Alpaca-Tagespanel inkl. delisteter Titel.
+Regel: Kauf zum Schluss des ersten Handelstags NACH dem Meldetag; Ausstieg zum letzten verfügbaren
+Schluss (Delisting) oder nach 120 Handelstagen. Nur Kurs >= 1 USD beim Einstieg. Kosten 20 bp
+Round-Trip. Portfolio: täglich gleichgewichtet über offene Positionen, sonst T-Bill.
+Kennzahl: Überrendite über T-Bill (Portfolio, täglich), dazu Beta ggü. SPY und Ø Rendite je Deal.
+Zeiträume: Entdeckung 2016-2020, Bestätigung 2021-2025-09-19. 1 Familie.
+Bestehen: Überrendite-t >= 2 in beiden Zeiträumen. Umsetzung DE: US-Einzelaktien long über IBKR.
