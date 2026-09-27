@@ -2042,3 +2042,17 @@ Bestehen (2 Gruppen -> 2,24): Ø Überschuss t >= 2,24 in 2025 UND t >= 2 in 202
 der Gruppe > 0. Vorbehalte (vorab): Konten ohne Leaderboard-Eintrag fehlen (Rest-Survivorship);
 Market-Maker mit stetiger PnL sind nicht kopierbar -- berichtet: Anteil Konten mit Volumen/Kontowert
 > 1.000 in den Gruppen. Kopierkosten (Verzögerung, Gebühren) nicht abgezogen -> Obergrenze.
+Gesichtet, nicht getestet: CME-Bitcoin-Gap-Fill ("77 % schließen binnen einer Woche") -- seit
+Mai 2026 handelt CME Bitcoin-Futures rund um die Uhr, die Wochenend-Gaps existieren nicht mehr.
+
+# Runde 71: Spot-Bitcoin-ETF-Flüsse sagen die BTC-Rendite des Folgetags voraus (2026-09-27)
+
+Quelle: Lim (SSRN 6592830): tägliche Nettoflüsse der US-Spot-BTC-ETFs erklären 21 % der Tages-
+renditen und sagen die Folgetagsrendite voraus (Stichprobe 2024-01..2025-04, 313 Tage).
+Daten: Farside Investors "Bitcoin ETF Flow -- All Data" (Spalte Total, Mio. USD, US-Handelstage;
+per Browser). Kurse: Binance BTCUSDT 1m (Runde 65).
+Regel (handelbar, Veröffentlichung abwarten): Fluss F am US-Handelstag t; Position ab 14:00 UTC am
+Kalendertag t+1 für 24 h: long wenn F > 0, short wenn F < 0 (Perp/CFD). Kosten 5 bp je Seite.
+Zeiträume: Entdeckung 2024-01-11..2025-04-30 (Stichprobe des Papiers), Bestätigung 2025-05-01..
+2026-09-25 (nach der Stichprobe). 1 Familie. Bestehen: t >= 2 in beiden Zeiträumen (netto).
+Berichtet: nur große Flüsse (|F| > 200 Mio.), Korrelation F mit gleichzeitiger Rendite.
