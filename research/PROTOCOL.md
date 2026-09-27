@@ -2072,3 +2072,18 @@ mit Kontowert >= 100.000 USD; Median-Folgerendite aller Konten -1,3 % je 28 Tage
 die Top-20 nach PnL im Folgemonat im Mittel -63 % (Großverluste einzelner, hoch gehebelter Konten).
 27 % (G1) bzw. 74 % (G2) der Gruppenkonten haben Volumen/Kontowert > 1.000 (Market-Maker/HFT-artig,
 ohnehin nicht kopierbar). Kopierkosten nicht abgezogen -- real noch schlechter.
+
+# Runde 72: Vortagesrendite des S&P 500 -> Nikkei-Intraday (Umkehr früh, Momentum spät) (2026-09-27)
+
+Quelle: "How the prior day's S&P 500 returns influence the intraday returns of Nikkei 225 futures"
+(ScienceDirect S3050700626000204, 2026; nur Zusammenfassung gelesen, Volltext hinter Captcha):
+höhere S&P-Vortagesrendite -> niedrigere Rendite in den ersten 30 min, höhere in den letzten 30 min.
+Unsere Daten 2013-2025 liegen vermutlich in der Stichprobe des Papiers; echt neu ist nur das
+unberührte Jahr.
+Daten: Dukascopy JPNIDXJPY-Minuten (wie Runde 64); S&P-Signal = SPY Schluss/Schluss des letzten
+US-Handelstags VOR dem Tokio-Datum (Yahoo adjclose).
+- HA Früh-Umkehr: Position -Vorzeichen(S&P) von 08:45 bis 09:15 JST.
+- HB Spät-Momentum: Position +Vorzeichen(S&P) von S-30min bis S (S = 15:15 bis 2024-11-04,
+  15:45 ab 2024-11-05).
+Kosten 0,75 bp je Seite. Zeiträume: Entdeckung 2013-2019, Bestätigung 2020-2025-09-19, unberührt
+2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 / Ø > 0 (netto).
