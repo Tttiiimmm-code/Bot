@@ -1583,3 +1583,11 @@ Ergebnis Runde 52 (Alpha-t Entdeckung / Bestätigung / unberührt):
 - Z1 IBS-Band: 0,44 / 0,50 / 0,20 (Alpha +1,0 / +0,9 / +1,3 % p.a.) -> NICHT BESTANDEN.
 - Z2 Double 7: 1,37 / -1,68 / -0,33 -> NICHT BESTANDEN.
 Die in den USA vor 2016 starken Umkehrregeln (SPY t 3,7) wirken an DAX/CAC/Nikkei nie signifikant.
+
+Ergebnis Runde 51 (306.492 13F-HR-Meldungen, davon 154.720 qualifiziert; 10.913 Kandidaten-CUSIPs,
+etwa die Hälfte per OpenFIGI einem US-Ticker zuordenbar; 85.558 Meldungen mit Ticker im Panel):
+- 20-200 Positionen: Ø 457 Titel, 14,6 % / 11,2 % p.a. (SPY 14,2 % / 13,5 %), Alpha t 0,01 / -0,74.
+- 20-50 Positionen: Ø 268 Titel, 15,2 % / 12,2 %, t 0,20 / -0,49 -> NICHT BESTANDEN.
+Die gebündelten "besten Ideen" sind so breit gestreut, dass sie den Markt nachbilden (Beta 1,05-1,10);
+kein Informationsvorsprung erkennbar.
+Nicht getestet (vermerkt): Pre-ECB-Drift -- ECB-Sitzungstermine nicht als statische Liste abrufbar.
