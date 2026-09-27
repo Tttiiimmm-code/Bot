@@ -2175,3 +2175,9 @@ Kosten: 20 bp Round-Trip + Leihgebühr 0,5 % je Trade (~18 % p.a. für 10 Tage, 
 Zeiträume: IPO 2016-2019 (Entdeckung), IPO 2020-2025-02 (Bestätigung). 1 Familie.
 Bestehen: Ø Überrendite netto t >= 2 in beiden Zeiträumen (Ereignisse; zusätzlich berichtet:
 t über Monatsmittel wegen Häufung).
+Ergebnis Runde 76 (1.715 IPOs nach Filter, 650 Ereignisse mit Panel-Daten und Liquidität):
+- IPO 2016-2019: n 256, Ø Short-Überrendite netto +2,38 % (brutto 3,08 %), t 2,91; über Monats-
+  mittel nur t 1,09 (42 Monate, Häufung); 59 % positiv, Median +1,48 %.
+- IPO 2020-2025-02: n 394, Ø -1,13 % (brutto -0,43 %), t -1,59; Monats-t -1,01; 46 % positiv.
+-> NICHT BESTANDEN. Bis 2019 wie in der Literatur, seit dem IPO-Boom 2020/21 verschwunden bzw.
+umgekehrt (erwartete Verkäufe vorab eingepreist, teils frühere Lockup-Freigaben).
