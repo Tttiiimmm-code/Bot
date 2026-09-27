@@ -2087,3 +2087,8 @@ US-Handelstags VOR dem Tokio-Datum (Yahoo adjclose).
   15:45 ab 2024-11-05).
 Kosten 0,75 bp je Seite. Zeiträume: Entdeckung 2013-2019, Bestätigung 2020-2025-09-19, unberührt
 2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 / Ø > 0 (netto).
+Ergebnis Runde 72:
+- HA Früh-Umkehr 08:45-09:15: Entdeckung n 650 (CFD-Kurse um 08:45 erst ab ~2016 lückenlos),
+  Ø 0,90 bp netto (t 0,70); Bestätigung n 1341, Ø 1,98 bp (t 2,02); unberührt -2,42 bp -> NICHT BESTANDEN.
+- HB Spät-Momentum: -1,17 (t -1,84) / -0,24 (t -0,31) / -0,45 bp -> NICHT BESTANDEN.
+Brutto beide Richtungen wie im Papier nur 1-3 bp; nach Kosten und im unberührten Jahr nichts.
