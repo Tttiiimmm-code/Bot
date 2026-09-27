@@ -2105,3 +2105,15 @@ Handelstags des Monats (= Renditen der letzten 3 Handelstage). Überrendite = Re
 Zeiträume: Replikation 2003-2018 (Stichprobe des Papiers, nur berichtet), Bestätigung
 2019-01..2025-09-19 (nach Veröffentlichung), unberührt 2025-09-22..2026-09-25.
 1 Familie. Bestehen: Bestätigung t >= 2 UND unberührt Ø > 0 (netto). Berichtet: TLT (20+ J.).
+Ergebnis Runde 73 (Monatsende = letzte 3 Handelstage, netto 2 bp je Monat):
+- IEF: 2003-2018 Ø +17,3 bp je Monat (t 3,65, 62 % positiv; übrige Tage +8,1 bp);
+  Bestätigung 2019-2025-08 (nach Veröffentlichung) Ø +22,3 bp (t 3,00, 61 %; übrige Tage -35,8 bp);
+  unberührt 2025-09..2026-08 (12 Monate) Ø -12,1 bp (t -0,81, 42 % positiv).
+- TLT: +35,7 (t 3,74) / +33,2 (t 2,23) / -50,3 bp (t -1,62).
+Korrektur vor dem Urteil: Erster Lauf zählte den unvollständigen Monat 2026-09 (Daten bis 09-25,
+Monatsende noch nicht erreicht) und ließ 2025-09 (Monatsende nach dem 19.09. = unberührt) weg; oben
+die korrigierte Abgrenzung.
+-> NICHT BESTANDEN (unberührtes Jahr negativ). Aber: stärkster Nach-Veröffentlichungs-Befund
+außerhalb Japans (t 3,00 über 80 Monate nach 2019, Mechanismus Index-Rebalancing belegt). Das
+unberührte Jahr ist mit 12 Beobachtungen schwach aussagekräftig -> Kandidat für den Vorwärtstest
+(monatlich, 3 Tage, per 10Y-T-Note-Future oder UCITS-Treasury-ETF).
