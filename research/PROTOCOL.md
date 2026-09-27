@@ -2195,3 +2195,16 @@ Kosten: 10 bp Round-Trip + Funding 3 bp je Tag (Shorts zahlen bei neuen Listings
 Zeiträume: Listings 2020-2023 (Entdeckung), 2024-01..2025-08-20 (Bestätigung), 2025-08-21..
 2026-08-26 (unberührt). Bestehen: t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt.
 Berichtet: reiner Short ohne BTC-Absicherung, Median, schlimmster Einzelverlust.
+Ergebnis Runde 77 (408 Listings mit Liquidität; Ø / Median / Anteil positiv, netto, BTC-abgesichert):
+- 2020-2023: n 227, Ø +2,5 % je Trade (t 0,30), Median +21,2 %, 74 % positiv; schlimmster -1.758 %
+  (GMT 2022: Token x18).
+- 2024-2025-08: n 120, Ø +9,9 % (t 1,58), Median +24,5 %, 76 % positiv; schlimmster -504 % (USUAL).
+- unberührt 2025-08..2026-08: n 61, Ø +25,0 % (t 6,27), Median +25,6 %, 84 % positiv; schlimmster -73 %.
+-> NICHT BESTANDEN (Entdeckung/Bestätigung t < 2). Typischer neuer Token fällt im ersten Monat
+~20-25 % ggü. BTC, aber 2,9 % der Trades verlieren > 100 % (unbegrenztes Short-Risiko) und zerstören
+den Mittelwert. Nur Jahre 2022 und 2024 im Mittel negativ (je ein Extremfall).
+Nachträglich (NICHT gewertet): Eine Variante mit Verlustbegrenzung (Stopp, kleine gleichgewichtete
+Positionen) liegt nahe, wäre aber auf gesehenen Daten gewählt -> nur als Vorwärtstest zulässig.
+Offene Kostenrisiken: Funding bei gehypten Listings für Shorts teils -0,1 %/8 h und mehr (hier 3 bp/Tag
+angenommen); Perp oft nicht am Listingtag verfügbar. Verzerrung durch fehlende delistete Token
+spricht FÜR die Strategie (echte Ergebnisse eher besser).
