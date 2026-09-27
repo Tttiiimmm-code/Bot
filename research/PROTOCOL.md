@@ -2452,3 +2452,12 @@ Abdeckung, Portfolio oft nur wenige Titel):
 - 2021-2025-09 (71 Deals): -7,5 % p.a., Überrendite -8,5 % (t -0,82), Beta 0,39, MaxDD -51 %.
 -> NICHT BESTANDEN. Der Spread je Deal (~0,5 %) ist klein gegenüber den Ausfällen einzelner Deals;
 mit wenigen gleichzeitigen Positionen extrem schwankend. Vorbehalt: Zuordnung Ticker/Kurse lückenhaft.
+
+# Runde 88: Monatsend-Effekt in anderen Segmenten des US-Rentenindex (Mechanismus-Test zu Runde 73) (2026-09-27)
+
+Wenn der Treasury-Monatsend-Effekt aus dem Index-Rebalancing (Bloomberg US Aggregate) stammt,
+sollte er auch in anderen Segmenten auftreten. Regel exakt wie Runde 73 (letzte 3 Handelstage long,
+Überrendite ggü. T-Bill, 2 bp je Monat Kosten). Familien: LQD (Unternehmensanleihen IG), TIP
+(inflationsgeschützt), MBB (Hypothekenpfandbriefe, ab 2007) -> 3 Familien, Schwelle 2,39.
+Zeiträume: Entdeckung Datenbeginn..2018, Bestätigung 2019-2025-08, unberührt 2025-09..2026-08.
+Bestehen je Familie: t >= 2,39 / >= 2 / Ø > 0.
