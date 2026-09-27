@@ -1527,3 +1527,29 @@ Veröffentlichung, Umkehr nach dem Fixing), aber mit echten ECN-Bid/Ask-Kursen b
 (~0,7 % p.a. bei 1x) und die Signifikanz geht verloren. Nur mit passiven Limit-Orders (Spread
 verdienen statt zahlen) wäre mehr möglich -- nicht mit Minutendaten prüfbar. Kein handelbarer
 Kandidat nach den Kriterien; bester Befund der Suche für einen Papierhandel.
+
+# Runde 50: Querschnitts-Funding-Carry bei Altcoins (2026-09-27)
+
+Erweiterung von Familie O (Runde 6; BTC/ETH-Prämie im Holdout auf ~1-2 % p.a. gefallen): Prämie
+dort ernten, wo das Funding gerade hoch ist. Universum: Spot-Top-30 nach Volumen (crypto.
+universe_mask) mit heute existierendem USDT-Perpetual (inkl. 1000PEPE/1000SHIB/1000BONK/1000FLOKI/
+1000LUNC; delistete Perps wie LUNA fehlen -> Verzerrung zugunsten der Strategie).
+Regel: jeden Sonntag zum Tagesschluss (UTC) die k Coins mit dem höchsten Ø-Funding der letzten
+7 Tage (nur > 0); je Coin 1/k des Kapitals: halb Spot long, halb Perp short (1x). Tagesrendite je
+Coin = 0,5 x (Spot - Perp + Funding); fehlende Kurse = 0. Kosten Spot 0,10 %, Perp 0,05 % je Seite
+auf den Umschlag. k {5, 10}.
+Kennzahl: Überrendite über T-Bill (FRED TB3MS/365). Entdeckung 2020-01 bis 2022-12, Bestätigung
+2023-01 bis 2025-09-21, unberührtes Jahr 2025-09-22 bis 2026-09-25 (Altcoin-Funding dort bisher nicht
+angesehen). Bestehen (1 Familie, 2 Varianten): beste Variante Überrendite-t >= 2,24 Entdeckung UND
+>= 2 Bestätigung UND Überrendite im unberührten Jahr > 0. Berichtet: MaxDD, größter Tagesverlust,
+größte Tages-Perp-Rendite eines gehaltenen Coins (Liquidationsrisiko der 1x-Short-Seite).
+Umsetzbarkeit DE: Binance-Futures für deutsche Privatkunden i.d.R. nicht verfügbar; Alternativen
+(DEX wie Hyperliquid/dYdX) mit eigenem Risiko -- im Ergebnis bewerten.
+
+Ergebnis Runde 50 (Überrendite über T-Bill, t):
+- k=5: 2020-2022 +11,4 % p.a. (Sharpe 6,0), t 9,51; 2023-2025 +1,0 % (über T-Bill -3,8 %), t -4,11;
+  unberührt -7,6 %, t -4,13.
+- k=10: +11,6 % (Sharpe 7,1), t 11,35; +2,0 % (-2,8 % über T-Bill), t -5,00; unberührt -4,2 %, t -5,05
+  -> NICHT BESTANDEN. Größte Tages-Perp-Rendite eines gehaltenen Coins bis +73 % (1x-Short nahe
+  Liquidation). Die Funding-Prämie ist seit 2023 auch bei Altcoins wegarbitriert; zuletzt negativ
+  (Kosten der wöchentlichen Umschichtung > Funding).
