@@ -1834,3 +1834,13 @@ Zeiträume: Entdeckung 2008-01..2014-12 (Fixing-Ära), Bestätigung 2015-01..202
 unberührt 2025-09-22..2026-09-25.
 Bestehen je Familie: Entdeckung t >= 2,24 UND Bestätigung t >= 2 UND unberührt Ø > 0 (alles netto).
 Zusätzlich berichtet (nicht gewertet): Bruttowerte, Jahreswerte.
+Ergebnis Runde 61 (7,89 Mio. Minuten 2008-01..2026-09-25; netto 1 bp je Seite):
+- GA Asien-Nacht long: Entdeckung n 1618, Ø 6,56 bp netto (t 4,67); Bestätigung n 2581, Ø 2,83 bp
+  (t 3,42); unberührt n 261, Ø 13,81 bp (t 2,09). Negative Jahre: 2014, 2018, 2022 (je > -2 bp).
+  -> BESTANDEN.
+- GF Fixing short: Entdeckung Ø -0,34 bp (t -0,60), Bestätigung Ø -1,40 bp (t -4,18), unberührt
+  +0,52 bp -> NICHT BESTANDEN (brutto 2008-2009 positiv, danach verschwunden).
+Vorbehalte vor jeder Umsetzung (-> Runde 62): (1) Gold stieg 2008-2026 stark; die Nacht könnte nur
+den Gesamttrend einsammeln -> Vergleich mit der Tagessitzung. (2) Spread direkt nach der
+Wiedereröffnung 18:00 NY ist breiter als 1 bp -> echte Bid/Ask-Kurse. (3) Kein Swap, da Einstieg
+nach und Ausstieg vor dem Rollover 17:00 NY -- beim Broker prüfen.
