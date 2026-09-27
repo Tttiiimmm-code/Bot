@@ -2420,3 +2420,12 @@ letzten 12 Monate (bekannt ab Einreichungstag + 1); Quintile nach Ähnlichkeit; 
 - berichtet: Long-only Q5 minus gleichgewichtetes Universum (für DE-Privatanleger umsetzbar).
 Zeiträume: Entdeckung 2016-2020, Bestätigung 2021-2025-09 (nach Veröffentlichung im JF).
 1 Familie. Bestehen: Monats-t >= 2 in beiden Zeiträumen (netto).
+Ergebnis Runde 85 (Ask->Bid + 0,35 bp/Seite; vor dem Urteil 8 fehlgeschlagene Downloads nachgeholt,
+erster Lauf mit unvollständigen EUR/JPY-Ask-Daten verworfen):
+- USD/JPY (Referenz): 2017-2025 n 628, Ø 1,07 bp (t 1,48); unberührt +0,98 bp.
+- EUR/JPY: 2017-2025 n 615, Ø 1,84 bp netto (t 2,70, 56 % positiv); unberührt n 72, +1,73 bp (t 1,19);
+  Korrelation mit USD/JPY-Trades 0,81 -> BESTANDEN.
+- AUD/JPY: -0,75 bp (t -0,75); unberührt +2,86 bp -> NICHT BESTANDEN.
+Einordnung: bestätigt den Gotobi-Mechanismus (Yen-Schwäche vor dem Fixing) in einem zweiten Paar;
+EUR/JPY netto sogar besser als USD/JPY. Wegen Korrelation 0,81 nur begrenzte Diversifikation;
+Kandidat für den Vorwärtstest neben USD/JPY.
