@@ -1652,3 +1652,11 @@ Ergebnis Runde 54 (netto 0,5 bp je Seite, t; 2008-2018 / 2019-2025 / unberührt)
 - CC ohne Gotobi-Tage: 2008-2018 t 2,22, 2019-2025 t -5,57. Die Gotobi-Tage (Runde 46) hielten
   nach 2017 als einzige Teilmenge -- die gewöhnliche tägliche Fixing-Umkehr ist nach der
   Veröffentlichung verschwunden bzw. umgekehrt.
+
+## 2026-09-27 -- Gesichtet, nicht getestet (kein Versuch gezählt)
+
+- Quantpedia "GDX Overnight Drift" (>30 % p.a.): von Quantpedia selbst als OHLC-Artefakt entlarvt
+  (Eröffnungskurs der Tageskerze nicht handelbar; mit 1-Minuten-Ausführung weitgehend weg).
+- Quantpedia "Sectoral Intramonth Momentum Cycle" (veröffentlicht 2026-08-17, Stichprobe bis 2026-06,
+  Sharpe 0,55 ohne Kosten): keine Daten nach der Stichprobe verfügbar; drei nachträglich gewählte
+  Teilfenster mit Vorzeichenwechsel -> hohes Überanpassungsrisiko. Frühestens als Vorwärtstest.
