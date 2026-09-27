@@ -1553,3 +1553,33 @@ Ergebnis Runde 50 (Überrendite über T-Bill, t):
   -> NICHT BESTANDEN. Größte Tages-Perp-Rendite eines gehaltenen Coins bis +73 % (1x-Short nahe
   Liquidation). Die Funding-Prämie ist seit 2023 auch bei Altcoins wegarbitriert; zuletzt negativ
   (Kosten der wöchentlichen Umschichtung > Funding).
+
+# Runde 51: "Best Ideas" aus 13F-Meldungen (Cohen, Polk & Silli 2010) (2026-09-27)
+
+Daten: SEC Form-13F-Datensätze (quartalsweise ZIPs 2013Q2-2026, INFOTABLE + SUBMISSION), nur
+13F-HR (keine Änderungen), Zeilen ohne Put/Call, Aktien (Wertpapierklasse nicht "PRN"/Anleihen).
+CUSIP -> Ticker per OpenFIGI (US-Aktien); Kurse Alpaca-Panel (nur heute noch vorhandene Symbole).
+Definition: Für jeden Melder mit 20-200 Positionen und >= 100 Mio. USD gemeldetem Wert ist die
+"beste Idee" die Position mit dem größten Portfoliogewicht UNTER AUSSCHLUSS der 100 Titel mit dem
+höchsten Gesamtwert über alle Melder im selben Berichtsquartal (Näherung für "Gewicht über
+Marktgewicht", da Mega-Caps sonst immer größte Positionen sind).
+Portfolio: an jedem Monatsende alle besten Ideen aus den jeweils letzten 13F-HR-Meldungen je Melder
+mit Meldedatum in den letzten 92 Tagen (Information ab Meldedatum verfügbar), gleichgewichtet je
+Titel, 1 Monat halten; nur Titel im Top-1000-Universum (ohne Fonds). 10 bp je Seite.
+Varianten: Melder mit 20-200 Positionen vs. konzentrierte Melder mit 20-50 Positionen.
+Entdeckung 2014-2019, Bestätigung 2020-2025-09-19. Alpha-t ggü. SPY. Bestehen (1 Familie): beste
+Variante t >= 2,24 Entdeckung UND >= 2 Bestätigung.
+
+# Runde 52: Kurzfrist-Umkehr-Regeln (Z1 IBS-Band, Z2 Double 7) an DAX, CAC 40, Nikkei (2026-09-27)
+
+Regeln exakt wie Runde 12 (anomalies.ibs_band_positions, double7_positions), angewandt auf Yahoo
+^GDAXI, ^FCHI, ^N225 (OHLC, ab 1994; data_cache/yahoo_unseen bis 2026-09-25). Umsetzung per Index-
+Future: Kosten 0,5 bp je Seite; investierte Tage tragen Indexrendite - T-Bill/252 (Future-Carry,
+konservativ für Kursindizes). Portfolio = Mittel der 3 Strategierenditen; Benchmark = Mittel der
+3 Indexrenditen. Entdeckung 1994-2008, Bestätigung 2009-2025-09-19, unberührtes Jahr 2025-09-22..
+2026-09-25. Bestehen (2 Familien): Alpha-t >= 2,24 Entdeckung UND >= 2 Bestätigung UND Alpha im
+unberührten Jahr > 0.
+Ergebnis Runde 52 (Alpha-t Entdeckung / Bestätigung / unberührt):
+- Z1 IBS-Band: 0,44 / 0,50 / 0,20 (Alpha +1,0 / +0,9 / +1,3 % p.a.) -> NICHT BESTANDEN.
+- Z2 Double 7: 1,37 / -1,68 / -0,33 -> NICHT BESTANDEN.
+Die in den USA vor 2016 starken Umkehrregeln (SPY t 3,7) wirken an DAX/CAC/Nikkei nie signifikant.
