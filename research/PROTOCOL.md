@@ -2062,3 +2062,13 @@ Rendite der US-Sitzung (r = 0,27), aber nicht mit der handelbaren Folgeperiode:
 - Bestätigung: n 352, Ø netto 2,0 bp, t 0,18, Treffer 46 %; |F|>200: t 0,52.
 -> NICHT BESTANDEN. Die "Vorhersage" des Papiers entsteht vermutlich aus Überlappung von
 Flussmeldung und Kursbewegung (Flüsse folgen dem Kurs), nicht aus handelbarer Information.
+Ergebnis Runde 70 (7.011 Konten geladen, 22 Stichtage 2025-01..2026-08, Ø 785 Konten je Stichtag
+mit Kontowert >= 100.000 USD; Median-Folgerendite aller Konten -1,3 % je 28 Tage):
+- G1 Top 20 nach PnL (wie Rangliste): Formationsrendite Ø +135 % / +96 %; Folgerendite 2025
+  Ø +17,1 % (Überschuss 19,4 %, t 2,02), 2026 Ø -63,3 % (Überschuss -63,8 %, t -1,43).
+- G2 Top 20 nach Rendite: Formation Ø +356 % / +280 %; Folgerendite 2025 +7,6 % (t 0,92), 2026
+  -2,7 % (t -0,36).
+-> NICHT BESTANDEN (beide Gruppen). Die Top-Verdiener behalten ihren Vorsprung nicht; 2026 erlitten
+die Top-20 nach PnL im Folgemonat im Mittel -63 % (Großverluste einzelner, hoch gehebelter Konten).
+27 % (G1) bzw. 74 % (G2) der Gruppenkonten haben Volumen/Kontowert > 1.000 (Market-Maker/HFT-artig,
+ohnehin nicht kopierbar). Kopierkosten nicht abgezogen -- real noch schlechter.
