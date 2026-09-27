@@ -2135,3 +2135,19 @@ Ergebnis Runde 74:
 In allen Zeiträumen positiv, seit 2019 aber schwächer und nicht signifikant. Zusammen mit Runde 73:
 Der Monatsend-Effekt bei Staatsanleihen ist in zwei unabhängigen Märkten vorhanden, aber seit etwa
 2019 (EUR) bzw. im letzten Jahr (USD) schwächer -- kein Kandidat nach den Kriterien.
+
+# Runde 75: Aufnahme in den Nikkei 225 -- Nachfragedruck zwischen Ankündigung und Stichtag (2026-09-27)
+
+Mechanismus (Hanaeda & Serita; Okada, Isagawa & Fujiwara 2006 "temporary demand effect of index
+arbitrageurs"): Nikkei-225-Indexfonds (sehr groß, preisgewichteter Index) müssen neue Titel zum
+Schlusskurs vor dem Stichtag kaufen. Aus DE handelbar: japanische Einzelaktien über IBKR (long).
+Ereignisse: alle ordentlichen Überprüfungen laut Nikkei-Pressemitteilungen (indexes.nikkei.co.jp,
+Newsroom 2005-2026, PDFs; 2024/2025 als Bild-PDF -> Namen aus ja.wikipedia + Nikkei-Meldungen).
+Nur Neuaufnahmen aus Liquiditäts-/Sektorgründen; ausgeschlossen: Nachfolge-Holdings nach Fusion
+(Weiterführung), außerordentliche Ersetzungen wegen Delisting/Fusion (2011-08, Rohm, Ibiden, ...),
+2026-09 (Stichtag noch nicht erreicht). Aktien ohne Yahoo-Daten (delistet) fallen weg.
+Regel: Kauf zum Eröffnungskurs des ersten Handelstags NACH der Ankündigung (Mitteilung nach
+Börsenschluss), Verkauf zum Schlusskurs des letzten Handelstags VOR dem Stichtag. Überrendite =
+Aktie minus ^N225 im selben Fenster (Open->Close). Kosten 20 bp Round-Trip.
+Zeiträume: Entdeckung Ankündigungen 2005-2016, Bestätigung 2017-2026-03. Bestehen: Ø Überrendite je
+Ereignis t >= 2 in beiden (über Ereignisse). Berichtet: Umkehr vom Stichtag bis +10 Handelstage.
