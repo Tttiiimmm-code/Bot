@@ -1911,3 +1911,6 @@ S-30min bis S (long und short, CFD/Micro-Future). Nur japanische Handelstage mit
 Zeitpunkten (max. 5 min Toleranz). Kosten 0,75 bp je Seite.
 Zeiträume: Entdeckung 2013-2019, Bestätigung 2020-2025-09-19, unberührt 2025-09-22..2026-09-25.
 1 Familie, keine Varianten. Bestehen: t >= 2 in beiden Zeiträumen UND Ø > 0 unberührt (netto).
+Ergebnis Runde 64: Entdeckung n 1546, Ø 1,14 bp netto (brutto 2,64), t 1,79; Bestätigung n 1418,
+Ø 1,07 bp (brutto 2,57), t 1,42; unberührt Ø -2,51 bp (t -1,28) -> NICHT BESTANDEN. Brutto
+schwach positiv wie im Papier, aber zu klein für Kosten; im unberührten Jahr negativ.
