@@ -1624,3 +1624,31 @@ OSE-Tagessitzung (15:15 JST, ab 2024-11-05 15:45), Ausstieg 08:45 JST (Eröffnun
 Ergebnis Kontrolle: 2013-2018 (nur 508 Nächte mit Kurs um 15:15 -- Datenlücken) Ø netto 4,19 bp, t 1,05;
 2019-2025 4,22 bp (9,8 % p.a.), t 1,69; 2013-2025 4,21 bp (9,9 % p.a.), t 1,98 -> ok (>= 1,65);
 unberührtes Jahr 13,67 bp, t 1,46. Der Effekt besteht auch zu handelbaren Future-Sitzungszeiten.
+
+# Runde 54: Tägliche Fixing-Umkehr im Devisenmarkt (Krohn, Mueller & Whelan, JF 2024) (2026-09-27)
+
+Paper (Stichprobe 1999-2018, G9-Währungen): USD steigt vor den drei großen Fixings und fällt danach,
+jeden Tag. Fenster (wie im Paper, Zeitzonen je Ort, Sommerzeit berücksichtigt):
+- vor Tokio: 17:00 New York (Vortag) -> 09:55 Tokio: USD long
+- nach Tokio: 09:55 Tokio -> 08:00 Frankfurt: USD short
+- vor EZB: 08:00 Frankfurt -> 14:15 Frankfurt: USD long
+- nach London: 16:00 London -> 17:00 New York: USD short
+Familien (je gleichgewichtet über EURUSD, GBPUSD, USDJPY; Dukascopy-Bid-Minuten):
+- CB Europa-Fenster = vor EZB + nach London (2 Round-Trips je Tag und Paar).
+- CC Tokio-Fenster = vor Tokio + nach Tokio (2 Round-Trips).
+Kosten 0,5 bp je Seite je Round-Trip (ECN), Stress 1,0 bp berichtet. Tagesrendite = Summe der
+Fenster. Zeiträume: 2008-2018 = Replikation im Paper-Zeitraum (nur berichtet), 2019-2025-09-19 =
+nach der Stichprobe des Papers (echte Prüfung), plus unberührtes Jahr 2025-09-22..2026-09-25.
+Bestehen (2 Familien): t >= 2,24 für 2019-2025 UND Ø > 0 im unberührten Jahr.
+Überschneidung: Das Tokio-Fenster enthält die Gotobi-Tage (Runde 46) -- zusätzlich berichtet: CC
+ohne Gotobi-Tage.
+
+Ergebnis Runde 54 (netto 0,5 bp je Seite, t; 2008-2018 / 2019-2025 / unberührt):
+- CB Europa: +0,47 bp/Tag (t 0,66) / -2,15 (t -2,71) / -3,73 (t -2,19) -> NICHT BESTANDEN.
+- CC Tokio: +1,97 bp/Tag (5,0 % p.a., t 4,55) / -2,27 (t -4,80) / -3,66 (t -3,60) -> NICHT BESTANDEN.
+- Brutto je Fenster im Paper-Zeitraum stark (vor Tokio t 6,26, nach Tokio 7,50, vor EZB 4,80):
+  Replikation gelingt, Daten und Umsetzung sind also richtig. Nach 2018 kehrt sich "vor Tokio" um
+  (t -2,42); "vor EZB" schwächt sich auf t 1,57 ab und ist im unberührten Jahr null.
+- CC ohne Gotobi-Tage: 2008-2018 t 2,22, 2019-2025 t -5,57. Die Gotobi-Tage (Runde 46) hielten
+  nach 2017 als einzige Teilmenge -- die gewöhnliche tägliche Fixing-Umkehr ist nach der
+  Veröffentlichung verschwunden bzw. umgekehrt.
