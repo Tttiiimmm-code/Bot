@@ -1999,3 +1999,10 @@ Kosten: 1,5 Punkte Round-Trip + 1 bp Übernacht-Finanzierung.
 Zeiträume: Entdeckung 2013-10..2019, Bestätigung 2020..2025-09-19, unberührt 2025-09-22..2026-09-25.
 Berichtet zum Vergleich: gleiche Zeitfenster an allen anderen Tagen (Kontrolle).
 1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung, Ø > 0 unberührt (netto).
+Ergebnis Runde 68 (89 von 109 Sitzungen mit Kursen zu beiden Zeitpunkten):
+- Entdeckung 2013-10..2019: n 35, Ø 15,7 bp netto (t 1,94, 63 % Treffer); Kontrolle (alle anderen
+  Tage, gleiches Fenster) 2,6 bp.
+- Bestätigung 2020..2025-09: n 46, Ø -24,0 bp (t -1,38); Kontrolle 2,2 bp.
+- unberührt: n 8, Ø -48,9 bp; Kontrolle 4,2 bp.
+-> NICHT BESTANDEN (wie Brusa, Savor & Wilson 2020 erwarten lassen). Die Lücke aus Runde 52 ist
+damit geschlossen.
