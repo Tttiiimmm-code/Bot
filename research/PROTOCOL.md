@@ -2499,3 +2499,15 @@ Zeiträume: Entdeckung 2011-2018 (Wachstum der VIX-ETPs), Bestätigung 2019-2025
 Ergebnis Runde 90: Signalnächte (VIX >= +10 %) 2011-2018 n 173, Ø +3,3 bp (t 0,53); 2019-2025 n 145,
 Ø -5,9 bp (t -0,60); unberührt n 26, +17,8 bp (t 1,37); übrige Nächte ~0-2 bp -> NICHT BESTANDEN.
 Keine messbare Umkehr über Nacht (trotz leicht optimistischem Signal).
+Hinweis NY Fed (Liberty Street, 2026-09 "Treasury Trading at the Close"): Bloomberg verlegte die
+Index-Bewertungszeit am 2021-01-14 von 15:00 auf 16:00 ET; am Monatsende konzentrieren sich inzwischen
+~20 % des Tagesvolumens um 15:45-16:15 (2021: 11,6 %). Mögliche Erklärung für eine Abschwächung des
+Monatsend-Effekts (effizientere Ausführung zum Bewertungszeitpunkt), nicht belegt.
+
+# Runde 91: Monatsend-Effekt bei britischen Staatsanleihen (Gilts) (2026-09-27)
+
+Unabhängiger Markt, gleicher Mechanismus (FTSE-Gilt-Indizes, Monatsende). Regel wie Runde 73/74:
+letzte 3 Handelstage long, Überrendite ggü. FRED IR3TIB01GBM156N, 2 bp je Monat. Daten Yahoo IGLT.L
+(iShares Core UK Gilts, ausschüttend -> adjclose). Japanische Anleihe-ETFs erst ab 2017-12 -> nicht getestet.
+Zeiträume: Entdeckung 2008-2018, Bestätigung 2019-2025-08, unberührt 2025-09..2026-08.
+1 Familie. Bestehen: t >= 2 / >= 2 / Ø > 0.
