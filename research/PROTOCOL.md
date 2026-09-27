@@ -2224,3 +2224,7 @@ bei der Kennzahl; Strategie p.a. mit 1 bp je Seite berichtet.
 Zeiträume: Replikation 1994-2016 (Stichprobe des Papiers, berichtet), Bestätigung 2017-2025-09-19
 (nach Veröffentlichung), unberührt 2025-09-22..2026-09-25.
 1 Familie. Bestehen: Bestätigung t >= 2 UND unberührt Differenz > 0.
+Ergebnis Runde 78: Replikation 1994-2016 gerade Wochen Ø 8,8 bp/Tag vs ungerade -3,5 bp (t 3,91;
+Strategie 12,4 % p.a. vs SPY 9,1 % bei halber Marktzeit) -- bestätigt das Papier.
+Nach Veröffentlichung 2017-2025-09: gerade 3,3 bp vs ungerade 7,8 bp (t -0,90; Strategie 4,3 % vs
+SPY 15,2 %); unberührt 4,2 vs 6,3 bp (t -0,20) -> NICHT BESTANDEN. Klarer Verfall nach 2016.
