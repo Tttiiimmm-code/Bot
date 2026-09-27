@@ -1929,3 +1929,10 @@ Zeiträume: Entdeckung 2024-01-11..2025-06-30 (ETF-Ära, bevor das Muster popul�
 Kontrolle (berichtet, nicht gewertet): 2020-01..2024-01-10 (vor ETFs).
 1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung (netto).
 NYSE-Feiertage: aus Yahoo-SPY-Handelstagen abgeleitet (Werktage ohne SPY-Kurs entfallen).
+Ergebnis Runde 65 (Binance BTCUSDT 1m 2020-01..2026-09-25):
+- Kontrolle vor ETF 2020-2024-01: brutto -0,27 bp (short), netto -10,3 bp.
+- Entdeckung 2024-01-11..2025-06: n 367, brutto +2,85 bp, netto -7,15 bp (t -1,27).
+- Bestätigung 2025-07..2026-09: n 312, brutto +2,80 bp, netto -7,20 bp (t -1,33); Short-Trefferquote
+  51-53 %. Halbjahre brutto stark schwankend (2026-H1 +11,5 bp, 2026-H2 -25,2 bp).
+-> NICHT BESTANDEN. Der "10-Uhr-Dump" ist brutto kaum messbar (~3 bp bei ~70 bp Stunden-Vola)
+und nach Kosten klar negativ; die Medienzahlen stammen aus einem ausgewählten Bärenmarkt-Fenster.
