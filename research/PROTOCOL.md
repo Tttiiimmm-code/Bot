@@ -2445,3 +2445,10 @@ Round-Trip. Portfolio: täglich gleichgewichtet über offene Positionen, sonst T
 Kennzahl: Überrendite über T-Bill (Portfolio, täglich), dazu Beta ggü. SPY und Ø Rendite je Deal.
 Zeiträume: Entdeckung 2016-2020, Bestätigung 2021-2025-09-19. 1 Familie.
 Bestehen: Überrendite-t >= 2 in beiden Zeiträumen. Umsetzung DE: US-Einzelaktien long über IBKR.
+Ergebnis Runde 87 (566 Erstangebote; 367 mit Ticker, nur 150 mit Kursen im Alpaca-Panel -> geringe
+Abdeckung, Portfolio oft nur wenige Titel):
+- je Deal Ø +0,53 %, Median +0,21 % nach Kosten, Ø 62 Handelstage; 17 Deals mit Verlust > 10 %.
+- 2016-2020 (52 Deals): 16,3 % p.a., Überrendite 15,3 % (t 2,08), Beta 0,30, MaxDD -17,5 %.
+- 2021-2025-09 (71 Deals): -7,5 % p.a., Überrendite -8,5 % (t -0,82), Beta 0,39, MaxDD -51 %.
+-> NICHT BESTANDEN. Der Spread je Deal (~0,5 %) ist klein gegenüber den Ausfällen einzelner Deals;
+mit wenigen gleichzeitigen Positionen extrem schwankend. Vorbehalt: Zuordnung Ticker/Kurse lückenhaft.
