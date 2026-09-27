@@ -2022,3 +2022,23 @@ Ranglisten erhöhen Risiko und Herdenverhalten; Popularität folgt nur teilweise
 Außerdem: US-ETFs (NANC, GURU) für DE-Privatanleger wegen PRIIPs nicht kaufbar.
 Fazit: Kein Kopieransatz mit öffentlich verfügbaren Meldungen schlägt den Markt nach Kosten;
 Meldeverzug (13F 45 Tage, Kongress bis 45 Tage) nimmt den Informationsvorsprung vorweg.
+
+# Runde 70: Ranglisten-Kopieren auf Hyperliquid -- halten Top-Verdiener ihren Vorsprung? (2026-09-27)
+
+Frage des Nutzers: Trades der Top-Verdiener einer Plattform in Echtzeit automatisch kopieren.
+Hyperliquid (On-Chain-Perp-Börse) veröffentlicht Positionen, Fills und PnL-Historie ALLER Konten.
+Notwendige Bedingung fürs Kopieren: Top-Verdiener einer Periode verdienen auch in der nächsten.
+Daten: stats-data.hyperliquid.xyz Leaderboard (46.957 Konten, inkl. Verlierer; Stand 2026-09-27);
+Universum = Konten mit Gesamtvolumen >= 100 Mio. USD (7.011). Je Konto info/portfolio "perpAllTime":
+pnlHistory + accountValueHistory (~wöchentlich seit Kontoeröffnung).
+Regel: Formationsstichtage alle 28 Tage ab 2025-01-01 bis 2026-08-30. Je Stichtag T: PnL im Fenster
+[T-28 T] und [T, T+28] je Konto (lineare Interpolation der kumulierten PnL-Historie auf die
+Stichtage; nur Konten mit Historie über beide Fenster und Kontowert >= 100.000 USD bei T-28 und T).
+Rendite = PnL / Kontowert bei Fensterbeginn.
+Gruppen: G1 Top 20 nach absoluter PnL in [T-28, T] (wie die Rangliste), G2 Top 20 nach Rendite.
+Kennzahl je Stichtag: Ø Folgerendite der Gruppe minus Median-Folgerendite aller Konten.
+Zeiträume: Entdeckung Stichtage 2025, Bestätigung Stichtage 2026.
+Bestehen (2 Gruppen -> 2,24): Ø Überschuss t >= 2,24 in 2025 UND t >= 2 in 2026 UND Ø Folgerendite
+der Gruppe > 0. Vorbehalte (vorab): Konten ohne Leaderboard-Eintrag fehlen (Rest-Survivorship);
+Market-Maker mit stetiger PnL sind nicht kopierbar -- berichtet: Anteil Konten mit Volumen/Kontowert
+> 1.000 in den Gruppen. Kopierkosten (Verzögerung, Gebühren) nicht abgezogen -> Obergrenze.
