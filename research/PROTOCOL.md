@@ -1970,3 +1970,6 @@ von der TOM-Rendite abgezogen).
 Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-09-24.
 1 Familie. Bestehen: Welch-t >= 2 in Entdeckung UND Bestätigung UND Differenz > 0 unberührt.
 Berichtet: TOM-Strategie p.a. vs Halten.
+Ergebnis Runde 67: Entdeckung 1993-2008 TOM Ø 10,4 bp vs Rest -6,3 bp, Diff 16,6 bp (t 3,28);
+Bestätigung 2009-2025 TOM 1,7 bp vs Rest 6,4 bp, Diff -4,7 bp (t -1,06); unberührt Diff +9,8 bp
+(t 0,41) -> NICHT BESTANDEN. Stark bis 2008, danach verschwunden.
