@@ -1707,3 +1707,26 @@ Ergebnis Runde 56 (ASX-Daten erst ab 2014; leere Datei 2013 entfernt):
 - Portfolio 2013-2025 Ø 0,76 bp, t 0,56 -> NICHT BESTANDEN.
 Befund: Der Nachteffekt ist kein allgemeines asiatisch-pazifisches Phänomen; Japan ist ein
 Sonderfall (passt zur Literatur, die es als japanspezifisches Rätsel beschreibt).
+
+# Runde 57: NT-Verhältnis vor den japanischen Dividendenstichtagen (2026-09-27)
+
+Mechanismus (QUICK Japan Market View u.a.): Treuhandbanken reinvestieren die erwarteten Dividenden
+der Indexfonds Ende März und Ende September per Futures-Kauf, überwiegend TOPIX -> TOPIX schlägt
+Nikkei 225 in den Tagen vor dem Dividendenabschlag (NT-Verhältnis fällt).
+Daten: Yahoo 1306.T (TOPIX-ETF) und 1321.T (Nikkei-225-ETF), adjclose, ab 2009 (beide zahlen im
+Juli aus -- keine Ausschüttung im Fenster). Yahoo-Datum = Tokio-Datum - 1 Tag (New-York-Umrechnung)
+-> +1 Kalendertag korrigiert.
+Ereignis: letzter Tag MIT Dividendenanspruch im März/September = Stichtag (letzter Handelstag des
+Monats) - 3 Handelstage bis 2019-07-15 (T+3), danach - 2 Handelstage (T+2).
+Position: long 1306 / short 1321 (gleiche Nominale) vom Schluss K Handelstage vor diesem Tag bis zu
+dessen Schluss. K {5, 10}. Kosten 4 x 1 bp je Ereignis (Futures).
+Bestehen (1 Familie, 2 Varianten): beste Variante Ø je Ereignis mit t >= 2,24 über 2009-2025 UND
+Ø > 0 in beiden Hälften (2009-2016, 2017-2025) UND Ø > 0 bei den Ereignissen im unberührten Jahr
+(Sept. 2025, März 2026).
+Ergebnis Runde 57 (33 Ereignisse 2009-2025):
+- K=5: Ø 4,8 bp, 64 % Treffer, t 0,33 (2009-2016 -1,4 bp; 2017-2025 +10,7 bp).
+- K=10: Ø 38,1 bp, t 1,25 (2009-2016 -27,8 bp; 2017-2025 +100,1 bp); unberührt Sept. 2025 -220 bp,
+  März 2026 +187 bp -> NICHT BESTANDEN.
+Programmfehler (ohne Einfluss aufs Urteil): Sept. 2026 wurde als Ereignis gezählt, obwohl die Daten
+vor dem echten Monatsende enden (Prüfung "Tag >= 25" nach Datumskorrektur zu schwach). Der Effekt ist
+erst seit 2017 sichtbar (+100 bp bei K=10) -- nachträglich betrachtet, kein Beleg.
