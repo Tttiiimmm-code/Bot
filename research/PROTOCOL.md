@@ -2484,3 +2484,15 @@ Zeiträume: Entdeckung 2013-10..2019, Bestätigung 2020..2025-09-19, unberührt 
 Ergebnis Runde 89: Gotobi-Tage 2013-2019 Ø -2,98 bp (t -0,97), 2020-2025 Ø -0,32 bp (t -0,11), unberührt
 +8,73 bp (t 0,80); andere Tage -1,1 / -1,4 / -8,8 bp -> NICHT BESTANDEN. Die Yen-Schwäche vor dem
 Fixing überträgt sich nicht messbar auf den Nikkei; der Gotobi-Effekt bleibt ein reiner Devisen-Effekt.
+
+# Runde 90: Umkehr des VIX-ETP-Absicherungsdrucks über Nacht (J. Banking & Finance 180, 2025) (2026-09-27)
+
+Befund: Die tägliche Rebalancing-Nachfrage der VIX-ETPs (gehebelt/invers kaufen VIX-Futures, wenn
+diese steigen) wird von Market-Makern über SPX-Futures abgesichert, drückt den S&P zum Schluss und
+kehrt sich danach um. Proxy ohne ETP-Bestandsdaten: VIX-Tagesänderung (Yahoo ^VIX).
+Regel: an Tagen mit VIX-Schluss/Vortag >= +10 % SPY zum Schluss kaufen, zum nächsten Open verkaufen
+(Yahoo SPY open/close). Kosten 2 bp Round-Trip. Kontrolle: alle übrigen Nächte.
+Vorbehalt: Signal nutzt den VIX-Schluss (reale Order müsste ~15:45 ET entscheiden) -> leicht zu
+optimistisch; ein Nichtbestehen ist daher aussagekräftig.
+Zeiträume: Entdeckung 2011-2018 (Wachstum der VIX-ETPs), Bestätigung 2019-2025-09-19, unberührt
+2025-09-22..2026-09-25. 1 Familie. Bestehen: t >= 2 in beiden UND Ø > 0 unberührt.
