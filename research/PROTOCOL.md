@@ -2250,3 +2250,16 @@ Nachtsitzungs-Stopp -3 % beim Nikkei (Minuten-Tiefs, 5 bp Schlupf): Ø 4,82 bp, 
 den MaxDD (Verlustserien statt Einzelnächte).
 Einordnung: alles In-Sample-Hebelung zweier bereits geprüfter Befunde; Umsetzung erst nach
 bestätigendem Vorwärtstest.
+Gesichtet, nicht lesbar: SSRN 7115197 (ML-Signale und Handelsfriktionen bei Krypto) -- Cloudflare-
+Prüfung, nicht umgangen.
+
+# Runde 79: Vor-Feiertags-Effekt am Nikkei (Ziemba 1991) (2026-09-27)
+
+Befund bis 1988: Japanische Aktien steigen am Handelstag vor Börsenfeiertagen stark. Unser Test der
+anderen Ziemba-Anomalie (Monatswechsel, Runde 67) zeigte Verfall nach 2008.
+Daten: Yahoo ^N225 Schlusskurse 1993-2026-09-24. Feiertag = Werktag (Mo-Fr) ohne Nikkei-Kurs;
+Vor-Feiertag = letzter Handelstag davor (inkl. Jahresende 30.12. vor den Neujahrsferien).
+Kennzahl: Ø Tagesrendite Vor-Feiertag minus übrige Tage (Welch-t); Kosten 2 bp je Round-Trip
+(Micro-Future) von den Vor-Feiertagsrenditen abgezogen.
+Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-09-24.
+1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung, Differenz > 0 unberührt.
