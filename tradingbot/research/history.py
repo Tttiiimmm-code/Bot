@@ -35,7 +35,10 @@ def fetch_yahoo(symbol: str, base: Path = YAHOO_DIR, until: date = date(2016, 1,
     with urllib.request.urlopen(req, timeout=60) as r:
         res = json.load(r)["chart"]["result"][0]
     q = res["indicators"]["quote"][0]
-    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert("America/New_York").date
+    # Handelstag in der Börsenzeitzone (vorher fest New York -> asiatische Indizes um einen Tag verschoben;
+    # bereits gespeicherte Caches asiatischer Symbole sind betroffen, siehe PROTOCOL Runde 79).
+    tz = res.get("meta", {}).get("exchangeTimezoneName") or "America/New_York"
+    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert(tz).date
     df = pd.DataFrame({"open": q["open"], "close": q["close"],
                        "adjclose": res["indicators"]["adjclose"][0]["adjclose"]}, index=idx)
     divs = res.get("events", {}).get("dividends", {})
@@ -61,7 +64,10 @@ def fetch_yahoo_ohlc(symbol: str, base: Path = YAHOO_DIR, until: date = date(202
     with urllib.request.urlopen(req, timeout=60) as r:
         res = json.load(r)["chart"]["result"][0]
     q = res["indicators"]["quote"][0]
-    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert("America/New_York").date
+    # Handelstag in der Börsenzeitzone (vorher fest New York -> asiatische Indizes um einen Tag verschoben;
+    # bereits gespeicherte Caches asiatischer Symbole sind betroffen, siehe PROTOCOL Runde 79).
+    tz = res.get("meta", {}).get("exchangeTimezoneName") or "America/New_York"
+    idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert(tz).date
     df = pd.DataFrame({"open": q["open"], "high": q["high"], "low": q["low"], "close": q["close"],
                        "adjclose": res["indicators"]["adjclose"][0]["adjclose"]}, index=idx)
     df = df.dropna()

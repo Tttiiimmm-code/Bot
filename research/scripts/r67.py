@@ -4,7 +4,7 @@ import pandas as pd
 
 COST_DAY = 0.25e-4
 c = pd.read_pickle("data_cache/yahoo_unseen/^N225_full.pkl")["close"].astype(float)
-c.index = pd.to_datetime(c.index)
+c.index = pd.to_datetime(c.index) + pd.Timedelta(days=1)  # Yahoo-Cache: JST-Mitternacht als UTC-Datum gespeichert (Tag -1)
 r = c.pct_change().dropna()
 ym = r.index.to_period("M")
 pos = pd.Series(0, index=r.index)

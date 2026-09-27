@@ -2263,3 +2263,15 @@ Kennzahl: Ø Tagesrendite Vor-Feiertag minus übrige Tage (Welch-t); Kosten 2 bp
 (Micro-Future) von den Vor-Feiertagsrenditen abgezogen.
 Zeiträume: Entdeckung 1993-2008, Bestätigung 2009-2025-09-19, unberührt 2025-09-22..2026-09-24.
 1 Familie. Bestehen: t >= 2 in Entdeckung UND Bestätigung, Differenz > 0 unberührt.
+Datenfehler entdeckt (vor dem Urteil zu Runde 79): Der Yahoo-Helfer (history.fetch_yahoo/_ohlc)
+wandelte Zeitstempel fest in New-York-Zeit um; asiatisch-pazifische Indizes (Tagesstempel 09:00 Ortszeit
+= Vorabend in NY) stehen im Cache um einen Kalendertag zu früh (Handelstage So-Do). Betroffen:
+^N225 in Runden 52, 53, 67, 79. Runden 52/53 nutzen nur aufeinanderfolgende Kurse -> Ergebnis unverändert
+(nur Periodengrenzen um einen Tag verschoben). Runde 67 (Lage im Monat) neu gerechnet mit Datum+1:
+Entdeckung Diff 17,5 bp (t 3,45), Bestätigung -3,8 bp (t -0,86), unberührt -1,5 bp (t -0,06) ->
+Urteil unverändert NICHT BESTANDEN. Helfer korrigiert (Börsenzeitzone aus den Yahoo-Metadaten);
+bestehende Caches asiatischer Symbole in den Skripten mit +1 Tag behandeln.
+Ergebnis Runde 79 (mit korrigiertem Datum; 13-20 Feiertage je Jahr):
+- 1993-2008: Vor-Feiertag n 182, Ø +1,0 bp vs übrige -0,7 bp (t 0,14).
+- 2009-2025-09: n 205, Ø -5,1 bp vs +5,3 bp (t -1,23); unberührt n 14, -19,9 bp vs +19,1 bp.
+-> NICHT BESTANDEN. Der Vor-Feiertags-Effekt ist in Japan schon seit 1993 nicht mehr vorhanden.
