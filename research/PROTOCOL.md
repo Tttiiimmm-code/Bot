@@ -2230,3 +2230,23 @@ Nach Veröffentlichung 2017-2025-09: gerade 3,3 bp vs ungerade 7,8 bp (t -0,90; 
 SPY 15,2 %); unberührt 4,2 vs 6,3 bp (t -0,20) -> NICHT BESTANDEN. Klarer Verfall nach 2016.
 Präzisierung der Nutzerpräferenz (2026-09-27): Hohes Risiko ist akzeptabel, wenn der Ertrag es
 überwiegt; ausgeschlossen sind nur neue Memecoins/Listings (long wie short).
+
+# Positionsgrößen-Analyse Gotobi + Nikkei-Nacht (beschreibend, 2026-09-27; research/scripts/sizing.py)
+
+Handelslogik = tradingbot/forward_test.py (feature/forward-test); 2017-01..2026-09-25; Kosten wie
+Vorwärtstest (Nikkei 0,5 bp/Seite + JPY-Zins; Gotobi Ask->Bid + 0,35 bp/Seite).
+- Nikkei-Nacht: 1.907 Nächte, Ø 5,41 bp, Std 117 bp, schlechteste Nacht -8,56 %; Jahre 2018 -1,9 bp,
+  2022 -7,0 bp, sonst positiv (2025 +13,9, 2026 +15,3). Kelly 3,9x.
+- Gotobi: 699 Trades, Ø 1,06 bp, Std 17,9 bp, schlechtester -0,89 %; 2024 -1,4 bp, 2025 -3,3 bp.
+  Kelly rechnerisch 33x -- wegen Schätzfehler des kleinen Mittelwerts bedeutungslos.
+- Korrelation an gemeinsamen Tagen 0,03.
+Hebel (Nikkei/Gotobi, Anteil des Kontos als Nominale) -> CAGR, MaxDD (doppelte Kosten):
+  1x/1x 10,5 %, -27 % (7,8 %) | 1x/5x 13,6 %, -35 % (8,6 %) | 1x/10x 17,0 %, -45 % (9,1 %) |
+  1,5x/10x 21,3 %, -53 % (12,0 %) | 2x/10x 24,9 %, -60 % | 3x/5x 26,0 %, -68 % | 5x/8x 27,2 %, -88 %
+  | 8x/12x 0,6 %, -99 %. Rendite-Maximum bei ~3-5x Nikkei; darüber zerstört die Volatilität den Ertrag.
+Bootstrap 1 Jahr: 2x/3x Median +20,7 %, P(Verlust) 28 %, P(DD < -30 %) 31 %, 5-%-Quantil -30 %.
+Nachtsitzungs-Stopp -3 % beim Nikkei (Minuten-Tiefs, 5 bp Schlupf): Ø 4,82 bp, schlechteste Nacht
+-3,06 %, 53 Stopps; 1x/10x 15,8 %, MaxDD -41 %; 1,5x/10x 19,6 %, -47 %. Senkt Extremtage, kaum
+den MaxDD (Verlustserien statt Einzelnächte).
+Einordnung: alles In-Sample-Hebelung zweier bereits geprüfter Befunde; Umsetzung erst nach
+bestätigendem Vorwärtstest.
