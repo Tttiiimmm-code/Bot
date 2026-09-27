@@ -1425,3 +1425,23 @@ Kontrakt -> mit 20k EUR nicht voll besichert handelbar; Euro-Stoxx-50-Optionen ~
 Ergebnis Runde 44: 1996-2009 PUT 8,9 % p.a. (S&P TR 5,8 %), Sharpe 0,68 vs. 0,37, Alpha 4,9 %,
 t 2,78; 2010-2025 PUT 7,8 % (S&P TR 14,2 %), Sharpe 0,54 vs. 0,85, Alpha -1,8 %, t -0,65
 -> NICHT BESTANDEN. Gleiches Muster wie fast alle Prämien: stark vor der Veröffentlichung, danach weg.
+
+# Runde 45: Unberührtes Jahr für den Nachteffekt (2026-09-27)
+
+Dukascopy-Daten 2025-09-20 bis 2026-09-25 (bisher nie geladen), Regeln und Kosten exakt wie Runde 43
+(Future-Kosten) bzw. Kontrolle Runde 41/42 (DAX 17:30 -> 09:00). Nur Vorzeichentest (ein Jahr hat
+wenig Macht): berichtet werden Ø netto je Nacht, t und Jahresrendite für
+(a) DAX, (b) Nikkei (in Runde 43 nachträglich aufgefallen), (c) 5-Index-Portfolio aus Runde 43,
+(d) 6-Index-Portfolio inkl. DAX. "Bestätigt" nur, wenn Ø netto > 0; sonst verworfen.
+Ergebnis Runde 45 (2025-09-22..2026-09-25, netto je Nacht):
+- (a) DAX -0,07 bp, t -0,02, Jahr -0,9 % -> VERWORFEN (DAX-Nachteffekt der Runden 40-42 bestätigt
+  sich nicht).
+- (b) Nikkei +11,98 bp, t 1,21, Jahr +29,2 % -> positiv (in einem stark steigenden Jahr; nicht
+  signifikant).
+- Einzeln: S&P 500 +3,37 bp (t 1,01), Nasdaq-100 +5,60 (1,02), FTSE -2,07 (-0,71), CAC -0,49 (-0,12).
+- (c) 5-Index-Portfolio +4,02 bp, t 1,13, +10,7 %; (d) 6-Index-Portfolio +3,37 bp, t 0,94, +8,8 %
+  -> positiv, nicht signifikant.
+Gesamtbild Nachteffekt (Runden 40-45): real vorhanden (brutto positiv in fast allen Märkten und
+Zeiträumen), netto nach Future-Kosten klein und instabil; der einzige über alle Prüfungen
+durchgehend positive Markt ist Japan -- das ist aber nachträglich ausgewählt. Kein Kandidat, der
+die vorregistrierten Kriterien erfüllt.
