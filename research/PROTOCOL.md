@@ -1799,3 +1799,17 @@ Stand Runde 60 (unvollständig, kein Urteil):
 - Korrigierter Abruf monatsweise: Marktliste vollständig (45.385 Märkte 2023-01..2026-09), Preis-
   verläufe bei ~10.400 vom System wegen Speichermangel gestoppt. Fortsetzung mit
   research/scripts/r60_fetch.py (überspringt Vorhandenes), dann r60.py.
+Ergebnis Runde 60 (vollständiger Abruf: 45.385 Märkte, 30.589 Preisverläufe; 22.511 Märkte mit Preis
+7 Tage vor Schluss, 7.972 ohne Preis in diesem Fenster, 106 ohne Verlauf/eindeutige Auflösung):
+Kalibrierung (alle Zeiträume, Preis -> Trefferquote):
+0,55->0,53 | 0,65->0,61 | 0,75->0,72 | 0,85->0,81 | 0,93->0,91 | 0,96->0,95 | 0,993->0,994 (n=10.380)
+- 2023-2024:      494 Ereignisse, Ø Preis 0,908, Treffer 0,893, Ø Rendite je Ereignis -5,02 % (t -3,21)
+- 2025-01..09-19: 797 Ereignisse, Ø Preis 0,904, Treffer 0,882, Ø -4,98 % (t -4,14)
+- unberührt:     1565 Ereignisse, Ø Preis 0,899, Treffer 0,867, Ø -5,68 % (t -6,31)
+-> NICHT BESTANDEN. Auf Polymarket ist es umgekehrt: Favoriten zwischen 0,5 und 0,95 sind um
+2-4 Prozentpunkte ZU TEUER, in allen drei Zeiträumen gleichgerichtet.
+Nachträgliche Beobachtung (nicht vorregistriert, NICHT gewertet): Die Gegenseite (Außenseiter zu
+~0,10 kaufen) hätte rechnerisch positiv abgeschnitten (unberührt grob +20 % je Ereignis vor Gebühren).
+Das ist mit denselben, bereits gesehenen Daten gefunden und dürfte nur in einem echten
+Vorwärtstest (Märkte, die nach 2026-09-27 schließen) gewertet werden; Liquidität/Spread bei 0,10-
+Preisen und Zugang aus Deutschland sind ungeprüft.
