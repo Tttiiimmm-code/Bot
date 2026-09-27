@@ -2496,3 +2496,6 @@ Vorbehalt: Signal nutzt den VIX-Schluss (reale Order müsste ~15:45 ET entscheid
 optimistisch; ein Nichtbestehen ist daher aussagekräftig.
 Zeiträume: Entdeckung 2011-2018 (Wachstum der VIX-ETPs), Bestätigung 2019-2025-09-19, unberührt
 2025-09-22..2026-09-25. 1 Familie. Bestehen: t >= 2 in beiden UND Ø > 0 unberührt.
+Ergebnis Runde 90: Signalnächte (VIX >= +10 %) 2011-2018 n 173, Ø +3,3 bp (t 0,53); 2019-2025 n 145,
+Ø -5,9 bp (t -0,60); unberührt n 26, +17,8 bp (t 1,37); übrige Nächte ~0-2 bp -> NICHT BESTANDEN.
+Keine messbare Umkehr über Nacht (trotz leicht optimistischem Signal).
