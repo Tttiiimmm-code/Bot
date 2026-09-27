@@ -1748,3 +1748,30 @@ Hinweis: Macht gering (erwartetes t vorher ~1,3 bei Paper-Sharpe 0,55).
 Ergebnis Runde 58: vorher 2001-2006 (64 Monate) Ø -0,3 bp/Monat, t -0,01; Replikation 2008-2024-06
 Ø +18 bp/Monat, Sharpe 0,25, t 1,01 (Paper: 0,55); nachher 2024-07..2026-08 (26 Monate) -7,8 % p.a.,
 t -0,99 -> NICHT BESTANDEN. Außerhalb der Paper-Stichprobe keine Spur des Effekts.
+
+## 2026-09-27 -- Literatur: "What survives honest evaluation?" (arXiv 2608.27734, Aug. 2026)
+
+LLM-gestützte Strategiesuche (453 US-Aktien zeitpunktgenau, 39 ETFs, bis 100 Kandidaten, Deflated
+Sharpe, PBO): KEINE der gefundenen Strategien besteht; nur passive Benchmarks haben Konfidenz-
+intervalle ohne Null. Deckt sich mit dieser Suche.
+
+# Runde 59: Prämie an Makro-Ankündigungstagen (Savor & Wilson 2013) (2026-09-27)
+
+Hypothese: Aktien verdienen an Tagen mit CPI-, Arbeitsmarkt- (Employment Situation) und FOMC-
+Ankündigungen deutlich mehr als an anderen Tagen (1958-2009: ~11 bp vs. ~1 bp).
+Daten: Veröffentlichungstermine aus den BLS-Archivseiten (Employment Situation, CPI; ab 2002-07,
+data_cache/bls_release_dates.json), FOMC-Entscheidungstage (anomalies.fomc_decision_days); SPY
+Yahoo adjclose bis 2026-09-25 (data_cache/yahoo_unseen).
+Regel: S&P 500 (SPY/Future) nur an Ankündigungstagen halten (Kauf zum Vortagesschluss, Verkauf zum
+Schluss des Ankündigungstags); sonst Cash (T-Bill). Kosten 1 bp je Seite.
+Kennzahl: Überrendite (über T-Bill) je Ankündigungstag. Zeiträume: 2002-07..2012 (vor
+Veröffentlichung, berichtet), 2013..2025-09-19 (nach Veröffentlichung), unberührtes Jahr.
+1 Familie. Bestehen: Ø Überrendite je Ankündigungstag mit t >= 2 für 2013-2025 UND Ø > 0 im
+unberührten Jahr. Berichtet: je Ankündigungsart; Ø der übrigen Tage.
+Ergebnis Runde 59 (Überrendite je Tag, netto 2 bp):
+- 2002-07..2012: 329 Ankündigungstage Ø 7,5 bp (t 1,05), übrige Tage Ø 1,4 bp; FOMC allein 46 bp (t 3,14).
+- 2013..2025: 392 Tage Ø 7,0 bp (t 1,22), übrige Tage Ø 4,9 bp; NFP 12,9 (t 1,41), CPI 5,7, FOMC 10,5.
+- unberührt: 29 Tage Ø -27,9 bp (t -1,70) -> NICHT BESTANDEN.
+Die Ankündigungsprämie ist nach der Veröffentlichung weitgehend verschwunden (Abstand zu übrigen
+Tagen nur noch ~2 bp); die starke FOMC-Prämie vor 2013 passt zum Pre-FOMC-Drift (Runde 9), der
+ebenfalls verschwand.
