@@ -2338,3 +2338,17 @@ Ergebnis Runde 82 (Beginn 1993 wegen ^SP500TR bei Yahoo; nach Kostenabzug):
 - BFLY: 1993-2009 Alpha 3,2 % (t 1,25); 2010-2025 -5,5 % p.a., MaxDD -61 %, Alpha -7,1 % (t -2,47).
 -> alle NICHT BESTANDEN. Nach realistischen Kosten ist Optionsverkauf auf den S&P 500 seit 2010
 klar unterlegen (Volatilitätsprämie zu klein bzw. durch Kosten und Crash-Tage aufgezehrt).
+
+# Runde 83: Medienpessimismus (GDELT-Ton) sagt kurzfristige Aktienrenditen voraus (Tetlock 2007) (2026-09-27)
+
+Befund (Tetlock 2007, WSJ-Kolumne 1984-1999): hoher Medienpessimismus -> fallende Kurse am Folgetag,
+Umkehr innerhalb einer Woche. Daten: GDELT DOC 2.0 "timelinetone" für "stock market" (englische
+Quellen), täglicher Durchschnittston 2017-01..2026-09 (kostenlos). Kurse Yahoo SPY adjclose.
+Signal: Ton-z-Wert am Kalendertag t = (Ton_t - Mittel der 60 Vortage) / Std der 60 Vortage;
+pessimistisch, wenn z <= -1,5. Tag t zählt zum nächsten US-Handelstag d (Ton liegt vor dessen Eröffnung
+nur teilweise vor -> Position ab Schluss von d).
+- NA Folgetag: nach pessimistischem Signal SPY SHORT vom Schluss d bis Schluss d+1 (CFD).
+- NB Umkehr: nach pessimistischem Signal SPY LONG vom Schluss d+1 bis Schluss d+5.
+Kosten 2 bp je Round-Trip. Kennzahl: Ø Rendite je Signal (t über Signale), plus Vergleich mit allen
+Tagen (Kontrolle). Zeiträume: Entdeckung 2017-2021, Bestätigung 2022-2025-09-19, unberührt
+2025-09-22..2026-09-25. 2 Familien -> Bestehen je Familie: t >= 2,24 / >= 2 / Ø > 0.
