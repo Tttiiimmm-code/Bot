@@ -2006,3 +2006,19 @@ Ergebnis Runde 68 (89 von 109 Sitzungen mit Kursen zu beiden Zeitpunkten):
 - unberührt: n 8, Ø -48,9 bp; Kontrolle 4,2 bp.
 -> NICHT BESTANDEN (wie Brusa, Savor & Wilson 2020 erwarten lassen). Die Lücke aus Runde 52 ist
 damit geschlossen.
+
+# Runde 69 (beschreibend): Kopieren erfolgreicher Anleger -- echte Kopier-ETFs (2026-09-27)
+
+Frage des Nutzers: Trades sehr erfolgreicher Trader kopieren. Bereits getestet: Insiderkäufe
+(Runde 11, unter SPY), 13F-"beste Ideen" der Hedgefonds (Runde 51, Alpha ~0). Hier die
+Echtgeld-Bilanz von ETFs, die genau das umsetzen (Yahoo adjclose, Alpha ggü. SPY mit Beta):
+- NANC (kopiert gemeldete Trades demokratischer Kongressabgeordneter, ab 2023-02-07, 3,6 J):
+  22,8 % p.a. vs SPY 20,3 %, Beta 1,07, Alpha +0,9 % p.a. (t 0,36) -> nicht signifikant (Tech-Übergewicht).
+- KRUZ (republikanische Abgeordnete): bei Yahoo delistet (Fonds geschlossen).
+- GURU (Top-Positionen von Hedgefonds aus 13F, ab 2012-06, 14,3 J): 12,1 % p.a. vs SPY 15,4 %,
+  Beta 1,03, Alpha -2,9 % p.a. (t -1,37).
+Literatur Echtzeit-Kopieren (eToro u.a.): Kopierer schneiden schlechter ab als die Vorbilder;
+Ranglisten erhöhen Risiko und Herdenverhalten; Popularität folgt nur teilweise der Leistung.
+Außerdem: US-ETFs (NANC, GURU) für DE-Privatanleger wegen PRIIPs nicht kaufbar.
+Fazit: Kein Kopieransatz mit öffentlich verfügbaren Meldungen schlägt den Markt nach Kosten;
+Meldeverzug (13F 45 Tage, Kongress bis 45 Tage) nimmt den Informationsvorsprung vorweg.
