@@ -2461,3 +2461,14 @@ sollte er auch in anderen Segmenten auftreten. Regel exakt wie Runde 73 (letzte 
 (inflationsgeschützt), MBB (Hypothekenpfandbriefe, ab 2007) -> 3 Familien, Schwelle 2,39.
 Zeiträume: Entdeckung Datenbeginn..2018, Bestätigung 2019-2025-08, unberührt 2025-09..2026-08.
 Bestehen je Familie: t >= 2,39 / >= 2 / Ø > 0.
+Ergebnis Runde 88 (je Monat netto, letzte 3 Handelstage):
+- LQD: bis 2018 +18,1 bp (t 3,99), 2019-2025-08 +18,8 bp (t 2,42), unberührt -19,5 bp (4 von 12 positiv).
+- TIP: +20,4 (t 4,30) / +14,5 (t 2,13) / -4,7 bp.
+- MBB: +11,4 (t 4,33) / +15,9 (t 3,07) / -12,6 bp.
+-> alle drei NICHT BESTANDEN (unberührtes Jahr negativ), aber Entdeckung UND Bestätigung jeweils
+bestanden. Zusammen mit Runde 73 (IEF, TLT) und 74 (EUR): Der Monatsend-Effekt ist über alle Segmente
+des US-Rentenindex hinweg vorhanden und hielt nach der Veröffentlichung (2019) bis Mitte 2025 -- im
+letzten Jahr in ALLEN Segmenten negativ. Das sind 12 gemeinsame Monatsbeobachtungen (hoch korreliert),
+also eher EIN schlechtes Jahr als fünf unabhängige Widerlegungen. Möglicher Bruch (z.B. veränderte
+Rebalancing-Praxis, vgl. NY Fed 2026-09 "Treasury Trading at the Close") ungeklärt.
+Einordnung: stärkster und breitester Befund außerhalb Japans -> Vorwärtstest-Kandidat (monatlich).
