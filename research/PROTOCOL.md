@@ -2522,3 +2522,21 @@ Ergebnis Runde 86 (871 Firmen, 8.709 10-K, 7.908 Vorjahresvergleiche; Median-Kos
 -> NICHT BESTANDEN. Bis 2020 in Richtung und Größe wie im Papier (knapp nicht signifikant), nach der
 Veröffentlichung im JF (2020) verschwunden. Einschränkung: nur die 500 liquidesten Titel (Effekt im
 Papier bei kleineren Firmen stärker); ein LLM-basiertes Maß wurde nicht getestet (Vorwissens-Problem).
+
+# Runde 92: LLM-bewertete Nachrichten über Nacht -> Kleinwerte von Eröffnung bis Schluss (2026-09-28)
+
+Nutzerwunsch: LLM entscheidet anhand von Nachrichten über Kauf/Verkauf. Test OHNE Vorwissen des Modells:
+nur Nachrichten nach dem Wissensstand von gpt-5-mini (Trainingsdaten bis 2024) -> Zeitraum
+2025-10-01..2026-09-25. Daten: Alpaca-News-Historie (Benzinga), Alpaca-Tageskerzen (SIP).
+Ereignis: Aktie mit Vortagesschluss 1-20 USD und Ø-Dollarvolumen (20 Tage) >= 1 Mio. USD, mit
+mindestens einer Nachricht zwischen 16:00 ET des Vortags und 09:20 ET des Handelstags D; je Aktie und
+Tag ein Ereignis (alle Überschriften/Zusammenfassungen zusammen). Obergrenze 3.000 LLM-Bewertungen
+(bei mehr Ereignissen gleichmäßige Zufallsstichprobe, Seed 92).
+LLM (gpt-5-mini): Richtung (positive/negative/mixed/unclear), Stärke 1-5 (erwartete Kurswirkung),
+Verwässerung ja/nein.
+- LN Long-Signal: positive UND Stärke >= 4 UND keine Verwässerung -> Kauf zum Open D, Verkauf zum
+  Schluss D. Kosten 30 bp Round-Trip (Kleinwerte, Spread).
+Vergleich: alle Ereignisse (gleiches Universum, gleiches Fenster) = Basis ohne LLM.
+Bestehen: LN Ø netto > 0 mit t >= 2 über den ganzen Zeitraum UND Ø > 0 in beiden Hälften
+(2025-10..2026-03, 2026-04..2026-09) UND LN-Rendite minus Basis-Rendite t >= 2 (Welch).
+Berichtet: negativ bewertete Ereignisse (Short-Kandidaten), Verwässerungs-Ereignisse, Kosten.
