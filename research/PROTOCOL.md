@@ -2597,3 +2597,5 @@ EW-Universum P1 +8,8 % p.a., P2 +0,1 % p.a., unberührt +6,8 % p.a.):
 brutto +4..15 bp je Woche), doch ~86 % Wochenumschlag x 2 x 10 bp (~17 bp) frisst es fast vollständig.
 Das einfache Momentum 12-1 mit demselben Puffer schlägt alle ML-Varianten netto, weil es kaum handelt.
 Keine Automatisierung (Phasen 3-4 entfallen).
+Korrektur Runde 93: "Umschlag" ist bereits Summe aus Käufen und Verkäufen -> Kosten ~0,86 x 10 bp = ~8,6 bp
+je Woche (nicht ~17 bp); bestätigt durch brutto minus netto (P2 14,6 - 6,0). Urteil unverändert.
