@@ -2599,3 +2599,17 @@ Das einfache Momentum 12-1 mit demselben Puffer schlägt alle ML-Varianten netto
 Keine Automatisierung (Phasen 3-4 entfallen).
 Korrektur Runde 93: "Umschlag" ist bereits Summe aus Käufen und Verkäufen -> Kosten ~0,86 x 10 bp = ~8,6 bp
 je Woche (nicht ~17 bp); bestätigt durch brutto minus netto (P2 14,6 - 6,0). Urteil unverändert.
+
+# Runde 94: ML-Ranking US-Aktien, MONATLICH, long-only (2026-09-28)
+
+Folgetest zu Runde 93 (Signal vorhanden, aber vom Wochenumschlag aufgefressen). Einzige Änderung: Takt.
+Alles andere wie Runde 93 (Daten, Universum, 15 Merkmale, Modelle und Parameter, Top-10/20-%-Regel,
+10 bp je Seite, Vergleiche, Zeiträume nach Kauftag).
+Takt: Signal zum Schluss des letzten Handelstags jedes Monats, Kauf zum Open des nächsten Handelstags,
+Halten bis zum Open nach dem nächsten Monatssignal. Zielgröße: Perzentilrang der Open->Open-Monatsrendite.
+Training: expandierendes Fenster ab 2017-01, Neutraining jeden Monat; nur Monate, deren Ausstieg vor dem
+Signaltag liegt (Purge). Erster Testmonat 2018-01.
+Bestehen (nur PRIMÄR LGBM-A, netto): Monats-Überrendite ggü. gleichgewichtetem Universum mit t >= 2 in
+P1 (2018-01..2021-12) UND t >= 2 in P2 (2022-01..2025-09-19), Ø > 0 im unberührten Jahr (ab 2025-09-22),
+UND Ø-Überrendite ggü. Momentum 12-1 (gleiche Regel, monatlich) > 0 in P1 und P2.
+Berichtet: Rang-IC, Umschlag, brutto/netto, Jahre, Nebenmodelle, ohne Puffer, Top-50.
