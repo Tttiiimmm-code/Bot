@@ -2627,3 +2627,20 @@ netto 10 bp je Seite; EW-Universum P1 +8,7 % p.a., P2 -0,1 % p.a., unberührt +1
 -> NICHT BESTANDEN. Monatlich sinken die Kosten auf ~10 bp je Monat, aber jetzt fehlt das Signal selbst:
 2018-2021 schon brutto negativ, positiv nur 2024-2025. Rang-IC bleibt positiv, trägt aber nicht bis in
 das Top-Dezil. Keine ML-Variante schlägt Momentum 12-1, das selbst nicht signifikant ist.
+
+# Vorwärtstest Momentum-Bot (Ross-Cameron-Stil, Paper) -- Auswertungsregel (2026-09-29)
+
+Festgelegt VOR der Auswertung. Gezählt werden nur abgeschlossene Trades ab 2026-09-23 (erste Version mit
+Mindest-Stop 2 %, Positions-Obergrenze und Sperre veralteter Breakouts; ebe8e34/4254ef3/d044770 auf
+feature/forward-test). Einstellungen wie in deploy/momentum.service (--max-risk-dollars 500
+--daily-max-loss-pct 0.1 --weakness-exit none; News-Intel nur Schattenmodus). Jede Änderung an Einstiegs-,
+Ausstiegs- oder Größenlogik startet die Zählung neu; reine Fehlerbehebungen ohne Regeländerung nicht.
+Datenquelle: `main.py momentum-report` (Alpaca-Order-Historie).
+Kosten-Aufschlag (Paper füllt ohne Markteinfluss): 0,5 Cent je Aktie und Seite (1 Cent je Round-Trip).
+Stand 2026-09-28 (nur zur Dokumentation, nicht Teil der Wertung): 25 Trades, -2.696 USD brutto,
+Trefferquote 24 %, Ø Gewinn +365 / Ø Verlust -287 USD, Profit-Faktor 0,45, t -1,46.
+Auswertung bei 150 Trades:
+- BESTANDEN, wenn nach Aufschlag: Netto-P&L > 0 UND Profit-Faktor >= 1,3 UND Ø je Trade t >= 2.
+- sonst NICHT BESTANDEN -> kein Echtgeld; Bot abschalten oder als Datensammler weiterlaufen lassen.
+Vorzeitiger Abbruch (Aussichtslosigkeit) bei 100 Trades: Netto-P&L nach Aufschlag < 0 UND Profit-Faktor < 0,8.
+Keine Parameteranpassung auf Basis der laufenden Ergebnisse.
