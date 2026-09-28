@@ -2644,3 +2644,27 @@ Auswertung bei 150 Trades:
 - sonst NICHT BESTANDEN -> kein Echtgeld; Bot abschalten oder als Datensammler weiterlaufen lassen.
 Vorzeitiger Abbruch (Aussichtslosigkeit) bei 100 Trades: Netto-P&L nach Aufschlag < 0 UND Profit-Faktor < 0,8.
 Keine Parameteranpassung auf Basis der laufenden Ergebnisse.
+
+# Runde 95: ML-Ranking US-Aktien monatlich MIT Fundamentaldaten (2026-09-29)
+
+Nutzerwunsch: weiter nach ML-Ansätzen für Privatanleger suchen. Lücke in Runde 94: nur Kurs/Volumen;
+in der Literatur (Gu/Kelly/Xiu 2020) stammt der ML-Vorteil im Monatstakt großteils aus Fundamentaldaten.
+Alles wie Runde 94 (Universum, Takt, 15 Kurs-Merkmale, Training, Portfolio, Kosten, Zeiträume, Kriterien),
+zusätzlich 13 Fundamental-Merkmale aus SEC-XBRL-Frames (data.sec.gov/api/xbrl/frames), CIK<->Ticker über
+edgar.symbol_to_cik (aktuelle SEC-Liste + historische Kürzel aus Form 4):
+- Stichtagswerte je Kalenderquartal (Assets, Liabilities, StockholdersEquity, dei
+  EntityCommonStockSharesOutstanding) gelten ab Quartalsende + 3 Monate.
+- Jahreswerte je Kalenderjahr (NetIncomeLoss, Revenues bzw. RevenueFromContractWithCustomer
+  ExcludingAssessedTax, GrossProfit, OperatingIncomeLoss, NetCashProvidedByUsedInOperatingActivities)
+  gelten ab Jahresende + 5 Monate.
+- Werte werden höchstens 2 Quartale bzw. 1 Jahr fortgeschrieben.
+- Marktwert = unbereinigter Schluss (split-bereinigter Kurs x spätere Splits, data_cache/splits.pkl) x Aktien.
+Merkmale: Buch/Markt, Gewinn/Markt, Umsatz/Markt, Cashflow/Markt, ROE, ROA, Bruttogewinn/Vermögen,
+operative Marge, Verschuldung (Verb./Vermögen), Vermögenswachstum 1 J., Accruals ((NI-CFO)/Vermögen),
+Aktienausgabe 1 J., Umsatzwachstum 1 J. -- querschnittlich in Perzentile, fehlend 0,5.
+Bekannte Einschränkung: Frames liefern den zuletzt gemeldeten Wert (Restatements können minimal nachwirken).
+Modelle (4 Versuche): PRIMÄR LGBM-A (Parameter wie Runde 93) auf allen 28 Merkmalen; berichtet: Ridge,
+LGBM-C, einfacher Nicht-ML-Mix (Ø-Perzentil aus Buch/Markt, Gewinn/Markt, Cashflow/Markt, Bruttogewinn/Vermögen,
+ROA sowie invertiert Vermögenswachstum, Aktienausgabe, Accruals) mit derselben Top-10/20-%-Regel.
+Bestehen (nur PRIMÄR, netto): wie Runde 94 -- t >= 2 in P1 und P2 ggü. gleichgewichtetem Universum,
+Ø > 0 unberührt, Ø-Überrendite ggü. Momentum 12-1 > 0 in P1 und P2.
