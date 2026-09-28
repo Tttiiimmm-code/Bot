@@ -197,7 +197,9 @@ def cross_rank(values: np.ndarray) -> np.ndarray:
 
 
 def build_panel(wide: dict[str, pd.DataFrame], feats: dict[str, pd.DataFrame] | None = None,
-                mask: pd.DataFrame | None = None, weeks: list[Week] | None = None) -> list[WeekData]:
+                mask: pd.DataFrame | None = None, weeks: list[Week] | None = None,
+                extra: dict[str, pd.DataFrame] | None = None) -> list[WeekData]:
+    """`extra`: zusätzliche Merkmale (Signaltage x Symbole), werden nach FEATURES angehängt."""
     o, c = wide["open"], wide["close"]
     if weeks is None:
         weeks = weekly_schedule(c.index)
@@ -214,10 +216,79 @@ def build_panel(wide: dict[str, pd.DataFrame], feats: dict[str, pd.DataFrame] | 
         m = m & np.isfinite(r)
         if m.sum() < 20:
             continue
-        X = np.column_stack([cross_rank(feats[k].loc[w.signal].to_numpy(float)[m]) for k in FEATURES])
+        cols_x = [cross_rank(feats[k].loc[w.signal].to_numpy(float)[m]) for k in FEATURES]
+        for f in (extra or {}).values():
+            row = f.loc[w.signal] if w.signal in f.index else pd.Series(np.nan, index=c.columns)
+            cols_x.append(cross_rank(row.reindex(c.columns).to_numpy(float)[m]))
+        X = np.column_stack(cols_x)
         rr = r[m]
         out.append(WeekData(w, cols[m], X.astype("float32"), rr, cross_rank(rr)))
     return out
+
+
+# ---------------------------------------------------------------- Fundamentaldaten (Runde 95)
+
+FUNDAMENTALS = ["bm", "ep", "sp", "cfp", "roe", "roa", "gpa", "opm", "lev", "ag", "accruals", "issuance",
+                "sgrowth"]
+
+
+def split_factor(splits: pd.DataFrame, dates: pd.DatetimeIndex, symbols) -> pd.DataFrame:
+    """Faktor, mit dem der split-bereinigte Kurs multipliziert den damals gehandelten Kurs ergibt:
+    Produkt new_rate/old_rate aller Splits mit Ex-Tag NACH dem jeweiligen Datum."""
+    f = pd.DataFrame(1.0, index=pd.DatetimeIndex(dates), columns=pd.Index(symbols))
+    sub = splits[splits["symbol"].isin(f.columns)]
+    for sym, ex, old, new in sub[["symbol", "ex_date", "old_rate", "new_rate"]].itertuples(index=False):
+        if old and new:
+            f.loc[f.index < pd.Timestamp(ex), sym] *= float(new) / float(old)
+    return f
+
+
+def as_of(rows: pd.DataFrame, at: pd.DatetimeIndex, max_age_days: int) -> pd.DataFrame:
+    """rows: Index = Verfügbarkeitsdatum, Spalten = Symbole. Je Tag in `at` der letzte bis dahin
+    verfügbare Wert, höchstens `max_age_days` alt (nie ein Wert mit Verfügbarkeit nach dem Tag)."""
+    rows = rows.sort_index()
+    rows = rows[~rows.index.duplicated(keep="last")]
+    out = pd.DataFrame(np.nan, index=pd.DatetimeIndex(at), columns=rows.columns)
+    valid = rows.notna()
+    for col in rows.columns:
+        s = rows[col][valid[col]]
+        if s.empty:
+            continue
+        pos = s.index.searchsorted(out.index, side="right") - 1
+        ok = pos >= 0
+        vals = np.full(len(out), np.nan)
+        dates = s.index.to_numpy()
+        vals[ok] = s.to_numpy(float)[pos[ok]]
+        age = (out.index.to_numpy() - dates[np.clip(pos, 0, None)]) / np.timedelta64(1, "D")
+        vals[~ok | (age > max_age_days)] = np.nan
+        out[col] = vals
+    return out
+
+
+def fundamental_features(q: dict[str, pd.DataFrame], a: dict[str, pd.DataFrame],
+                         price: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Kennzahlen je Signaltag x Symbol. q: Stichtagswerte assets, liabilities, equity, shares sowie
+    assets_1y, shares_1y (Vorjahr); a: Jahreswerte ni, rev, gp, oi, cfo, rev_1y; price: damals
+    gehandelter Schlusskurs. Alle Eingaben bereits as-of auf dieselben Zeilen/Spalten gebracht."""
+    def pos(x):
+        return x.where(x > 0)
+    mcap = pos(price * q["shares"])
+    assets = pos(q["assets"])
+    return {
+        "bm": q["equity"] / mcap,
+        "ep": a["ni"] / mcap,
+        "sp": a["rev"] / mcap,
+        "cfp": a["cfo"] / mcap,
+        "roe": a["ni"] / pos(q["equity"]),
+        "roa": a["ni"] / assets,
+        "gpa": a["gp"] / assets,
+        "opm": a["oi"] / pos(a["rev"]),
+        "lev": q["liabilities"] / assets,
+        "ag": assets / pos(q["assets_1y"]) - 1,
+        "accruals": (a["ni"] - a["cfo"]) / assets,
+        "issuance": q["shares"] / pos(q["shares_1y"]) - 1,
+        "sgrowth": a["rev"] / pos(a["rev_1y"]) - 1,
+    }
 
 
 # ---------------------------------------------------------------- Modelle

@@ -2668,3 +2668,18 @@ LGBM-C, einfacher Nicht-ML-Mix (Ø-Perzentil aus Buch/Markt, Gewinn/Markt, Cashf
 ROA sowie invertiert Vermögenswachstum, Aktienausgabe, Accruals) mit derselben Top-10/20-%-Regel.
 Bestehen (nur PRIMÄR, netto): wie Runde 94 -- t >= 2 in P1 und P2 ggü. gleichgewichtetem Universum,
 Ø > 0 unberührt, Ø-Überrendite ggü. Momentum 12-1 > 0 in P1 und P2.
+Ergebnis Runde 95 (116 Monate, Ø 2.899 Titel, 28 Merkmale; CIK-Zuordnung 5.579 von 8.418 Symbolen,
+Fundamentalwerte für 54 % der Universums-Zellen vorhanden; netto 10 bp je Seite):
+- PRIMÄR LGBM-A: Überrendite ggü. EW P1 +37,7 bp/Monat (t 1,10), P2 +7,8 (t 0,35), unberührt +32,6 (t 0,98);
+  Rang-IC +0,036 / +0,054 / +0,060; Umschlag 0,71 je Monat; ggü. Momentum 12-1 -10,4 / -57,0 / +13,0 bp.
+- Ridge +53,6 / +29,2 / +36,5 bp (t 1,78 / 1,12 / 0,85); LGBM-C +56,9 / +23,3 / +36,2 (t 1,82 / 1,07 / 0,88,
+  Umschlag 0,40); Mix ohne ML +46,6 / +17,9 / +88,5 (t 1,12 / 0,64 / 1,22, Umschlag 0,19).
+- Momentum 12-1: +48,1 / +64,8 / +19,6 bp (t 0,89 / 1,25 / 0,11).
+- Merkmalswichtigkeit (nur berichtet): fast nur Kurs-Merkmale (Ø Tagesspanne 21 %, Abstand 52-W-Hoch 9 %,
+  Rendite 21 T 7 %); kein Fundamental-Merkmal unter den Top 10.
+- PRIMÄR je Jahr: 2018 +2,8 %, 2019 -0,8 %, 2020 +15,7 %, 2021 0,0 %, 2022 -5,5 %, 2023 +0,7 %, 2024 +5,6 %,
+  2025 +4,4 %, 2026 +1,8 %.
+-> NICHT BESTANDEN. Mit Fundamentaldaten sind erstmals ALLE Varianten in allen drei Zeiträumen netto positiv
+(Runde 94: P1 negativ), aber keine erreicht t >= 2 in beiden Zeiträumen, und in P2 schlägt Momentum alle.
+LGBM-C/Ridge wären die besten -- nachträglich gewählt, daher nicht gewertet. Ursache vermutlich zu wenig
+Statistik: ~45 Monate je Zeitraum erfordern eine Informationsquote ~1 für t 2.

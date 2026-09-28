@@ -139,3 +139,41 @@ def test_monthly_schedule_uses_last_trading_day_of_month():
     assert months[0] == Week(pd.Timestamp("2024-01-31"), pd.Timestamp("2024-02-01"), pd.Timestamp("2024-03-01"))
     assert [m.signal for m in months] == [pd.Timestamp("2024-01-31"), pd.Timestamp("2024-02-29"),
                                           pd.Timestamp("2024-03-29")]
+
+
+def test_split_factor_restores_traded_price():
+    from tradingbot.research.ml_rank import split_factor
+    days = pd.DatetimeIndex(["2020-08-28", "2020-09-01"])
+    splits = pd.DataFrame({"symbol": ["AAPL"], "ex_date": ["2020-08-31"], "old_rate": [1.0], "new_rate": [4.0]})
+    f = split_factor(splits, days, ["AAPL", "X"])
+    assert f.loc["2020-08-28", "AAPL"] == 4.0 and f.loc["2020-09-01", "AAPL"] == 1.0
+    assert (f["X"] == 1.0).all()
+
+
+def test_as_of_never_uses_values_available_later_and_respects_max_age():
+    from tradingbot.research.ml_rank import as_of
+    rows = pd.DataFrame({"A": [1.0, 2.0], "B": [5.0, np.nan]},
+                        index=pd.DatetimeIndex(["2020-03-31", "2020-06-30"]))
+    at = pd.DatetimeIndex(["2020-03-30", "2020-04-30", "2020-06-30", "2020-12-31", "2021-06-30"])
+    out = as_of(rows, at, max_age_days=200)
+    assert np.isnan(out.loc["2020-03-30", "A"])
+    assert out.loc["2020-04-30", "A"] == 1.0 and out.loc["2020-06-30", "A"] == 2.0
+    assert out.loc["2020-06-30", "B"] == 5.0  # fehlender neuer Wert -> letzter gültiger
+    assert np.isnan(out.loc["2020-12-31", "B"])  # älter als 200 Tage
+    assert np.isnan(out.loc["2021-06-30", "A"])
+
+
+def test_fundamental_features_ratios():
+    from tradingbot.research.ml_rank import fundamental_features
+    idx, cols = pd.DatetimeIndex(["2020-06-30"]), ["A"]
+    one = lambda v: pd.DataFrame(v, index=idx, columns=cols)  # noqa: E731
+    q = {"assets": one(200.0), "liabilities": one(100.0), "equity": one(100.0), "shares": one(10.0),
+         "assets_1y": one(160.0), "shares_1y": one(8.0)}
+    a = {"ni": one(20.0), "rev": one(300.0), "gp": one(90.0), "oi": one(30.0), "cfo": one(25.0), "rev_1y": one(250.0)}
+    f = fundamental_features(q, a, one(50.0))
+    assert f["bm"].iloc[0, 0] == pytest.approx(0.2)
+    assert f["ep"].iloc[0, 0] == pytest.approx(0.04)
+    assert f["ag"].iloc[0, 0] == pytest.approx(0.25)
+    assert f["issuance"].iloc[0, 0] == pytest.approx(0.25)
+    assert f["accruals"].iloc[0, 0] == pytest.approx(-0.025)
+    assert f["sgrowth"].iloc[0, 0] == pytest.approx(0.2)
