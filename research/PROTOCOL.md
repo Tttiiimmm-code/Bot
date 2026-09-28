@@ -2583,3 +2583,17 @@ Zeiträume (nach Kauftag): P1 2018-01..2021-12, P2 2022-01..2025-09-19, unberüh
 Bestehen (nur PRIMÄR, netto): Wochen-Überrendite ggü. (a) mit t >= 2 in P1 UND t >= 2 in P2,
 Ø > 0 im unberührten Jahr, UND Ø-Überrendite ggü. (b) > 0 in P1 und P2.
 Berichtet: Rang-IC je Zeitraum, Umschlag, brutto/netto, Jahre, Nebenmodelle, ohne Puffer, Top-50-Titel.
+Ergebnis Runde 93 (507 Wochen, Ø 2.916 Titel je Woche im Universum, 454 Testwochen, netto 10 bp je Seite;
+EW-Universum P1 +8,8 % p.a., P2 +0,1 % p.a., unberührt +6,8 % p.a.):
+- PRIMÄR LGBM-A: Überrendite ggü. EW P1 -3,1 bp/Woche (t -0,29), P2 +6,0 (t 0,68), unberührt +6,1 (t 0,47);
+  brutto +4,2 / +14,6 / +13,3 bp; Rang-IC +0,028 / +0,044 / +0,048; Umschlag Ø 0,86 je Woche;
+  ggü. Momentum 12-1 -15,5 / -12,0 / -11,8 bp.
+- Ridge -0,1 / +9,7 / +6,1 bp (t -0,01 / 1,11 / 0,41); LGBM-B -5,7 / +4,2 / +5,0; LGBM-C +0,3 / +7,4 / +6,8.
+- Momentum 12-1 (Vergleich b): +12,4 / +18,0 / +17,9 bp (t 0,69 / 1,06 / 0,46), Umschlag 0,15 je Woche.
+- berichtet: ohne Puffer -7,7 / +0,3 / +3,1 bp; Top-50 -19,2 / +0,8 / +20,4 bp (Umschlag 1,30).
+- PRIMÄR je Jahr: 2018 +1,6 %, 2019 -10,3 %, 2020 +4,3 %, 2021 -3,7 %, 2022 +1,7 %, 2023 -2,1 %,
+  2024 +10,3 %, 2025 +0,9 %, 2026 +2,8 %.
+-> NICHT BESTANDEN. Das Modell findet echtes, aber kleines Signal (IC in allen Zeiträumen positiv,
+brutto +4..15 bp je Woche), doch ~86 % Wochenumschlag x 2 x 10 bp (~17 bp) frisst es fast vollständig.
+Das einfache Momentum 12-1 mit demselben Puffer schlägt alle ML-Varianten netto, weil es kaum handelt.
+Keine Automatisierung (Phasen 3-4 entfallen).
