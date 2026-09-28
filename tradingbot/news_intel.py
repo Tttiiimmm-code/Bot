@@ -3,7 +3,7 @@
 Für jedes neue Kandidaten-Symbol wird EINMAL pro Handelstag gesammelt:
 - Alpaca-News (Überschrift + Zusammenfassung) der letzten `news_lookback_hours`,
 - SEC-Meldungen der letzten 14 Tage (8-K, Emissionsformulare S-1/S-3/424B*, 13D/G, ...),
-und ein LLM (Anthropic Messages API) um eine strikte JSON-Einschätzung gebeten:
+und ein LLM (Anthropic Messages API oder OpenAI Chat Completions) um eine strikte JSON-Einschätzung gebeten:
 Katalysator, Richtung, Verwässerungsrisiko, Konfidenz, Kurzbegründung.
 
 Schattenmodus (Standard): Die Einschätzung wird nur protokolliert (news_intel.csv und Log),
@@ -11,7 +11,8 @@ der Bot handelt unverändert. Erst wenn die Auswertung zeigt, dass die Einschät
 Tradeausgang vorhersagt, soll sie als Filter dienen (`filter_mode="block_dilution"`).
 
 Fehler (fehlender Key, Netz, Parserfehler) werden nur geloggt und blockieren nie den Handel.
-Der API-Key kommt aus ANTHROPIC_API_KEY (.env) und wird nie geloggt.
+Der API-Key kommt aus ANTHROPIC_API_KEY bzw. OPENAI_API_KEY (.env) und wird nie geloggt.
+provider="auto": Anthropic, wenn dessen Key gesetzt ist, sonst OpenAI.
 """
 
 from __future__ import annotations
@@ -62,7 +63,8 @@ Answer with ONE JSON object and nothing else:
 class NewsIntelConfig:
     enabled: bool = False
     filter_mode: str = "off"  # "off" (Schattenmodus) | "block_dilution"
-    model: str = "claude-haiku-4-5-20251001"
+    provider: str = "auto"  # "auto" | "anthropic" | "openai"
+    model: str | None = None  # None = Standardmodell des Anbieters (DEFAULT_MODELS)
     news_lookback_hours: int = 24
     max_news: int = 8
     log_path: Path = Path("news_intel.csv")
@@ -114,6 +116,9 @@ def parse_assessment(symbol: str, text: str) -> Assessment:
     )
 
 
+DEFAULT_MODELS = {"anthropic": "claude-haiku-4-5-20251001", "openai": "gpt-5-mini"}
+
+
 def call_anthropic(prompt: str, model: str, api_key: str, timeout: float) -> str:
     body = json.dumps({"model": model, "max_tokens": 300,
                        "messages": [{"role": "user", "content": prompt}]}).encode()
@@ -126,16 +131,47 @@ def call_anthropic(prompt: str, model: str, api_key: str, timeout: float) -> str
     return "".join(part.get("text", "") for part in res.get("content", []) if part.get("type") == "text")
 
 
+def openai_text(res: dict) -> str:
+    """Antworttext aus einer OpenAI-Chat-Completions-Antwort."""
+    choices = res.get("choices") or []
+    return (choices[0].get("message", {}).get("content") or "") if choices else ""
+
+
+def call_openai(prompt: str, model: str, api_key: str, timeout: float) -> str:
+    # max_completion_tokens statt max_tokens: gilt auch für Reasoning-Modelle, deren interne
+    # Denk-Token mitzählen -- daher großzügig bemessen.
+    body = json.dumps({"model": model, "max_completion_tokens": 2000,
+                       "messages": [{"role": "user", "content": prompt}]}).encode()
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions", data=body, method="POST",
+        headers={"Authorization": f"Bearer {api_key}", "content-type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return openai_text(json.load(r))
+
+
+_CALLERS = {"anthropic": call_anthropic, "openai": call_openai}
+
+
 class NewsIntel:
     """Sammelt und bewertet Nachrichten je Symbol; Aufrufe laufen in einem Hintergrund-Thread."""
 
-    def __init__(self, config: NewsIntelConfig, news_client=None, *, llm=call_anthropic,
+    def __init__(self, config: NewsIntelConfig, news_client=None, *, llm=None,
                  sec_user_agent: str = "tradingbot-research-script"):
         self.config = config
         self.news_client = news_client
-        self._llm = llm
         self._ua = sec_user_agent
-        self._api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        keys = {"anthropic": os.environ.get("ANTHROPIC_API_KEY", "").strip(),
+                "openai": os.environ.get("OPENAI_API_KEY", "").strip()}
+        provider = config.provider
+        if provider == "auto":
+            provider = "anthropic" if keys["anthropic"] else ("openai" if keys["openai"] else "anthropic")
+        if provider not in _CALLERS:
+            raise ValueError(f"Unbekannter LLM-Anbieter {provider!r} (erlaubt: auto, anthropic, openai).")
+        self.provider = provider
+        self.model = config.model or DEFAULT_MODELS[provider]
+        self._api_key = keys[provider]
+        self._llm = llm or _CALLERS[provider]
         self._cache: dict[tuple[date, str], Assessment] = {}
         self._pending: set[tuple[date, str]] = set()
         self._calls: dict[date, int] = {}
@@ -143,7 +179,8 @@ class NewsIntel:
         self._pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="news-intel")
         self._cik: dict[str, str] | None = None
         if config.enabled and not self._api_key:
-            logger.warning("News-Intel aktiviert, aber ANTHROPIC_API_KEY fehlt in .env -- es werden keine "
+            logger.warning("News-Intel aktiviert, aber weder ANTHROPIC_API_KEY noch OPENAI_API_KEY in .env -- "
+                           "es werden keine "
                            "LLM-Einschätzungen erstellt (der Bot handelt normal weiter).")
 
     # ---------------------------------------------------------- öffentlich
@@ -190,7 +227,7 @@ class NewsIntel:
                 news="\n".join(news) or "(none)", filings="\n".join(filings) or "(none)",
                 catalysts=list(CATALYSTS), directions=list(DIRECTIONS), dilution=list(DILUTION),
             )
-            text = self._llm(prompt, self.config.model, self._api_key, self.config.timeout_seconds)
+            text = self._llm(prompt, self.model, self._api_key, self.config.timeout_seconds)
             a = parse_assessment(symbol, text)
             a.n_news, a.n_filings = len(news), len(filings)
         except Exception as e:  # nie den Handel stören
@@ -258,7 +295,7 @@ class NewsIntel:
                         w.writerow(FIELDS)
                     w.writerow([now.date().isoformat(), now.strftime("%H:%M:%S"), symbol, f"{price:.4f}",
                                 f"{pct_change:.2f}", f"{(rel_volume or 0):.2f}", a.n_news, a.n_filings, a.catalyst,
-                                a.direction, a.dilution_risk, f"{a.confidence:.2f}", a.summary, self.config.model,
+                                a.direction, a.dilution_risk, f"{a.confidence:.2f}", a.summary, self.model,
                                 a.error])
         except OSError:
             logger.exception("news_intel.csv konnte nicht geschrieben werden.")

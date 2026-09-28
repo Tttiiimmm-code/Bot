@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from tradingbot.news_intel import Assessment, NewsIntel, NewsIntelConfig, parse_assessment
+from tradingbot.news_intel import Assessment, NewsIntel, NewsIntelConfig, openai_text, parse_assessment
 
 NOW = datetime(2026, 10, 1, 14, 0, tzinfo=timezone.utc)
 
@@ -82,8 +82,28 @@ def test_shadow_mode_never_blocks_filter_mode_blocks_dilution(tmp_path, key):
 
 def test_disabled_or_missing_key_does_nothing(tmp_path, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     called = []
     intel = NewsIntel(NewsIntelConfig(enabled=True, log_path=tmp_path / "ni.csv"), llm=lambda *a: called.append(1))
     intel.request("ABC", 1.0, 1.0, 1.0, NOW)
     time.sleep(0.05)
     assert not called and intel.get("ABC", NOW) is None
+
+
+def test_provider_auto_prefers_anthropic_then_openai(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "oa")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    intel = NewsIntel(NewsIntelConfig(enabled=True))
+    assert intel.provider == "openai" and intel.model == "gpt-5-mini"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "an")
+    intel = NewsIntel(NewsIntelConfig(enabled=True))
+    assert intel.provider == "anthropic" and intel.model.startswith("claude")
+    intel = NewsIntel(NewsIntelConfig(enabled=True, provider="openai", model="my-model"))
+    assert intel.provider == "openai" and intel.model == "my-model"
+    with pytest.raises(ValueError):
+        NewsIntel(NewsIntelConfig(enabled=True, provider="xyz"))
+
+
+def test_openai_text_extracts_message_content():
+    assert openai_text({"choices": [{"message": {"content": '{"catalyst": "earnings"}'}}]}) == '{"catalyst": "earnings"}'
+    assert openai_text({"choices": []}) == ""

@@ -985,7 +985,8 @@ def cmd_momentum_run(
     weakness_exit: str = "red_candle",
     news_intel: bool = False,
     news_filter: str = "off",
-    news_model: str = "claude-haiku-4-5-20251001",
+    news_model: str | None = None,
+    news_provider: str = "auto",
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -1058,11 +1059,12 @@ def cmd_momentum_run(
 
         intel = NewsIntel(
             NewsIntelConfig(enabled=True, filter_mode=news_filter.replace("-", "_"), model=news_model,
+                            provider=news_provider,
                             news_lookback_hours=news_lookback_hours),
             NewsClient(config.api_key, config.secret_key),
         )
         mode = "Filter: Verwässerung blockiert Einstiege" if news_filter != "off" else "Schatten: nur protokollieren"
-        print(f"News-Intel aktiv (Modell {news_model}, {mode}) -> news_intel.csv")
+        print(f"News-Intel aktiv ({intel.provider}, Modell {intel.model}, {mode}) -> news_intel.csv")
     bot = LiveMomentumBot(config, criteria, live_config, news_intel=intel)
     bot.run_forever()
 
@@ -1477,7 +1479,8 @@ def main():
     )
     momentum_run_parser.add_argument(
         "--news-intel", action="store_true",
-        help="Je neuem Kandidaten News + SEC-Meldungen per LLM einschätzen (ANTHROPIC_API_KEY in .env); "
+        help="Je neuem Kandidaten News + SEC-Meldungen per LLM einschätzen (ANTHROPIC_API_KEY oder "
+        "OPENAI_API_KEY in .env); "
         "Ergebnis in news_intel.csv. Ohne --news-filter nur Schattenmodus (Handel unverändert).",
     )
     momentum_run_parser.add_argument(
@@ -1486,8 +1489,13 @@ def main():
         "(erst nach Auswertung des Schattenmodus nutzen; Standard: off).",
     )
     momentum_run_parser.add_argument(
-        "--news-model", default="claude-haiku-4-5-20251001",
-        help="Anthropic-Modell für die Einschätzung (Standard: claude-haiku-4-5-20251001).",
+        "--news-model", default=None,
+        help="Modell für die Einschätzung (Standard je Anbieter: claude-haiku-4-5-20251001 bzw. gpt-5-mini).",
+    )
+    momentum_run_parser.add_argument(
+        "--news-provider", choices=["auto", "anthropic", "openai"], default="auto",
+        help="LLM-Anbieter; auto = Anthropic, wenn ANTHROPIC_API_KEY gesetzt ist, sonst OpenAI "
+        "(OPENAI_API_KEY) (Standard: auto).",
     )
     momentum_run_parser.add_argument(
         "--max-concurrent-positions", type=_positive_int, default=3,
@@ -1809,6 +1817,7 @@ def main():
                 news_intel=args.news_intel,
                 news_filter=args.news_filter,
                 news_model=args.news_model,
+                news_provider=args.news_provider,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)
