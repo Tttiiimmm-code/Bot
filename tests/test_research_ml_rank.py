@@ -131,3 +131,11 @@ def test_chunked_features_match_full_computation():
     full = raw_features(w["open"], w["high"], w["low"], w["close"], w["volume"])
     for k in FEATURES:
         np.testing.assert_allclose(chunked[k].to_numpy(), full[k].loc[at].to_numpy(), rtol=1e-5)
+
+
+def test_monthly_schedule_uses_last_trading_day_of_month():
+    days = pd.bdate_range("2024-01-01", "2024-05-31")
+    months = weekly_schedule(days, freq="M")
+    assert months[0] == Week(pd.Timestamp("2024-01-31"), pd.Timestamp("2024-02-01"), pd.Timestamp("2024-03-01"))
+    assert [m.signal for m in months] == [pd.Timestamp("2024-01-31"), pd.Timestamp("2024-02-29"),
+                                          pd.Timestamp("2024-03-29")]

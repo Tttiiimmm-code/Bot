@@ -151,12 +151,12 @@ class Week:
     exit: pd.Timestamp
 
 
-def weekly_schedule(days: pd.DatetimeIndex) -> list[Week]:
-    """Signal = letzter Handelstag jeder Kalenderwoche; Kauf am nächsten Handelstag (Open);
-    Verkauf am Handelstag nach dem nächsten Signal (Open)."""
+def weekly_schedule(days: pd.DatetimeIndex, freq: str = "W") -> list[Week]:
+    """Signal = letzter Handelstag jeder Kalenderwoche (freq "W") bzw. jedes Monats ("M");
+    Kauf am nächsten Handelstag (Open); Verkauf am Handelstag nach dem nächsten Signal (Open)."""
     days = pd.DatetimeIndex(days).sort_values()
     pos = pd.Series(np.arange(len(days)), index=days)
-    signals = pos.groupby(days.to_period("W")).max().to_numpy()
+    signals = pos.groupby(days.to_period(freq)).max().to_numpy()
     weeks = []
     for a, b in zip(signals[:-1], signals[1:]):
         if b + 1 >= len(days):

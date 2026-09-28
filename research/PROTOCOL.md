@@ -2613,3 +2613,17 @@ Bestehen (nur PRIMÄR LGBM-A, netto): Monats-Überrendite ggü. gleichgewichtete
 P1 (2018-01..2021-12) UND t >= 2 in P2 (2022-01..2025-09-19), Ø > 0 im unberührten Jahr (ab 2025-09-22),
 UND Ø-Überrendite ggü. Momentum 12-1 (gleiche Regel, monatlich) > 0 in P1 und P2.
 Berichtet: Rang-IC, Umschlag, brutto/netto, Jahre, Nebenmodelle, ohne Puffer, Top-50.
+Ergebnis Runde 94 (116 Monate, Ø 2.899 Titel, 103 Testmonate bis Kauf 2026-08; unberührt nur 11 Monate,
+netto 10 bp je Seite; EW-Universum P1 +8,7 % p.a., P2 -0,1 % p.a., unberührt +10,4 % p.a.):
+- PRIMÄR LGBM-A: Überrendite ggü. EW P1 -30,7 bp/Monat (t -0,92), P2 +28,5 (t 1,10), unberührt +11,7
+  (t 0,33); brutto -20,6 / +36,3 / +16,4 bp; Rang-IC +0,025 / +0,051 / +0,060; Umschlag Ø 1,05 je Monat;
+  ggü. Momentum 12-1 -78,8 / -36,3 / -7,9 bp.
+- Ridge +26,3 / +4,5 / +18,3 bp (t 0,72 / 0,14 / 0,72); LGBM-B -26,8 / +15,9 / +49,6;
+  LGBM-C -14,6 / +42,7 / +33,4 (t -0,44 / 1,51 / 1,29).
+- Momentum 12-1: +48,1 / +64,8 / +19,6 bp (t 0,89 / 1,25 / 0,11), Umschlag 0,41 je Monat.
+- berichtet: ohne Puffer -37,0 / +22,4 / -9,3 bp; Top-50 -92,0 / -7,9 / +22,9 bp.
+- PRIMÄR je Jahr: 2018 -5,6 %, 2019 -3,2 %, 2020 -5,2 %, 2021 -1,4 %, 2022 -0,3 %, 2023 -4,8 %,
+  2024 +10,6 %, 2025 +9,4 %, 2026 -0,5 %.
+-> NICHT BESTANDEN. Monatlich sinken die Kosten auf ~10 bp je Monat, aber jetzt fehlt das Signal selbst:
+2018-2021 schon brutto negativ, positiv nur 2024-2025. Rang-IC bleibt positiv, trägt aber nicht bis in
+das Top-Dezil. Keine ML-Variante schlägt Momentum 12-1, das selbst nicht signifikant ist.
