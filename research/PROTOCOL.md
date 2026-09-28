@@ -2683,3 +2683,21 @@ Fundamentalwerte für 54 % der Universums-Zellen vorhanden; netto 10 bp je Seite
 (Runde 94: P1 negativ), aber keine erreicht t >= 2 in beiden Zeiträumen, und in P2 schlägt Momentum alle.
 LGBM-C/Ridge wären die besten -- nachträglich gewählt, daher nicht gewertet. Ursache vermutlich zu wenig
 Statistik: ~45 Monate je Zeitraum erfordern eine Informationsquote ~1 für t 2.
+
+# Runde 96: News-Momentum -- Kursreaktion auf Nachrichten setzt sich fort (Chan, JFE 2003) (2026-09-29)
+
+Hintergrund: Chan (2003) -- Kursbewegungen MIT öffentlicher Nachricht setzen sich über Wochen fort, ohne
+Nachricht kehren sie um. Aktuell (Johnsen/Shasharina 2026): LLM-bewertete Nachrichten sagen den Folgetag
+nur bei Firmen mit >= 3 Artikeln voraus. Hier zuerst OHNE LLM: die eigene Kursreaktion ersetzt die Bewertung.
+Daten: Alpaca-News (Benzinga) je Nacht-Fenster 16:00 ET Vortag .. 09:20 ET Tag D (2016-01..2026-09,
+data_cache/r92/news), Tageskerzen data_cache/universe (split-bereinigt).
+Universum am Tag D: Vortagesschluss > 5 USD, Ø-Dollarvolumen 20 Vortage >= 5 Mio. USD.
+Ereignis: >= 3 Artikel mit dem Symbol im Nacht-Fenster vor D. Reaktion: Rendite Schluss D-1 -> Schluss D
+minus gleichgewichtetes Universum (Überrendite). Signal LONG: Reaktion >= +2 %.
+Handel: Kauf zum Schluss D, Verkauf zum Schluss D+5 (Handelstage). Kosten 20 bp je Round-Trip.
+Messung: Überrendite ggü. gleichgewichtetem Universum im selben Fenster; je Kauftag Mittel über alle
+Ereignisse (eine Beobachtung je Tag, gegen gleichzeitige Häufung), t über die Tage.
+Zeiträume (Kauftag): P1 2016-01..2020-12, P2 2021-01..2025-09-19, unberührt 2025-09-22..2026-09.
+Bestehen: Ø netto > 0 mit t >= 2 in P1 UND P2, Ø > 0 unberührt.
+Berichtet (nicht gewertet): Halten 1 und 20 Tage; negative Reaktion <= -2 % (Short-Seite, nur Info);
+Vergleich OHNE Nachricht (0 Artikel, Reaktion >= +2 %) -- laut Chan Umkehr; Ereignisse je Jahr.
