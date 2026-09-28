@@ -2540,3 +2540,14 @@ Vergleich: alle Ereignisse (gleiches Universum, gleiches Fenster) = Basis ohne L
 Bestehen: LN Ø netto > 0 mit t >= 2 über den ganzen Zeitraum UND Ø > 0 in beiden Hälften
 (2025-10..2026-03, 2026-04..2026-09) UND LN-Rendite minus Basis-Rendite t >= 2 (Welch).
 Berichtet: negativ bewertete Ereignisse (Short-Kandidaten), Verwässerungs-Ereignisse, Kosten.
+Ergebnis Runde 92 (23.856 Ereignisse an 248 Tagen; Zufallsstichprobe 3.000 bewertet, 0 Fehler,
+~1,7 USD; Rendite Open->Schluss, netto 30 bp):
+- nach Richtung: positiv n 1.782 Ø -0,82 %, negativ n 616 Ø -1,35 %, gemischt n 369 -0,39 %,
+  unklar n 233 -0,08 %.
+- LN (positiv, Stärke >= 4, keine Verwässerung): n 117, Ø -1,74 % je Trade (t -1,79), 39 % Treffer;
+  Hälften -1,51 % / -2,01 %. Basis alle Ereignisse Ø -0,82 %; Differenz -0,93 %-Punkte (t -0,94).
+- berichtet: negativ Stärke >= 4 Ø brutto -1,18 %, Verwässerung Ø brutto -0,84 %.
+-> NICHT BESTANDEN. Kleinwerte mit Nachrichten über Nacht fallen im Mittel während des Tages (Gap
+wird abverkauft); vom LLM als stark positiv eingestufte Nachrichten sogar tendenziell stärker. Die
+LLM-Einschätzung liefert kein Kaufsignal. (Eine Short-Regel auf "stark positiv" wäre nachträglich
+gewählt und bei Kleinwerten riskant -- nicht gewertet.)
