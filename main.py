@@ -983,6 +983,9 @@ def cmd_momentum_run(
     max_position_dollars: float = 25_000.0,
     max_entry_slippage_pct: float = 0.01,
     weakness_exit: str = "red_candle",
+    news_intel: bool = False,
+    news_filter: str = "off",
+    news_model: str = "claude-haiku-4-5-20251001",
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -1047,7 +1050,20 @@ def cmd_momentum_run(
         f"Zustand übersteht einen Neustart, kein Float-Filter) -- {trading_mode_warning} "
         "Mit Strg+C beenden.\n"
     )
-    bot = LiveMomentumBot(config, criteria, live_config)
+    intel = None
+    if news_intel:
+        from alpaca.data.historical.news import NewsClient
+
+        from tradingbot.news_intel import NewsIntel, NewsIntelConfig
+
+        intel = NewsIntel(
+            NewsIntelConfig(enabled=True, filter_mode=news_filter.replace("-", "_"), model=news_model,
+                            news_lookback_hours=news_lookback_hours),
+            NewsClient(config.api_key, config.secret_key),
+        )
+        mode = "Filter: Verwässerung blockiert Einstiege" if news_filter != "off" else "Schatten: nur protokollieren"
+        print(f"News-Intel aktiv (Modell {news_model}, {mode}) -> news_intel.csv")
+    bot = LiveMomentumBot(config, criteria, live_config, news_intel=intel)
     bot.run_forever()
 
 
@@ -1460,6 +1476,20 @@ def main():
         "(Standard: red_candle).",
     )
     momentum_run_parser.add_argument(
+        "--news-intel", action="store_true",
+        help="Je neuem Kandidaten News + SEC-Meldungen per LLM einschätzen (ANTHROPIC_API_KEY in .env); "
+        "Ergebnis in news_intel.csv. Ohne --news-filter nur Schattenmodus (Handel unverändert).",
+    )
+    momentum_run_parser.add_argument(
+        "--news-filter", choices=["off", "block-dilution"], default="off",
+        help="block-dilution: Einstieg ablehnen, wenn die Einschätzung Verwässerung/Emission meldet "
+        "(erst nach Auswertung des Schattenmodus nutzen; Standard: off).",
+    )
+    momentum_run_parser.add_argument(
+        "--news-model", default="claude-haiku-4-5-20251001",
+        help="Anthropic-Modell für die Einschätzung (Standard: claude-haiku-4-5-20251001).",
+    )
+    momentum_run_parser.add_argument(
         "--max-concurrent-positions", type=_positive_int, default=3,
         help="Obergrenze gleichzeitig offener Positionen (Standard: 3).",
     )
@@ -1776,6 +1806,9 @@ def main():
                 args.max_position_dollars,
                 args.max_entry_slippage_pct,
                 weakness_exit=args.weakness_exit,
+                news_intel=args.news_intel,
+                news_filter=args.news_filter,
+                news_model=args.news_model,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

@@ -333,7 +333,7 @@ def test_momentum_run_allows_live_trading_with_flag(monkeypatch):
     started = []
 
     class FakeBot:
-        def __init__(self, config, criteria, live_config):
+        def __init__(self, config, criteria, live_config, news_intel=None):
             started.append(config.paper)
 
         def run_forever(self):
@@ -356,7 +356,7 @@ def test_momentum_run_broker_stop_flag(monkeypatch, argv, expected):
     seen = []
 
     class FakeBot:
-        def __init__(self, config, criteria, live_config):
+        def __init__(self, config, criteria, live_config, news_intel=None):
             seen.append(live_config.broker_stop_orders)
 
         def run_forever(self):
@@ -502,3 +502,33 @@ def test_momentum_compare_rejects_missing_env_file(monkeypatch, capsys):
     with pytest.raises(SystemExit):
         main_module.main()
     assert "existiert nicht" in capsys.readouterr().err
+
+
+def test_momentum_run_passes_news_intel_only_when_enabled(monkeypatch, tmp_path):
+    import main
+    import tradingbot.momentum_live as ml
+    seen = []
+
+    class FakeBot:
+        def __init__(self, config, criteria, live_config, news_intel=None):
+            seen.append(news_intel)
+
+        def run_forever(self):
+            pass
+
+    monkeypatch.setattr(ml, "LiveMomentumBot", FakeBot)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    cfg = type("C", (), {"paper": True, "api_key": "k", "secret_key": "s"})()
+    base = dict(min_price=1, max_price=20, min_percent_change=10, scan_min_relative_volume=5,
+                relative_volume_lookback_days=30, require_news=False, news_lookback_hours=24, top_movers=30,
+                top_actives=30, max_risk_dollars=500, reward_risk_ratio=2, min_relative_volume=2, lookback_days=20,
+                daily_trend_window=50, flagpole_min_gain_pct=0.03, flagpole_max_bars=15, min_pullback_bars=1,
+                max_pullback_bars=10, max_pullback_retrace_pct=0.5, extension_multiplier=4,
+                max_concurrent_positions=3, max_tracked_symbols=20, daily_max_loss_pct=0.1,
+                scan_interval_seconds=60, poll_interval_seconds=15, order_fill_timeout_seconds=30,
+                order_poll_interval_seconds=1, flatten_minutes_before_close=5)
+    main.cmd_momentum_run(cfg, **base)
+    main.cmd_momentum_run(cfg, **base, news_intel=True, news_filter="block-dilution")
+    assert seen[0] is None
+    assert seen[1] is not None and seen[1].config.filter_mode == "block_dilution"
+    seen[1].shutdown()

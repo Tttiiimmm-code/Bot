@@ -444,6 +444,26 @@ Einstieg innerhalb von `--tolerance-minutes` (Standard 3) stehen nebeneinander -
 direkt sichtbar, wie unterschiedliche Regeln dasselbe Setup behandelt haben. Zweimal dasselbe
 Konto (gleiche API-Keys) wird abgelehnt.
 
+### News-Einschätzung per LLM (`--news-intel`, zunächst Schattenmodus)
+
+```bash
+python main.py momentum-run ... --news-intel                              # nur protokollieren
+python main.py momentum-run ... --news-intel --news-filter block-dilution # Einstieg bei Emission ablehnen
+```
+
+- Für jeden neuen Kandidaten (einmal je Tag) holt `tradingbot/news_intel.py` die Alpaca-News der
+  letzten `--news-lookback-hours` (Überschrift + Zusammenfassung) und die SEC-Meldungen der letzten
+  14 Tage (8-K, S-1/S-3, 424B*, 13D/G, ...) und lässt ein LLM (Standard `claude-haiku-4-5-20251001`,
+  `--news-model`) einordnen: Katalysator (earnings, fda_clinical, offering_dilution, m_and_a, ...),
+  Richtung, Verwässerungsrisiko, Konfidenz, Kurzbegründung.
+- Ergebnis in `news_intel.csv` und im Log (auch beim Breakout). Läuft in einem Hintergrund-Thread;
+  Fehler (fehlender Key, Netz) werden nur geloggt und blockieren nie den Handel.
+- Schattenmodus zuerst: Die Einschätzung ändert nichts am Handel. Erst wenn die Auswertung
+  (news_intel.csv gegen `momentum-report`) zeigt, dass z.B. "offering_dilution" schlechtere Trades
+  anzeigt, `--news-filter block-dilution` einschalten.
+- Voraussetzung: `ANTHROPIC_API_KEY` in `.env`. Kosten mit Haiku grob unter 1 Cent je Kandidat;
+  Obergrenze 200 Einschätzungen je Tag.
+
 ## Overnight-Portfolio-Bot (Paper-Vorwärtstest)
 
 Bester Kandidat aus der Strategie-Forschung (`research/PROTOCOL.md`): kurz vor Handelsschluss

@@ -63,6 +63,7 @@ from tradingbot.momentum import (
     _relative_volume_at,
 )
 from tradingbot.scanner import Scanner, ScanCriteria, latest_trading_session
+from tradingbot.news_intel import NewsIntel
 
 logger = logging.getLogger(__name__)
 
@@ -305,8 +306,12 @@ class LiveMomentumBot:
         scanner: Scanner | None = None,
         trading_client: TradingClient | None = None,
         data_client: StockHistoricalDataClient | None = None,
+        news_intel: NewsIntel | None = None,
     ):
         self.config = config
+        # Optional: LLM-Einschätzung neuer Kandidaten (tradingbot/news_intel.py);
+        # im Schattenmodus nur Protokoll, im Filtermodus Einstiegs-Veto bei Verwässerung.
+        self.news_intel = news_intel
         self.criteria = criteria
         self.live_config = live_config or LiveMomentumConfig()
         _validate_live_config(self.live_config)
@@ -651,6 +656,12 @@ class LiveMomentumBot:
                 candidate.relative_volume,
                 ",".join(candidate.sources),
             )
+            if self.news_intel is not None:
+                try:
+                    self.news_intel.request(candidate.symbol, candidate.price, candidate.percent_change,
+                                            candidate.relative_volume, now)
+                except Exception:
+                    logger.exception("News-Intel-Anfrage für %s fehlgeschlagen (Handel unbeeinflusst).", candidate.symbol)
 
     def _build_symbol_context(
         self, symbol: str, now: datetime, session
@@ -831,6 +842,15 @@ class LiveMomentumBot:
             event.stop_price,
             event.risk_per_share,
         )
+        if self.news_intel is not None:
+            assessment = self.news_intel.get(symbol)
+            if assessment is not None:
+                logger.info("News-Intel zum Breakout %s: %s/%s, Verwässerung=%s (%s)", symbol, assessment.catalyst,
+                            assessment.direction, assessment.dilution_risk, assessment.summary)
+            if self.news_intel.should_block_entry(symbol):
+                logger.info("Breakout bei %s ignoriert: News-Filter meldet Verwässerung/Emission.", symbol)
+                state.engine.decline_entry()
+                return
         open_positions = sum(1 for s in self._symbols.values() if s.engine.in_position)
         if open_positions >= self.live_config.max_concurrent_positions:
             logger.info(

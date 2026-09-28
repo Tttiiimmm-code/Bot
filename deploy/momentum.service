@@ -11,8 +11,9 @@ StartLimitBurst=5
 # Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
 User=tradingbot
 WorkingDirectory=/home/tradingbot/Bot
-# Gleiche Einstellungen wie der bisher per tmux gestartete Bot.
-ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py momentum-run --max-risk-dollars 500 --daily-max-loss-pct 0.1 --weakness-exit none
+# Gleiche Einstellungen wie der bisher per tmux gestartete Bot; --news-intel protokolliert nur
+# (Schattenmodus) und braucht ANTHROPIC_API_KEY in .env (ohne Key: nur Warnung).
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py momentum-run --max-risk-dollars 500 --daily-max-loss-pct 0.1 --weakness-exit none --news-intel
 
 # .env (Keys des Momentum-Kontos) liegt im Repo und wird beim Start geladen.
 # Offene Positionen werden nach einem Neustart übernommen (carried over).

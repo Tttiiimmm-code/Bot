@@ -10,3 +10,4 @@ data_cache/
 overnight_state.json
 overnight_trades.csv
 forward_trades.csv
+news_intel.csv
