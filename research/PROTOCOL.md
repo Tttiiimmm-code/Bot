@@ -2716,3 +2716,19 @@ Kosten: 10 bp je Round-Trip (Micro-WTI-Future / ETC).
 Zeiträume: P1 1986-2005 (nie untersucht), P2 2006-2024-08 (Quellen-Zeitraum), unberührt 2024-09..2026-09.
 Bestehen (WTI, PRIMÄR): Ø netto je Trade > 0 mit t >= 2 in P1 UND Ø > 0 in P2 UND Ø > 0 unberührt.
 Berichtet: Benzin (DGASNYH), je Feiertag, Vergleich zufällige 4-Tage-Fenster (Ø aller Tage x 4).
+Ergebnis Runde 97 (netto 10 bp je Trade; je Zeitraum n Trades, Ø, t, Trefferquote):
+- WTI (PRIMÄR): P1 1986-2005 n 159, -31 bp (t -0,72, 55 %); P2 2006-2024-08 n 152, +76 bp (t 1,85, 59 %);
+  unberührt n 19, -90 bp (t -0,81, 26 %). Zufällige 4-Tage-Fenster brutto +22 / +17 / +43 bp.
+- Benzin: P1 +28 bp (t 0,51); P2 +120 bp (t 2,99); unberührt -130 bp (t -1,18).
+- je Feiertag uneinheitlich (Neujahr in P1 und P2 positiv, Memorial in allen Zeiträumen negativ).
+-> NICHT BESTANDEN. Der Effekt existiert nur im Stichprobenzeitraum der Quelle; vorher und nachher negativ --
+typisches Muster eines Zufallsfunds.
+
+## Recherche-Notizen 2026-09-29 (keine eigenen Runden)
+- NAAIM Exposure Index (Portfolio Optimizer, 2026-09): als Risikosignal interessant (SPY-Anteil nach Perzentil:
+  Sharpe 0,76 vs 0,66 fix 60 %), Daten seit 2026-08 nur noch im Abo -> nicht getestet.
+- Lopez-Lira & Tang (JFE 2026), LLM-Nachrichten: Long-Seite nur +8 bp/Tag brutto, bei 20 bp Round-Trip
+  unprofitabel, Sharpe fallend 6,5 (2021) -> 1,2 (2024) -> kein Test (Long-only + Kosten, wie Runde 92).
+- Daru Finance (2026): ML-Filter über 420 verlierende Regeln -- besser als Zufall, aber netto ~0 (wie Runden 93-95).
+- Zarattini & Antonacci (2025), Branchen-Trendfolge: 2005-2024 mit 31 Sektor-ETFs 7,7 % p.a. vs SPY 10,0 %,
+  Sharpe 0,61 vs 0,59, MaxDD 24 % vs 55 % -> senkt Verluste, keine Mehrrendite; nicht getestet.
