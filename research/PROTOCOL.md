@@ -2701,3 +2701,18 @@ Zeiträume (Kauftag): P1 2016-01..2020-12, P2 2021-01..2025-09-19, unberührt 20
 Bestehen: Ø netto > 0 mit t >= 2 in P1 UND P2, Ø > 0 unberührt.
 Berichtet (nicht gewertet): Halten 1 und 20 Tage; negative Reaktion <= -2 % (Short-Seite, nur Info);
 Vergleich OHNE Nachricht (0 Artikel, Reaktion >= +2 %) -- laut Chan Umkehr; Ereignisse je Jahr.
+
+# Runde 97: Vor-Feiertags-Effekt bei Rohöl (Quantpedia, "Pre-Holiday Effect in Commodities", 2024) (2026-09-29)
+
+Quelle: Quantpedia testete USO/UGA 2006-04..2024-08: Kauf zum Schluss D-5, Verkauf zum Schluss D-1 vor
+9 US-Börsenfeiertagen (Neujahr, MLK, Presidents, Memorial, Juneteenth ab 2022, Independence, Labor,
+Thanksgiving, Weihnachten); Begründung: Reisenachfrage nach Benzin. Keine Zahlen je Trade veröffentlicht.
+Test: unabhängiger Zeitraum VOR der Quelle + unberührte Zeit danach.
+Daten: FRED DCOILWTICO (WTI-Spot, täglich ab 1986) und DGASNYH (Benzin NY Harbor, ab 1986); Kassa statt
+Future (Rollrendite über 4 Tage vernachlässigbar). Handelstage = Tage mit Kurs in der jeweiligen Reihe.
+Feiertage per Regel (mit Wochenend-Verschiebung), D-1 = letzter Handelstag vor dem Feiertag, D-5 = vier
+Handelstage vor D-1. Liegen zwei Fenster überlappend, zählt jedes einzeln.
+Kosten: 10 bp je Round-Trip (Micro-WTI-Future / ETC).
+Zeiträume: P1 1986-2005 (nie untersucht), P2 2006-2024-08 (Quellen-Zeitraum), unberührt 2024-09..2026-09.
+Bestehen (WTI, PRIMÄR): Ø netto je Trade > 0 mit t >= 2 in P1 UND Ø > 0 in P2 UND Ø > 0 unberührt.
+Berichtet: Benzin (DGASNYH), je Feiertag, Vergleich zufällige 4-Tage-Fenster (Ø aller Tage x 4).
