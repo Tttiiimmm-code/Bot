@@ -2551,3 +2551,35 @@ Ergebnis Runde 92 (23.856 Ereignisse an 248 Tagen; Zufallsstichprobe 3.000 bewer
 wird abverkauft); vom LLM als stark positiv eingestufte Nachrichten sogar tendenziell stärker. Die
 LLM-Einschätzung liefert kein Kaufsignal. (Eine Short-Regel auf "stark positiv" wäre nachträglich
 gewählt und bei Kleinwerten riskant -- nicht gewertet.)
+
+# Runde 93: ML-Ranking US-Aktien, wöchentlich, long-only (2026-09-28)
+
+Nutzerwunsch: automatisiertes ML-Modell, das Aktien handelt und "aus Fehlern lernt". Umgesetzt als
+überwachtes Ranking-Modell, das walk-forward regelmäßig neu trainiert wird (kein Online-RL auf Live-P&L).
+Daten: Alpaca-Tageskerzen (SIP, nur split-bereinigt, inkl. inaktiver Symbole), data_cache/universe/daily,
+2016-01-04..2026-09-22. Keine Fundamentaldaten (nicht vorhanden; EDGAR-Cache enthält nur Form 3/4/5).
+
+Universum je Signaltag t (nur Daten bis Schluss t): Schluss > 5 USD, Ø-Dollarvolumen 20 Tage >= 5 Mio. USD,
+>= 252 Handelstage Historie.
+Takt: Signal zum Schluss des letzten Handelstags jeder Woche, Kauf zum Open des nächsten Handelstags,
+Halten bis zum Open nach dem nächsten Signal (Open->Open). Delisting/Datenlücke: Ausstieg zum letzten
+bekannten Schluss. Kosten 10 bp je Seite auf den tatsächlichen Umschlag (inkl. Gewichtsdrift).
+Merkmale (15, je Tag querschnittlich in Perzentile umgerechnet, fehlend = 0,5): Rendite 5 T, 21 T,
+Momentum 12-1 (252..21), 6-1 (126..21), Volatilität 21 T / 63 T, log Ø-Dollarvolumen 20 T,
+Dollarvolumen 5 T / 63 T, Abstand zum 252-T-Hoch, Abstand zum 252-T-Tief, max. Tagesrendite 21 T,
+Summe Übernacht-Renditen 21 T, Summe Intraday-Renditen 21 T, Amihud-Illiquidität 21 T, Ø (Hoch-Tief)/Schluss 21 T.
+Zielgröße: Perzentilrang der Open->Open-Wochenrendite im Querschnitt.
+Training: expandierendes Fenster ab 2017-01, Neutraining alle 4 Signaltage; nur Beispiele, deren
+Ausstieg vor dem Signaltag liegt (Purge). Erste Testwoche 2018-01.
+Modelle (4 Versuche, Parameter fest, kein Tuning):
+- PRIMÄR LGBM-A: LightGBM num_leaves 15, learning_rate 0,05, 200 Bäume, min_child_samples 1000,
+  subsample 0,8 (bagging_freq 1), colsample 0,8, Seed 93.
+- berichtet: Ridge (alpha 1, lineare Basis), LGBM-B (31 Blätter, 400 Bäume), LGBM-C (7 Blätter, 100 Bäume).
+Portfolio: Top-10 % der Prognose kaufen, gehaltene Titel behalten, solange sie in den Top-20 % sind;
+gleichgewichtet, wöchentlich auf Gleichgewicht zurückgesetzt.
+Vergleich: (a) gleichgewichtetes Universum (gleiche Kosten), (b) Momentum 12-1 mit derselben
+Top-10/20-%-Regel und Kosten.
+Zeiträume (nach Kauftag): P1 2018-01..2021-12, P2 2022-01..2025-09-19, unberührt 2025-09-22..2026-09.
+Bestehen (nur PRIMÄR, netto): Wochen-Überrendite ggü. (a) mit t >= 2 in P1 UND t >= 2 in P2,
+Ø > 0 im unberührten Jahr, UND Ø-Überrendite ggü. (b) > 0 in P1 und P2.
+Berichtet: Rang-IC je Zeitraum, Umschlag, brutto/netto, Jahre, Nebenmodelle, ohne Puffer, Top-50-Titel.
