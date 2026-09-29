@@ -2801,3 +2801,18 @@ Ergebnis Runde 99 (Dukascopy WTI 2012-01..2026-09, 6,3 Mio. Minuten, 3.664 Tage,
 -> NICHT BESTANDEN. Keine Fortsetzung der Reaktion auf die EIA-Zahlen bis zum Settlement; Trefferquote ~50 %.
 Recherche-Notiz: Krohn et al. (JF 2024) Fixing-W-Muster = Runde 54 (nach 2018 umgekehrt); BCOM/GSCI-Januar-
 Rebalancing (Verkauf der Vorjahresgewinner) nur 1 Ereignis/Jahr und in der Presse breit angekündigt -> nicht getestet.
+
+# Runde 100: TikTok "The Quant Builder" -- erste 5-Minuten-Kerze vs. EMA12 an der Nasdaq (2026-09-29)
+
+Quelle: TikTok @thequantbuilder (122.000 Aufrufe, Transkript): Nasdaq 5-Minuten-Chart, erste Kerze nach der
+NY-Eröffnung schließt über EMA12 -> long, darunter -> short, Trailing-Stop (nicht spezifiziert); Backtest
+2019-2026: 1.448 Trades, 57 % Treffer, Profit-Faktor 1,29, +982 %, MaxDD ~20 %. Verwandt mit Runde 1.
+Test: Richtungssignal selbst, Ausstieg zum Schluss (der Trailing-Stop ist nicht nachbaubar; keine Varianten).
+Daten: Alpaca-Minutenkerzen (nur reguläre Sitzung 9:30-16:00 ET) QQQ, SPY, IWM, DIA, 2016-01..2026-09-23.
+5-Minuten-Kerzen aus Minuten; EMA12 der 5-Minuten-Schlusskurse fortlaufend über die Tage (Chart ohne
+Vor-/Nachbörse), inklusive der ersten Kerze des Tages. Signal: Schluss 9:30-9:35 > EMA12 -> long, < -> short.
+Einstieg Open 9:35, Ausstieg Schluss 15:59-Kerze. Kosten 2 bp je Round-Trip (Micro-Nasdaq-Future).
+Zeiträume: P1 2016-01..2018-12 (vor dem Backtest der Quelle), P2 2019-01..2025-09-19 (Quellen-Zeitraum),
+jüngst 2025-09-22..2026-09 (ebenfalls im Quellen-Zeitraum, nur berichtet).
+Bestehen (PRIMÄR QQQ long+short): Ø netto je Tag t >= 2 in P1 UND Ø > 0 in P2.
+Berichtet: SPY, IWM, DIA; nur long; nur short; Trefferquote; Profit-Faktor; je Jahr.
