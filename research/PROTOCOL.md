@@ -2822,3 +2822,14 @@ Ergebnis Runde 100 (netto 2 bp; Ø je Tag, t, Treffer, Profit-Faktor):
 - QQQ nur long -0,3 / +4,2 / -1,6 bp; nur short +2,9 / -4,0 / -1,6 bp.
 -> NICHT BESTANDEN. Das Richtungssignal ist ein Münzwurf (Treffer 50 %). Der behauptete Profit-Faktor 1,29
 kann nur aus dem nicht offengelegten Trailing-Stop stammen (bzw. dessen Optimierung auf denselben Daten).
+Recherche-Notiz TikTok (2026-09-29, Transkripte automatisch ausgelesen, 14 Strategie-Videos):
+- @hooper_algo.fx London-Breakout (Asien-Range 15-40 Pips, Pending ±5 Pips) = Runde 22 (nicht bestanden).
+- @luxalgo (71-110 Tsd. Aufrufe): KI erzeugt TradingView-Strategien "PF > 2, >= 50 Trades, 5-Min-Chart" --
+  reine Stichproben-Optimierung (50 Trades, unzählige Versuche), nicht getestet.
+- @tiko69447 (PF 3,94 Forward-Test), @impact.marco ("Power-Free-Konzept"), @trade_with_pat (Asien/London/NY),
+  @nicholas_crown (VWAP-Front-Running), @joshuaaalampour (algebraische Topologie, proprietär): keine
+  überprüfbaren Regeln bzw. diskretionär.
+- @deltatrendtrading (333 Tsd.): Prop-Firm-Challenges als konvexe Auszahlung (Gebühr = begrenzter Verlust) --
+  mathematische Frage der Firmenregeln, kein Marktvorteil; nicht getestet.
+Folgerung: TikTok liefert fast nur Vertriebstrichter ("kommentiere X für den Bot"), Daten-Überoptimierung und
+diskretionäre Muster; die einzige präzise, testbare Behauptung (Runde 100) ist ein Münzwurf.
