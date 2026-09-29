@@ -39,6 +39,9 @@ logger = logging.getLogger(__name__)
 
 NY = ZoneInfo("America/New_York")
 DEFAULT_SYMBOLS = ("SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "SMH")
+DRY_RUN_LOG_DELAY_MINUTES = 20
+DRY_RUN_RETRY_MINUTES = 10
+_DRY = "dry-run:"  # Kauf-ID im Dry-Run: "dry-run:<Stück>"
 
 
 @dataclass(frozen=True)
@@ -110,6 +113,7 @@ class OvernightBot:
         self.paper = paper
         self.state = _State.load(config.state_file)
         self._session_cache: tuple[date, _Session | None] | None = None
+        self._dry_retry_at: datetime | None = None
 
     # ------------------------------------------------------------ Zeitplan
 
@@ -140,16 +144,19 @@ class OvernightBot:
             sell_until = session.open - timedelta(minutes=2)
             if self.state.sold_for != self.state.bought_on and sell_from <= now < sell_until:
                 self._submit_morning_sells()
-            fallback_at = session.open + timedelta(minutes=cfg.fallback_sell_minutes_after_open)
+            # Dry-Run: Eröffnungskurs aus SIP-Tageskerzen, die ohne Abo erst nach 15 Minuten
+            # abrufbar sind -> später protokollieren.
+            extra = DRY_RUN_LOG_DELAY_MINUTES if cfg.dry_run else 0
+            fallback_at = session.open + timedelta(minutes=cfg.fallback_sell_minutes_after_open + extra)
             if now >= fallback_at and self.state.logged_for != self.state.bought_on:
-                self._finish_night()
+                self._finish_night(now)
 
         # Abend: neue Käufe zum Schlusskurs
         decide_from = session.close - timedelta(minutes=cfg.decision_minutes_before_close)
         decide_until = session.close - timedelta(minutes=10)
         if self.state.bought_on != today and decide_from <= now < decide_until:
             if self.state.bought_on and self.state.logged_for != self.state.bought_on:
-                self._finish_night()  # Morgen-Abschluss nachholen, bevor neu gekauft wird
+                self._finish_night(now)  # Morgen-Abschluss nachholen, bevor neu gekauft wird
             self._submit_evening_buys(session)
 
     # ------------------------------------------------------------ Abend
@@ -209,7 +216,7 @@ class OvernightBot:
             if not go or qty <= 0:
                 continue
             if cfg.dry_run:
-                buys[sym] = "dry-run"
+                buys[sym] = f"{_DRY}{qty}"
                 continue
             order = self.trading_client.submit_order(MarketOrderRequest(
                 symbol=sym, qty=qty, side=OrderSide.BUY, time_in_force=TimeInForce.CLS))
@@ -247,12 +254,24 @@ class OvernightBot:
         logger.info("Morgen: %d Verkaufs-Order(s) zum Eröffnungskurs für Käufe vom %s",
                     len(sells), self.state.bought_on)
 
-    def _finish_night(self) -> None:
+    def _finish_night(self, now: datetime) -> None:
         """Nach Handelsbeginn: nicht gefüllte Reste per Market verkaufen und
         die Nacht protokollieren."""
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import MarketOrderRequest
 
+        if self.config.dry_run:
+            # Kurse evtl. noch nicht abrufbar -> höchstens alle paar Minuten neu versuchen,
+            # die Nacht erst nach erfolgreichem Protokoll als erledigt markieren.
+            if self._dry_retry_at and now < self._dry_retry_at:
+                return
+            if not self._log_night(now):
+                self._dry_retry_at = now + timedelta(minutes=DRY_RUN_RETRY_MINUTES)
+                return
+            self.state.logged_for = self.state.bought_on
+            self.state.sold_for = self.state.bought_on
+            self.state.save(self.config.state_file)
+            return
         if not self.config.dry_run:
             for p in self.trading_client.get_all_positions():
                 qty = int(float(p.qty))
@@ -261,45 +280,91 @@ class OvernightBot:
                     order = self.trading_client.submit_order(MarketOrderRequest(
                         symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.DAY))
                     self.state.sells[p.symbol] = str(order.id)
-        self._log_night()
+        self._log_night(now)
         self.state.logged_for = self.state.bought_on
         self.state.sold_for = self.state.bought_on
         self.state.save(self.config.state_file)
 
     def _fill(self, order_id: str) -> tuple[float, float] | None:
-        if not order_id or order_id == "dry-run":
+        if not order_id or order_id.startswith("dry-run"):
             return None
         o = self.trading_client.get_order_by_id(order_id)
         if o.filled_avg_price is None or not o.filled_qty:
             return None
         return float(o.filled_qty), float(o.filled_avg_price)
 
-    def _log_night(self) -> None:
+    def _dry_run_prices(self, bought_on: date, now: datetime, symbols: list[str]) -> dict[str, tuple[float, float]]:
+        """Dry-Run: (Schlusskurs am Kauftag, Eröffnungskurs am nächsten Handelstag) aus
+        SIP-Tageskerzen, unbereinigt. Ohne SIP-Abo nur Daten älter als 15 Minuten."""
+        from alpaca.data.enums import Adjustment, DataFeed
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+
+        df = self.data_client.get_stock_bars(StockBarsRequest(
+            symbol_or_symbols=symbols, timeframe=TimeFrame.Day,
+            start=datetime.combine(bought_on, datetime.min.time(), tzinfo=NY),
+            end=now - timedelta(minutes=16), adjustment=Adjustment.RAW, feed=DataFeed.SIP,
+        )).df
+        out: dict[str, tuple[float, float]] = {}
+        for sym in symbols:
+            if df.empty or sym not in df.index.get_level_values("symbol"):
+                continue
+            bars = df.xs(sym, level="symbol")
+            days = bars.index.tz_convert(NY).date
+            buy_bar, next_bars = bars[days == bought_on], bars[days > bought_on]
+            if len(buy_bar) and len(next_bars):
+                out[sym] = (float(buy_bar["close"].iloc[0]), float(next_bars["open"].iloc[0]))
+        return out
+
+    def _log_night(self, now: datetime) -> bool:
+        """Schreibt die Nacht ins CSV. False nur im Dry-Run, wenn die Kurse noch fehlen
+        (dann später erneut versuchen)."""
         path = self.config.trade_log
-        new = not path.exists()
+        dry = {s: int(i[len(_DRY):]) for s, i in self.state.buys.items() if i.startswith(_DRY)}
+        prices: dict[str, tuple[float, float]] = {}
+        if dry:
+            try:
+                prices = self._dry_run_prices(date.fromisoformat(self.state.bought_on), now, list(dry))
+            except Exception:
+                logger.exception("Dry-Run: Kurse für die Nacht ab %s nicht abrufbar -- neuer Versuch später",
+                                 self.state.bought_on)
+                return False
+            if not prices:
+                logger.warning("Dry-Run: Eröffnungskurse für die Nacht ab %s noch nicht verfügbar",
+                               self.state.bought_on)
+                return False
+        mode = "paper" if self.paper else "live"
         rows, total = [], 0.0
         for sym, buy_id in self.state.buys.items():
-            buy = self._fill(buy_id)
-            sell = self._fill(self.state.sells.get(sym, ""))
-            if buy is None:
-                logger.info("%s: Kauf-Order nicht gefüllt", sym)
-                continue
-            if sell is None:
-                logger.error("%s: Verkauf noch nicht gefüllt -- im Alpaca-Dashboard prüfen", sym)
-                continue
-            qty, buy_px = buy
-            _, sell_px = sell
+            if sym in dry:
+                if sym not in prices:
+                    logger.warning("%s: Dry-Run-Kurse fehlen, Position nicht protokolliert", sym)
+                    continue
+                qty, (buy_px, sell_px), row_mode = dry[sym], prices[sym], "dry-run"
+            else:
+                buy = self._fill(buy_id)
+                sell = self._fill(self.state.sells.get(sym, ""))
+                if buy is None:
+                    logger.info("%s: Kauf-Order nicht gefüllt", sym)
+                    continue
+                if sell is None:
+                    logger.error("%s: Verkauf noch nicht gefüllt -- im Alpaca-Dashboard prüfen", sym)
+                    continue
+                (qty, buy_px), (_, sell_px), row_mode = buy, sell, mode
             pnl = qty * (sell_px - buy_px)
             total += pnl
             rows.append([self.state.bought_on, sym, int(qty), f"{buy_px:.4f}", f"{sell_px:.4f}",
-                         f"{pnl:.2f}", f"{sell_px / buy_px - 1:.6f}"])
+                         f"{pnl:.2f}", f"{sell_px / buy_px - 1:.6f}", row_mode])
         if rows:
+            new = not path.exists()
             with path.open("a", newline="", encoding="utf-8") as f:
                 w = csv.writer(f)
                 if new:
-                    w.writerow(["bought_on", "symbol", "qty", "buy_price", "sell_price", "pnl", "return"])
+                    w.writerow(["bought_on", "symbol", "qty", "buy_price", "sell_price", "pnl", "return", "mode"])
                 w.writerows(rows)
-        logger.info("Nacht ab %s abgeschlossen: %d Positionen, P&L %.2f $", self.state.bought_on, len(rows), total)
+        logger.info("Nacht ab %s abgeschlossen%s: %d Positionen, P&L %.2f $", self.state.bought_on,
+                    " (hypothetisch, Dry-Run)" if dry else "", len(rows), total)
+        return True
 
     # ------------------------------------------------------------ Loop
 
@@ -335,10 +400,15 @@ def summarize_trade_log(path: Path) -> str:
         nights[r["bought_on"]] = nights.get(r["bought_on"], 0.0) + float(r["pnl"])
     pnl = list(nights.values())
     wins = sum(1 for p in pnl if p > 0)
-    return "\n".join([
+    lines = [
         f"Nächte: {len(pnl)} ({rows[0]['bought_on']} bis {rows[-1]['bought_on']}), "
         f"davon positiv: {wins} ({wins / len(pnl):.0%})",
         f"Summe P&L: {sum(pnl):.2f} $, Ø je Nacht: {sum(pnl) / len(pnl):.2f} $",
         f"Positionen gesamt: {len(rows)}, Ø Rendite je Position: "
         f"{sum(float(r['return']) for r in rows) / len(rows) * 10_000:.1f} bp",
-    ])
+    ]
+    dry_nights = {r["bought_on"] for r in rows if r.get("mode") == "dry-run"}
+    if dry_nights:
+        lines.append(f"Davon hypothetisch (Dry-Run, Schluss -> Eröffnung, ohne Kosten/Spread): "
+                     f"{len(dry_nights)} Nächte")
+    return "\n".join(lines)

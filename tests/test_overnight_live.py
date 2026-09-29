@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pandas as pd
 import pytest
+from alpaca.data.enums import Adjustment
 from alpaca.trading.enums import OrderSide, TimeInForce
 
 from tradingbot.overnight_live import (
@@ -51,13 +52,25 @@ class FakeTrading:
 
 
 class FakeData:
-    def __init__(self, prices, closes):
-        self.prices, self.closes = prices, closes
+    def __init__(self, prices, closes, daily=None):
+        # daily: {symbol: [(Tag, open, close), ...]} für die Dry-Run-Abfrage (unbereinigte Tageskerzen)
+        self.prices, self.closes, self.daily = prices, closes, daily or {}
+        self.raw_requests = 0
 
     def get_stock_latest_trade(self, req):
         return {s: SimpleNamespace(price=p) for s, p in self.prices.items()}
 
     def get_stock_bars(self, req):
+        if req.adjustment == Adjustment.RAW:
+            self.raw_requests += 1
+            frames = [pd.DataFrame({"open": [b[1] for b in bars], "close": [b[2] for b in bars]},
+                                   index=pd.MultiIndex.from_arrays(
+                                       [[s] * len(bars),
+                                        pd.DatetimeIndex([pd.Timestamp(b[0]) for b in bars])
+                                        .tz_localize("America/New_York").tz_convert("UTC")],
+                                       names=["symbol", "timestamp"]))
+                      for s, bars in self.daily.items() if s in req.symbol_or_symbols]
+            return SimpleNamespace(df=pd.concat(frames) if frames else pd.DataFrame())
         frames = []
         for s, cl in self.closes.items():
             idx = pd.date_range(end=pd.Timestamp(DAY1) - pd.Timedelta(days=1), periods=len(cl), freq="B",
@@ -134,7 +147,7 @@ def test_full_night_survives_restart_and_logs_pnl(setup):
     bot.run_once(ny(DAY2, 9, 36))
     rows = list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))
     assert rows == [{"bought_on": "2026-09-24", "symbol": "SPY", "qty": "80", "buy_price": "500.0000",
-                     "sell_price": "502.5000", "pnl": "200.00", "return": "0.005000"}]
+                     "sell_price": "502.5000", "pnl": "200.00", "return": "0.005000", "mode": "paper"}]
     bot.run_once(ny(DAY2, 9, 40))
     assert len(list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))) == 1  # nur einmal
     assert "Summe P&L: 200.00 $" in summarize_trade_log(cfg.trade_log)
@@ -168,3 +181,39 @@ def test_dry_run_places_no_orders(setup):
     bot.run_once(ny(DAY2, 9, 21))
     bot.run_once(ny(DAY2, 9, 36))
     assert trading.orders == []
+
+
+def _dry_cfg(cfg):
+    return OvernightConfig(symbols=cfg.symbols, state_file=cfg.state_file, trade_log=cfg.trade_log, dry_run=True)
+
+
+def test_dry_run_logs_hypothetical_night_from_close_and_next_open(setup):
+    cfg, trading, _ = setup
+    data = FakeData({"SPY": 500.0, "QQQ": 390.0}, {"SPY": [450.0] * 210, "QQQ": [400.0] * 210},
+                    daily={"SPY": [(DAY1, 498.0, 500.0), (DAY2, 502.5, 503.0)]})
+    bot = OvernightBot(_dry_cfg(cfg), trading, data)
+    bot.run_once(ny(DAY1, 15, 46))  # SPY über SMA -> hypothetisch 80 Stück, QQQ darunter
+    bot.run_once(ny(DAY2, 9, 36))
+    assert not cfg.trade_log.exists()  # Dry-Run protokolliert erst später (15 Min. Datenverzögerung)
+    bot.run_once(ny(DAY2, 9, 56))
+    rows = list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))
+    assert rows == [{"bought_on": "2026-09-24", "symbol": "SPY", "qty": "80", "buy_price": "500.0000",
+                     "sell_price": "502.5000", "pnl": "200.00", "return": "0.005000", "mode": "dry-run"}]
+    bot.run_once(ny(DAY2, 10, 30))
+    assert len(list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))) == 1  # nur einmal
+    assert trading.orders == []
+    assert "hypothetisch" in summarize_trade_log(cfg.trade_log)
+
+
+def test_dry_run_retries_later_when_open_price_missing(setup):
+    cfg, trading, _ = setup
+    data = FakeData({"SPY": 500.0, "QQQ": 390.0}, {"SPY": [450.0] * 210, "QQQ": [400.0] * 210},
+                    daily={"SPY": [(DAY1, 498.0, 500.0)]})  # Eröffnung DAY2 noch nicht verfügbar
+    bot = OvernightBot(_dry_cfg(cfg), trading, data)
+    bot.run_once(ny(DAY1, 15, 46))
+    bot.run_once(ny(DAY2, 9, 56))
+    bot.run_once(ny(DAY2, 9, 57))  # innerhalb der Wartezeit kein neuer Abruf
+    assert data.raw_requests == 1 and not cfg.trade_log.exists()
+    data.daily["SPY"].append((DAY2, 502.5, 503.0))
+    bot.run_once(ny(DAY2, 10, 7))
+    assert len(list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))) == 1
