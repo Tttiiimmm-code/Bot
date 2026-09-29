@@ -2780,3 +2780,17 @@ Kein stabiler Vorteil, aber der stärkste Kleinwerte-Befund bisher; allenfalls a
 Folgerung: Mit freien Daten (US-Aktien ab 2016) sind Kleinwerte-/Faktor-Effekte statistisch kaum prüfbar
 (Runde 95/98: ~50 Monate je Zeitraum). Entscheidend wäre eine längere, survivorship-freie Historie
 (z.B. Sharadar SF1/SEP ab 1998 oder Norgate) -- kostenpflichtig.
+
+# Runde 99: Intraday-Momentum bei Rohöl an EIA-Tagen (Wen, Indriawan, Lien & Xu, Energy Journal 2023) (2026-09-29)
+
+Quelle: An EIA-Lagerdaten-Tagen (Mittwoch 10:30 ET = Beginn der dritten Halbstunde) sagt die Rendite der
+dritten Halbstunde die der letzten Halbstunde positiv voraus (informierte Händler, geringere Liquidität).
+Struktureller Mechanismus wie Gotobi; genug Beobachtungen (~50 Tage/Jahr).
+Daten: Dukascopy LIGHT.CMD/USD (WTI-CFD auf den Front-Future), Minutenkerzen Bid, UTC -> America/New_York.
+Ereignistage: Mittwoche, an denen Mo-Mi kein US-Bundesfeiertag liegt (Feiertagswochen -> Donnerstag
+11:00, ausgeschlossen). Dritte Halbstunde 10:30-11:00 ET, letzte Halbstunde 14:00-14:30 ET (Settlement).
+Regel: Richtung = Vorzeichen(Kurs 11:00 / Kurs 10:30 - 1); Position in diese Richtung von 14:00 bis 14:30.
+Kosten: 3 bp je Round-Trip (Micro-WTI-Future MCL: 1 Tick + Kommission).
+Zeiträume: P1 2012-2019, P2 2020-2025-09-19 (Quelle ab 2021 öffentlich), unberührt 2025-09-22..2026-09.
+Bestehen (PRIMÄR long+short): Ø netto je Tag t >= 2 in P1 UND P2, Ø > 0 unberührt.
+Berichtet: nur long, nur short, Nicht-EIA-Tage (gleiche Regel, Info), Trefferquote, je Jahr.
