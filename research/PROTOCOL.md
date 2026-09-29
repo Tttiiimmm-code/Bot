@@ -2768,3 +2768,15 @@ netto 75 bp je Seite; EW-Klein-Universum P1 +14,8 % p.a., P2 -11,5 % p.a., unber
 2017-2021 und gewann ab 2022 deutlich. Absolut in P2 nur ~+1,8 % p.a. (Universum fiel), unberührt ~+11 % p.a.
 Kein stabiler Vorteil, aber der stärkste Kleinwerte-Befund bisher; allenfalls als Vorwärtstest-Kandidat
 (Gefahr: die Auswahl nach dem jüngsten Regime wäre nachträglich).
+- "The Quarter-Hour Effect" (arXiv 2607.09426, Binance-Perpetuals 2021-2024): vorhersagbarer Anteil laut Autoren
+  ~1/10 einer Taker-Gebühr, braucht Co-Location -> nicht handelbar.
+- Quantpedia "Weakening Morning Order Flow" (SPY 2021-2026): braucht Trade-at-Bid/Ask-Daten (Algoseek), ohne
+  Kosten, mehrere Varianten auf 5 Jahren -> nicht getestet.
+- Hartzmark & Solomon, "Market-Wide Predictable Price Pressure" (AER): Markt steigt an Tagen hoher Dividenden-
+  zahlungen (~8 vs 2 bp/Tag, keine Umkehr). Mit Alpaca-Dividenden (2016-2025) ~50 Signaltage je Jahr ->
+  bei 6 bp Effekt und 1,1 % Tagesvola nur t ~1,2 erreichbar; zu wenig Statistik, nicht getestet.
+- Analyst-Upgrades (Talval, 22.000 Änderungen seit 2016): Median +0,9 % in 12 Monaten, Trefferquote 51 %.
+- Chen & Zimmermann / Jensen-Kelly-Pedersen: ~200 Anomalien seit 2006 in den oberen 90 % Median 7 bp/Monat brutto.
+Folgerung: Mit freien Daten (US-Aktien ab 2016) sind Kleinwerte-/Faktor-Effekte statistisch kaum prüfbar
+(Runde 95/98: ~50 Monate je Zeitraum). Entscheidend wäre eine längere, survivorship-freie Historie
+(z.B. Sharadar SF1/SEP ab 1998 oder Norgate) -- kostenpflichtig.
