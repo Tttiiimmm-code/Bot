@@ -2732,3 +2732,12 @@ typisches Muster eines Zufallsfunds.
 - Daru Finance (2026): ML-Filter über 420 verlierende Regeln -- besser als Zufall, aber netto ~0 (wie Runden 93-95).
 - Zarattini & Antonacci (2025), Branchen-Trendfolge: 2005-2024 mit 31 Sektor-ETFs 7,7 % p.a. vs SPY 10,0 %,
   Sharpe 0,61 vs 0,59, MaxDD 24 % vs 55 % -> senkt Verluste, keine Mehrrendite; nicht getestet.
+Ergebnis Runde 96 (Nachrichten 2016-01..2026-09 vollständig, 2.798 Nacht-Fenster; Ereignisse >= 3 Artikel im
+Universum je Jahr 4.949 (2016) bis 13.308 (2025); netto 20 bp je Round-Trip, Überrendite ggü. EW-Universum):
+- PRIMÄR (Reaktion >= +2 %, 5 Tage): P1 -26,6 bp (t -1,72), P2 -56,4 bp (t -4,16), unberührt -1,6 bp (t -0,02).
+- 1 Tag: -28,7 / -27,4 / -63,2 bp (t -3,10 / -3,08 / -3,40); 20 Tage: +36,9 / -98,4 / -218,3 bp.
+- Reaktion <= -2 % (Info): -32,0 / -39,2 / -26,3 bp; OHNE News, Reaktion >= +2 %: -31,3 / -41,5 / -48,1 bp
+  (brutto leicht negativ = Umkehr wie bei Chan); alle News-Ereignisse: -26,8 / -21,8 / -18,4 bp.
+- PRIMÄR je Jahr nur 2020 positiv (+10 bp).
+-> NICHT BESTANDEN. Keine Fortsetzung nach positiven Nachrichten; brutto eher leichte Umkehr. Nachrichten sind
+bei liquiden US-Aktien sofort eingepreist (passt zu Runde 92 und Lopez-Lira & Tang 2026).
