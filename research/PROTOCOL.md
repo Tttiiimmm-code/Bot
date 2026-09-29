@@ -2794,3 +2794,10 @@ Kosten: 3 bp je Round-Trip (Micro-WTI-Future MCL: 1 Tick + Kommission).
 Zeiträume: P1 2012-2019, P2 2020-2025-09-19 (Quelle ab 2021 öffentlich), unberührt 2025-09-22..2026-09.
 Bestehen (PRIMÄR long+short): Ø netto je Tag t >= 2 in P1 UND P2, Ø > 0 unberührt.
 Berichtet: nur long, nur short, Nicht-EIA-Tage (gleiche Regel, Info), Trefferquote, je Jahr.
+Ergebnis Runde 99 (Dukascopy WTI 2012-01..2026-09, 6,3 Mio. Minuten, 3.664 Tage, 639 EIA-Tage; netto 3 bp):
+- PRIMÄR EIA long+short: P1 -1,8 bp (t -0,54, 47 %), P2 -4,9 bp (t -1,21, 50 %), unberührt -13,8 bp (t -1,95).
+- nur long +1,9 / -7,5 / -15,9 bp; nur short -5,0 / -2,1 / -11,2 bp; Nicht-EIA-Tage -2,6 / -4,0 / -5,4 bp.
+- je Jahr uneinheitlich (-20,5 bis +13,6 bp).
+-> NICHT BESTANDEN. Keine Fortsetzung der Reaktion auf die EIA-Zahlen bis zum Settlement; Trefferquote ~50 %.
+Recherche-Notiz: Krohn et al. (JF 2024) Fixing-W-Muster = Runde 54 (nach 2018 umgekehrt); BCOM/GSCI-Januar-
+Rebalancing (Verkauf der Vorjahresgewinner) nur 1 Ereignis/Jahr und in der Presse breit angekündigt -> nicht getestet.
