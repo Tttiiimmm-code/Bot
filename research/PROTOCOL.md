@@ -2758,3 +2758,13 @@ gleiche Kosten.
 Zeiträume (Kauftag): P1 2017-01..2021-06, P2 2021-07..2025-09-19, unberührt 2025-09-22..2026-08.
 Bestehen: Überrendite netto ggü. EW-Universum t >= 2 in P1 UND P2, Ø > 0 unberührt.
 Berichtet: brutto, Umschlag, Titelzahl, Top-10 %/20 %-Varianten, je Jahr.
+Ergebnis Runde 98 (116 Monate, Ø 858 Titel im Klein-Universum, Top-20 % Ø 172 Titel, Umschlag 0,31/Monat;
+netto 75 bp je Seite; EW-Klein-Universum P1 +14,8 % p.a., P2 -11,5 % p.a., unberührt -7,4 % p.a.):
+- PRIMÄR Top-20/40 %: P1 -42,1 bp/Monat (t -1,25), P2 +99,9 bp (t 2,76), unberührt +147,7 bp (t 1,60, n 11).
+- Top-10/20 %: -28,1 / +76,2 (t 2,02) / +94,3 bp.
+- je Jahr: 2017 -7,2 %, 2018 +11,2 %, 2019 -5,8 %, 2020 -13,8 %, 2021 +1,7 %, 2022 +26,7 %, 2023 +2,5 %,
+  2024 +6,6 %, 2025 +10,1 %, 2026 +15,1 %.
+-> NICHT BESTANDEN (P1 negativ). Klassisches Regime-Muster: Value/Qualität verlor in der Spekulationsphase
+2017-2021 und gewann ab 2022 deutlich. Absolut in P2 nur ~+1,8 % p.a. (Universum fiel), unberührt ~+11 % p.a.
+Kein stabiler Vorteil, aber der stärkste Kleinwerte-Befund bisher; allenfalls als Vorwärtstest-Kandidat
+(Gefahr: die Auswahl nach dem jüngsten Regime wäre nachträglich).

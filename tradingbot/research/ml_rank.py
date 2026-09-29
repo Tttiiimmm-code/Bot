@@ -43,7 +43,7 @@ FEATURES = [
 # ---------------------------------------------------------------- Daten
 
 def load_wide(base: Path = UNIVERSE_DIR, min_dollar_volume: float = MIN_DOLLAR_VOLUME,
-              until: pd.Timestamp | None = None) -> dict[str, pd.DataFrame]:
+              until: pd.Timestamp | None = None, min_price: float = MIN_PRICE) -> dict[str, pd.DataFrame]:
     """Wide-Matrizen open/high/low/close/volume (Index: Datum, Spalten: Symbole).
     Symbole ohne einen einzigen Tag mit Schluss > 5 USD und Ø-Dollarvolumen >= Grenze
     werden schon beim Laden verworfen (Speicher)."""
@@ -57,7 +57,7 @@ def load_wide(base: Path = UNIVERSE_DIR, min_dollar_volume: float = MIN_DOLLAR_V
         d.index = pd.MultiIndex.from_arrays([d.index.get_level_values("symbol"), ts], names=["symbol", "date"])
         d = d[~d.index.duplicated()]
         dv = (d["close"] * d["volume"]).groupby(level="symbol").transform(lambda s: s.rolling(20).mean())
-        ok = (dv >= min_dollar_volume) & (d["close"] > MIN_PRICE)
+        ok = (dv >= min_dollar_volume) & (d["close"] > min_price)
         keep = ok.groupby(level="symbol").any()
         d = d[d.index.get_level_values("symbol").isin(keep[keep].index)]
         if d.empty:
