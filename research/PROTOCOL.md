@@ -2816,3 +2816,9 @@ Zeiträume: P1 2016-01..2018-12 (vor dem Backtest der Quelle), P2 2019-01..2025-
 jüngst 2025-09-22..2026-09 (ebenfalls im Quellen-Zeitraum, nur berichtet).
 Bestehen (PRIMÄR QQQ long+short): Ø netto je Tag t >= 2 in P1 UND Ø > 0 in P2.
 Berichtet: SPY, IWM, DIA; nur long; nur short; Trefferquote; Profit-Faktor; je Jahr.
+Ergebnis Runde 100 (netto 2 bp; Ø je Tag, t, Treffer, Profit-Faktor):
+- PRIMÄR QQQ: P1 +1,0 bp (t 0,33, 50 %, PF 1,04), P2 +0,7 bp (t 0,24, 50 %, PF 1,02), jüngst -1,6 bp (PF 0,95).
+- SPY +0,9 / -0,3 / -2,8 bp; IWM +0,1 / -4,7 / -6,5; DIA -2,4 / -5,0 (t -2,41) / -6,6.
+- QQQ nur long -0,3 / +4,2 / -1,6 bp; nur short +2,9 / -4,0 / -1,6 bp.
+-> NICHT BESTANDEN. Das Richtungssignal ist ein Münzwurf (Treffer 50 %). Der behauptete Profit-Faktor 1,29
+kann nur aus dem nicht offengelegten Trailing-Stop stammen (bzw. dessen Optimierung auf denselben Daten).
