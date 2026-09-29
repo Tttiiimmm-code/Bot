@@ -2741,3 +2741,20 @@ Universum je Jahr 4.949 (2016) bis 13.308 (2025); netto 20 bp je Round-Trip, Üb
 - PRIMÄR je Jahr nur 2020 positiv (+10 bp).
 -> NICHT BESTANDEN. Keine Fortsetzung nach positiven Nachrichten; brutto eher leichte Umkehr. Nachrichten sind
 bei liquiden US-Aktien sofort eingepreist (passt zu Runde 92 und Lopez-Lira & Tang 2026).
+
+# Runde 98: Value+Qualität bei kleinen, illiquiden US-Aktien (Kapazitätsvorteil Privatanleger) (2026-09-29)
+
+Begründung: Anomalien sind in Kleinwerten am stärksten (Piotroski 2000: F-Score-Vorteil v.a. in billigen
+Micro Caps ohne Analysten), dort können große Fonds nicht investieren. Runden 93-95 nutzten nur Titel mit
+>= 5 Mio. USD Tagesumsatz; der Mix ohne ML aus Runde 95 war dort in allen Zeiträumen positiv (t 1,12/0,64).
+Universum je Monatssignal (nur Daten bis Schluss t): Schluss > 2 USD, Ø-Dollarvolumen 20 T zwischen 0,1 und
+5 Mio. USD, >= 252 Tage Historie, Eigenkapital > 0 und Buch/Markt vorhanden.
+Signal (fest, kein ML): Mix aus Runde 95 = Ø-Perzentil (im Universum) aus Buch/Markt, Gewinn/Markt,
+Cashflow/Markt, Bruttogewinn/Vermögen, ROA sowie invertiert Vermögenswachstum, Aktienausgabe, Accruals;
+Fundamentaldaten und Verfügbarkeitsregeln exakt wie Runde 95.
+Portfolio: Top-20 % kaufen, halten solange Top-40 %; gleichgewichtet; Monatstakt Open->Open wie Runde 94.
+Kosten: 75 bp je Seite auf den Umschlag (Spread kleiner Werte). Vergleich: gleichgewichtetes Universum,
+gleiche Kosten.
+Zeiträume (Kauftag): P1 2017-01..2021-06, P2 2021-07..2025-09-19, unberührt 2025-09-22..2026-08.
+Bestehen: Überrendite netto ggü. EW-Universum t >= 2 in P1 UND P2, Ø > 0 unberührt.
+Berichtet: brutto, Umschlag, Titelzahl, Top-10 %/20 %-Varianten, je Jahr.
