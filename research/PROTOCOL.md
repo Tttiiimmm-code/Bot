@@ -2850,3 +2850,12 @@ Rendite je Trade in % des Kurses (ohne Hebel). 2 Instrumente -> Bonferroni.
 Zeiträume: P1 2008-2014, P2 2015-2020, Quellen-Zeitraum 2021-2026-09 (berichtet).
 Bestehen je Instrument: Ø netto je Trade t >= 2,24 in P1 UND P2.
 Berichtet: brutto, Trefferquote, Profit-Faktor, Anteil Ziel/Stop/Zeitausstieg, je Jahr.
+Ergebnis Runde 101 (echte Spreads + 0,4 bp; n Trades, Ø netto, t, PF):
+- EUR/USD: P1 n 1.314, +0,2 bp (t 0,37, PF 1,02); P2 n 1.516, +0,2 bp (t 0,60, PF 1,04); Quelle 2021-2026
+  n 1.476, +0,1 bp (PF 1,01). Brutto überall +0,8 bp. Treffer ~44 %, Ziel/Stop/Zeit 39/54/8 %.
+- Gold: P1 -1,8 bp (t -1,81, PF 0,89); P2 0,0 bp (PF 1,00); Quelle -1,2 bp (PF 0,93).
+-> NICHT BESTANDEN. Mit festen Parametern flach, auch im eigenen Zeitraum der Quelle; die +630 %/+431 % können
+nur aus der Auswahl der besten Parameter (plus Hebel/Zinseszins) stammen.
+Recherche-Notiz YouTube: IRONCLAD TRADING "Backtested Trading Guru's Strategy" (121 Tsd.): SMC-Strategien
+von Trading Geek -72 %, Lewis Kelly -86 %, JIFX +15 % in 10 Jahren (5 FX-Paare, Dukascopy-Ticks, beste Werte
+für alle offenen Parameter); die "+950 %" sind das Maximum aus 8.700 Kombinationen (Auswahlfehler).
