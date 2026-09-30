@@ -651,3 +651,21 @@ def test_elapsed_session_fraction_follows_intraday_volume_profile(hour, minute, 
     day = date(2026, 9, 22)
     now = datetime.combine(day, time(hour, minute), tzinfo=et)
     assert elapsed_session_fraction(now, FakeCalendarEntry(day)) == pytest.approx(expected)
+
+
+def test_liquidity_filter_and_actives_by_trades():
+    scanner = make_scanner()
+    gainers = [FakeMover("THIN", percent_change=25.0, price=5.0)]           # Ø Umsatz 0,4 Mio $
+    by_request = {"volume": [], "trades": [FakeActiveStock("LIQ")]}
+    bars = make_multi_symbol_bars({
+        "THIN": [(4.0, 100_000)] * 30 + [(5.0, 600_000)],
+        "LIQ": [(100.0, 3_000_000)] * 30 + [(103.0, 9_000_000)],            # Ø Umsatz 300 Mio $
+    })
+    install_fakes(scanner, gainers, [], bars)
+    scanner.screener_client.get_most_actives = lambda request: FakeActivesResponse(by_request[request.by.value])
+
+    criteria = ScanCriteria(min_price=1.0, max_price=500.0, min_percent_change=2.0, min_relative_volume=1.2,
+                            min_avg_dollar_volume=200e6, include_actives_by_trades=True)
+    assert [c.symbol for c in scanner.scan(criteria, reference_time=TEST_NOW)] == ["LIQ"]
+    # Standard (Momentum-Bot): kein Umsatzfilter, keine Trades-Liste
+    assert [c.symbol for c in scanner.scan(ScanCriteria(min_relative_volume=1.2), reference_time=TEST_NOW)] == ["THIN"]

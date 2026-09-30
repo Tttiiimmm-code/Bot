@@ -141,7 +141,8 @@ with tab_trade:
     left, right = st.columns([1, 2])
     with left:
         st.subheader("1. Kandidaten")
-        st.caption("Aktien, die heute stark steigen und viel gehandelt werden.")
+        st.caption("Große, viel gehandelte Aktien (Ø Umsatz über 200 Mio. $ am Tag), die heute mindestens 2 % "
+                   "im Plus sind und mehr Volumen als üblich haben.")
         if st.button("Kandidaten suchen"):
             from types import SimpleNamespace
 
@@ -152,7 +153,11 @@ with tab_trade:
             with st.spinner("Suche läuft ..."):
                 try:
                     found = Scanner(SimpleNamespace(api_key=key, secret_key=secret, paper=True)).scan(
-                        ScanCriteria(min_price=2.0, max_price=200.0, min_percent_change=5.0, min_relative_volume=2.0))
+                        # Nur viel gehandelte Werte: bei kleinen Aktien sieht der kostenlose Echtzeit-Feed (IEX)
+                        # kaum Handel -- Chart lückenhaft, Kurs veraltet (siehe Copilot._price_problems).
+                        ScanCriteria(min_price=10.0, max_price=5000.0, min_percent_change=2.0, min_relative_volume=1.2,
+                                     top_movers=50, top_actives=100, min_avg_dollar_volume=200e6,
+                                     include_actives_by_trades=True))
                     st.session_state["scan"] = pd.DataFrame(
                         [{"Symbol": c.symbol, "Kurs $": round(c.price, 2), "Heute %": round(c.percent_change, 1),
                           "Rel. Volumen": round(c.relative_volume, 1)} for c in found])

@@ -152,6 +152,11 @@ class ScanCriteria:
     news_lookback_hours: int = 24
     top_movers: int = 30
     top_actives: int = 30
+    # Für den Copilot: nur gut handelbare Werte (Ø Tagesumsatz in $ über die Lookback-Tage) und
+    # zusätzlich die meistgehandelten Aktien nach ANZAHL der Trades (große, liquide Werte) --
+    # die Standardwerte lassen den Momentum-Scanner unverändert.
+    min_avg_dollar_volume: float = 0.0
+    include_actives_by_trades: bool = False
 
 
 def _validate_criteria(c: ScanCriteria) -> None:
@@ -218,6 +223,12 @@ class Scanner:
         actives = self.screener_client.get_most_actives(
             MostActivesRequest(top=criteria.top_actives, by=MostActivesBy.VOLUME)
         )
+        active_lists = [actives.most_actives]
+        if criteria.include_actives_by_trades:
+            by_trades = self.screener_client.get_most_actives(
+                MostActivesRequest(top=criteria.top_actives, by=MostActivesBy.TRADES)
+            )
+            active_lists.append(by_trades.most_actives)
         # Der spätere der beiden last_updated-Werte: movers/actives sind
         # zwei unabhängige, nacheinander ausgeführte Aufrufe mit je eigenem
         # Zeitstempel -- der spätere ist die aktuellere bekannte Information
@@ -228,7 +239,7 @@ class Scanner:
         session_fraction = elapsed_session_fraction(now, session)
 
         gainer_by_symbol = {g.symbol: g for g in movers.gainers}
-        active_symbols = {a.symbol for a in actives.most_actives}
+        active_symbols = {a.symbol for lst in active_lists for a in lst}
         all_symbols = sorted(set(gainer_by_symbol) | active_symbols)
         if not all_symbols:
             return []
@@ -287,6 +298,10 @@ class Scanner:
             avg_volume = float(history["volume"].mean())
             if not (avg_volume > 0):
                 continue
+            if criteria.min_avg_dollar_volume > 0:
+                avg_dollar_volume = float((history["close"] * history["volume"]).mean())
+                if avg_dollar_volume < criteria.min_avg_dollar_volume:
+                    continue
             # Während der Sitzung ist das bisherige Tagesvolumen nur ein
             # TEIL eines vollen Handelstags -- ein direkter Vergleich mit
             # dem (vollständigen) historischen Tagesdurchschnitt würde das
