@@ -680,6 +680,72 @@ def cmd_overnight_run(env_file: str, dry_run: bool, allow_live_trading: bool):
     bot.run_forever()
 
 
+def cmd_copilot(args):
+    """Trading-Copilot (tradingbot/copilot.py) auf einem EIGENEN Paper-Konto."""
+    import time as _time
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    from alpaca.data.historical import StockHistoricalDataClient
+    from alpaca.trading.client import TradingClient
+
+    from tradingbot.copilot import Copilot, CopilotRules
+    from tradingbot.report import read_account_env
+
+    if not Path(args.env_file).exists():
+        raise RuntimeError(
+            f"{args.env_file} nicht gefunden. Der Copilot braucht ein EIGENES Alpaca-Paper-Konto "
+            "(der Momentum-Bot stellt fremde Positionen glatt): ALPACA_API_KEY, ALPACA_SECRET_KEY, "
+            "ALPACA_PAPER=true dort eintragen."
+        )
+    key, secret, paper = read_account_env(args.env_file)
+    if not paper:
+        raise RuntimeError("Der Copilot ist nur für Paper-Trading gedacht (ALPACA_PAPER=true setzen).")
+    rules = CopilotRules(risk_per_trade=args.risk, max_daily_loss=args.max_daily_loss,
+                         max_trades_per_day=args.max_trades)
+    cp = Copilot(TradingClient(key, secret, paper=True), StockHistoricalDataClient(key, secret), rules,
+                 Path(args.journal))
+    now = datetime.now(timezone.utc)
+    sub = args.copilot_command
+    if sub == "scan":
+        from types import SimpleNamespace
+
+        from tradingbot.scanner import ScanCriteria, Scanner
+
+        criteria = ScanCriteria(min_price=args.min_price, max_price=args.max_price,
+                                min_percent_change=args.min_change, min_relative_volume=args.min_relvol)
+        found = Scanner(SimpleNamespace(api_key=key, secret_key=secret, paper=True)).scan(criteria)
+        if not found:
+            print("Keine Kandidaten mit diesen Kriterien.")
+        for c in found:
+            print(f"{c.symbol:6s} {c.price:8.2f} $ {c.percent_change:+7.1f} %  RelVol {c.relative_volume:5.1f}x")
+    elif sub == "buy":
+        print(cp.buy(args.symbol, args.stop, args.setup, now, target=args.target, note=args.note))
+    elif sub == "status":
+        print(cp.status(now))
+    elif sub == "close":
+        print(cp.close(None if args.symbol.lower() == "all" else args.symbol))
+    elif sub == "watch":
+        print("Copilot-Überwachung läuft (Strg+C beendet): Tagesverlustgrenze und Glattstellen 15:55 ET.")
+        last_status = 0.0
+        while True:
+            try:
+                now = datetime.now(timezone.utc)
+                msg = cp.watch_step(now)
+                if msg:
+                    print(msg)
+                if _time.time() - last_status > 300:
+                    print(cp.status(now))
+                    last_status = _time.time()
+            except KeyboardInterrupt:
+                break
+            except Exception as e:  # Netzfehler o.ä.: weiter überwachen
+                print(f"Fehler in der Überwachung (nächster Versuch in 20 s): {e}")
+            _time.sleep(20)
+    elif sub == "report":
+        print(cp.report(now, args.days))
+
+
 def cmd_momentum_report(config: Config, days: int):
     from datetime import datetime, timedelta, timezone
     from zoneinfo import ZoneInfo
@@ -1582,6 +1648,37 @@ def main():
                                   help="Erlaubt Echtgeld, falls ALPACA_PAPER=false (nicht empfohlen).")
     subparsers.add_parser("overnight-report", help="Auswertung von overnight_trades.csv.")
 
+    copilot_parser = subparsers.add_parser(
+        "copilot",
+        help="Trading-Copilot (eigenes Paper-Konto): du entscheidest, er erzwingt Regeln, setzt den Stop "
+        "bei Alpaca und führt ein Journal. Unterbefehle: scan, buy, status, close, watch, report.",
+    )
+    copilot_parser.add_argument("--env-file", default="copilot.env",
+                                help="Keys des eigenen Copilot-Kontos (Standard: copilot.env).")
+    copilot_parser.add_argument("--journal", default="copilot_journal.jsonl", help="Journal-Datei.")
+    copilot_parser.add_argument("--risk", type=float, default=50.0, help="$-Risiko je Trade = 1 R (Standard 50).")
+    copilot_parser.add_argument("--max-daily-loss", type=float, default=150.0,
+                                help="Tagesverlustgrenze in $ (Standard 150).")
+    copilot_parser.add_argument("--max-trades", type=_positive_int, default=6, help="Einstiege pro Tag (Standard 6).")
+    copilot_sub = copilot_parser.add_subparsers(dest="copilot_command", required=True)
+    cp_scan = copilot_sub.add_parser("scan", help="Kandidaten (Aktien im Spiel) für den Nachmittag.")
+    cp_scan.add_argument("--min-change", type=float, default=5.0, help="Mindest-Tagesplus in %% (Standard 5).")
+    cp_scan.add_argument("--min-price", type=float, default=2.0)
+    cp_scan.add_argument("--max-price", type=float, default=200.0)
+    cp_scan.add_argument("--min-relvol", type=float, default=2.0, help="Mindest-Relativvolumen (Standard 2).")
+    cp_buy = copilot_sub.add_parser("buy", help="Kauf mit Stop bei Alpaca; Stückzahl aus dem Risiko.")
+    cp_buy.add_argument("symbol")
+    cp_buy.add_argument("--stop", type=float, required=True, help="Stop-Kurs (unter dem aktuellen Kurs).")
+    cp_buy.add_argument("--setup", required=True, help="Name des Setups, z.B. vwap-pullback, power-hour.")
+    cp_buy.add_argument("--target", type=float, default=None, help="Optionales Kursziel (Limit-Verkauf).")
+    cp_buy.add_argument("--note", default="", help="Warum dieser Trade? (fürs Journal)")
+    copilot_sub.add_parser("status", help="Offene Positionen, Tages-P&L, verbleibendes Verlustbudget.")
+    cp_close = copilot_sub.add_parser("close", help="Position schließen (Stop-Order wird storniert).")
+    cp_close.add_argument("symbol", help="Symbol oder 'all'.")
+    copilot_sub.add_parser("watch", help="Läuft im Hintergrund: stellt bei Tagesverlustgrenze und um 15:55 ET glatt.")
+    cp_report = copilot_sub.add_parser("report", help="Auswertung je Setup in R-Vielfachen.")
+    cp_report.add_argument("--days", type=_positive_int, default=90)
+
     forward_parser = subparsers.add_parser(
         "forward-run",
         help="Vorwärtstest ohne Broker: Nikkei-Nachteffekt und Gotobi (USD/JPY) aus Dukascopy-Minutendaten "
@@ -1638,6 +1735,13 @@ def main():
 
     # Der Overnight-Bot nutzt ein eigenes Konto und braucht die .env des
     # Momentum-Bots nicht -- daher vor Config.from_env() behandeln.
+    if args.command == "copilot":
+        try:
+            cmd_copilot(args)
+        except (RuntimeError, ValueError) as e:
+            print(f"Fehler: {e}", file=sys.stderr)
+            sys.exit(1)
+        return
     if args.command in ("overnight-run", "overnight-report"):
         try:
             if args.command == "overnight-run":

@@ -11,3 +11,4 @@ overnight_state.json
 overnight_trades.csv
 forward_trades.csv
 news_intel.csv
+copilot_journal.jsonl
