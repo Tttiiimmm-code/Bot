@@ -720,13 +720,15 @@ def cmd_copilot(args):
         for c in found:
             print(f"{c.symbol:6s} {c.price:8.2f} $ {c.percent_change:+7.1f} %  RelVol {c.relative_volume:5.1f}x")
     elif sub == "buy":
-        print(cp.buy(args.symbol, args.stop, args.setup, now, target=args.target, note=args.note))
+        print(cp.buy(args.symbol, args.stop, args.setup, now, target=args.target, note=args.note,
+                     breakeven=args.breakeven))
     elif sub == "status":
         print(cp.status(now))
     elif sub == "close":
         print(cp.close(None if args.symbol.lower() == "all" else args.symbol))
     elif sub == "watch":
-        print("Copilot-Überwachung läuft (Strg+C beendet): Tagesverlustgrenze und Glattstellen 15:55 ET.")
+        print("Copilot-Überwachung läuft (Strg+C beendet): Tagesverlustgrenze, Glattstellen 15:55 ET, "
+              "Stop auf Einstand bei +1 R (wenn beim Kauf gewählt).")
         last_status = 0.0
         while True:
             try:
@@ -1672,6 +1674,8 @@ def main():
     cp_buy.add_argument("--setup", required=True, help="Name des Setups, z.B. vwap-pullback, power-hour.")
     cp_buy.add_argument("--target", type=float, default=None, help="Optionales Kursziel (Limit-Verkauf).")
     cp_buy.add_argument("--note", default="", help="Warum dieser Trade? (fürs Journal)")
+    cp_buy.add_argument("--breakeven", action="store_true",
+                        help="Stop bei +1 R auf den Einstiegskurs nachziehen (erledigt `copilot watch`).")
     copilot_sub.add_parser("status", help="Offene Positionen, Tages-P&L, verbleibendes Verlustbudget.")
     cp_close = copilot_sub.add_parser("close", help="Position schließen (Stop-Order wird storniert).")
     cp_close.add_argument("symbol", help="Symbol oder 'all'.")

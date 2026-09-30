@@ -12,6 +12,7 @@ from tradingbot.copilot import (
     CopilotRules,
     DayState,
     JournalEntry,
+    append_journal,
     attach_setups,
     check_entry,
     day_state,
@@ -288,3 +289,60 @@ def test_stale_iex_price_blocks_entry(tmp_path):
     cp = Copilot(FakeTrading(), StaleData(25.0), RULES, tmp_path / "j.jsonl")
     assert any("veraltet" in p for p in cp.preview("XYZ", 24.0, ny(12, 0))["problems"])
     assert cp.preview("XYZ", 24.0, ny(11, 50) + timedelta(minutes=2))["problems"] == []
+
+
+class BreakevenTrading(FakeTrading):
+    """Offene OTO-Order mit Stop-Bein; replace_order_by_id verschiebt den Stop."""
+
+    def __init__(self, current_price):
+        super().__init__(positions=[SimpleNamespace(symbol="XYZ", qty="50", avg_entry_price="25.00",
+                                                    current_price=str(current_price), unrealized_pl="0")])
+        self.stop_leg = SimpleNamespace(id="leg1", side=SimpleNamespace(value="sell"), type=SimpleNamespace(value="stop"),
+                                        status=SimpleNamespace(value="new"), stop_price="24.00")
+        self.replaced = []
+
+    def get_orders(self, filter=None):
+        if filter.status.value == "open":
+            parent = SimpleNamespace(id="p1", side=SimpleNamespace(value="buy"), type=SimpleNamespace(value="market"),
+                                     status=SimpleNamespace(value="filled"), legs=[self.stop_leg])
+            return [parent]
+        return super().get_orders(filter)
+
+    def replace_order_by_id(self, order_id, req):
+        self.replaced.append((order_id, req.stop_price))
+        self.stop_leg.stop_price = str(req.stop_price)
+
+
+def _journal_with(tmp_path, breakeven):
+    path = tmp_path / "j.jsonl"
+    append_journal(path, JournalEntry(time=ny(12, 0).isoformat(), symbol="XYZ", setup="vwap", shares=50, price=25.0,
+                                      stop=24.0, target=None, risk=50.0, breakeven=breakeven))
+    return path
+
+
+def test_breakeven_moves_stop_to_entry_at_plus_one_r(tmp_path):
+    trading = BreakevenTrading(current_price=26.05)                      # +1 R = 26,00
+    cp = Copilot(trading, FakeData(26.05), RULES, _journal_with(tmp_path, True))
+    msg = cp.watch_step(ny(12, 30))
+    assert "Einstand 25.00" in msg and trading.replaced == [("leg1", 25.0)]
+    assert cp.watch_step(ny(12, 31)) is None and len(trading.replaced) == 1   # nur einmal
+
+
+def test_breakeven_waits_below_one_r_and_respects_choice(tmp_path):
+    trading = BreakevenTrading(current_price=25.90)
+    cp = Copilot(trading, FakeData(25.9), RULES, _journal_with(tmp_path, True))
+    assert cp.watch_step(ny(12, 30)) is None and trading.replaced == []
+    # ohne Häkchen beim Kauf: auch bei +2 R bleibt der Stop, wo er ist
+    other = tmp_path / "ohne"
+    other.mkdir()
+    trading = BreakevenTrading(current_price=27.00)
+    cp = Copilot(trading, FakeData(27.0), RULES, _journal_with(other, False))
+    assert cp.watch_step(ny(12, 30)) is None and trading.replaced == []
+
+
+def test_old_journal_lines_without_breakeven_still_load(tmp_path):
+    path = tmp_path / "j.jsonl"
+    path.write_text('{"time": "2026-10-01T16:00:00+00:00", "symbol": "A", "setup": "x", "shares": 1, "price": 10.0, '
+                    '"stop": 9.0, "target": null, "risk": 1.0, "note": "", "order_id": "o"}' + chr(10), encoding="utf-8")
+    [e] = load_journal(path)
+    assert e.breakeven is False

@@ -51,8 +51,9 @@ class _FakeCopilot:
         return {"symbol": symbol, "price": 10.4, "shares": 10, "risk": 10 * (10.4 - stop), "value": 104.0,
                 "reward_r": None, "problems": []}
 
-    def buy(self, symbol, stop, setup, now, target=None, note=""):
+    def buy(self, symbol, stop, setup, now, target=None, note="", breakeven=False):
         self.bought.append((symbol, stop))
+        self.breakeven = breakeven
         return f"GEKAUFT (Market): {symbol}"
 
     def _closed_trades(self, now, days=1):

@@ -262,6 +262,10 @@ with tab_trade:
             target = st.number_input("Kursziel", min_value=0.0, key=target_key, step=0.01,
                                      format="%.2f") if use_target else None
             note = st.text_area("Warum dieser Trade?", placeholder="z.B. Rücksetzer auf VWAP, Volumen steigt wieder")
+            breakeven = st.checkbox("Stop auf Einstand nachziehen, sobald +1 R erreicht",
+                                    help="Liegt der Trade 1 R im Plus, setzt das Fenster 'Copilot-Sicherheit' den Stop "
+                                         "auf deinen Kaufkurs. Aus einem Gewinner wird dann kein Verlierer mehr -- "
+                                         "dafür wirst du öfter bei +/-0 ausgestoppt.")
         with c:
             try:
                 pv = cp.preview(symbol, stop, now(), target)
@@ -281,7 +285,7 @@ with tab_trade:
         blocked = not pv or bool(pv["problems"]) or pv["shares"] <= 0 or not confirmed
         if st.button("Kaufen", type="primary", disabled=blocked):
             try:
-                msg = cp.buy(symbol, stop, setup, now(), target=target, note=note)
+                msg = cp.buy(symbol, stop, setup, now(), target=target, note=note, breakeven=breakeven)
             except Exception as e:
                 msg = f"Alpaca hat abgelehnt oder ist nicht erreichbar: {e}"
             # Häkchen zurücksetzen: ein zweiter Klick darf nicht versehentlich ein zweites Mal kaufen

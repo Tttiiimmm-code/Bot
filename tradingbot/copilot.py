@@ -60,6 +60,7 @@ class JournalEntry:
     risk: float      # shares * (price - stop)
     note: str = ""
     order_id: str = ""
+    breakeven: bool = False  # Stop bei +1 R auf den Einstiegskurs nachziehen (macht `watch`)
 
     @property
     def dt(self) -> datetime:
@@ -262,9 +263,10 @@ class Copilot:
         return []
 
     def buy(self, symbol: str, stop: float, setup: str, now: datetime, target: float | None = None,
-            note: str = "", risk: float | None = None) -> str:
+            note: str = "", risk: float | None = None, breakeven: bool = False) -> str:
         """Prüft die Regeln, rechnet die Stückzahl und sendet eine Market-Order mit Stop (und optional
-        Ziel) bei Alpaca. Gibt eine Meldung zurück; bei Regelverstoß wird NICHT gehandelt."""
+        Ziel) bei Alpaca. Gibt eine Meldung zurück; bei Regelverstoß wird NICHT gehandelt.
+        breakeven: `watch` zieht den Stop auf den Einstiegskurs nach, sobald der Trade +1 R im Plus ist."""
         from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
         from alpaca.trading.requests import MarketOrderRequest, StopLossRequest, TakeProfitRequest
 
@@ -292,9 +294,11 @@ class Copilot:
         planned_risk = shares * (price - stop)
         append_journal(self.journal_path, JournalEntry(
             time=now.astimezone(ZoneInfo("UTC")).isoformat(), symbol=symbol, setup=setup, shares=shares,
-            price=price, stop=stop, target=target, risk=round(planned_risk, 2), note=note, order_id=str(order.id)))
+            price=price, stop=stop, target=target, risk=round(planned_risk, 2), note=note, order_id=str(order.id),
+            breakeven=breakeven))
         return (f"GEKAUFT (Market): {symbol} {shares} Stück @ ~{price:.2f}, Stop {stop:.2f} bei Alpaca"
                 + (f", Ziel {target:.2f}" if target is not None else "")
+                + (", Stop wandert bei +1 R auf Einstand" if breakeven else "")
                 + f" -- Risiko {planned_risk:.2f} $ = 1 R, Setup '{setup}'")
 
     def close(self, symbol: str | None = None) -> str:
@@ -429,7 +433,53 @@ class Copilot:
         if total <= -self.rules.max_daily_loss:
             self.close(None)
             return f"Tagesverlust {total:.2f} $ über der Grenze: alles glattgestellt."
+        moved = self.breakeven_step(now, positions)
+        return "; ".join(moved) if moved else None
+
+    def _stop_order(self, symbol: str):
+        """Offene Stop-Verkaufsorder des Symbols (auch als Bein einer OTO/Bracket-Order) oder None."""
+        from alpaca.trading.enums import QueryOrderStatus
+        from alpaca.trading.requests import GetOrdersRequest
+
+        orders = self.trading_client.get_orders(filter=GetOrdersRequest(
+            status=QueryOrderStatus.OPEN, symbols=[symbol], nested=True))
+        for o in orders:
+            for cand in [o, *(getattr(o, "legs", None) or [])]:
+                if (getattr(cand.side, "value", cand.side) == "sell"
+                        and getattr(cand.type, "value", cand.type) == "stop"
+                        and getattr(cand.status, "value", cand.status) not in ("filled", "canceled", "expired",
+                                                                                "replaced", "rejected")):
+                    return cand
         return None
+
+    def breakeven_step(self, now: datetime, positions) -> list[str]:
+        """Für heutige Einstiege mit breakeven=True: sobald der Kurs Einstieg + 1 R (geplanter Abstand
+        Kurs-Stop je Stück) erreicht, Stop bei Alpaca auf den Einstiegskurs setzen. Idempotent: liegt der
+        Stop schon auf/über dem Einstieg, passiert nichts."""
+        from alpaca.trading.requests import ReplaceOrderRequest
+
+        today = now.astimezone(NY).date()
+        latest: dict[str, JournalEntry] = {}
+        for e in load_journal(self.journal_path):
+            if e.dt.astimezone(NY).date() == today:
+                latest[e.symbol] = e
+        messages = []
+        for p in positions:
+            e = latest.get(p.symbol)
+            if e is None or not e.breakeven or e.price <= e.stop:
+                continue
+            entry = float(p.avg_entry_price)
+            one_r = e.price - e.stop
+            if float(p.current_price) < entry + one_r:
+                continue
+            new_stop = _round_price(entry)
+            order = self._stop_order(p.symbol)
+            if order is None or float(order.stop_price) >= new_stop - 1e-9:
+                continue
+            self.trading_client.replace_order_by_id(order.id, ReplaceOrderRequest(stop_price=new_stop))
+            messages.append(f"{p.symbol}: +1 R erreicht -- Stop von {float(order.stop_price):.2f} auf Einstand "
+                            f"{new_stop:.2f} nachgezogen.")
+        return messages
 
 
 # ------------------------------------------------------------ Helfer für die Oberfläche
