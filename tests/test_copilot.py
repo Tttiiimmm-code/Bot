@@ -241,3 +241,50 @@ def test_preview_computes_size_and_reports_problems_without_ordering(tmp_path):
     assert ok["problems"] == [] and trading.submitted == []
     bad = cp.preview("XYZ", 26.0, ny(12, 0))
     assert bad["shares"] == 0 and any("unter dem Kurs" in p for p in bad["problems"])
+
+
+class BarsData:
+    """SIP: lückenlose Kerzen mit viel Volumen; IEX: wenige Kerzen mit wenig Volumen."""
+
+    def __init__(self, sip, iex):
+        self.frames = {"sip": sip, "iex": iex}
+
+    def get_stock_bars(self, req):
+        import pandas as pd
+        df = self.frames[req.feed.value]
+        # alpaca-py wandelt start/end in UTC ohne Zeitzone um
+        start, end = (pd.Timestamp(t).tz_localize("UTC") if pd.Timestamp(t).tzinfo is None else pd.Timestamp(t)
+                      for t in (req.start, req.end))
+        df = df[(df.index >= start) & (df.index < end)]
+        df = df.copy()
+        df.index = pd.MultiIndex.from_product([["XYZ"], df.index], names=["symbol", "timestamp"])
+        return SimpleNamespace(df=df)
+
+
+def _frame(times, volume):
+    import pandas as pd
+    return pd.DataFrame({"open": 10.0, "high": 10.5, "low": 9.5, "close": 10.0, "volume": volume},
+                        index=pd.DatetimeIndex(times))
+
+
+def test_today_bars_uses_full_sip_until_delay_then_iex():
+    sip_times = [ny(9, 30 + 5 * i) for i in range(6)]            # 9:30 .. 9:55
+    iex_times = [ny(9, 35), ny(9, 50), ny(9, 55)]
+    cp = Copilot(FakeTrading(), BarsData(_frame(sip_times, 10_000), _frame(iex_times, 20)), RULES, None)
+    bars = cp.today_bars("xyz", ny(10, 1))                        # SIP bis 9:45 vollständig
+    assert list(bars.index) == [ny(9, 30), ny(9, 35), ny(9, 40), ny(9, 50), ny(9, 55)]
+    assert list(bars["volume"]) == [10_000, 10_000, 10_000, 20, 20]
+    assert bars.attrs["live_from"] == ny(9, 45)
+    assert bars.attrs["iex_share"] == pytest.approx(20 / 30_000)
+
+
+def test_stale_iex_price_blocks_entry(tmp_path):
+    from datetime import timedelta
+
+    class StaleData(FakeData):
+        def get_stock_latest_trade(self, req):
+            return {req.symbol_or_symbols: SimpleNamespace(price=self.price, timestamp=ny(11, 50))}
+
+    cp = Copilot(FakeTrading(), StaleData(25.0), RULES, tmp_path / "j.jsonl")
+    assert any("veraltet" in p for p in cp.preview("XYZ", 24.0, ny(12, 0))["problems"])
+    assert cp.preview("XYZ", 24.0, ny(11, 50) + timedelta(minutes=2))["problems"] == []

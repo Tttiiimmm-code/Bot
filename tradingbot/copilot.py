@@ -28,6 +28,10 @@ BERLIN = ZoneInfo("Europe/Berlin")
 # relativ zum tatsächlichen Börsenschluss (Alpaca-Uhr), gilt zusätzlich zu den festen ET-Zeiten
 ENTRY_CUTOFF_BEFORE_CLOSE_MIN = 15
 FLATTEN_BEFORE_CLOSE_MIN = 5
+# Kostenloser Alpaca-Zugang: Echtzeit nur von IEX (bei kleinen Werten oft < 1 % des Handels),
+# vollständige SIP-Daten erst nach 15 Minuten.
+SIP_DELAY = timedelta(minutes=16)
+MAX_PRICE_AGE = timedelta(minutes=3)
 
 
 @dataclass(frozen=True)
@@ -208,13 +212,26 @@ class Copilot:
         self.rules = rules
         self.journal_path = journal_path
 
-    def latest_price(self, symbol: str) -> float:
+    def latest_trade(self, symbol: str) -> tuple[float, datetime | None]:
+        """Letzter IEX-Trade: (Kurs, Zeitpunkt)."""
         from alpaca.data.enums import DataFeed
         from alpaca.data.requests import StockLatestTradeRequest
 
         res = self.data_client.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols=symbol,
                                                                                 feed=DataFeed.IEX))
-        return float(res[symbol].price)
+        return float(res[symbol].price), getattr(res[symbol], "timestamp", None)
+
+    def latest_price(self, symbol: str) -> float:
+        return self.latest_trade(symbol)[0]
+
+    def _price_problems(self, traded_at: datetime | None, now: datetime) -> list[str]:
+        """Bei dünn gehandelten Werten ist der letzte IEX-Trade oft Minuten alt -- dann stimmen
+        Stückzahl und Risiko nicht (die Market-Order wird zum echten, evtl. ganz anderen Kurs gefüllt)."""
+        if traded_at is None or now - traded_at <= MAX_PRICE_AGE:
+            return []
+        minutes = (now - traded_at).total_seconds() / 60
+        return [f"Kurs veraltet: letzter IEX-Trade vor {minutes:.0f} Min. -- IEX sieht diese Aktie kaum, "
+                "Stückzahl und Risiko wären ungenau. Lieber eine meistgehandelte Aktie wählen."]
 
     def _closed_trades(self, now: datetime, days: int = 1) -> tuple[list, list]:
         from tradingbot.report import fetch_closed_orders, match_trades
@@ -254,8 +271,9 @@ class Copilot:
         symbol = symbol.upper()
         stop = _round_price(stop)
         target = _round_price(target) if target is not None else None
-        price = self.latest_price(symbol)
-        problems = self.market_problems(now) + check_entry(self.rules, self.state(now), now, symbol, price, stop)
+        price, traded_at = self.latest_trade(symbol)
+        problems = (self.market_problems(now) + self._price_problems(traded_at, now)
+                    + check_entry(self.rules, self.state(now), now, symbol, price, stop))
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         if problems:
@@ -327,8 +345,9 @@ class Copilot:
         symbol = symbol.upper()
         stop = _round_price(stop)
         target = _round_price(target) if target is not None else None
-        price = self.latest_price(symbol)
-        problems = self.market_problems(now) + check_entry(self.rules, self.state(now), now, symbol, price, stop)
+        price, traded_at = self.latest_trade(symbol)
+        problems = (self.market_problems(now) + self._price_problems(traded_at, now)
+                    + check_entry(self.rules, self.state(now), now, symbol, price, stop))
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         buying_power = float(self.trading_client.get_account().buying_power)
@@ -338,22 +357,51 @@ class Copilot:
                 "problems": problems}
 
 
-    def today_bars(self, symbol: str, now: datetime):
-        """5-Minuten-Kerzen des heutigen Handelstags (IEX, Echtzeit ohne Abo) als DataFrame."""
-        from alpaca.data.enums import DataFeed
+    def _bars(self, symbol: str, feed, start: datetime, end: datetime):
+        import pandas as pd
         from alpaca.data.requests import StockBarsRequest
         from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-        start = datetime.combine(now.astimezone(NY).date(), time(9, 30), tzinfo=NY)
+        if end <= start:
+            return pd.DataFrame()
         df = self.data_client.get_stock_bars(StockBarsRequest(
-            symbol_or_symbols=symbol.upper(), timeframe=TimeFrame(5, TimeFrameUnit.Minute), start=start, end=now,
-            feed=DataFeed.IEX)).df
+            symbol_or_symbols=symbol, timeframe=TimeFrame(5, TimeFrameUnit.Minute), start=start, end=end,
+            feed=feed)).df
         if df.empty:
             return df
-        df = df.xs(symbol.upper(), level="symbol")
+        df = df.xs(symbol, level="symbol")
         df.index = df.index.tz_convert(NY)
         return df
 
+    def today_bars(self, symbol: str, now: datetime):
+        """5-Minuten-Kerzen des heutigen Handelstags. Vollständige SIP-Kerzen bis vor 16 Minuten
+        (kostenlos nur verzögert), danach die IEX-Kerzen (live, aber lückenhaft).
+        attrs: live_from (erste IEX-Kerze), iex_share (IEX-Volumen / SIP-Volumen im selben Zeitraum)."""
+        import pandas as pd
+        from alpaca.data.enums import DataFeed
+
+        symbol = symbol.upper()
+        start = datetime.combine(now.astimezone(NY).date(), time(9, 30), tzinfo=NY)
+        cut = now - SIP_DELAY
+        iex = self._bars(symbol, DataFeed.IEX, start, now)
+        try:
+            sip = self._bars(symbol, DataFeed.SIP, start, cut)
+        except Exception:  # z.B. Abo-Grenzen: dann nur IEX
+            sip = pd.DataFrame()
+        if not sip.empty:
+            sip = sip[sip.index + timedelta(minutes=5) <= cut]  # angefangene Kerze liefert IEX
+        if sip.empty:
+            bars, live_from, share = iex, (iex.index[0] if not iex.empty else None), None
+        else:
+            last = sip.index[-1]
+            tail = iex[iex.index > last] if not iex.empty else iex
+            bars = pd.concat([sip, tail]) if not tail.empty else sip
+            live_from = last + timedelta(minutes=5)
+            sip_vol = float(sip["volume"].sum())
+            iex_vol = float(iex[iex.index <= last]["volume"].sum()) if not iex.empty else 0.0
+            share = iex_vol / sip_vol if sip_vol > 0 else None
+        bars.attrs.update(live_from=live_from, iex_share=share)
+        return bars
 
     def journal_risk(self, symbol: str, now: datetime) -> float | None:
         """Geplantes Risiko (1 R) des letzten heutigen Journal-Eintrags für das Symbol."""
