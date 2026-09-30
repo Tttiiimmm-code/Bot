@@ -153,6 +153,44 @@ def test_watch_flattens_at_close_and_on_daily_loss(tmp_path):
     assert "Tagesverlust" in cp.watch_step(ny(12, 0)) and trading.closed_all
 
 
+class ClosingTrading(FakeTrading):
+    """Stop-Order bleibt nach dem Stornieren noch 2 Abfragen offen (Alpaca storniert asynchron)."""
+    def __init__(self):
+        super().__init__()
+        self.open_polls, self.cancelled, self.closed = 3, [], []
+
+    def get_orders(self, filter=None):
+        if filter.status.value == "open" and self.open_polls > 0:
+            self.open_polls -= 1
+            return [SimpleNamespace(id="stop1")]
+        return []
+
+    def cancel_order_by_id(self, order_id):
+        self.cancelled.append(order_id)
+
+    def close_position(self, symbol):
+        assert self.open_polls == 0, "Verkauf gesendet, während der Stop noch offen war"
+        self.closed.append(symbol)
+
+
+def test_close_waits_until_stop_is_cancelled(tmp_path, monkeypatch):
+    import tradingbot.copilot as copilot_mod
+    monkeypatch.setattr(copilot_mod._systime, "sleep", lambda s: None)
+    trading = ClosingTrading()
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    assert "geschlossen" in cp.close("xyz")
+    assert trading.cancelled == ["stop1"] and trading.closed == ["XYZ"]
+
+
+def test_buy_rounds_stop_before_checking_rules(tmp_path):
+    trading = FakeTrading()
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    assert cp.buy("XYZ", stop=24.004, setup="vwap", now=ny(12, 0)).startswith("GEKAUFT")
+    assert trading.submitted[0].stop_loss.stop_price == 24.0
+    [e] = load_journal(tmp_path / "j.jsonl")
+    assert e.stop == 24.0
+
+
 def test_vwap_is_volume_weighted_typical_price():
     from tradingbot.copilot import vwap
     bars = {"high": [11.0, 13.0], "low": [9.0, 11.0], "close": [10.0, 12.0], "volume": [100, 300]}

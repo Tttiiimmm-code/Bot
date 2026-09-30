@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import math
 import statistics
+import time as _systime
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, time, timedelta
 from pathlib import Path
@@ -234,6 +235,8 @@ class Copilot:
         from alpaca.trading.requests import MarketOrderRequest, StopLossRequest, TakeProfitRequest
 
         symbol = symbol.upper()
+        stop = _round_price(stop)
+        target = _round_price(target) if target is not None else None
         price = self.latest_price(symbol)
         problems = check_entry(self.rules, self.state(now), now, symbol, price, stop)
         if target is not None and target <= price:
@@ -247,8 +250,8 @@ class Copilot:
         req = MarketOrderRequest(
             symbol=symbol, qty=shares, side=OrderSide.BUY, time_in_force=TimeInForce.DAY,
             order_class=OrderClass.BRACKET if target is not None else OrderClass.OTO,
-            stop_loss=StopLossRequest(stop_price=_round_price(stop)),
-            take_profit=TakeProfitRequest(limit_price=_round_price(target)) if target is not None else None,
+            stop_loss=StopLossRequest(stop_price=stop),
+            take_profit=TakeProfitRequest(limit_price=target) if target is not None else None,
         )
         order = self.trading_client.submit_order(req)
         planned_risk = shares * (price - stop)
@@ -268,9 +271,14 @@ class Copilot:
         from alpaca.trading.requests import GetOrdersRequest
 
         symbol = symbol.upper()
-        for o in self.trading_client.get_orders(filter=GetOrdersRequest(status=QueryOrderStatus.OPEN,
-                                                                        symbols=[symbol])):
+        req = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[symbol])
+        for o in self.trading_client.get_orders(filter=req):
             self.trading_client.cancel_order_by_id(o.id)
+        # Stornieren läuft bei Alpaca asynchron; solange der Stop noch offen ist, sind die Stücke
+        # blockiert und der Verkauf würde abgelehnt ("insufficient qty available").
+        deadline = _systime.monotonic() + 10
+        while self.trading_client.get_orders(filter=req) and _systime.monotonic() < deadline:
+            _systime.sleep(0.5)
         self.trading_client.close_position(symbol)
         return f"{symbol} geschlossen (Market), Stop-Order storniert."
 
@@ -300,6 +308,8 @@ class Copilot:
     def preview(self, symbol: str, stop: float, now: datetime, target: float | None = None) -> dict:
         """Wie buy(), aber ohne Order: Kurs, Stückzahl, Risiko, Positionswert und Regelverstöße."""
         symbol = symbol.upper()
+        stop = _round_price(stop)
+        target = _round_price(target) if target is not None else None
         price = self.latest_price(symbol)
         problems = check_entry(self.rules, self.state(now), now, symbol, price, stop)
         if target is not None and target <= price:

@@ -26,7 +26,7 @@ JOURNAL = Path(os.environ.get("COPILOT_JOURNAL", ROOT / "copilot_journal.jsonl")
 SETUPS = {
     "vwap-pullback": "Aktie ist heute deutlich im Plus, läuft auf die VWAP-Linie zurück und dreht wieder nach oben.",
     "trend-continuation": "Nach einer ruhigen Mittagsphase bricht die Aktie über ihr Tageshoch aus.",
-    "power-hour": "Ab 21:00 (deutsche Zeit) starker Ausbruch in der letzten Handelsstunde.",
+    "power-hour": "Starker Ausbruch in der letzten Handelsstunde (ab 15:00 New Yorker Zeit, meist 21:00 bei uns).",
 }
 
 st.set_page_config(page_title="Trading-Copilot (Paper)", page_icon="📈", layout="wide")
@@ -34,6 +34,22 @@ st.set_page_config(page_title="Trading-Copilot (Paper)", page_icon="📈", layou
 
 def now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def berlin_time(t_et) -> str:
+    """Uhrzeit New York (heute) in deutscher Zeit -- stimmt auch in den Wochen, in denen
+    die Zeitumstellung in den USA und Europa nicht gleichzeitig ist."""
+    return datetime.combine(now().astimezone(NY).date(), t_et, tzinfo=NY).astimezone(BERLIN).strftime("%H:%M")
+
+
+def safe(action) -> None:
+    """Order-Aktion ausführen; Fehler von Alpaca als Meldung statt Programmabsturz zeigen."""
+    try:
+        msg = action()
+    except Exception as e:
+        st.error(f"Alpaca hat abgelehnt oder ist nicht erreichbar: {e}")
+        return
+    (st.success if msg.startswith("GEKAUFT") else st.warning)(msg)
 
 
 @st.cache_resource
@@ -81,12 +97,12 @@ with st.sidebar:
 - Max. **{rules.max_trades_per_day}** Einstiege pro Tag
 - Nach **{rules.loss_streak}** Verlusten in Folge **{rules.cooldown_minutes} Min.** Pause
 - Stop mind. **{rules.min_stop_pct:.1%}** unter dem Kurs
-- Einstiege bis **21:45**, alles zu um **21:55** (deutsche Zeit)
+- Einstiege bis **{berlin_time(rules.last_entry_et)}**, alles zu um **{berlin_time(rules.flatten_et)}** (deutsche Zeit, heute)
 - Nur Kaufen (long), nur Paper-Geld""")
     st.info("Das Fenster **Copilot-Sicherheit** muss geöffnet bleiben: es stellt bei der Tagesgrenze und "
-            "um 21:55 automatisch glatt. Jede Position hat zusätzlich einen Stop direkt bei Alpaca.")
+            f"um {berlin_time(rules.flatten_et)} automatisch glatt. Jede Position hat zusätzlich einen Stop direkt bei Alpaca.")
     if st.button("🛑 Notfall: alles schließen", use_container_width=True):
-        st.warning(cp.close(None))
+        safe(lambda: cp.close(None))
 
 
 # ------------------------------------------------------------ Kopfzeile (aktualisiert sich selbst)
@@ -195,8 +211,7 @@ with tab_trade:
         confirmed = st.checkbox("Ich habe Stop und Setup geprüft.")
         blocked = not pv or bool(pv["problems"]) or pv["shares"] <= 0 or not confirmed
         if st.button("Kaufen", type="primary", disabled=blocked):
-            msg = cp.buy(symbol, stop, setup, now(), target=target, note=note)
-            (st.success if msg.startswith("GEKAUFT") else st.error)(msg)
+            safe(lambda: cp.buy(symbol, stop, setup, now(), target=target, note=note))
 
         if not bars.empty:
             fig = go.Figure(go.Candlestick(x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"],
@@ -233,7 +248,7 @@ with tab_pos:
             cols[2].metric("Aktuell", f"{float(p.current_price):.2f}")
             cols[3].metric("Gewinn/Verlust", f"{pl:+.2f} $", f"{pl / risk:+.2f} R" if risk else None)
             if cols[4].button("Schließen", key=f"close_{p.symbol}"):
-                st.warning(cp.close(p.symbol))
+                safe(lambda s=p.symbol: cp.close(s))
         st.divider()
         st.subheader("Heute abgeschlossen")
         try:
@@ -302,7 +317,7 @@ als Zufall. Die meisten Anfänger sind es anfangs nicht -- das ist normal und ko
 3. Passt eins der drei Setups? Wenn nicht: **nichts tun**. Nicht handeln ist oft der beste Trade.
 4. **Stop** unter den letzten Rücksetzer (der Vorschlag hilft), Setup wählen, Grund aufschreiben.
 5. Vorschau prüfen: Alles grün? Dann kaufen. Danach **nicht** den Stop nach unten verschieben.
-6. Verkaufen: wenn der Stop greift, das Ziel erreicht ist, das Setup kaputtgeht -- spätestens 21:55 automatisch.
+6. Verkaufen: wenn der Stop greift, das Ziel erreicht ist, das Setup kaputtgeht -- spätestens 21:55 automatisch (in der Woche 25.10.-1.11.2026 schon 20:55, weil die USA die Uhr später umstellen).
 
 ### Die drei Setups
 """ + "\n".join(f"- **{k}:** {v}" for k, v in SETUPS.items()) + """
