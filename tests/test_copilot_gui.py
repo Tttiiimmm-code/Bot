@@ -8,6 +8,15 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 APP = str(Path(__file__).resolve().parents[1] / "gui" / "copilot_app.py")
 
 
+@pytest.fixture(autouse=True)
+def _fresh_copilot_cache():
+    """get_copilot ist per st.cache_resource gecacht -- ohne Leeren bekäme jeder Test den Copilot des vorigen."""
+    import streamlit as st
+
+    st.cache_resource.clear()
+    yield
+
+
 def test_gui_without_env_file_shows_setup_instructions(tmp_path, monkeypatch):
     monkeypatch.setenv("COPILOT_ENV", str(tmp_path / "missing.env"))
     at = AppTest.from_file(APP, default_timeout=60).run()
@@ -141,3 +150,30 @@ def test_chart_is_tradingview_like():
     assert fig.layout.yaxis.side == "right"
     texts = [a.text for a in fig.layout.annotations]
     assert "Stop 9.80" in texts and "Ziel 10.80" in texts and " 10.20 " in texts
+
+
+@pytest.mark.parametrize("unreal,delta,color", [("-12.5", "-12.50 $ offen", "RED"), ("7", "+7.00 $ offen", "GREEN"),
+                                                ("0", "+0.00 $ offen", "GRAY")])
+def test_header_open_pnl_colored_by_sign(tmp_path, monkeypatch, unreal, delta, color):
+    from types import SimpleNamespace
+
+    from streamlit.proto.Metric_pb2 import Metric
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x" + chr(10) + "ALPACA_SECRET_KEY=y" + chr(10) + "ALPACA_PAPER=true" + chr(10))
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    fake = _FakeCopilot()
+    clock = fake.trading_client.get_clock()
+    fake.trading_client = SimpleNamespace(get_clock=lambda: clock,
+                                          get_all_positions=lambda: [SimpleNamespace(
+                                              symbol="XYZ", qty="10", avg_entry_price="10.00", current_price="10.00",
+                                              unrealized_pl=unreal)])
+    import tradingbot.copilot as copilot_mod
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    assert not at.exception
+    m = next(m for m in at.metric if m.label == "Heute realisiert")
+    assert m.delta == delta
+    assert Metric.MetricColor.Name(m.proto.color) == color

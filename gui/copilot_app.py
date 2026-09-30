@@ -123,7 +123,9 @@ def header():
     c[1].metric("Markt", "offen" if clock.is_open else "geschlossen",
                 None if clock.is_open else f"öffnet {clock.next_open.astimezone(BERLIN):%a %H:%M}",
                 delta_color="off")
-    c[2].metric("Heute realisiert", f"{st_.realized_pnl:+.2f} $", f"offen {unreal:+.2f} $")
+    # Streamlit färbt das Delta nach dem führenden Vorzeichen -- darum steht der Betrag vorne
+    c[2].metric("Heute realisiert", f"{st_.realized_pnl:+.2f} $", f"{unreal:+.2f} $ offen",
+                delta_color="normal" if round(unreal, 2) != 0 else "off")
     c[3].metric("Einstiege", f"{st_.entries_today} / {rules.max_trades_per_day}",
                 f"Verlustserie {st_.loss_streak}", delta_color="off")
     budget = max(rules.max_daily_loss + st_.realized_pnl, 0.0)
