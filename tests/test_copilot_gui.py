@@ -84,3 +84,31 @@ def test_gui_keeps_typed_stop_and_resets_confirmation_after_buy(tmp_path, monkey
     assert fake.bought == [("XYZ", 9.5)]
     assert at.checkbox(key="confirmed").value is False
     assert any("GEKAUFT" in s.value for s in at.success)
+
+
+def test_gui_scan_shows_first_candidate_chart(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x\nALPACA_SECRET_KEY=y\nALPACA_PAPER=true\n")
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    fake = _FakeCopilot()
+    import tradingbot.copilot as copilot_mod
+    import tradingbot.scanner as scanner_mod
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+    found = [SimpleNamespace(symbol="AAA", price=10.0, percent_change=12.0, relative_volume=3.0),
+             SimpleNamespace(symbol="BBB", price=20.0, percent_change=8.0, relative_volume=2.5)]
+    monkeypatch.setattr(scanner_mod.Scanner, "__init__", lambda self, cfg: None)
+    monkeypatch.setattr(scanner_mod.Scanner, "scan", lambda self, criteria: found)
+
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label == "Kandidaten suchen").click().run()
+    assert not at.exception
+    assert at.text_input(key="symbol_input").value == "AAA"
+    assert any(h.value == "2. Chart AAA" for h in at.subheader)
+    at.button(key="pick_BBB").click().run()                    # Zeile anklicken -> Chart BBB
+    assert not at.exception
+    assert any(h.value == "2. Chart BBB" for h in at.subheader)
+    at.text_input(key="symbol_input").set_value("CCC").run()   # von Hand getippt bleibt stehen
+    assert any(h.value == "2. Chart CCC" for h in at.subheader)

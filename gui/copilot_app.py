@@ -101,7 +101,7 @@ with st.sidebar:
 - Nur Kaufen (long), nur Paper-Geld""")
     st.info("Das Fenster **Copilot-Sicherheit** muss geöffnet bleiben: es stellt bei der Tagesgrenze und "
             f"um {berlin_time(rules.flatten_et)} automatisch glatt. Jede Position hat zusätzlich einen Stop direkt bei Alpaca.")
-    if st.button("🛑 Notfall: alles schließen", use_container_width=True):
+    if st.button("🛑 Notfall: alles schließen", width="stretch"):
         safe(lambda: cp.close(None))
 
 
@@ -156,16 +156,25 @@ with tab_trade:
                     st.session_state["scan"] = pd.DataFrame(
                         [{"Symbol": c.symbol, "Kurs $": round(c.price, 2), "Heute %": round(c.percent_change, 1),
                           "Rel. Volumen": round(c.relative_volume, 1)} for c in found])
+                    if found:
+                        st.session_state["symbol_input"] = found[0].symbol
                 except Exception as e:
                     st.error(f"Scanner-Fehler: {e}")
         scan = st.session_state.get("scan")
         if scan is not None and not scan.empty:
-            st.dataframe(scan, hide_index=True, use_container_width=True)
-            options = list(scan["Symbol"])
+            st.caption("Auf eine Zeile klicken, um den Chart rechts zu sehen.")
+            current = st.session_state.get("symbol_input", "").strip().upper()
+            for r in scan.itertuples(index=False):
+                sym, kurs, heute, relvol = r
+                # "\\$": sonst liest Streamlit $...$ als Formel
+                label = f"**{sym}**  ·  {kurs:.2f} \\$  ·  {heute:+.1f} %  ·  Volumen {relvol:.1f}x"
+                if st.button(label, key=f"pick_{sym}", width="stretch",
+                             type="primary" if sym == current else "secondary"):
+                    st.session_state["symbol_input"] = sym
+                    st.rerun()
         else:
-            options = []
             st.caption("Noch keine Suche (oder keine Treffer).")
-        symbol = st.text_input("Symbol", value=options[0] if options else "").strip().upper()
+        symbol = st.text_input("Symbol", key="symbol_input").strip().upper()
 
     with right:
         st.subheader(f"2. Chart {symbol}" if symbol else "2. Chart")
@@ -243,7 +252,7 @@ with tab_trade:
                 fig.add_hline(y=target, line_dash="dash", line_color="green", annotation_text="Ziel")
             fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_rangeslider_visible=False,
                               legend=dict(orientation="h"))
-            chart_slot.plotly_chart(fig, use_container_width=True)
+            chart_slot.plotly_chart(fig, width="stretch")
         else:
             chart_slot.info("Noch keine 5-Minuten-Kerzen für heute (Markt geschlossen?).")
 
@@ -282,7 +291,7 @@ with tab_pos:
             st.dataframe(pd.DataFrame([{"Symbol": r["symbol"], "Setup": r["setup"],
                                         "Ausstieg": r["exit_time"].astimezone(BERLIN).strftime("%H:%M"),
                                         "P&L $": round(r["pnl"], 2), "R": None if r["r"] is None else round(r["r"], 2)}
-                                       for r in rows]), hide_index=True, use_container_width=True)
+                                       for r in rows]), hide_index=True, width="stretch")
         else:
             st.caption("Heute noch keine abgeschlossenen Trades.")
 
@@ -306,7 +315,7 @@ with tab_eval:
             "profit_factor": "Profit-Faktor", "t_r": "t (R)"})
         st.dataframe(stats.style.format({"Trefferquote": "{:.0%}", "Ø R": "{:.2f}", "P&L $": "{:.2f}",
                                          "Profit-Faktor": "{:.2f}", "t (R)": "{:.2f}"}),
-                     hide_index=True, use_container_width=True)
+                     hide_index=True, width="stretch")
         curve = pd.Series([r["r"] or 0.0 for r in rows]).cumsum()
         st.line_chart(curve, height=250)
         st.caption("Summe der R-Vielfachen über alle Trades. Bestanden (vorab festgelegt) erst ab 100 Trades bei "
