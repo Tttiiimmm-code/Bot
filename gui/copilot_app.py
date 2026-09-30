@@ -19,7 +19,7 @@ import streamlit as st  # noqa: E402
 
 from gui.chart import CHART_CONFIG, DOWN, UP, build_chart  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
-    BERLIN, NY, Copilot, CopilotRules, attach_setups, entry_warnings, load_journal, setup_stats, suggest_stop,
+    BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, suggest_stop,
 )
 
 ENV_FILE = Path(os.environ.get("COPILOT_ENV", ROOT / "copilot.env"))
@@ -40,7 +40,7 @@ ENTRY_CHECKLIST = """\
 6. **Kopf frei:** Kein Frust vom letzten Trade, kein "ich muss heute noch was verdienen".
 """
 
-st.set_page_config(page_title="Trading-Copilot (Paper)", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Trading-Copilot (Paper)", page_icon=":material/candlestick_chart:", layout="wide")
 
 st.markdown("""
 <style>
@@ -124,7 +124,7 @@ rules = cp.rules
 # ------------------------------------------------------------ Seitenleiste
 
 with st.sidebar:
-    st.subheader("📋 Regeln")
+    st.subheader(":material/rule: Regeln")
     rule_rows = [
         ("1 R (Verlust am Stop)", f"{rules.risk_per_trade:.0f} $"),
         ("Tagesverlust max.", f"{rules.max_daily_loss:.0f} $"),
@@ -139,8 +139,8 @@ with st.sidebar:
     st.caption("Nur Kaufen (long) · nur Paper-Geld · Uhrzeiten deutsch, heute")
     st.info("Das Fenster **Copilot-Sicherheit** muss offen bleiben: es stellt bei der Tagesgrenze und "
             f"um {berlin_time(rules.flatten_et)} glatt und zieht Stops nach. Jede Position hat zusätzlich "
-            "einen Stop direkt bei Alpaca.", icon="🛡️")
-    if st.button("Notfall: alles schließen", icon="🛑", width="stretch"):
+            "einen Stop direkt bei Alpaca.", icon=":material/shield:")
+    if st.button("Notfall: alles schließen", icon=":material/dangerous:", width="stretch"):
         safe(lambda: cp.close(None))
 
 
@@ -160,9 +160,10 @@ def header():
     c = st.columns(5)
     c[0].metric("Zeit", f"{t.astimezone(BERLIN):%H:%M}", f"New York {t.astimezone(NY):%H:%M}", delta_color="off", delta_arrow="off",
                 border=True)
-    c[1].metric("Markt", "🟢 offen" if clock.is_open else "🔴 geschlossen",
-                None if clock.is_open else f"öffnet {clock.next_open.astimezone(BERLIN):%a %H:%M}",
-                delta_color="off", delta_arrow="off", border=True)
+    # grün "Handel läuft" bzw. grau mit nächster Öffnung
+    c[1].metric("Markt", "offen" if clock.is_open else "geschlossen",
+                "Handel läuft" if clock.is_open else f"öffnet {de_weekday(clock.next_open)} {clock.next_open.astimezone(BERLIN):%H:%M}",
+                delta_color="normal" if clock.is_open else "off", delta_arrow="off", border=True)
     # Streamlit färbt das Delta nach dem führenden Vorzeichen -- darum steht der Betrag vorne
     c[2].metric("Heute realisiert", f"{st_.realized_pnl:+.2f} $", f"{unreal:+.2f} $ offen",
                 delta_color="normal" if round(unreal, 2) != 0 else "off", border=True)
@@ -209,16 +210,16 @@ def chart_view(symbol: str, stop: float, target: float | None) -> None:
     info.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag  \n"
                  "Links der gepunkteten Linie: alle Börsen (15 Min. verzögert) · rechts: live, nur IEX  \n"
                  f"Chart-Stand {t.astimezone(BERLIN):%H:%M:%S} -- aktualisiert sich alle 5 Minuten selbst.")
-    link.link_button("TradingView", f"https://www.tradingview.com/chart/?symbol={symbol}", icon="↗️",
+    link.link_button("TradingView", f"https://www.tradingview.com/chart/?symbol={symbol}", icon=":material/open_in_new:",
                      width="stretch")
 
 
-st.title("📈 Trading-Copilot")
+st.title(":material/candlestick_chart: Trading-Copilot")
 st.markdown('<div class="copilot-sub">Paper-Konto · jeder Trade mit Stop bei Alpaca · '
             'Auswertung nach 100 Trades</div>', unsafe_allow_html=True)
 header()
 tab_trade, tab_pos, tab_practice, tab_eval, tab_help = st.tabs(
-    ["📊 Handeln", "💼 Positionen", "🎓 Üben", "📈 Auswertung", "📘 Anleitung"])
+    [":material/candlestick_chart: Handeln", ":material/work: Positionen", ":material/school: Üben", ":material/monitoring: Auswertung", ":material/menu_book: Anleitung"])
 
 # ------------------------------------------------------------ Handeln
 
@@ -228,7 +229,7 @@ with tab_trade:
         st.subheader("1. Kandidaten")
         st.caption("Große, viel gehandelte Aktien (Ø Umsatz über 200 Mio. $ am Tag), die heute mindestens 2 % "
                    "im Plus sind und mehr Volumen als üblich haben.")
-        if st.button("Kandidaten suchen", icon="🔎", width="stretch"):
+        if st.button("Kandidaten suchen", icon=":material/search:", width="stretch"):
             from types import SimpleNamespace
 
             from tradingbot.report import read_account_env
@@ -276,7 +277,7 @@ with tab_trade:
             except Exception as e:
                 st.error(f"Kursdaten für {symbol} nicht abrufbar: {e}")
         else:
-            st.info("Links Kandidaten suchen oder ein Symbol eingeben.", icon="👈")
+            st.info("Links Kandidaten suchen oder ein Symbol eingeben.", icon=":material/arrow_back:")
         stop_default = suggest_stop(bars, price, rules) if price and not bars.empty else None
         chart_slot = st.empty()
 
@@ -296,7 +297,7 @@ with tab_trade:
                                        help="Vorschlag: knapp unter dem letzten Rücksetzer. Dort ist die Idee widerlegt.")
                 if stop_default:
                     # on_click läuft VOR dem Neuaufbau -- danach darf das Stop-Feld nicht mehr geändert werden
-                    st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}", icon="🎯",
+                    st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}", icon=":material/my_location:",
                               on_click=st.session_state.__setitem__, args=(stop_key, float(stop_default)))
                 setup = st.selectbox("Setup", list(SETUPS), help="Welches Muster siehst du?")
                 st.caption(SETUPS[setup])
@@ -330,18 +331,18 @@ with tab_trade:
                               delta_color="off", delta_arrow="off", border=True)
                     if pv["problems"]:
                         for p in pv["problems"]:
-                            st.error(p, icon="⛔")
+                            st.error(p, icon=":material/block:")
                     else:
-                        st.success("Alle Regeln erfüllt.", icon="✅")
+                        st.success("Alle Regeln erfüllt.", icon=":material/check_circle:")
                     # Hinweise zu typischen Anfängerfehlern -- sperren nicht, sollen aber zum Nachdenken bringen
                     if not bars.empty:
                         for w in entry_warnings(bars, pv["price"], stop):
-                            st.warning(w, icon="⚠️")
-                with st.expander("Checkliste vor dem Kauf", icon="📝"):
+                            st.warning(w, icon=":material/warning:")
+                with st.expander("Checkliste vor dem Kauf", icon=":material/checklist:"):
                     st.markdown(ENTRY_CHECKLIST)
                 confirmed = st.checkbox("Ich habe Stop und Setup geprüft.", key="confirmed")
                 blocked = not pv or bool(pv["problems"]) or pv["shares"] <= 0 or not confirmed
-                if st.button("Kaufen", type="primary", disabled=blocked, icon="🛒", width="stretch"):
+                if st.button("Kaufen", type="primary", disabled=blocked, icon=":material/shopping_cart:", width="stretch"):
                     try:
                         msg = cp.buy(symbol, stop, setup, now(), target=target, note=note, breakeven=breakeven)
                     except Exception as e:
@@ -370,7 +371,7 @@ with tab_pos:
             return
         st.subheader("Offene Positionen")
         if not positions:
-            st.info("Keine offenen Positionen.", icon="💤")
+            st.info("Keine offenen Positionen.", icon=":material/inbox:")
         for p in positions:
             risk = cp.journal_risk(p.symbol, t)
             pl = float(p.unrealized_pl)
@@ -380,7 +381,7 @@ with tab_pos:
                 cols[1].metric("Einstieg", f"{float(p.avg_entry_price):.2f}")
                 cols[2].metric("Aktuell", f"{float(p.current_price):.2f}")
                 cols[3].metric("Gewinn/Verlust", f"{pl:+.2f} $", f"{pl / risk:+.2f} R" if risk else None)
-                if cols[4].button("Schließen", key=f"close_{p.symbol}", icon="✖️", width="stretch"):
+                if cols[4].button("Schließen", key=f"close_{p.symbol}", icon=":material/close:", width="stretch"):
                     safe(lambda s=p.symbol: cp.close(s))
         st.subheader("Heute abgeschlossen")
         try:
@@ -499,7 +500,7 @@ als Zufall. Die meisten Anfänger sind es anfangs nicht -- das ist normal und ko
 - Erst nach bestandener Auswertung (100 Trades) über Echtgeld nachdenken.
 """)
 
-    st.subheader("🎯 Gute Einstiege finden")
+    st.subheader(":material/my_location: Gute Einstiege finden")
     e1, e2 = st.columns(2, gap="large")
     with e1:
         with st.container(border=True):

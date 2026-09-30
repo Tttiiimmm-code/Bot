@@ -27,6 +27,7 @@ NY = ZoneInfo("America/New_York")
 BERLIN = ZoneInfo("Europe/Berlin")
 # relativ zum tatsächlichen Börsenschluss (Alpaca-Uhr), gilt zusätzlich zu den festen ET-Zeiten
 ENTRY_CUTOFF_BEFORE_CLOSE_MIN = 15
+WEEKDAYS_DE = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
 FLATTEN_BEFORE_CLOSE_MIN = 5
 # Kostenloser Alpaca-Zugang: Echtzeit nur von IEX (bei kleinen Werten oft < 1 % des Handels),
 # vollständige SIP-Daten erst nach 15 Minuten.
@@ -74,6 +75,11 @@ class DayState:
     loss_streak: int = 0
     last_loss_exit: datetime | None = None
     open_symbols: set[str] = field(default_factory=set)
+
+
+def de_weekday(dt: datetime) -> str:
+    """Wochentag in deutscher Zeit, deutsch abgekürzt (strftime %a wäre englisch)."""
+    return WEEKDAYS_DE[dt.astimezone(BERLIN).weekday()]
 
 
 # ------------------------------------------------------------ Regeln
@@ -255,7 +261,7 @@ class Copilot:
         clock = self.trading_client.get_clock()
         if not clock.is_open:
             return ["Markt ist geschlossen -- die Order würde erst zur nächsten "
-                    f"Eröffnung ausgeführt ({clock.next_open.astimezone(BERLIN):%a %d.%m. %H:%M})"]
+                    f"Eröffnung ausgeführt ({de_weekday(clock.next_open)} {clock.next_open.astimezone(BERLIN):%d.%m. %H:%M})"]
         cutoff = clock.next_close - timedelta(minutes=ENTRY_CUTOFF_BEFORE_CLOSE_MIN)
         if now >= cutoff:
             return [f"Markt schließt um {clock.next_close.astimezone(BERLIN):%H:%M} (deutsche Zeit) -- "

@@ -158,14 +158,14 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
         c[1].date_input("Tag", key="rp_day_in", value=None, max_value=date.today() - timedelta(days=1),
                         format="DD.MM.YYYY", help="Leer = zufälliger Tag, an dem die Aktie zum Start im Plus lag.")
         c[2].selectbox("Start (deutsche Zeit)", list(rpl.REPLAY_STARTS_ET), key="rp_start_in")
-        c[3].button("Tag laden", type="primary", icon="🎲", width="stretch", on_click=_load, args=(cp, rules))
+        c[3].button("Tag laden", type="primary", icon=":material/casino:", width="stretch", on_click=_load, args=(cp, rules))
     if SS.get("rp_error"):
         st.error(SS.rp_error)
 
     rp = SS.get("rp")
     if rp is None:
         st.info("Lade einen Tag: leer lassen für eine zufällige Aktie an einem zufälligen Tag, an dem sie zu "
-                "deinem Start mindestens 2 % im Plus war -- wie ein Treffer der Kandidatensuche.", icon="🎓")
+                "deinem Start mindestens 2 % im Plus war -- wie ein Treffer der Kandidatensuche.", icon=":material/school:")
         _stats(journal)
         return
 
@@ -196,7 +196,7 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
             {"success": st.success, "error": st.error, "info": st.info}[kind](text)
 
         if day_over:
-            st.button("Nächster zufälliger Tag", icon="🎲", type="primary", width="stretch", on_click=_load,
+            st.button("Nächster zufälliger Tag", icon=":material/casino:", type="primary", width="stretch", on_click=_load,
                       args=(cp, rules))
         elif pos:
             r_now = (price - pos.entry) / pos.one_r
@@ -205,15 +205,15 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
                        + (f" · Ziel {pos.target:.2f}" if pos.target else " · ohne Ziel")
                        + (" · Stop wandert bei +1 R auf Einstand" if pos.breakeven else ""))
             b = st.columns(2)
-            b[0].button("Nächste Kerze", icon="▶️", width="stretch", on_click=_step, args=(journal, rules))
-            b[1].button("Bis Trade-Ende", icon="⏭️", width="stretch", on_click=_step, args=(journal, rules),
+            b[0].button("Nächste Kerze", icon=":material/play_arrow:", width="stretch", on_click=_step, args=(journal, rules))
+            b[1].button("Bis Trade-Ende", icon=":material/skip_next:", width="stretch", on_click=_step, args=(journal, rules),
                         kwargs={"until_exit": True})
-            st.button("Verkaufen (nächste Eröffnung)", icon="✖️", width="stretch", on_click=_sell,
+            st.button("Verkaufen (nächste Eröffnung)", icon=":material/close:", width="stretch", on_click=_sell,
                       args=(journal, rules))
         else:
             b = st.columns(2)
-            b[0].button("Nächste Kerze", icon="▶️", width="stretch", on_click=_step, args=(journal, rules))
-            b[1].button("30 Minuten", icon="⏩", width="stretch", on_click=_step, args=(journal, rules),
+            b[0].button("Nächste Kerze", icon=":material/play_arrow:", width="stretch", on_click=_step, args=(journal, rules))
+            b[1].button("30 Minuten", icon=":material/fast_forward:", width="stretch", on_click=_step, args=(journal, rules),
                         kwargs={"n": 6})
             st.divider()
             st.markdown("**Kauf planen**")
@@ -222,7 +222,7 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
             st.number_input("Stop", min_value=0.0, step=0.01, format="%.2f", key="rp_stop")
             suggestion = suggest_stop(visible, price, rules)
             if suggestion:
-                st.button(f"Vorschlag übernehmen ({suggestion:.2f})", icon="🎯", key="rp_use",
+                st.button(f"Vorschlag übernehmen ({suggestion:.2f})", icon=":material/my_location:", key="rp_use",
                           on_click=_use_suggestion, args=(suggestion,))
             t = st.columns([1, 1], vertical_alignment="bottom")
             t[0].checkbox("Kursziel", value=True, key="rp_use_target")
@@ -232,9 +232,9 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
             st.checkbox("Stop auf Einstand bei +1 R", key="rp_be")
             st.text_input("Warum dieser Trade?", key="rp_note", placeholder="kurz begründen")
             for w in entry_warnings(visible, price, float(SS.rp_stop)):
-                st.warning(w, icon="⚠️")
-            with st.expander("Checkliste vor dem Kauf", icon="📝"):
+                st.warning(w, icon=":material/warning:")
+            with st.expander("Checkliste vor dem Kauf", icon=":material/checklist:"):
                 st.markdown(checklist)
-            st.button("Kaufen", type="primary", icon="🛒", width="stretch", on_click=_buy, args=(journal, rules))
+            st.button("Kaufen", type="primary", icon=":material/shopping_cart:", width="stretch", on_click=_buy, args=(journal, rules))
 
     _stats(journal)
