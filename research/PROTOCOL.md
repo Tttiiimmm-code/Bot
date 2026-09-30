@@ -2859,3 +2859,17 @@ nur aus der Auswahl der besten Parameter (plus Hebel/Zinseszins) stammen.
 Recherche-Notiz YouTube: IRONCLAD TRADING "Backtested Trading Guru's Strategy" (121 Tsd.): SMC-Strategien
 von Trading Geek -72 %, Lewis Kelly -86 %, JIFX +15 % in 10 Jahren (5 FX-Paare, Dukascopy-Ticks, beste Werte
 für alle offenen Parameter); die "+950 %" sind das Maximum aus 8.700 Kombinationen (Auswahlfehler).
+
+# Vorwärtstest: Diskretionärer Handel mit Copilot (Nutzer, Paper) -- Auswertungsregel (2026-09-30)
+
+Festgelegt VOR dem ersten Trade. Der Nutzer entscheidet selbst (18:00-22:00 deutsche Zeit = 12:00-16:00 ET),
+der Copilot (main.py copilot, feature/forward-test cf33868) erzwingt: 1 R = 50 $ Risiko je Trade, Tagesverlust
+150 $, max. 6 Einstiege, 20 Min. Pause nach 2 Verlusten in Folge, Stop >= 0,3 %, Einstiege bis 15:45 ET,
+Glattstellen 15:55 ET, nur long, eigenes Paper-Konto (copilot.env).
+Gezählt: alle über den Copilot eröffneten, abgeschlossenen Trades (copilot report, R = P&L / geplantes Risiko).
+Kosten-Aufschlag (Paper ohne Markteinfluss): 1 Cent je Aktie und Seite.
+Auswertung bei 100 Trades (gesamt, Setups nur berichtet, da nachträglich gruppiert):
+- BESTANDEN, wenn nach Aufschlag: Profit-Faktor >= 1,3 UND Ø R mit t >= 2.
+- sonst NICHT BESTANDEN -> kein Echtgeld.
+Vorzeitiger Abbruch bei 60 Trades: Ø R nach Aufschlag < 0 UND Profit-Faktor < 0,9.
+Regeländerungen (Risiko, Grenzen) nur zwischen Auswertungen und mit Vermerk hier.
