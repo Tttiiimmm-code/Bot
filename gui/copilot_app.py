@@ -131,6 +131,49 @@ def header():
     st.progress(min(budget / rules.max_daily_loss, 1.0))
 
 
+CHART_REFRESH = os.environ.get("COPILOT_CHART_REFRESH", "5m")  # nur zum Testen änderbar
+
+
+@st.fragment(run_every=CHART_REFRESH)
+def chart_view(symbol: str, stop: float, target: float | None) -> None:
+    """Chart mit VWAP, Stop und Ziel; lädt sich alle 5 Minuten selbst neu (neue 5-Minuten-Kerze).
+    Stop/Ziel kommen aus dem letzten vollständigen Seitenaufbau -- ändern sie sich, wird die Seite
+    ohnehin neu aufgebaut."""
+    t = now()
+    try:
+        bars = cp.today_bars(symbol, t)
+    except Exception as e:
+        st.error(f"Kursdaten für {symbol} nicht abrufbar: {e}")
+        return
+    if bars.empty:
+        st.info("Noch keine 5-Minuten-Kerzen für heute (Markt geschlossen?).")
+        return
+    fig = go.Figure(go.Candlestick(x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"],
+                                   close=bars["close"], name=symbol))
+    fig.add_trace(go.Scatter(x=bars.index, y=vwap(bars), name="VWAP", line=dict(color="orange", width=2)))
+    fig.add_hline(y=stop, line_dash="dash", line_color="red", annotation_text="Stop")
+    if target:
+        fig.add_hline(y=target, line_dash="dash", line_color="green", annotation_text="Ziel")
+    live_from = bars.attrs.get("live_from")
+    if live_from is not None and live_from > bars.index[0]:
+        fig.add_vline(x=live_from, line_dash="dot", line_color="gray")
+        fig.add_annotation(x=live_from, y=1, yref="paper", text="ab hier live (nur IEX)",
+                           showarrow=False, xanchor="left", font=dict(color="gray"))
+    fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_rangeslider_visible=False,
+                      legend=dict(orientation="h"))
+    st.plotly_chart(fig, width="stretch")
+    share = bars.attrs.get("iex_share")
+    if share is not None and share < 0.01:
+        st.warning(f"IEX sieht nur {share:.1%} des Handels in {symbol}: die letzten 15 Minuten im Chart "
+                   "(rechts der gepunkteten Linie) und der Kurs für die Stückzahl sind lückenhaft. "
+                   "Links der Linie ist der Chart vollständig, aber 15 Minuten verzögert.")
+    else:
+        st.caption("Links der gepunkteten Linie: vollständige Kurse aller Börsen (15 Min. verzögert). "
+                   "Rechts davon: live, aber nur von der Börse IEX.")
+    st.caption(f"Chart-Stand {t.astimezone(BERLIN):%H:%M:%S} -- aktualisiert sich alle 5 Minuten selbst.")
+    st.link_button(f"{symbol} live bei TradingView öffnen", f"https://www.tradingview.com/chart/?symbol={symbol}")
+
+
 st.title("📈 Trading-Copilot  ·  Paper-Konto")
 header()
 tab_trade, tab_pos, tab_eval, tab_help = st.tabs(["Handeln", "Positionen", "Auswertung", "Anleitung"])
@@ -248,34 +291,8 @@ with tab_trade:
             msg = st.session_state["last_buy_msg"]
             (st.success if msg.startswith("GEKAUFT") else st.error)(msg)
 
-        if not bars.empty:
-            fig = go.Figure(go.Candlestick(x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"],
-                                           close=bars["close"], name=symbol))
-            fig.add_trace(go.Scatter(x=bars.index, y=vwap(bars), name="VWAP", line=dict(color="orange", width=2)))
-            fig.add_hline(y=stop, line_dash="dash", line_color="red", annotation_text="Stop")
-            if target:
-                fig.add_hline(y=target, line_dash="dash", line_color="green", annotation_text="Ziel")
-            live_from = bars.attrs.get("live_from")
-            if live_from is not None and live_from > bars.index[0]:
-                fig.add_vline(x=live_from, line_dash="dot", line_color="gray")
-                fig.add_annotation(x=live_from, y=1, yref="paper", text="ab hier live (nur IEX)",
-                                   showarrow=False, xanchor="left", font=dict(color="gray"))
-            fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_rangeslider_visible=False,
-                              legend=dict(orientation="h"))
-            with chart_slot.container():
-                st.plotly_chart(fig, width="stretch")
-                share = bars.attrs.get("iex_share")
-                if share is not None and share < 0.01:
-                    st.warning(f"IEX sieht nur {share:.1%} des Handels in {symbol}: die letzten 15 Minuten im Chart "
-                               "(rechts der gepunkteten Linie) und der Kurs für die Stückzahl sind lückenhaft. "
-                               "Links der Linie ist der Chart vollständig, aber 15 Minuten verzögert.")
-                else:
-                    st.caption("Links der gepunkteten Linie: vollständige Kurse aller Börsen (15 Min. verzögert). "
-                               "Rechts davon: live, aber nur von der Börse IEX.")
-                st.link_button(f"{symbol} live bei TradingView öffnen",
-                               f"https://www.tradingview.com/chart/?symbol={symbol}")
-        else:
-            chart_slot.info("Noch keine 5-Minuten-Kerzen für heute (Markt geschlossen?).")
+        with chart_slot.container():
+            chart_view(symbol, stop, target)
 
 # ------------------------------------------------------------ Positionen
 

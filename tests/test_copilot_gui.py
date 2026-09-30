@@ -107,6 +107,7 @@ def test_gui_scan_shows_first_candidate_chart(tmp_path, monkeypatch):
     assert not at.exception
     assert at.text_input(key="symbol_input").value == "AAA"
     assert any(h.value == "2. Chart AAA" for h in at.subheader)
+    assert any("aktualisiert sich alle 5 Minuten" in c.value for c in at.caption)   # Chart-Fragment gezeichnet
     at.button(key="pick_BBB").click().run()                    # Zeile anklicken -> Chart BBB
     assert not at.exception
     assert any(h.value == "2. Chart BBB" for h in at.subheader)
