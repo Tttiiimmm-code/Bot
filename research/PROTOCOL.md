@@ -2833,3 +2833,20 @@ Recherche-Notiz TikTok (2026-09-29, Transkripte automatisch ausgelesen, 14 Strat
   mathematische Frage der Firmenregeln, kein Marktvorteil; nicht getestet.
 Folgerung: TikTok liefert fast nur Vertriebstrichter ("kommentiere X für den Bot"), Daten-Überoptimierung und
 diskretionäre Muster; die einzige präzise, testbare Behauptung (Runde 100) ist ein Münzwurf.
+
+# Runde 101: 9:30-Uhr-Opening-Range-Breakout bei EUR/USD und Gold (YouTube IRONCLAD TRADING) (2026-09-30)
+
+Quelle: YouTube "Opening Range Breakout im Backtest: Das ist die Wahrheit" (IRONCLAD TRADING, 102 Tsd.): Basis-
+ORB ohne Retest/FVG funktioniere auf EUR/USD (+630 %) und Gold (+431 %) in 5 Jahren, nicht auf ES/NQ; beste
+Parameter (aus vielen optimiert): Range 15 Min., Chance-Risiko unter 1:2. Test mit festen Parametern VOR dem
+Quellen-Zeitraum (dieser ~2021-2026 = nur berichtet).
+Daten: Dukascopy Minuten Bid (fx, xau; 2026 aus unseen_*), Ask (fx_ask, xau_ask), Zeit America/New_York.
+Regel je Handelstag (Mo-Fr): Range = Hoch/Tief (Bid) 9:30-9:44 ET. Ab 9:45 erster Ausbruch: Minuten-Hoch >
+Range-Hoch -> long zum Range-Hoch; Minuten-Tief < Range-Tief -> short zum Range-Tief (beides in derselben
+Minute: Tag ausgelassen). Stop = gegenüberliegende Range-Seite, Ziel = 1,5 x Risiko. Stop und Ziel in
+derselben Minute: Stop. Sonst Ausstieg Schluss 15:59 ET. Ein Trade je Tag.
+Kosten: Spread (Ask-Open minus Bid-Open der Einstiegsminute) + 0,4 bp Kommission je Round-Trip.
+Rendite je Trade in % des Kurses (ohne Hebel). 2 Instrumente -> Bonferroni.
+Zeiträume: P1 2008-2014, P2 2015-2020, Quellen-Zeitraum 2021-2026-09 (berichtet).
+Bestehen je Instrument: Ø netto je Trade t >= 2,24 in P1 UND P2.
+Berichtet: brutto, Trefferquote, Profit-Faktor, Anteil Ziel/Stop/Zeitausstieg, je Jahr.
