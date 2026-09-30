@@ -14,11 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
-import plotly.graph_objects as go  # noqa: E402
 import streamlit as st  # noqa: E402
 
+from gui.chart import CHART_CONFIG, build_chart  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
-    BERLIN, NY, Copilot, CopilotRules, attach_setups, load_journal, setup_stats, suggest_stop, vwap,
+    BERLIN, NY, Copilot, CopilotRules, attach_setups, load_journal, setup_stats, suggest_stop,
 )
 
 ENV_FILE = Path(os.environ.get("COPILOT_ENV", ROOT / "copilot.env"))
@@ -148,20 +148,9 @@ def chart_view(symbol: str, stop: float, target: float | None) -> None:
     if bars.empty:
         st.info("Noch keine 5-Minuten-Kerzen für heute (Markt geschlossen?).")
         return
-    fig = go.Figure(go.Candlestick(x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"],
-                                   close=bars["close"], name=symbol))
-    fig.add_trace(go.Scatter(x=bars.index, y=vwap(bars), name="VWAP", line=dict(color="orange", width=2)))
-    fig.add_hline(y=stop, line_dash="dash", line_color="red", annotation_text="Stop")
-    if target:
-        fig.add_hline(y=target, line_dash="dash", line_color="green", annotation_text="Ziel")
-    live_from = bars.attrs.get("live_from")
-    if live_from is not None and live_from > bars.index[0]:
-        fig.add_vline(x=live_from, line_dash="dot", line_color="gray")
-        fig.add_annotation(x=live_from, y=1, yref="paper", text="ab hier live (nur IEX)",
-                           showarrow=False, xanchor="left", font=dict(color="gray"))
-    fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_rangeslider_visible=False,
-                      legend=dict(orientation="h"))
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(build_chart(bars, symbol, stop, target), width="stretch", config=CHART_CONFIG,
+                    key=f"chart_{symbol}")
+    st.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag")
     share = bars.attrs.get("iex_share")
     if share is not None and share < 0.01:
         st.warning(f"IEX sieht nur {share:.1%} des Handels in {symbol}: die letzten 15 Minuten im Chart "

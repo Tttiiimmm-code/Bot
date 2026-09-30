@@ -119,3 +119,25 @@ def test_gui_scan_shows_first_candidate_chart(tmp_path, monkeypatch):
     assert any(h.value == "2. Chart BBB" for h in at.subheader)
     at.text_input(key="symbol_input").set_value("CCC").run()   # von Hand getippt bleibt stehen
     assert any(h.value == "2. Chart CCC" for h in at.subheader)
+
+
+def test_chart_is_tradingview_like():
+    from datetime import datetime, timedelta
+
+    import pandas as pd
+
+    from gui.chart import CHART_CONFIG, build_chart
+    from tradingbot.copilot import NY
+
+    t0 = datetime(2026, 10, 1, 10, 0, tzinfo=NY)
+    bars = pd.DataFrame({"open": [10.0, 10.4], "high": [10.5, 10.6], "low": [9.9, 10.1], "close": [10.4, 10.2],
+                         "volume": [1000, 2000]}, index=[t0, t0 + timedelta(minutes=5)])
+    bars.attrs.update(live_from=t0 + timedelta(minutes=5))
+    fig = build_chart(bars, "XYZ", stop=9.8, target=10.8)
+    assert CHART_CONFIG["scrollZoom"] is True                   # Mausrad zoomt
+    assert fig.layout.dragmode == "pan"                         # Ziehen verschiebt
+    assert fig.layout.uirevision == "XYZ"                       # Zoom bleibt beim Neuladen
+    assert [tr.type for tr in fig.data] == ["candlestick", "scatter", "bar"]   # Kerzen, VWAP, Volumen
+    assert fig.layout.yaxis.side == "right"
+    texts = [a.text for a in fig.layout.annotations]
+    assert "Stop 9.80" in texts and "Ziel 10.80" in texts and " 10.20 " in texts
