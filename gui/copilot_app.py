@@ -248,9 +248,10 @@ with tab_trade:
             stop = st.number_input("Stop (Verkauf, wenn der Kurs hierhin fällt)", min_value=0.0, key=stop_key,
                                    step=0.01, format="%.2f",
                                    help="Vorschlag: knapp unter dem letzten Rücksetzer. Dort ist die Idee widerlegt.")
-            if stop_default and st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}"):
-                st.session_state[stop_key] = float(stop_default)
-                st.rerun()
+            if stop_default:
+                # on_click läuft VOR dem Neuaufbau -- danach darf das Stop-Feld nicht mehr geändert werden
+                st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}",
+                          on_click=st.session_state.__setitem__, args=(stop_key, float(stop_default)))
             setup = st.selectbox("Setup", list(SETUPS), help="Welches Muster siehst du?")
             st.caption(SETUPS[setup])
         with b:

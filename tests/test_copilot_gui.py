@@ -78,6 +78,11 @@ def test_gui_keeps_typed_stop_and_resets_confirmation_after_buy(tmp_path, monkey
     stop.set_value(9.5).run()
     at.text_area[0].set_value("Notiz").run()          # andere Eingabe -> Neuaufbau der Seite
     assert next(n for n in at.number_input if n.key == "stop_XYZ").value == 9.5
+    use = next(b for b in at.button if b.key == "use_XYZ")     # Vorschlag übernehmen (Tief 9.9 - 0.01)
+    use.click().run()
+    assert not at.exception
+    assert next(n for n in at.number_input if n.key == "stop_XYZ").value == pytest.approx(9.89)
+    next(n for n in at.number_input if n.key == "stop_XYZ").set_value(9.5).run()
     at.checkbox(key="confirmed").check().run()
     next(b for b in at.button if b.label == "Kaufen").click().run()
     assert not at.exception
