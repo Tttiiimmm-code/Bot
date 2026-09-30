@@ -123,6 +123,10 @@ def test_gui_scan_shows_first_candidate_chart(tmp_path, monkeypatch):
     assert at.text_input(key="symbol_input").value == "AAA"
     assert any(h.value == "2. Chart AAA" for h in at.subheader)
     assert any("aktualisiert sich alle 5 Minuten" in c.value for c in at.caption)   # Chart-Fragment gezeichnet
+    # Checkliste steht beim Kaufen (aufklappbar) UND in der Anleitung -- AppTest listet Expander nicht auf
+    assert sum("Kopf frei" in m.value for m in at.markdown) == 2
+    texts = " ".join(m.value for m in at.markdown)
+    assert "Checkliste vor jedem Kauf" in texts and "Typische Anfängerfehler" in texts  # Anleitung
     at.button(key="pick_BBB").click().run()                    # Zeile anklicken -> Chart BBB
     assert not at.exception
     assert any(h.value == "2. Chart BBB" for h in at.subheader)

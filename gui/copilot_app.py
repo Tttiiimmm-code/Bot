@@ -30,6 +30,14 @@ SETUPS = {
     "power-hour": "Starker Ausbruch in der letzten Handelsstunde (ab 15:00 New Yorker Zeit, meist 21:00 bei uns).",
 }
 NEUTRAL = "#9598A1"
+ENTRY_CHECKLIST = """\
+1. **Trend passt:** Kurs liegt **über der VWAP**, und die Hochs und Tiefs werden höher.
+2. **Setup erkennbar:** Du kannst es in einem Satz benennen (VWAP-Rücksetzer, Ausbruch übers Tageshoch, Power Hour).
+3. **Bestätigung da:** Nicht in eine fallende Kerze kaufen -- warten, bis eine Kerze über das Hoch der vorherigen steigt.
+4. **Klarer Stop-Punkt:** Stop unter einem sichtbaren Tief oder der VWAP, nicht willkürlich.
+5. **Chance mindestens 2 R:** Bis zum Tageshoch bzw. zum nächsten Widerstand ist Platz für das Doppelte des Stop-Abstands.
+6. **Kopf frei:** Kein Frust vom letzten Trade, kein "ich muss heute noch was verdienen".
+"""
 
 st.set_page_config(page_title="Trading-Copilot (Paper)", page_icon="📈", layout="wide")
 
@@ -319,6 +327,8 @@ with tab_trade:
                             st.error(p, icon="⛔")
                     else:
                         st.success("Alle Regeln erfüllt.", icon="✅")
+                with st.expander("Checkliste vor dem Kauf", icon="📝"):
+                    st.markdown(ENTRY_CHECKLIST)
                 confirmed = st.checkbox("Ich habe Stop und Setup geprüft.", key="confirmed")
                 blocked = not pv or bool(pv["problems"]) or pv["shares"] <= 0 or not confirmed
                 if st.button("Kaufen", type="primary", disabled=blocked, icon="🛒", width="stretch"):
@@ -466,4 +476,56 @@ als Zufall. Die meisten Anfänger sind es anfangs nicht -- das ist normal und ko
 - Wenige, gute Gelegenheiten statt vieler mittelmäßiger. 0 Trades an einem Abend ist völlig in Ordnung.
 - In den ersten Wochen höchstens 2 Trades pro Abend.
 - Erst nach bestandener Auswertung (100 Trades) über Echtgeld nachdenken.
+""")
+
+    st.subheader("🎯 Gute Einstiege finden")
+    e1, e2 = st.columns(2, gap="large")
+    with e1:
+        with st.container(border=True):
+            st.markdown("### Checkliste vor jedem Kauf\nNur kaufen, wenn **alle sechs** Punkte stimmen:\n\n"
+                        + ENTRY_CHECKLIST)
+        with st.container(border=True):
+            st.markdown("""
+### Beispiel: VWAP-Rücksetzer Schritt für Schritt
+1. Aktie ist heute +4 %, der Kurs lag den ganzen Nachmittag **über der orangen VWAP-Linie**.
+2. Der Kurs fällt in 3-4 Kerzen von 52,00 auf 51,20 -- **knapp über die VWAP (51,10)**. Die roten Kerzen
+   werden kleiner, das Volumen nimmt ab (Verkäufer werden müde).
+3. **Nicht in die fallende Kerze kaufen.** Warten, bis eine Kerze **über das Hoch der vorherigen Kerze**
+   steigt, z.B. über 51,35. Erst das zeigt: Käufer übernehmen wieder.
+4. **Stop** unter das Tief des Rücksetzers und unter die VWAP: 51,05. Abstand 0,30 $ = 1 R.
+5. **Ziel** 2 R = 51,35 + 0,60 = 51,95 -- das liegt noch unter dem Tageshoch (52,00). Passt.
+6. Kaufen, Ziel setzen, **dann nichts mehr anfassen**. Stop oder Ziel entscheiden.
+""")
+    with e2:
+        with st.container(border=True):
+            st.markdown(f"""
+### Timing an deinem Abend
+- **18:00-19:30 (Mittag in New York):** oft ruhig und zäh, viele Fehlausbrüche. Gut zum **Beobachten**
+  und Kandidaten vormerken -- beim Handeln besonders wählerisch sein.
+- **19:30-21:00:** Bewegung kommt zurück, Trends vom Vormittag setzen sich oft fort. Gute Zeit für
+  VWAP-Rücksetzer.
+- **21:00-{berlin_time(rules.last_entry_et)} (Power Hour):** mehr Volumen, schnellere Bewegungen. Wenig Zeit
+  bis zum automatischen Schließen um {berlin_time(rules.flatten_et)} -- das Ziel muss schnell erreichbar sein.
+- **Vor Zahlen/Nachrichten** (z.B. Zinsentscheid um 20:00 an Fed-Tagen): lieber abwarten.
+""")
+        with st.container(border=True):
+            st.markdown("""
+### Typische Anfängerfehler
+- **Hinterherlaufen (FOMO):** Nach 3-4 grünen Kerzen in Folge ist der beste Einstieg vorbei. Auf den
+  nächsten Rücksetzer warten -- es kommt fast immer einer.
+- **Stop zu eng:** Ein Stop direkt unter dem Kurs wird vom normalen Hin und Her ausgelöst. Der Stop gehört
+  unter einen **sichtbaren Punkt** (letztes Tief, VWAP) -- die Stückzahl passt der Copilot an.
+- **Stop nach unten verschieben:** Macht aus einem kleinen Verlust einen großen. Nie.
+- **Gewinn laufen lassen "bis es mehr wird":** Ohne Ziel wird aus +1 R oft wieder 0 oder -1 R.
+  Ziel setzen oder Stop auf Einstand nachziehen lassen.
+- **Gegen den Markt kaufen:** Fallen die großen Indizes (QQQ/SPY) gerade deutlich, scheitern auch gute
+  Einzel-Setups öfter. Kurz den QQQ-Chart ansehen.
+- **Rache-Trade nach einem Verlust:** Der nächste Trade soll ein guter sein, nicht ein schneller.
+""")
+        with st.container(border=True):
+            st.markdown("""
+### Nach jedem Trade (2 Minuten)
+Schreib dir auf: **Hätte ich diesen Trade mit der Checkliste wieder genommen?** Ein Verlust mit
+eingehaltener Checkliste ist ein **guter Trade** -- Verluste gehören dazu. Ein Gewinn ohne Plan ist
+ein schlechter Trade, der zufällig aufging. Nur die Trades mit Plan zeigen dir, ob du einen Vorteil hast.
 """)
