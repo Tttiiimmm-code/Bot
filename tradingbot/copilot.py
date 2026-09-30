@@ -254,7 +254,7 @@ class Copilot:
         in CopilotRules nicht kennen. Sonst würde eine Market-Order bis zur nächsten Eröffnung warten."""
         clock = self.trading_client.get_clock()
         if not clock.is_open:
-            return ["Markt ist geschlossen (Wochenende/Feiertag) -- die Order würde erst zur nächsten "
+            return ["Markt ist geschlossen -- die Order würde erst zur nächsten "
                     f"Eröffnung ausgeführt ({clock.next_open.astimezone(BERLIN):%a %d.%m. %H:%M})"]
         cutoff = clock.next_close - timedelta(minutes=ENTRY_CUTOFF_BEFORE_CLOSE_MIN)
         if now >= cutoff:

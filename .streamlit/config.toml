@@ -1,0 +1,14 @@
+# Farbschema der Copilot-Oberfläche (angelehnt an TradingView, dunkel). Streamlit liest diese Datei,
+# weil "Copilot starten.bat" im Bot-Ordner startet.
+[theme]
+base = "dark"
+primaryColor = "#2962FF"
+backgroundColor = "#131722"
+secondaryBackgroundColor = "#1E222D"
+textColor = "#D1D4DC"
+borderColor = "#2A2E39"
+showWidgetBorder = true
+baseRadius = "medium"
+
+[client]
+toolbarMode = "minimal"
