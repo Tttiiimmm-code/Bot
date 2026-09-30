@@ -1,0 +1,5 @@
+# Nur für die Copilot-Oberfläche auf dem eigenen PC (nicht auf dem VPS nötig).
+# Installation: .venv\Scripts\python -m pip install -r requirements-gui.txt
+-r requirements.txt
+streamlit>=1.40,<2
+plotly>=5.20,<8

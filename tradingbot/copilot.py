@@ -297,6 +297,44 @@ class Copilot:
             return f"Keine abgeschlossenen Trades in den letzten {days} Tagen."
         return format_stats(setup_stats(rows))
 
+    def preview(self, symbol: str, stop: float, now: datetime, target: float | None = None) -> dict:
+        """Wie buy(), aber ohne Order: Kurs, Stückzahl, Risiko, Positionswert und Regelverstöße."""
+        symbol = symbol.upper()
+        price = self.latest_price(symbol)
+        problems = check_entry(self.rules, self.state(now), now, symbol, price, stop)
+        if target is not None and target <= price:
+            problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
+        buying_power = float(self.trading_client.get_account().buying_power)
+        shares = position_size(self.rules, price, stop, buying_power) if stop < price else 0
+        return {"symbol": symbol, "price": price, "shares": shares, "risk": shares * max(price - stop, 0.0),
+                "value": shares * price, "reward_r": ((target - price) / (price - stop)) if target and stop < price else None,
+                "problems": problems}
+
+
+    def today_bars(self, symbol: str, now: datetime):
+        """5-Minuten-Kerzen des heutigen Handelstags (IEX, Echtzeit ohne Abo) als DataFrame."""
+        from alpaca.data.enums import DataFeed
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+
+        start = datetime.combine(now.astimezone(NY).date(), time(9, 30), tzinfo=NY)
+        df = self.data_client.get_stock_bars(StockBarsRequest(
+            symbol_or_symbols=symbol.upper(), timeframe=TimeFrame(5, TimeFrameUnit.Minute), start=start, end=now,
+            feed=DataFeed.IEX)).df
+        if df.empty:
+            return df
+        df = df.xs(symbol.upper(), level="symbol")
+        df.index = df.index.tz_convert(NY)
+        return df
+
+
+    def journal_risk(self, symbol: str, now: datetime) -> float | None:
+        """Geplantes Risiko (1 R) des letzten heutigen Journal-Eintrags für das Symbol."""
+        today = now.astimezone(NY).date()
+        entries = [e for e in load_journal(self.journal_path) if e.symbol == symbol.upper()
+                   and e.dt.astimezone(NY).date() == today]
+        return entries[-1].risk if entries else None
+
     def watch_step(self, now: datetime) -> str | None:
         """Ein Durchlauf der Überwachung: glattstellen zur Schlusszeit oder bei Tagesverlust
         (realisiert + offen) über der Grenze. Gibt eine Meldung zurück, wenn gehandelt wurde."""
@@ -312,3 +350,27 @@ class Copilot:
             self.close(None)
             return f"Tagesverlust {total:.2f} $ über der Grenze: alles glattgestellt."
         return None
+
+
+# ------------------------------------------------------------ Helfer für die Oberfläche
+
+def vwap(bars) -> list[float]:
+    """Laufender VWAP ((H+L+C)/3 x Volumen, kumuliert) über die übergebenen Kerzen eines Tages."""
+    out, pv, vol = [], 0.0, 0.0
+    for h, l_, c, v in zip(bars["high"], bars["low"], bars["close"], bars["volume"]):
+        pv += (h + l_ + c) / 3 * v
+        vol += v
+        out.append(pv / vol if vol > 0 else float("nan"))
+    return out
+
+
+def suggest_stop(bars, price: float, rules: CopilotRules, lookback: int = 6) -> float | None:
+    """Vorschlag: 1 Cent unter dem Tief der letzten `lookback` Kerzen (letzter Rücksetzer), mindestens
+    rules.min_stop_pct unter dem Kurs. None ohne Kerzen."""
+    lows = list(bars["low"])[-lookback:]
+    if not lows or price <= 0:
+        return None
+    stop = min(min(lows) - 0.01, price * (1 - rules.min_stop_pct))
+    # abrunden (nicht runden), sonst läge der Vorschlag knapp innerhalb des Mindestabstands
+    step = 0.01 if stop >= 1 else 0.0001
+    return round(math.floor(stop / step + 1e-9) * step, 4)

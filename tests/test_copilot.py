@@ -151,3 +151,27 @@ def test_watch_flattens_at_close_and_on_daily_loss(tmp_path):
     trading = FakeTrading(positions=[SimpleNamespace(symbol="XYZ", unrealized_pl="-160")])
     cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
     assert "Tagesverlust" in cp.watch_step(ny(12, 0)) and trading.closed_all
+
+
+def test_vwap_is_volume_weighted_typical_price():
+    from tradingbot.copilot import vwap
+    bars = {"high": [11.0, 13.0], "low": [9.0, 11.0], "close": [10.0, 12.0], "volume": [100, 300]}
+    assert vwap(bars) == pytest.approx([10.0, (10 * 100 + 12 * 300) / 400])
+
+
+def test_suggest_stop_below_recent_low_and_min_distance():
+    from tradingbot.copilot import suggest_stop
+    bars = {"low": [24.0, 24.5, 24.3, 24.8, 24.9, 24.7, 24.6]}
+    assert suggest_stop(bars, 25.0, RULES) == pytest.approx(24.29)       # Tief der letzten 6 = 24,30
+    assert suggest_stop({"low": [24.99]}, 25.0, RULES) == pytest.approx(24.92)  # mind. 0,3 % Abstand
+    assert suggest_stop({"low": []}, 25.0, RULES) is None
+
+
+def test_preview_computes_size_and_reports_problems_without_ordering(tmp_path):
+    trading = FakeTrading()
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    ok = cp.preview("xyz", 24.0, ny(12, 0), target=27.0)
+    assert ok["shares"] == 50 and ok["risk"] == pytest.approx(50.0) and ok["reward_r"] == pytest.approx(2.0)
+    assert ok["problems"] == [] and trading.submitted == []
+    bad = cp.preview("XYZ", 26.0, ny(12, 0))
+    assert bad["shares"] == 0 and any("unter dem Kurs" in p for p in bad["problems"])
