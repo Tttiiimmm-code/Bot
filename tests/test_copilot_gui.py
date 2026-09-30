@@ -181,3 +181,68 @@ def test_header_open_pnl_colored_by_sign(tmp_path, monkeypatch, unreal, delta, c
     m = next(m for m in at.metric if m.label == "Heute realisiert")
     assert m.delta == delta
     assert Metric.MetricColor.Name(m.proto.color) == color
+
+
+def test_practice_tab_load_buy_and_finish_trade(tmp_path, monkeypatch):
+    from datetime import date, datetime, time, timedelta
+
+    import pandas as pd
+
+    import tradingbot.copilot as copilot_mod
+    import tradingbot.replay as rpl
+    from tradingbot.copilot import NY
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x" + chr(10) + "ALPACA_SECRET_KEY=y" + chr(10) + "ALPACA_PAPER=true" + chr(10))
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    monkeypatch.setenv("COPILOT_REPLAY_JOURNAL", str(tmp_path / "replay.jsonl"))
+    fake = _FakeCopilot()
+    fake.data_client = None   # wird durch das ersetzte pick_random_day nicht benutzt
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+
+    # Tag: bis 12:00 steigt der Kurs langsam, danach steigt er weiter bis zum Ziel
+    day = date(2026, 9, 29)
+    t0 = datetime.combine(day, time(9, 30), tzinfo=NY)
+    rows = [100 + 0.05 * i for i in range(78)]
+    bars = pd.DataFrame([{"open": p, "high": p + 0.1, "low": p - 0.1, "close": p + 0.04, "volume": 1000} for p in rows],
+                        index=pd.DatetimeIndex([t0 + timedelta(minutes=5 * i) for i in range(78)]))
+    monkeypatch.setattr(rpl, "pick_random_day", lambda *a, **k: ("XYZ", day, bars, 98.0))
+
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label == "Tag laden").click().run()
+    assert not at.exception
+    assert any(h.value.startswith("XYZ · 29.09.2026") for h in at.subheader), ([h.value for h in at.subheader], [e.value for e in at.error], [i.value for i in at.info][:3])
+    stop = next(n for n in at.number_input if n.key == "rp_stop")
+    stop.set_value(float(bars["close"].iloc[29]) - 0.5).run()
+    next(b for b in at.button if b.label == "Kaufen" and b.key is None or b.label == "Kaufen").click().run()
+    assert not at.exception
+    next(b for b in at.button if b.label == "Bis Trade-Ende").click().run()
+    assert not at.exception
+    results = rpl.load_results(tmp_path / "replay.jsonl")
+    assert len(results) == 1 and results[0].symbol == "XYZ" and results[0].reason == "Ziel"
+    assert results[0].r == pytest.approx(2.0, abs=0.05)
+    assert any(m.label == "Übungs-Trades" and m.value == "1" for m in at.metric)
+
+
+def test_practice_tab_shows_load_error(tmp_path, monkeypatch):
+    import tradingbot.copilot as copilot_mod
+    import tradingbot.replay as rpl
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x" + chr(10) + "ALPACA_SECRET_KEY=y" + chr(10) + "ALPACA_PAPER=true" + chr(10))
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    monkeypatch.setenv("COPILOT_REPLAY_JOURNAL", str(tmp_path / "replay.jsonl"))
+    fake = _FakeCopilot()
+    fake.data_client = None
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+
+    def boom(*a, **k):
+        raise ValueError("Netz weg")
+
+    monkeypatch.setattr(rpl, "pick_random_day", boom)
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label == "Tag laden").click().run()
+    assert not at.exception
+    assert any("Tag konnte nicht geladen werden: Netz weg" in e.value for e in at.error), [e.value for e in at.error]

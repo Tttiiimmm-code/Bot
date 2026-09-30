@@ -20,7 +20,9 @@ CHART_CONFIG = {
 }
 
 
-def build_chart(bars, symbol: str, stop: float | None, target: float | None) -> go.Figure:
+def build_chart(bars, symbol: str, stop: float | None, target: float | None, markers=(),
+                uirevision: str | None = None) -> go.Figure:
+    """markers: [(Zeit, "buy"/"sell", Kurs)] -- Käufe als grüne, Verkäufe als rote Pfeile an der Kerze."""
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.78, 0.22], vertical_spacing=0.02)
     fig.add_trace(go.Candlestick(
         x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"], close=bars["close"], name=symbol,
@@ -32,6 +34,17 @@ def build_chart(bars, symbol: str, stop: float | None, target: float | None) -> 
     fig.add_trace(go.Bar(x=bars.index, y=bars["volume"], name="Volumen", marker_color=colors, opacity=0.5,
                          hovertemplate="Volumen %{y:,.0f}<extra></extra>"), row=2, col=1)
 
+    if markers:
+        import pandas as pd
+
+        for side, color, symbol_shape, label in (("buy", UP, "triangle-up", "Kauf"),
+                                                  ("sell", DOWN, "triangle-down", "Verkauf")):
+            pts = [(pd.Timestamp(t).tz_convert(bars.index.tz).floor("5min"), px) for t, sd, px in markers if sd == side]
+            if pts:
+                fig.add_trace(go.Scatter(
+                    x=[p[0] for p in pts], y=[p[1] for p in pts], mode="markers", name=label,
+                    marker=dict(symbol=symbol_shape, size=13, color=color, line=dict(color="white", width=1)),
+                    hovertemplate=f"{label} %{{y:.2f}}<extra></extra>"), row=1, col=1)
     if stop:
         fig.add_hline(y=stop, line_dash="dash", line_color=DOWN, line_width=1, row=1, col=1,
                       annotation_text=f"Stop {stop:.2f}", annotation_position="bottom left")
@@ -58,7 +71,7 @@ def build_chart(bars, symbol: str, stop: float | None, target: float | None) -> 
     fig.update_yaxes(showticklabels=False, row=2, col=1)
     fig.update_layout(
         height=520, margin=dict(l=10, r=60, t=10, b=10), dragmode="pan", hovermode="x",
-        uirevision=symbol,  # Zoom/Ausschnitt bleiben beim automatischen Neuladen erhalten
+        uirevision=uirevision or symbol,  # Zoom/Ausschnitt bleiben beim automatischen Neuladen erhalten
         showlegend=False, bargap=0.1,
     )
     return fig

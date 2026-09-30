@@ -19,11 +19,12 @@ import streamlit as st  # noqa: E402
 
 from gui.chart import CHART_CONFIG, DOWN, UP, build_chart  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
-    BERLIN, NY, Copilot, CopilotRules, attach_setups, load_journal, setup_stats, suggest_stop,
+    BERLIN, NY, Copilot, CopilotRules, attach_setups, entry_warnings, load_journal, setup_stats, suggest_stop,
 )
 
 ENV_FILE = Path(os.environ.get("COPILOT_ENV", ROOT / "copilot.env"))
 JOURNAL = Path(os.environ.get("COPILOT_JOURNAL", ROOT / "copilot_journal.jsonl"))
+REPLAY_JOURNAL = Path(os.environ.get("COPILOT_REPLAY_JOURNAL", ROOT / "replay_journal.jsonl"))
 SETUPS = {
     "vwap-pullback": "Aktie ist heute deutlich im Plus, läuft auf die VWAP-Linie zurück und dreht wieder nach oben.",
     "trend-continuation": "Nach einer ruhigen Mittagsphase bricht die Aktie über ihr Tageshoch aus.",
@@ -193,7 +194,11 @@ def chart_view(symbol: str, stop: float, target: float | None) -> None:
     if bars.empty:
         st.info("Noch keine 5-Minuten-Kerzen für heute (Markt geschlossen?).")
         return
-    st.plotly_chart(build_chart(bars, symbol, stop, target), width="stretch", config=CHART_CONFIG,
+    try:
+        markers = cp.fills_today(symbol, t)  # Pfeile für heutige Käufe/Verkäufe
+    except Exception:
+        markers = []
+    st.plotly_chart(build_chart(bars, symbol, stop, target, markers=markers), width="stretch", config=CHART_CONFIG,
                     key=f"chart_{symbol}")
     share = bars.attrs.get("iex_share")
     if share is not None and share < 0.01:
@@ -212,7 +217,8 @@ st.title("📈 Trading-Copilot")
 st.markdown('<div class="copilot-sub">Paper-Konto · jeder Trade mit Stop bei Alpaca · '
             'Auswertung nach 100 Trades</div>', unsafe_allow_html=True)
 header()
-tab_trade, tab_pos, tab_eval, tab_help = st.tabs(["📊 Handeln", "💼 Positionen", "📈 Auswertung", "📘 Anleitung"])
+tab_trade, tab_pos, tab_practice, tab_eval, tab_help = st.tabs(
+    ["📊 Handeln", "💼 Positionen", "🎓 Üben", "📈 Auswertung", "📘 Anleitung"])
 
 # ------------------------------------------------------------ Handeln
 
@@ -327,6 +333,10 @@ with tab_trade:
                             st.error(p, icon="⛔")
                     else:
                         st.success("Alle Regeln erfüllt.", icon="✅")
+                    # Hinweise zu typischen Anfängerfehlern -- sperren nicht, sollen aber zum Nachdenken bringen
+                    if not bars.empty:
+                        for w in entry_warnings(bars, pv["price"], stop):
+                            st.warning(w, icon="⚠️")
                 with st.expander("Checkliste vor dem Kauf", icon="📝"):
                     st.markdown(ENTRY_CHECKLIST)
                 confirmed = st.checkbox("Ich habe Stop und Setup geprüft.", key="confirmed")
@@ -391,6 +401,17 @@ with tab_pos:
             st.caption("Heute noch keine abgeschlossenen Trades.")
 
     positions_view()
+
+# ------------------------------------------------------------ Üben (Replay)
+
+with tab_practice:
+    from gui import replay_view
+
+    @st.fragment
+    def practice_view():
+        replay_view.render(cp, rules, REPLAY_JOURNAL, SETUPS, ENTRY_CHECKLIST)
+
+    practice_view()
 
 # ------------------------------------------------------------ Auswertung
 

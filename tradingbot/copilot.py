@@ -407,6 +407,15 @@ class Copilot:
         bars.attrs.update(live_from=live_from, iex_share=share)
         return bars
 
+    def fills_today(self, symbol: str, now: datetime) -> list[tuple[datetime, str, float]]:
+        """Heutige Ausführungen des Symbols: (Zeit, "buy"/"sell", Kurs) -- für die Pfeile im Chart."""
+        from tradingbot.report import fetch_closed_orders
+
+        start = datetime.combine(now.astimezone(NY).date(), time(0), tzinfo=NY)
+        return [(o.filled_at, getattr(o.side, "value", str(o.side)), float(o.filled_avg_price))
+                for o in fetch_closed_orders(self.trading_client, start, now)
+                if o.symbol == symbol.upper() and o.filled_at is not None and o.filled_avg_price is not None]
+
     def journal_risk(self, symbol: str, now: datetime) -> float | None:
         """Geplantes Risiko (1 R) des letzten heutigen Journal-Eintrags für das Symbol."""
         today = now.astimezone(NY).date()
@@ -492,6 +501,24 @@ def vwap(bars) -> list[float]:
         vol += v
         out.append(pv / vol if vol > 0 else float("nan"))
     return out
+
+
+def entry_warnings(bars, price: float, stop: float, recent: int = 3) -> list[str]:
+    """Hinweise (keine Sperre) zu den häufigsten Anfängerfehlern: Long-Kauf UNTER der VWAP und ein
+    Stop, der nicht unter einem sichtbaren Tief liegt (Tief der letzten `recent` Kerzen)."""
+    lows = list(bars["low"])
+    if not lows:
+        return []
+    warnings = []
+    v = vwap(bars)[-1]
+    if v == v and price < v:  # v == v: nicht NaN
+        warnings.append(f"Kurs liegt {price / v - 1:.1%} unter der VWAP ({v:.2f}): von unten wirkt die VWAP oft wie "
+                        "eine Decke -- das passt zu keinem der Long-Setups.")
+    recent_low = min(lows[-recent:])
+    if stop > recent_low:
+        warnings.append(f"Stop {stop:.2f} liegt über dem Tief der letzten {recent * 5} Minuten ({recent_low:.2f}): "
+                        "normales Hin und Her kann ihn auslösen. Besser knapp unter ein sichtbares Tief.")
+    return warnings
 
 
 def suggest_stop(bars, price: float, rules: CopilotRules, lookback: int = 6) -> float | None:
