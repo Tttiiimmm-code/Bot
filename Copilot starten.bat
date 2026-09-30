@@ -6,5 +6,6 @@ if not exist "%USERPROFILE%\.streamlit\credentials.toml" (
   echo [general]> "%USERPROFILE%\.streamlit\credentials.toml"
   echo email = "">> "%USERPROFILE%\.streamlit\credentials.toml"
 )
-start "Copilot-Sicherheit (OFFEN LASSEN)" .venv\Scripts\python.exe main.py copilot watch
+rem cmd /k: das Fenster bleibt bei einem Fehler (z.B. copilot.env fehlt) offen und zeigt ihn an
+start "Copilot-Sicherheit (OFFEN LASSEN)" cmd /k .venv\Scripts\python.exe main.py copilot watch
 .venv\Scripts\python.exe -m streamlit run gui\copilot_app.py --browser.gatherUsageStats false

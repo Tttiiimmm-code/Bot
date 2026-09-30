@@ -183,15 +183,26 @@ with tab_trade:
         st.subheader("3. Kauf planen")
         a, b, c = st.columns(3)
         with a:
-            stop = st.number_input("Stop (Verkauf, wenn der Kurs hierhin fällt)", min_value=0.0,
-                                   value=float(stop_default or round(price * 0.98, 2)), step=0.01, format="%.2f",
+            # Feste Widget-Keys je Symbol: sonst setzt jede Aktualisierung (neuer Kurs -> neuer Vorschlag)
+            # den eingegebenen Stop still auf den Vorschlag zurück.
+            stop_key = f"stop_{symbol}"
+            if stop_key not in st.session_state:
+                st.session_state[stop_key] = float(stop_default or round(price * 0.98, 2))
+            stop = st.number_input("Stop (Verkauf, wenn der Kurs hierhin fällt)", min_value=0.0, key=stop_key,
+                                   step=0.01, format="%.2f",
                                    help="Vorschlag: knapp unter dem letzten Rücksetzer. Dort ist die Idee widerlegt.")
+            if stop_default and st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}"):
+                st.session_state[stop_key] = float(stop_default)
+                st.rerun()
             setup = st.selectbox("Setup", list(SETUPS), help="Welches Muster siehst du?")
             st.caption(SETUPS[setup])
         with b:
             use_target = st.checkbox("Kursziel setzen (optional)")
-            target = st.number_input("Kursziel", min_value=0.0, value=round(price + 2 * max(price - stop, 0.01), 2),
-                                     step=0.01, format="%.2f") if use_target else None
+            target_key = f"target_{symbol}"
+            if use_target and target_key not in st.session_state:
+                st.session_state[target_key] = round(price + 2 * max(price - stop, 0.01), 2)
+            target = st.number_input("Kursziel", min_value=0.0, key=target_key, step=0.01,
+                                     format="%.2f") if use_target else None
             note = st.text_area("Warum dieser Trade?", placeholder="z.B. Rücksetzer auf VWAP, Volumen steigt wieder")
         with c:
             try:
@@ -208,10 +219,20 @@ with tab_trade:
                         st.error(p)
                 else:
                     st.success("Alle Regeln erfüllt.")
-        confirmed = st.checkbox("Ich habe Stop und Setup geprüft.")
+        confirmed = st.checkbox("Ich habe Stop und Setup geprüft.", key="confirmed")
         blocked = not pv or bool(pv["problems"]) or pv["shares"] <= 0 or not confirmed
         if st.button("Kaufen", type="primary", disabled=blocked):
-            safe(lambda: cp.buy(symbol, stop, setup, now(), target=target, note=note))
+            try:
+                msg = cp.buy(symbol, stop, setup, now(), target=target, note=note)
+            except Exception as e:
+                msg = f"Alpaca hat abgelehnt oder ist nicht erreichbar: {e}"
+            # Häkchen zurücksetzen: ein zweiter Klick darf nicht versehentlich ein zweites Mal kaufen
+            st.session_state["last_buy_msg"] = msg
+            del st.session_state["confirmed"]
+            st.rerun()
+        if "last_buy_msg" in st.session_state:
+            msg = st.session_state["last_buy_msg"]
+            (st.success if msg.startswith("GEKAUFT") else st.error)(msg)
 
         if not bars.empty:
             fig = go.Figure(go.Candlestick(x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"],

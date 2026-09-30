@@ -25,6 +25,9 @@ from zoneinfo import ZoneInfo
 
 NY = ZoneInfo("America/New_York")
 BERLIN = ZoneInfo("Europe/Berlin")
+# relativ zum tatsächlichen Börsenschluss (Alpaca-Uhr), gilt zusätzlich zu den festen ET-Zeiten
+ENTRY_CUTOFF_BEFORE_CLOSE_MIN = 15
+FLATTEN_BEFORE_CLOSE_MIN = 5
 
 
 @dataclass(frozen=True)
@@ -227,6 +230,20 @@ class Copilot:
         entries = sum(1 for e in load_journal(self.journal_path) if e.dt.astimezone(NY).date() == today)
         return day_state(trades, open_symbols, entries, now)
 
+    def market_problems(self, now: datetime) -> list[str]:
+        """Einstieg nur bei offenem Markt und nicht kurz vor Schluss -- auch an Feiertagen und an
+        verkürzten Handelstagen (z.B. nach Thanksgiving, Schluss 13:00 ET), die die festen Uhrzeiten
+        in CopilotRules nicht kennen. Sonst würde eine Market-Order bis zur nächsten Eröffnung warten."""
+        clock = self.trading_client.get_clock()
+        if not clock.is_open:
+            return ["Markt ist geschlossen (Wochenende/Feiertag) -- die Order würde erst zur nächsten "
+                    f"Eröffnung ausgeführt ({clock.next_open.astimezone(BERLIN):%a %d.%m. %H:%M})"]
+        cutoff = clock.next_close - timedelta(minutes=ENTRY_CUTOFF_BEFORE_CLOSE_MIN)
+        if now >= cutoff:
+            return [f"Markt schließt um {clock.next_close.astimezone(BERLIN):%H:%M} (deutsche Zeit) -- "
+                    f"keine neuen Einstiege ab {cutoff.astimezone(BERLIN):%H:%M}"]
+        return []
+
     def buy(self, symbol: str, stop: float, setup: str, now: datetime, target: float | None = None,
             note: str = "", risk: float | None = None) -> str:
         """Prüft die Regeln, rechnet die Stückzahl und sendet eine Market-Order mit Stop (und optional
@@ -238,7 +255,7 @@ class Copilot:
         stop = _round_price(stop)
         target = _round_price(target) if target is not None else None
         price = self.latest_price(symbol)
-        problems = check_entry(self.rules, self.state(now), now, symbol, price, stop)
+        problems = self.market_problems(now) + check_entry(self.rules, self.state(now), now, symbol, price, stop)
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         if problems:
@@ -311,7 +328,7 @@ class Copilot:
         stop = _round_price(stop)
         target = _round_price(target) if target is not None else None
         price = self.latest_price(symbol)
-        problems = check_entry(self.rules, self.state(now), now, symbol, price, stop)
+        problems = self.market_problems(now) + check_entry(self.rules, self.state(now), now, symbol, price, stop)
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         buying_power = float(self.trading_client.get_account().buying_power)
@@ -354,6 +371,11 @@ class Copilot:
         if now.astimezone(NY).time() >= self.rules.flatten_et:
             self.close(None)
             return f"{self.rules.flatten_et:%H:%M} ET erreicht: alles glattgestellt."
+        clock = self.trading_client.get_clock()
+        if clock.is_open and now >= clock.next_close - timedelta(minutes=FLATTEN_BEFORE_CLOSE_MIN):
+            # verkürzter Handelstag: die Stop-Orders (DAY) verfallen zum Schluss -- nichts über Nacht halten
+            self.close(None)
+            return f"Früher Börsenschluss ({clock.next_close.astimezone(NY):%H:%M} ET): alles glattgestellt."
         st = self.state(now)
         total = st.realized_pnl + sum(float(p.unrealized_pl) for p in positions)
         if total <= -self.rules.max_daily_loss:

@@ -92,10 +92,15 @@ def test_attach_setups_and_stats_in_r_multiples():
 
 
 class FakeTrading:
-    def __init__(self, positions=None, orders=None):
+    def __init__(self, positions=None, orders=None, clock=None):
         self.positions = positions or []
         self.orders = orders or []
         self.submitted, self.closed_all = [], False
+        # Standard: normaler Handelstag, Schluss 16:00 ET
+        self.clock = clock or SimpleNamespace(is_open=True, next_close=ny(16, 0), next_open=ny(9, 30, day=2))
+
+    def get_clock(self):
+        return self.clock
 
     def get_orders(self, filter=None):
         return self.orders if getattr(filter, "status", None) and filter.status.value == "closed" else []
@@ -189,6 +194,29 @@ def test_buy_rounds_stop_before_checking_rules(tmp_path):
     assert trading.submitted[0].stop_loss.stop_price == 24.0
     [e] = load_journal(tmp_path / "j.jsonl")
     assert e.stop == 24.0
+
+
+def test_buy_refused_on_market_holiday(tmp_path):
+    trading = FakeTrading(clock=SimpleNamespace(is_open=False, next_open=ny(9, 30, day=2), next_close=ny(16, 0, day=2)))
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    msg = cp.buy("XYZ", stop=24.0, setup="vwap", now=ny(12, 0))
+    assert "geschlossen" in msg and trading.submitted == []
+
+
+def test_buy_refused_shortly_before_early_close(tmp_path):
+    trading = FakeTrading(clock=SimpleNamespace(is_open=True, next_close=ny(13, 0), next_open=ny(9, 30, day=2)))
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    assert cp.buy("XYZ", stop=24.0, setup="vwap", now=ny(12, 50)).startswith("KEIN TRADE")
+    assert trading.submitted == []
+    assert cp.buy("XYZ", stop=24.0, setup="vwap", now=ny(12, 30)).startswith("GEKAUFT")
+
+
+def test_watch_flattens_before_early_close(tmp_path):
+    trading = FakeTrading(positions=[SimpleNamespace(symbol="XYZ", unrealized_pl="5")],
+                          clock=SimpleNamespace(is_open=True, next_close=ny(13, 0), next_open=ny(9, 30, day=2)))
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    assert cp.watch_step(ny(12, 50)) is None and not trading.closed_all
+    assert "Früher Börsenschluss" in cp.watch_step(ny(12, 56)) and trading.closed_all
 
 
 def test_vwap_is_volume_weighted_typical_price():
