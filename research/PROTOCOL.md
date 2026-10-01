@@ -2961,3 +2961,43 @@ Bestehen erfordert alle drei Schritte. Keine nachträglichen Änderungen am Rast
 Einordnung: Gold-Spread ~0,36 $ (Median M5) gegen ATR14(M15) ~1,3-1,6 $ -> bei 1,5-3 x ATR-Stops kostet allein der
 Spread ~0,08-0,17 R je Trade. Kurzfristige Gold-Trendfolge/-Rücksetzer hat davor keinen Vorteil; die Auswahl der
 "besten" Trainingsvariante kippt in der Bestätigung ins Signifikant-Negative (klassische Überanpassung).
+
+# Runde 104: 1.152 Konfigurationen eines langsamen Trend-Bots (H4/D1, 14 Märkte) (Vorab, 2026-10-01)
+
+Idee: die Bot-Familie von @tagebuchmillion (Trend + Rücksetzer/Ausbruch, ATR-Stop) auf langsameren Zeitrahmen, wo der
+Spread im Verhältnis zum Stop klein ist. Auf Wunsch des Nutzers rund 1.000 Konfigurationen.
+
+Daten: Dukascopy H1 Bid/Ask 2012-01 bis 2026-09 (data_cache/dukascopy/h1), 14 Märkte: XAUUSD XAGUSD EURUSD GBPUSD
+USDJPY USDCHF USDCNH AUDUSD NZDUSD USDSEK GBPJPY EURJPY CHFJPY USTEC (Lücken einer Kursseite über den mittleren
+Spread ergänzt). H4/D1 in MT5-Serverzeit (GMT+2/+3).
+
+Raster (2 x 2 x 3 x 4 x 2 x 3 x 4 = 1.152):
+- Zeitrahmen: H4, D1 | ATR-Länge: 10, 20 | Trend-EMA: 50, 100, 200 (long nur über, short nur unter der EMA)
+- Einstieg: RSI14 kreuzt 30 (short: 70), RSI14 kreuzt 40 (short: 60), Donchian-Ausbruch 20, Donchian-Ausbruch 55
+- Richtung: long+short, nur long | Stop: 1,5 / 2 / 3 x ATR
+- Ausstieg: Ziel 2 R, Ziel 3 R, ATR-Nachzieh-Stop ohne Ziel (bei jedem Kerzenschluss Extrem - Stop-Faktor x ATR,
+  nur enger), Stop auf Einstand ab +1 R mit Ziel 2 R
+Je Markt höchstens 1 Position; alle Märkte gleich gewichtet (je Trade 1 R), Ergebnis = gepoolte R aller Trades.
+Ausführung: Signal auf geschlossener Kerze -> Einstieg zur Eröffnung der nächsten H1-Kerze (long Brief, short Geld);
+Ausstiege auf H1 (long Geld, short Brief); Kurslücke -> Eröffnungskurs; Stop und Ziel in einer Kerze -> Stop;
+Kommission 0,5 bp je Runde. Swap/Übernachtzins NICHT berücksichtigt (bei langen Haltedauern relevant -> Einordnung).
+
+Auswahl und Bewertung (R netto je Trade):
+1. Training 2012-07 bis 2017-12: berichtet wird die Verteilung (wie viele t >= 2 / 3 / 4; Zufallserwartung t >= 2: ~29).
+   Wählbar sind nur Konfigurationen mit >= 200 Trades, Ø R > 0 und t >= 4 (Mehrfachtest-Schutz); davon die 3 besten t.
+2. Bestätigung 2018-2021: besteht mit Ø R > 0 und t >= 2,4.
+3. Endtest 2022-2026-09: nur nach bestandener Bestätigung; BESTANDEN mit Ø R > 0 und t >= 2.
+Nur zur Information (zählt nicht): die 3 besten Trainings-t ohne t-4-Hürde und ihr Bestätigungsergebnis.
+
+## 2026-10-01 -- Ergebnisse Runde 104
+
+- Training 2012-07 bis 2017: t >= 2: 84 (Zufall ~29), t >= 3: 9 (alle < 200 Trades), t >= 4: 0; Ø R > 0: 805/1.152,
+  Median +0,036 R. Zählende Auswahl (t >= 4): keine -> RUNDE NICHT BESTANDEN.
+- Nur Information, beste Trainings-t (>= 200 Trades) in der Bestätigung 2018-2021:
+  D1 ATR20 EMA200 RSI40 beide 2x Nachzieh-Stop: +0,19 (t 2,67) -> +0,02 (t 0,31);
+  D1 ATR20 EMA50 DON20 beide 3x Ziel 3R: +0,25 (t 2,57) -> -0,05 (t -0,48);
+  D1 ATR10 EMA200 RSI40 beide 1,5x Ziel 2R: +0,23 (t 2,51) -> -0,12 (t -1,29). Endtest nicht angesehen.
+- Familien-Diagnose (Bestätigung, alle Konfigurationen): Median Ø R -0,005, 47 % positiv; Korrelation Training->
+  Bestätigung über Konfigurationen 0,39. Einzige Gruppe mit positivem Median in beiden: D1 nur long (+0,10 -> +0,06)
+  -- naheliegend Marktdrift (Gold/Nasdaq-Hausse, USD-Stärke) und ohne Swap gerechnet; keine eigenständige Hypothese,
+  nicht getestet.
