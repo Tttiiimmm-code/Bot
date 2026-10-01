@@ -3570,3 +3570,24 @@ Auswahl >= 200 Trades, Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> End
   -> +0,050 (t 1,37). Die H1-Scheintreffer aus Runde 110 (EURUSD/USDJPY NY 09-10) bestätigen sich minutengenau nicht.
 - Vorbehalt Indizes/WTI (nur Bid-Minuten, Spread pauschal 1,5 x H1-Median): Training-Mediane bis -1,2 R (DAX,
   Nikkei) deuten auf dünne Minutendaten 2013-2017 (winzige Ranges -> Kosten in R groß); Bestätigung -0,14 bis -0,48 R.
+
+# Liquidationen: erster beschreibender Blick (2026-10-01) und Vorab-Registrierung Runde 125
+
+Daten: Recorder auf dem VPS (deploy/liq-recorder.service) seit 2026-09-27 11:23 UTC; Bybit vollständig (20 Symbole),
+Binance nur Stichprobe (Stream liefert je Symbol höchstens 1 Liquidation/Sekunde). Coin-Kontrakte (z.B. BTCUSD_PERP):
+Menge = Kontrakte zu 100 $ (BTC) bzw. 10 $ -- erste Auswertung hatte das falsch (x8 überhöht), korrigiert.
+Beschreibung 27.09.-01.10. (research/scripts/liq_look.py): 716 Mio. $ liquidiert (Binance-Stichprobe 641, Bybit 75),
+Longs ~63 %; Spitze 28.09.; meiste Liquidationen 12-16 Uhr UTC (US-Eröffnung). Nach Wellen (oberste 2 % der
+5-Min-Summen je Symbol, BTC/ETH/SOL, mind. 30 Min. Abstand): nach Short-Liquidations-Wellen 240 Min. Ø -50 bp
+(n 43, 30 % positiv, t -4,25); nach Long-Wellen 60 Min. Ø -18 bp (t -2,05). NUR BESCHREIBUNG: 5 Tage, BTC/ETH/SOL
+stark korreliert (effektiv ~15 Fälle), mehrere Horizonte angesehen, SOL fiel im Zeitraum.
+
+## Vorab-Registrierung Runde 125 (Auswertung frühestens 2027-01-02, nur Daten ab 2026-10-02 00:00 UTC)
+- Ereignis: 5-Min-Fenster, in dem die Short-Liquidationen (Binance-Stichprobe + Bybit, USD) eines Symbols aus
+  {BTCUSDT, ETHUSDT, SOLUSDT} >= dem 98. Perzentil der vorangegangenen 30 Tage dieses Symbols liegen; Wellen
+  desselben Symbols mind. 30 Min. auseinander.
+- Handel (Papier): Short zum Schluss des Ereignisfensters (Binance-USDT-Perp, 1-Min-Schluss), Ausstieg nach 240 Min.;
+  Kosten 10 bp Round-Trip (Taker 2 x 4 bp + Spread), Funding ignoriert.
+- Kennzahl: Ø netto je Ereignis; Ereignisse innerhalb derselben 4 Stunden über alle Symbole zu EINEM Cluster
+  gemittelt (Korrelation); t über Cluster. BESTANDEN: >= 40 Cluster, Ø > 0, t >= 2.
+- Nur zur Information (zählt nicht): Long-Liquidations-Wellen, Horizonte 15/60 Min., Bybit allein.
