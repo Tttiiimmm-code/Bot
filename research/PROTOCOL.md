@@ -3392,3 +3392,31 @@ Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
   niedrigste SVR -2,3 -> -3,3, höchste -3,1 -> -4,3; Haltedauer 20 Tage -0,8 -> -1,4 (vor allem Kosten).
 - Information 2 bp: ein Training-t >= 4 (niedrigste 100 nach SVR5, täglich, Top 3.000: t 5,27) -> Bestätigung
   t -0,15. Kein Leerverkaufs-Signal, das nach Kosten oder auch nur stabil vor Kosten besteht.
+
+# Runde 117: 768 Varianten Paarhandel mit Einzelaktien (Distanzmethode) (Vorab, 2026-10-01)
+
+Quelle: Gatev, Goetzmann & Rouwenhorst (2006); Do & Faff (2010, Abschwächung nach 2002). Bisher nur ETF-Paare
+(Runde 9, U). Daten: Alpaca-Tagespanel aller US-Aktien (split-bereinigt, ohne Dividenden), 2016-2026-09.
+Ablauf je Fenster (nicht überlappend, Länge = Handelsperiode): Universum zum Fensterbeginn = Top 500 bzw. Top 1.500
+nach Ø-$-Umsatz der 20 Vortage, Kurs > 5 $, vollständige Kurse in der Formationsperiode. Normierte Kurse (Start = 1),
+Paare mit kleinster Summe quadrierter Abstände (jede Aktie höchstens in einem Paar). Handelsperiode: Abstand
+s = P_i - P_j (weiter ab Formationsbeginn normiert), Sigma aus der Formationsperiode. Eröffnung bei |s| >= k Sigma
+zum Schluss (oder einen Tag später): höhere verkaufen, niedrigere kaufen (je 1 Einheit). Schließen bei Kreuzung
+von 0 bzw. |s| <= 0,5 Sigma, optional Stop bei |s| >= 4 Sigma, spätestens am Periodenende; danach erneute Eröffnung
+erlaubt. Fehlende Kurse (Delisting) -> Schließen zum letzten Kurs.
+Raster (2 x 2 x 3 x 4 x 2 x 2 x 2 x 2 = 768): Formation 126 / 252 Tage x Handelsperiode 63 / 126 x Paare 5 / 20 / 50
+x Schwelle 1,5 / 2 / 2,5 / 3 Sigma x Ausstieg Kreuzung / 0,5 Sigma x Stop keiner / 4 Sigma x Universum 500 / 1.500 x
+Einstieg sofort / einen Tag warten.
+Rendite: Tagesrendite je Paar (long - short), Mittel über alle Paare (gebundenes Kapital, ungeöffnete Paare 0).
+Kosten 10 bp je Seite und Bein (Eröffnen + Schließen = 40 bp je Runde); Leihgebühr nicht berücksichtigt.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09 (nach Datum der Tagesrendite).
+Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+Umsetzbarkeit: braucht Leerverkäufe (aus Deutschland nur über CFD/US-Broker) -- bei Bestehen gesondert prüfen.
+
+## 2026-10-01 -- Ergebnisse Runde 117
+
+- Erster Lauf ungültig: einzelne Tagessprünge (nicht bereinigte Splits/Datenfehler) erzeugten +114 bp/Tag.
+  Korrektur vor Bewertung: |Tagesrendite| > 50 % gilt als Datenfehler, Paar wird geschlossen.
+- Korrigiert: 768 Varianten, Ø > 0: 0, t >= 2: 0 -> RUNDE NICHT BESTANDEN. Mediane -2,8 bis -12,4 bp/Tag.
+- Diagnose ohne Kosten (nur Information): +0,05 bis +0,4 bp/Tag, t >= 4: 23 -- der Annäherungs-Effekt existiert,
+  ist aber ~10x kleiner als 40 bp Kosten je Paar-Runde (Leihgebühren noch nicht eingerechnet).
