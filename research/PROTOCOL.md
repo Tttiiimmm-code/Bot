@@ -3420,3 +3420,39 @@ Umsetzbarkeit: braucht Leerverkäufe (aus Deutschland nur über CFD/US-Broker) -
 - Korrigiert: 768 Varianten, Ø > 0: 0, t >= 2: 0 -> RUNDE NICHT BESTANDEN. Mediane -2,8 bis -12,4 bp/Tag.
 - Diagnose ohne Kosten (nur Information): +0,05 bis +0,4 bp/Tag, t >= 4: 23 -- der Annäherungs-Effekt existiert,
   ist aber ~10x kleiner als 40 bp Kosten je Paar-Runde (Leihgebühren noch nicht eingerechnet).
+
+# Runde 118: 1.800 Faktor-Kombinationen (Kurs- und SEC-Kennzahlen), monatlich, nur long (Vorab, 2026-10-01)
+
+Daten: Panel aus Runde 95 (data_cache/r95/panel.pkl): 116 Monate 2016-12 bis 2026-08, je Monat ~2.400 liquide
+US-Aktien, 28 Merkmale als Querschnitts-Perzentile (fehlend 0,5): 15 Kurs-/Volumen-Merkmale (r5, r21, mom12_1,
+mom6_1, vol21, vol63, ldv20, dv5_63, hi52, lo52, max21, on21, in21, amihud21, hl21) und 13 SEC-XBRL-Kennzahlen
+point-in-time (bm, ep, sp, cfp, roe, roa, gpa, opm, lev, ag, accruals, issuance, sgrowth); Rendite Einstieg ->
+Ausstieg des Monats (Eröffnungskurse). Runde 95 testete nur ML-Modelle darauf, keine einfachen Sortierungen.
+Raster: (a) Einzelmerkmal x Richtung (hoch / niedrig kaufen): 56; (b) Zweierkombination aus 17 Merkmalen (13
+Kennzahlen + mom12_1, r21, vol63, hi52) als Mittel der vorzeichenbehafteten Perzentile, alle 4 Vorzeichen: 544;
+jeweils Top 20 / 50 / 100 -> 1.800. Gleichgewichtet, Kosten 10 bp je Seite auf den Umsatz.
+Kennzahl: Monatsrendite minus gleichgewichtetes Panel-Universum. t über Monate.
+Zeiträume: Training 2017-2019 (36 Monate), Bestätigung 2020-2022, Endtest 2023-2026-08.
+Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 118
+
+- Training 2017-2019: t >= 2: 36, t >= 3: 3, t >= 4: 0 -> RUNDE NICHT BESTANDEN. Bestätigung: 1.091/1.800 positiv,
+  Korrelation Training->Bestätigung über Varianten +0,21. t >= 2 in beiden: 2 (niedrig ep + hoch roe Top 50;
+  hoch roa + niedrig issuance Top 100). Beste Trainings-t: hoch opm + niedrig issuance Top 50 +0,75 %/Monat (t 3,96)
+  -> +0,60 % (t 1,89); Qualitäts-Kombinationen (Profitabilität + wenig Neuemission) durchgehend vorn.
+
+# Runde 118b: Einzeltest Qualitätsfaktor auf dem Endtest (Vorab, 2026-10-01 18:55)
+
+Regel vor dem Ansehen: die R118-Variante mit dem höchsten Trainings-t (hoch opm + niedrig issuance, Top 50;
+Training +0,75 %/Monat t 3,96, Bestätigung +0,60 % t 1,89). Endtest 2023-01 bis 2026-08, Monatsrendite minus
+gleichgewichtetes Universum nach 10 bp je Seite. BESTANDEN: Ø > 0 und t >= 2. Information: je Jahr, Halten des
+Universums absolut, Top 20/100 derselben Kombination.
+
+## 2026-10-01 -- Ergebnis Runde 118b
+
+- Endtest 2023-01..2026-08 (44 Monate): +0,38 %/Monat, t 1,17 -> NICHT BESTANDEN.
+  Je Jahr (Überschuss %/Monat): 2017 +0,51, 2018 +0,80, 2019 +0,92, 2020 +0,42, 2021 +0,65, 2022 +0,75, 2023 +0,70,
+  2024 +0,30, 2025 -0,67, 2026 +1,57. Top 100 gleich: +0,43 % (t 1,74), 9 von 10 Jahren positiv.
+  Einordnung: der stabilste Befund aller Aktien-Runden (Qualität ~ +4-5 % p.a. über dem gleichgewichteten Markt),
+  statistisch aber nicht gesichert; als Faktor-ETF (Qualität) bereits fertig handelbar.
