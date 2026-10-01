@@ -18,8 +18,10 @@ CHART_CONFIG = {
     "displaylogo": False,
     "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d", "toImage"],
 }
-# Handy: Chart fest, damit Wischen die Seite scrollt statt den Chart zu verschieben
-CHART_CONFIG_MOBILE = {"scrollZoom": False, "displayModeBar": False, "displaylogo": False, "doubleClick": False}
+# Handy: Zoomen über + / - / Zurücksetzen (immer sichtbar); ob Wischen den Chart bewegt oder die Seite scrollt,
+# entscheidet build_chart(move=...) -- sonst bleibt man beim Scrollen am Chart hängen.
+CHART_CONFIG_MOBILE = {"scrollZoom": False, "displayModeBar": True, "displaylogo": False, "doubleClick": False,
+                       "modeBarButtons": [["zoomIn2d", "zoomOut2d", "resetScale2d"]]}
 
 
 def is_mobile() -> bool:
@@ -34,9 +36,9 @@ def is_mobile() -> bool:
 
 
 def build_chart(bars, symbol: str, stop: float | None, target: float | None, markers=(),
-                uirevision: str | None = None, mobile: bool = False) -> go.Figure:
+                uirevision: str | None = None, mobile: bool = False, move: bool = False) -> go.Figure:
     """markers: [(Zeit, "buy"/"sell", Kurs)] -- Käufe als grüne, Verkäufe als rote Pfeile an der Kerze.
-    mobile: niedriger und ohne Ziehen/Zoomen (Achsen fest), damit der Chart beim Scrollen nicht im Weg ist."""
+    mobile: niedriger; Wischen verschiebt den Chart nur mit move=True, sonst scrollt es die Seite."""
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.78, 0.22], vertical_spacing=0.02)
     fig.add_trace(go.Candlestick(
         x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"], close=bars["close"], name=symbol,
@@ -84,11 +86,9 @@ def build_chart(bars, symbol: str, stop: float | None, target: float | None, mar
     fig.update_yaxes(tickformat=".2f", row=1, col=1)
     fig.update_yaxes(showticklabels=False, row=2, col=1)
     fig.update_layout(
-        height=380 if mobile else 520, margin=dict(l=10, r=60, t=10, b=10), dragmode=False if mobile else "pan",
+        height=380 if mobile else 520, margin=dict(l=10, r=60, t=30 if mobile else 10, b=10),
+        dragmode="pan" if (move or not mobile) else False,
         hovermode="x", uirevision=uirevision or symbol,  # Zoom/Ausschnitt bleiben beim automatischen Neuladen erhalten
         showlegend=False, bargap=0.1,
     )
-    if mobile:
-        fig.update_xaxes(fixedrange=True)
-        fig.update_yaxes(fixedrange=True)
     return fig

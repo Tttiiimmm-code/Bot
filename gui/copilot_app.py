@@ -281,15 +281,18 @@ def chart_view(symbol: str, stop: float, target: float | None) -> None:
     except Exception:
         markers = []
     mobile = is_mobile()
-    st.plotly_chart(build_chart(bars, symbol, stop, target, markers=markers, mobile=mobile), width="stretch",
-                    config=CHART_CONFIG_MOBILE if mobile else CHART_CONFIG, key=f"chart_{symbol}")
+    move = mobile and st.toggle("Chart mit dem Finger bewegen", key="chart_move",
+                                help="An: Wischen verschiebt den Chart. Aus: Wischen scrollt die Seite. "
+                                     "Zoomen geht immer mit + / - oben rechts im Chart.")
+    st.plotly_chart(build_chart(bars, symbol, stop, target, markers=markers, mobile=mobile, move=move),
+                    width="stretch", config=CHART_CONFIG_MOBILE if mobile else CHART_CONFIG, key=f"chart_{symbol}")
     share = bars.attrs.get("iex_share")
     if share is not None and share < 0.01:
         st.warning(f"IEX sieht nur {share:.1%} des Handels in {symbol}: die letzten 15 Minuten im Chart "
                    "(rechts der gepunkteten Linie) und der Kurs für die Stückzahl sind lückenhaft. "
                    "Links der Linie ist der Chart vollständig, aber 15 Minuten verzögert.")
     info, link = st.columns([3, 1], vertical_alignment="center")
-    info.caption(("Am Handy fest, Wischen scrollt die Seite -- zum Zoomen TradingView öffnen  \n" if mobile else
+    info.caption(("Zoomen: + / - oben rechts im Chart · Bewegen: Schalter über dem Chart  \n" if mobile else
                   "Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag  \n")
                  + "Links der gepunkteten Linie: alle Börsen (15 Min. verzögert) · rechts: live, nur IEX  \n"
                  f"Chart-Stand {t.astimezone(BERLIN):%H:%M:%S} -- aktualisiert sich alle 5 Minuten selbst.")

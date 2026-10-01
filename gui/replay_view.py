@@ -182,8 +182,11 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
         markers = list(rp["trades"]) + ([(bars.index[pos.entry_idx], "buy", pos.entry)] if pos else [])
         stop_line = pos.stop if pos else SS.get("rp_stop")
         mobile = is_mobile()
+        move = mobile and st.toggle("Chart mit dem Finger bewegen", key="rp_chart_move",
+                                    help="An: Wischen verschiebt den Chart. Aus: Wischen scrollt die Seite. "
+                                         "Zoomen geht immer mit + / - oben rechts im Chart.")
         st.plotly_chart(build_chart(visible, rp["symbol"], stop_line, pos.target if pos else None, markers=markers,
-                                    uirevision=f"replay_{rp['symbol']}_{rp['day']}", mobile=mobile),
+                                    uirevision=f"replay_{rp['symbol']}_{rp['day']}", mobile=mobile, move=move),
                         width="stretch", config=CHART_CONFIG_MOBILE if mobile else CHART_CONFIG, key="replay_chart")
         if not mobile:
             st.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag")

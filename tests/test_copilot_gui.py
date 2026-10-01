@@ -309,7 +309,11 @@ def test_chart_mobile_mode_is_fixed_and_lower():
                          "volume": [100, 200, 300]}, index=idx)
     desk, mob = build_chart(bars, "XYZ", 9.5, None), build_chart(bars, "XYZ", 9.5, None, mobile=True)
     assert desk.layout.dragmode == "pan" and desk.layout.height == 520
-    assert mob.layout.dragmode is False and mob.layout.height == 380 and mob.layout.xaxis.fixedrange
+    assert mob.layout.dragmode is False and mob.layout.height == 380        # Wischen scrollt die Seite
+    assert not mob.layout.xaxis.fixedrange                                    # + / - zoomen trotzdem
+    assert build_chart(bars, "XYZ", 9.5, None, mobile=True, move=True).layout.dragmode == "pan"
+    from gui.chart import CHART_CONFIG_MOBILE
+    assert CHART_CONFIG_MOBILE["modeBarButtons"] == [["zoomIn2d", "zoomOut2d", "resetScale2d"]]
 
 
 def test_login_token_is_password_bound():
