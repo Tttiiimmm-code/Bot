@@ -1,4 +1,4 @@
-# Nur für die Copilot-Oberfläche auf dem eigenen PC (nicht auf dem VPS nötig).
+# Für die Copilot-Oberfläche (PC oder VPS; auf dem VPS installiert deploy/setup_copilot_vps.sh sie).
 # Installation: .venv\Scripts\python -m pip install -r requirements-gui.txt
 -r requirements.txt
 streamlit>=1.40,<2
