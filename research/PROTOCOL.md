@@ -3545,3 +3545,28 @@ Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
   Beste Trainings-t: 10 ETFs SMA6 Top 3 Hafen IEF +9,7 % p.a. (t 1,47, MaxDD -14 % vs -38 %) -> -5,8 % p.a.
   (t -1,78, MaxDD -30 % vs -10 %). Rotationsstrategien schützen in langen Crashs (2008), verlieren in
   Seitwärts-/V-Phasen durch Fehlsignale; kein Vorteil gegenüber gleichgewichtetem Halten.
+
+# Runde 124: 1.872 Sitzungs-Range-Varianten auf Minutendaten (13 Märkte, exakte Reihenfolge) (Vorab, 2026-10-01)
+
+Anlass: Runde 110 (H1) war durch die Kerzen-Auflösung verzerrt; 110b rechnete den schlechtesten Fall. Hier exakt auf
+Dukascopy-Minuten. Märkte: EURUSD, GBPUSD, XAUUSD (Bid+Ask je Minute), USDJPY (Ask ab 2017, davor Bid + Spread),
+DAX, CAC, FTSE, Nikkei, Hang Seng, ASX, US500, USTEC, WTI (Bid; Ask = Bid + 1,5 x Median-Spread aus H1 Bid/Ask).
+Zeiten New York; Handelstag beginnt 19:00 NY. Ranges (Hoch/Tief Geld): Asien 19:00-02:00, Vor-London 00:00-03:00,
+London-Start 03:00-04:00, Europa-Start 03:00-03:30 (Handel jeweils bis 11:00), NY-Eröffnung 09:30-10:00 und
+09:30-09:45 (Handel bis 15:00). Zwangsausstieg 16:00 NY. Range nur gültig mit >= 50 % der Minuten.
+Modus Ausbruch / Fehlausbruch (wie Runde 110) x Stop Range / halbe Range x Ausstieg Ziel 1R / 2R / 16:00 x Filter
+keiner / Range kleiner als Median der 20 vorherigen Tage = 6 x 2 x 2 x 3 x 2 = 144 je Markt, 1.872 gesamt.
+Füllung: Ausbruch long zum Brief max(Brief-Open, Level + Spread), short zum Geld; Fehlausbruch per Limit am Level.
+Beide Seiten in derselben Minute -> -1 R (schlechtester Fall). Einstiegsminute: nur Stop. Danach Stop vor Ziel,
+Kurslücken zum Open. Kommission 0,5 bp. Ergebnis je Trade in R.
+Zeiträume: Training bis 2017 (FX/Gold ab 2008, Indizes ab 2013/14), Bestätigung 2018-2021, Endtest 2022-2025.
+Auswahl >= 200 Trades, Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 124
+
+- 1.872 Varianten, Training t >= 2: 11, t >= 3: 0, t >= 4: 0; Ø > 0: 89; Median -0,38 R -> RUNDE NICHT BESTANDEN.
+- Märkte mit echtem Bid/Ask je Minute (Median Training -> Bestätigung): EURUSD -0,07 -> -0,09, GBPUSD -0,13 -> -0,12,
+  XAUUSD -0,21 -> -0,16, USDJPY -0,15 -> -0,10. Beste: USDJPY Asien-Ausbruch Stop Range bis 16:00 +0,061 R (t 2,56)
+  -> +0,050 (t 1,37). Die H1-Scheintreffer aus Runde 110 (EURUSD/USDJPY NY 09-10) bestätigen sich minutengenau nicht.
+- Vorbehalt Indizes/WTI (nur Bid-Minuten, Spread pauschal 1,5 x H1-Median): Training-Mediane bis -1,2 R (DAX,
+  Nikkei) deuten auf dünne Minutendaten 2013-2017 (winzige Ranges -> Kosten in R groß); Bestätigung -0,14 bis -0,48 R.
