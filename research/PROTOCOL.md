@@ -3312,3 +3312,56 @@ Bestätigung t >= 2,4 -> Endtest t >= 2.
   Umschichtung kostet 20 bp/Tag). Information 2 bp je Seite: Tauziehen-Effekt sichtbar (Top-20 nach Nacht-Tag L20,
   nur Nacht halten: t 2,80 -> 1,73 bzw. 2,68 -> 2,28), aber kein Training-t >= 4 und nur mit institutionellen
   Kosten denkbar. Beste 10-bp-Variante (Bottom-50 Gesamtrendite L20, wöchentlich) t 1,62 -> -0,43.
+
+# Runden 114/115: Ereignis-Raster Quartalszahlen (1.536) und Insiderkäufe (576) (Vorab, 2026-10-01)
+
+Vorgänger Runde 11 (je 4 Varianten, Top-1000, Alpha ggü. SPY): Earnings-Drift 2016-20 t 2,06, 2021-25 signifikant
+negativ; Insiderkäufe negativ. Hier große Raster inkl. Umkehr und kleinerer Aktien.
+Daten: SEC 8-K Item 2.02 (data_cache/edgar/8k, Annahmezeit NY; vor 9:30 -> Ereignistag = Meldetag, sonst nächster
+Handelstag), SEC-Insiderkäufe (Code P, Officer/Director, >= 25.000 $, 2015Q4-2025Q3), CIK->Ticker über aktuelle
+SEC-Liste + historische Kürzel aus den Insider-Daten; Kurse: Alpaca-Tagespanel aller US-Aktien inkl. delisteter.
+Bewertung je Trade: Rendite Einstieg -> Ausstieg minus gleichgewichtetes Universum (Top 1.500, Kurs > 5 $) im selben
+Fenster, minus Kosten. Je Kalendermonat (nach Einstieg) Mittel der Trades; t über Monate (Monate mit >= 3 Trades).
+Nur long.
+
+R114 Quartalszahlen (2 x 4 x 2 x 4 x 3 x 2 x 2 x 2 = 1.536):
+- Reaktion: Tagesreaktion (Schluss Vortag -> Schluss Ereignistag, minus Markt; Einstieg Eröffnung Folgetag) /
+  Eröffnungslücke (Vortagesschluss -> Open Ereignistag, minus Markt-Lücke; Einstieg Schluss Ereignistag)
+- Schwelle |Reaktion| >= 3 / 5 / 10 / 20 % | Richtung: Gewinner kaufen (Drift) / Verlierer kaufen (Umkehr)
+- Haltedauer 1 / 5 / 20 / 60 Handelstage | Universum Top 500 / Top 1.500 / Top 3.000 (Kurs > 5 $)
+- Volumen-Bestätigung: keine / Ereignistag-Volumen >= 3 x Ø 20 Vortage | Trendfilter: keiner / Schluss > SMA200
+- Einstieg sofort / 2 Handelstage später. Kosten 10 bp je Seite (Top 1.500), 25 bp je Seite darüber.
+R115 Insiderkäufe (4 x 3 x 3 x 4 x 2 x 2 = 576):
+- Kaufwert >= 25 Tsd. / 100 Tsd. / 500 Tsd. / 1 Mio. $ | Häufung: einzeln / >= 2 / >= 3 verschiedene Insider in
+  30 Tagen (Ereignis = Meldung des letzten) | Universum: Top 500 / Rang 501-3.000 / alle mit Kurs > 2 $ und
+  Ø-Umsatz > 100 Tsd. $ | Haltedauer 5 / 20 / 60 / 120 | Einstieg Eröffnung 1 / 5 Handelstage nach Meldetag |
+  Filter: keiner / Aktie in den 20 Vortagen >= 10 % gefallen. Kosten wie R114.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026 (Insider bis 2025-09).
+Auswahl je Runde: >= 200 Trades und >= 24 Monate, Ø > 0, t >= 4; 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+Prüfregeln (seit Runde 110): kein Einstieg vor Bekanntwerden; Einstiegspreise nur aus Kursen nach dem Ereignis.
+
+## 2026-10-01 -- Ergebnisse Runden 114 und 115
+
+- R114: 89.187 Ergebnis-Ereignisse. Training t >= 2: 201, t >= 3: 56, t >= 4: 2 (beide 'Gewinner, 60 Tage').
+  Lücke >= 3 %, Top 3.000, Volumen x3, über SMA200: +2,82 %/Trade (t 4,30) -> Bestätigung +6,11 % (t 1,61);
+  Tagesreaktion >= 5 %, Top 1.500, +2 Tage: +1,72 % (t 4,10) -> +0,44 % (t 0,37). -> RUNDE NICHT BESTANDEN.
+  Familie: Gewinner +0,52 -> +0,21 %, Verlierer -0,15 -> -0,15 %; Haltedauer 60 Tage +1,48 -> +1,24 %;
+  67 % der im Training positiven Varianten auch in der Bestätigung positiv.
+- R115: Insiderkäufe 576 Varianten, t >= 2: 36, t >= 4: 0 -> NICHT BESTANDEN. Beste: >= 1 Mio. $, Rang 501-3000,
+  5 Tage +0,95 % (t 3,28) -> +0,09 % (t 0,21). Familie in der Bestätigung 47 % positiv.
+
+# Runde 114b: Einzeltest Quartalszahlen-Drift auf dem Endtest (Vorab, 2026-10-01 17:11)
+
+Auswahlregel (vor dem Ansehen des Endtests festgelegt): unter allen R114-Varianten mit Richtung 'Gewinner',
+Haltedauer 60 Tage, >= 200 Trades im Training und >= 100 in der Bestätigung die Variante mit dem höchsten
+min(t Training, t Bestätigung). Genau diese eine wird auf dem Endtest 2023-01 bis 2026-09 bewertet
+(Einstiege bis 60 Handelstage vor Datenende). BESTANDEN: Ø > 0 und t(Monate) >= 2. Information: je Jahr.
+
+## 2026-10-01 -- Ergebnis Runde 114b
+
+- Ausgewählt: Tagesreaktion Gewinner >= 5 %, 60 Tage, Top 3.000, Volumen x3, über SMA200, Einstieg +2 Tage
+  (Training +2,61 % t 3,64; Bestätigung +3,16 % t 1,61).
+- Endtest 2023-2026: 1.450 Trades, 42 Monate, Ø +0,00 %/Trade, t 0,00 -> NICHT BESTANDEN.
+  Je Jahr: 2016 +2,0, 2017 +3,8, 2018 +3,3, 2019 +1,4, 2020 +7,3, 2021 -1,0, 2022 +0,2, 2023 -0,7, 2024 +2,1,
+  2025 -0,3, 2026 +0,4 %. Der Drift nach guten Quartalszahlen bestand bis 2020 und ist seither verschwunden
+  (passt zu Runde 11).
