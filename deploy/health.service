@@ -1,0 +1,13 @@
+[Unit]
+Description=Wächter: Dienste/Platte/Speicher prüfen, Probleme per ntfy melden
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py health
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot

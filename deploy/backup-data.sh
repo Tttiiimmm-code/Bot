@@ -1,0 +1,16 @@
+#!/bin/sh
+# Nächtliche Sicherung der Daten, die nur auf dem VPS entstehen (keine Schlüssel/.env, keine neu ladbaren Caches).
+# Der PC holt die Archive mit "VPS-Sicherung holen.bat" ab (Windows-Aufgabe, täglich).
+set -eu
+cd /home/tradingbot/Bot
+DEST=/home/tradingbot/backups
+mkdir -p "$DEST"
+FILES=""
+for f in copilot_journal.jsonl forward_trades.csv forward_orb.csv forward_quality.csv news_intel.csv \
+         overnight_state.json overnight_trades.csv data_cache/liquidations; do
+  [ -e "$f" ] && FILES="$FILES $f"
+done
+# shellcheck disable=SC2086
+tar -czf "$DEST/bot-data-$(date +%F).tar.gz" $FILES
+find "$DEST" -name 'bot-data-*.tar.gz' -mtime +14 -delete
+ls -la "$DEST" | tail -3

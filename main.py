@@ -1755,6 +1755,9 @@ def main():
     fwd_stocks.add_argument("--last-day", type=date.fromisoformat, default=None,
                             help="Letzter zu verarbeitender Handelstag (Standard: gestern).")
     subparsers.add_parser("forward-stocks-report", help="Auswertung von forward_orb.csv und forward_quality.csv.")
+    health_parser = subparsers.add_parser(
+        "health", help="Wächter (VPS): Dienste, Platte, Speicher, Recorder prüfen; Probleme und Tagesstatus per ntfy.")
+    health_parser.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
 
     compare_parser = subparsers.add_parser(
         "momentum-compare",
@@ -1795,6 +1798,14 @@ def main():
         except (RuntimeError, OSError, subprocess.SubprocessError) as e:
             print(f"Fehler: {e}", file=sys.stderr)
             sys.exit(1)
+        return
+
+    if args.command == "health":
+        from tradingbot import health
+        from tradingbot.notify import notifier_from_env
+
+        for m in health.step(notifier_from_env(args.env_file)):
+            print(f"gesendet: {m}")
         return
 
     if args.command in ("forward-stocks", "forward-stocks-report"):

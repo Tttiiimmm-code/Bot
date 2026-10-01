@@ -1,0 +1,11 @@
+[Unit]
+Description=Nächtliche Datensicherung (Journal, Vorwärtstests, Liquidationen)
+
+[Service]
+Type=oneshot
+User=tradingbot
+ExecStart=/bin/sh /home/tradingbot/Bot/deploy/backup-data.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/backups
