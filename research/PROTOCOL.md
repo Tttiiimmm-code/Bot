@@ -3001,3 +3001,115 @@ Nur zur Information (zählt nicht): die 3 besten Trainings-t ohne t-4-Hürde und
   Bestätigung über Konfigurationen 0,39. Einzige Gruppe mit positivem Median in beiden: D1 nur long (+0,10 -> +0,06)
   -- naheliegend Marktdrift (Gold/Nasdaq-Hausse, USD-Stärke) und ohne Swap gerechnet; keine eigenständige Hypothese,
   nicht getestet.
+
+# Runde 105: 1.296 Konfigurationen Rückkehr zum Mittelwert (D1, 24 Märkte) (Vorab, 2026-10-01)
+
+Auf Wunsch des Nutzers (~1.000 Konfigurationen, "Rückkehr zum Mittelwert"). Vorgänger: Runde 2 Familie F (RSI2 auf
+ETFs), Runde 10 (RSI/Bollinger im Scan), Runden 12/52 (IBS, Double 7): stark bis ~2015, danach verschwunden.
+
+Daten: Dukascopy H1 Bid/Ask 2012-2026-09, 24 Märkte: die 14 aus Runde 104 plus US500, US30, DAX, FTSE 100, CAC 40,
+Euro Stoxx 50, Nikkei 225, Hang Seng, ASX 200, WTI (data_cache/dukascopy/h1, neu geladen; einige ab 2013/2014).
+D1 in MT5-Serverzeit (GMT+2/+3) wie Runde 104.
+
+Raster (18 x 3 x 4 x 3 x 2 = 1.296):
+- Einstieg (long; short gespiegelt): RSI(2) < 5 / 10 / 20; Schluss unter Bollinger(20) z = -1,5 / -2 / -2,5;
+  IBS = (Schluss - Tief)/(Hoch - Tief) < 0,1 / 0,2 / 0,3; tiefster Schluss seit 5 / 10 / 20 Tagen;
+  2 / 3 / 4 Schlüsse in Folge tiefer; Abstand Schluss - SMA10 < -1 / -1,5 / -2 ATR(20)
+- Trendfilter: keiner / long nur über SMA100 (short darunter) / dasselbe mit SMA200
+- Ausstieg (auf Tagesschluss geprüft, Ausführung zur nächsten H1-Eröffnung): Schluss > SMA5; RSI(2) > 70;
+  erster höherer Schluss; nach 5 Tagen. Höchstens 10 Tage Haltedauer.
+- Stop (auf H1, Kurslücke -> Eröffnung): keiner / 2 x ATR(20) / 3 x ATR(20)
+- Richtung: nur long / long und short
+Ausführung: Signal auf geschlossener D1-Kerze -> Einstieg zur Eröffnung der nächsten H1-Kerze (long Brief, short
+Geld), Ausstieg long zum Geld, short zum Brief. Je Markt höchstens 1 Position. Kommission 0,5 bp je Runde.
+Swap NICHT berücksichtigt. Einheit je Trade: Gewinn / ATR(20) beim Signal ("R"), alle Märkte gleich gewichtet.
+
+Zeiträume und Auswahl wie Runde 104: Training 2012-07 bis 2017, Bestätigung 2018-2021, Endtest 2022-2026-09.
+Wählbar nur >= 200 Trades, Ø R > 0, t >= 4 im Training; davon 3 beste t. Bestätigung Ø > 0 und t >= 2,4; Endtest
+nur danach, Ø > 0 und t >= 2. Nur zur Information: 3 beste Trainings-t ohne Hürde, Merkmals-Mediane, Familie in der
+Bestätigung.
+
+## 2026-10-01 -- Ergebnisse Runde 105
+
+- Training 2012-07 bis 2017: t >= 2: 288, t >= 3: 55, t >= 4: 5; Ø R > 0: 960/1.296, Median +0,047 R. Erstmals
+  wählbare Konfigurationen (t >= 4), alle 'Abstand zu SMA10 < -1,5 ATR, über SMA100, nur long':
+  Ausstieg Schluss>SMA5 ohne Stop: +0,44 (t 4,75) -> Bestätigung +0,19 (t 1,75); nach 5 Tagen ohne Stop:
+  +0,40 (t 4,32) -> +0,16 (t 1,38); Schluss>SMA5 Stop 2 ATR: +0,29 (t 4,04) -> +0,11 (t 1,19).
+  Keine besteht t >= 2,4 -> RUNDE NICHT BESTANDEN. Endtest nicht angesehen.
+- Familie in der Bestätigung: Median -0,055 R, nur 26 % positiv (Training 74 %) -> Rückkehr-Effekte nach 2017
+  weitgehend verschwunden (wie Runden 12/52). Einzige Einstiegsgruppe mit positivem Bestätigungs-Median: Bollinger
+  (+0,055). Nur Information: die beste Konfiguration ist in Aktienindizes (US500, US30, USTEC, DAX, CAC, ASX) in
+  beiden Zeiträumen positiv, je Markt aber nur ~10-20 Trades in 4 Jahren; Kaufen von Rücksetzern im Aufwärtstrend
+  enthält Indexdrift. Kein eigener Test.
+
+# Runde 106: 1.728 Tageszeit-Konfigurationen (24 Märkte x 24 Stunden x 3 Haltedauern) (Vorab, 2026-10-01)
+
+Auf Wunsch des Nutzers (~1.000 Konfigurationen, "Tageszeit-Muster"). Bekannt robust (Runden 46/47/53/85): Gotobi
+USD/JPY, Nikkei-Nacht -- beide an Kalender bzw. Börsenzeiten gebunden. Hier: einfache tägliche Uhrzeit-Muster.
+
+Daten: Dukascopy H1 Bid/Ask, dieselben 24 Märkte wie Runde 105.
+Konfiguration = Markt x Einstiegsstunde (Ortszeit New York, 0-23 Uhr, Kerzenbeginn) x Haltedauer 1 / 2 / 4 Stunden.
+Jeden Handelstag ein Trade: Einstieg zur Eröffnung der Stunde, Ausstieg zur Eröffnung k Stunden später (nur wenn
+genau diese Kerze existiert, also kein Trade über Wochenende/Pause). Long: Kauf Brief, Verkauf Geld; short umgekehrt.
+Kommission 0,5 bp je Runde. Ergebnis je Trade in bp.
+Richtung: im Training wird je Konfiguration die bessere Richtung (long oder short, höherer t) gewählt; sie gilt
+unverändert in Bestätigung und Endtest (entspricht 3.456 einseitigen Tests).
+
+Zeiträume: Training 2012-07 bis 2017, Bestätigung 2018-2021, Endtest 2022-2026-09.
+Wählbar nur >= 200 Trades, Ø netto > 0, t >= 4 im Training; davon 3 beste t. Bestätigung (gleiche Richtung) Ø > 0
+und t >= 2,4. Endtest nur danach: Ø > 0 und t >= 2.
+Nur zur Information: dasselbe brutto (Mitte zu Mitte, ohne Spread), um zu zeigen, ob ein Muster existiert, das nur
+an den Kosten scheitert; 3 beste Trainings-t ohne Hürde; Familie in der Bestätigung.
+
+## 2026-10-01 -- Ergebnisse Runde 106
+
+- Training netto: t >= 2: 6, t >= 3: 1, t >= 4: 0; nur 91/1.728 netto positiv; Median -1,84 bp je Trade.
+  -> RUNDE NICHT BESTANDEN.
+- Brutto (Mitte zu Mitte, nur Information): |t| >= 2: 332 (Zufall ~79), |t| >= 4: 45 -> Uhrzeit-Muster existieren,
+  sind aber kleiner als der Spread.
+- Beste Trainings-t (Information): EURUSD 04:00 NY 4 h short +1,86 bp (t 3,13) -> +1,17 bp (t 2,02); USDJPY 16:00
+  2 h long +0,74 (t 2,44) -> -1,57 (t -4,60); XAUUSD 02:00 4 h short +2,22 (t 2,29) -> -3,93 (t -3,86).
+  Von den 91 netto positiven Trainings-Konfigurationen sind in der Bestätigung nur 11 % positiv (Median -0,80 bp).
+
+# Runde 107: 1.440 Konfigurationen Aktien-Eröffnungsausbruch (ORB) auf "Stocks in Play" (Vorab, 2026-10-01)
+
+Auf Wunsch des Nutzers (~1.000 Konfigurationen, "Aktien-Ausbruch"). Vorgänger: Familie A (Runde 1, 4 Varianten,
+netto ~0). Diese Runde erweitert Stops, Ziele, Filter.
+
+Daten: data_cache/universe (Alpaca SIP, split-bereinigt): je Handelstag die Top 20 nach relativem Volumen der ersten
+5 Minuten (Grundfilter Zarattini & Aziz: Open > 5 $, Ø-Volumen > 1 Mio., ATR14 > 0,50 $), Minuten-Bars 9:30-15:59 ET,
+2016-01-25 bis 2026-09-23. Vortagesschluss aus features.pkl.
+
+Raster (3 x 3 x 2 x 4 x 5 x 2 x 2 = 1.440):
+- Opening Range: 5 / 15 / 30 Minuten
+- Richtung: (a) beide, Richtung = Farbe der OR-Kerze; (b) nur long bei grüner OR-Kerze; (c) nur long bei grüner
+  OR-Kerze UND Kurslücke (Open / Vortagesschluss - 1) >= +2 %
+- Filter: keiner / Schluss der Vorminute auf der richtigen Seite des VWAP (seit 9:30)
+- Stop: andere Seite der OR, 10 % / 25 % / 50 % der ATR14
+- Ausstieg: Ziel 1 R, 2 R, 3 R, Tagesschluss (letzte Minute), Stop auf Einstand ab +1 R und sonst Tagesschluss
+- Kandidaten: Top 5 / Top 20 nach relativem Volumen
+- Einstiegsfenster: bis 10:30 / bis 15:00 ET
+Ausführung: Stop-Order am OR-Hoch (long) / -Tief (short) nach Ende der OR; Füllung zum Level, bei Kurslücke zum
+schlechteren Minuten-Open. Einstiegsminute: nur der Stop wird geprüft (schlechtester Fall, Stop vor Ziel); ab der
+nächsten Minute Stop vor Ziel bei gleicher Minute, Kurslücke -> Minuten-Open; Einstand ab der Minute NACH +1 R.
+Je Kandidat und Tag höchstens ein Trade. Kosten je Seite 1 bp + 0,01 $/Aktie, in R umgerechnet (R = Stop-Abstand).
+Kennzahl: Tages-Summe R (alle Trades des Tages), t-Wert über Handelstage (berücksichtigt Korrelation am selben Tag).
+
+Zeiträume: Training 2016-01 bis 2019-12, Bestätigung 2020-01 bis 2022-12, Endtest 2023-01 bis 2026-09.
+Auswahl: wählbar nur >= 200 Trades, Ø R > 0, t >= 4 im Training (Mehrfachtest-Schutz bei 1.440 Tests); davon die 3
+besten t. Bestätigung: Ø > 0 und t >= 2,4. Endtest nur nach bestandener Bestätigung: Ø > 0 und t >= 2.
+Nur zur Information: die 3 besten Trainings-t ohne t-4-Hürde, ihr Bestätigungsergebnis; Verteilung je Merkmal.
+
+## 2026-10-01 -- Ergebnisse Runde 107
+
+- Training 2016-2019: t(Tage) >= 2: 115, >= 3: 18, >= 4: 0; Ø R > 0: 525/1.440, Median -0,025 R.
+  -> RUNDE NICHT BESTANDEN.
+- Beste Trainings-t (Information), alle OR5, beide Richtungen, Stop OR-Gegenseite, Top 5:
+  Ziel 1R bis 15:00 +0,053 (t 3,77) -> +0,025 (t 1,55); dasselbe mit VWAP +0,051 (3,65) -> +0,029 (1,79);
+  Ziel 2R bis 15:00 +0,063 (3,61) -> +0,047 (2,26). Endtest nicht angesehen.
+- Merkmals-Mediane (Training -> Bestätigung): Stop 10 % ATR -0,45 -> -0,40 (Kosten + Rauschen), 25 % ATR -0,06 ->
+  -0,03, 50 % ATR +0,01 -> +0,01, OR-Gegenseite +0,027 -> +0,029; von den 360 OR-Gegenseite-Konfigurationen sind
+  92 % in der Bestätigung positiv. Kleiner, aber stabiler Vorteil (~+0,03 R nach 1 bp + 1 Cent/Aktie je Seite);
+  empfindlich gegenüber realem Schlupf bei Stop-Einstiegen. Mögliche Folgerunde: EINE vorab festgelegte
+  Konfiguration auf dem unberührten Endtest 2023-2026 (noch nicht durchgeführt).
+- Universum mit Rest-Survivorship (Alpaca-Assetliste), Füllung im Einstiegsminuten-Bar im schlechtesten Fall.
