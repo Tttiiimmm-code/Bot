@@ -3365,3 +3365,30 @@ min(t Training, t Bestätigung). Genau diese eine wird auf dem Endtest 2023-01 b
   Je Jahr: 2016 +2,0, 2017 +3,8, 2018 +3,3, 2019 +1,4, 2020 +7,3, 2021 -1,0, 2022 +0,2, 2023 -0,7, 2024 +2,1,
   2025 -0,3, 2026 +0,4 %. Der Drift nach guten Quartalszahlen bestand bis 2020 und ist seither verschwunden
   (passt zu Runde 11).
+
+# Runde 116: 540 Varianten Leerverkaufs-Volumen (FINRA) im Aktien-Querschnitt (Vorab, 2026-10-01)
+
+Quelle: Wang, Yan & Zheng (2020) u.a.: hoher Anteil Leerverkaufs-Volumen (FINRA Reg SHO Daily Short Sale Volume)
+sagt schwächere Folgerenditen voraus. Neue Datenquelle im Protokoll.
+Daten: FINRA FNSQ + FNYX (Nasdaq- und NYSE-TRF, außerbörslich), täglich 2016-01 bis 2026-09, summiert je Symbol
+(gleiche Definition über den ganzen Zeitraum); Kurse Alpaca-Tagespanel aller US-Aktien inkl. delisteter.
+Veröffentlichung abends -> Signal aus Tag t, Einstieg Eröffnung t+1. Renditen Eröffnung -> Eröffnung.
+Kennzahl SVR = Short-Volumen / Gesamtvolumen (FINRA).
+Raster (5 x 2 x 3 x 3 x 3 x 2 = 540):
+- Signal: SVR 1 Tag / 5 Tage / 20 Tage (Summen), Änderung SVR5 - SVR60, Änderung SVR1 - SVR20
+- Kaufen: niedrigste N (wenig Leerverkaufsdruck) / höchste N (Gegenposition, Short-Squeeze)
+- N = 20 / 50 / 100 | Umschichtung alle 1 / 5 / 20 Tage | Universum Top 500 / 1.500 / 3.000 (Kurs > 5 $, Ø-$-Umsatz
+  der 20 Vortage) | Volumenfilter: keiner / FINRA-Gesamtvolumen des Signaltags >= Ø 20 Tage
+Nur long, gleichgewichtet; Kosten 10 bp je Seite (Rang <= 1.500), 25 bp darüber; 2 bp nur Information.
+Kennzahl: tägliche Rendite minus gleichgewichtetes Universum (gleiches Fenster). t über Tage.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09.
+Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 116
+
+- FINRA FNSQ+FNYX 2016-01..2026-09 geladen (data_cache/finra_short, research/scripts/fetch_finra.py), Abdeckung 64 %
+  der Universums-Tage, 8.104 Symbole je >= 1 Tag in den Top 3.000.
+- Training: t >= 2: 0, Ø > 0: 31/540 -> RUNDE NICHT BESTANDEN. Mediane Training -> Bestätigung (bp/Tag Überschuss):
+  niedrigste SVR -2,3 -> -3,3, höchste -3,1 -> -4,3; Haltedauer 20 Tage -0,8 -> -1,4 (vor allem Kosten).
+- Information 2 bp: ein Training-t >= 4 (niedrigste 100 nach SVR5, täglich, Top 3.000: t 5,27) -> Bestätigung
+  t -0,15. Kein Leerverkaufs-Signal, das nach Kosten oder auch nur stabil vor Kosten besteht.
