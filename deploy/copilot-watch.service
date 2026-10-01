@@ -1,0 +1,26 @@
+[Unit]
+Description=Trading-Copilot Sicherheit (Tagesverlustgrenze, Glattstellen vor Börsenschluss, Stop auf Einstand)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+# Liest copilot.env und copilot_journal.jsonl im Repo. Nur EINE Überwachung je Konto laufen lassen
+# (das Fenster "Copilot-Sicherheit" am PC dann nicht zusätzlich starten).
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py copilot watch
+
+Restart=always
+RestartSec=30
+MemoryMax=400M
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
+
+[Install]
+WantedBy=multi-user.target

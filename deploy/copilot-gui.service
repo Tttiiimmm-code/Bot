@@ -1,0 +1,30 @@
+[Unit]
+Description=Trading-Copilot Oberfläche (Streamlit, nur lokal -- Zugriff über Tailscale)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+# Anpassen: eigener, nicht-root Linux-User + absoluter Pfad zum Repo auf dem VPS.
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+Environment=HOME=/home/tradingbot
+# Nur 127.0.0.1: NICHT aus dem Internet erreichbar. Freigabe fürs Handy über `tailscale serve`
+# (nur Geräte im eigenen Tailscale-Netz). copilot.env braucht dafür COPILOT_PASSWORD=...
+ExecStart=/home/tradingbot/Bot/.venv/bin/python -m streamlit run gui/copilot_app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false
+
+Restart=on-failure
+RestartSec=30
+# Streamlit + pandas + plotly ~250-400 MB; harte Grenze, damit die Handels-Bots nie verdrängt werden.
+MemoryHigh=500M
+MemoryMax=700M
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+# "-": Ordner darf fehlen (sonst startet der Dienst nicht)
+ReadWritePaths=/home/tradingbot/Bot -/home/tradingbot/.streamlit
+
+[Install]
+WantedBy=multi-user.target

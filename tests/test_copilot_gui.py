@@ -246,3 +246,25 @@ def test_practice_tab_shows_load_error(tmp_path, monkeypatch):
     next(b for b in at.button if b.label == "Tag laden").click().run()
     assert not at.exception
     assert any("Tag konnte nicht geladen werden: Netz weg" in e.value for e in at.error), [e.value for e in at.error]
+
+
+def test_password_gate_blocks_until_correct(tmp_path, monkeypatch):
+    import tradingbot.copilot as copilot_mod
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x" + chr(10) + "ALPACA_SECRET_KEY=y" + chr(10) + "ALPACA_PAPER=true" + chr(10)
+                   + "COPILOT_PASSWORD=geheim123" + chr(10))
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    fake = _FakeCopilot()
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    assert not at.exception
+    assert not any(m.label == "Heute realisiert" for m in at.metric)          # nichts sichtbar ohne Passwort
+    at.text_input(key="password_input").set_value("falsch").run()
+    assert any("Falsches Passwort" in e.value for e in at.error)
+    assert not any(m.label == "Heute realisiert" for m in at.metric)
+    at.text_input(key="password_input").set_value("geheim123").run()
+    assert not at.exception
+    assert any(m.label == "Heute realisiert" for m in at.metric)

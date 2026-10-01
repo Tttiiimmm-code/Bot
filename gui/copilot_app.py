@@ -114,6 +114,29 @@ ALPACA_PAPER=true
 3. Diese Seite neu laden.""")
     st.stop()
 
+
+def require_password() -> None:
+    """Passwort-Abfrage, wenn COPILOT_PASSWORD in copilot.env steht (Pflicht, sobald die Oberfläche nicht nur
+    am eigenen PC läuft, z.B. auf dem VPS). Gilt je Browser-Sitzung."""
+    import hmac
+
+    from dotenv import dotenv_values
+
+    password = (dotenv_values(ENV_FILE).get("COPILOT_PASSWORD") or "").strip()
+    if not password or st.session_state.get("auth_ok"):
+        return
+    st.title(":material/lock: Trading-Copilot")
+    entered = st.text_input("Passwort", type="password", key="password_input")
+    if entered:
+        if hmac.compare_digest(entered.encode(), password.encode()):
+            st.session_state["auth_ok"] = True
+            st.rerun()
+        st.error("Falsches Passwort.")
+    st.stop()
+
+
+require_password()
+
 try:
     cp = get_copilot()
 except Exception as e:  # z.B. falsche Keys
