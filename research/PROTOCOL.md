@@ -3237,3 +3237,34 @@ Bestätigung 2018-2021 t >= 2,4; Endtest 2022-2026 t >= 2). Information: Mediane
   Median -0,344 R; beste (EURJPY Asien-Ausbruch Ziel 2R) +0,107 (t 3,59) -> -0,027. NICHT BESTANDEN.
 - Lehre für alle Simulationen auf Kerzen: Mehrdeutige Kerzen nie überspringen, sondern schlechtesten Fall
   annehmen; Kandidaten vor jeder Bewertung mit feineren Daten (Minuten) nachrechnen.
+
+# Runde 111: ~2.700 Krypto-Varianten (Binance Spot, täglich) (Vorab, 2026-10-01)
+
+Vorgänger: Runde 3 (BTC/ETH-Trend, Top-20-Momentum), 34/35 (Krypto-Umkehr und -Momentum) -- nicht bestanden.
+Hier ein großes Raster mit tagesaktuellem Liquiditäts-Universum.
+
+Daten: data_cache/crypto (662 USDT-Paare, Tageskerzen 2017-08 bis 2026-09; Vorbehalt Survivorship: nur Paare, die
+beim Laden existierten). Ausgeschlossen: Stablecoins, Fiat, Hebel-Token (UP/DOWN/BULL/BEAR).
+Universum je Tag: Top 20 / Top 50 nach Ø-Umsatz (quote volume) der 30 Vortage, mindestens 60 Tage Historie.
+Signal zum Tagesschluss t, Position ab t+1, Kosten 10 bp je Seite auf den Umsatz der Gewichte.
+
+A Querschnitt (2.592): Rendite über L = 3 / 7 / 14 / 30 / 60 / 90 Tage, ohne / mit Auslassen des letzten Tages;
+  Top-k = 3 / 5 / 10; Umschichtung alle 1 / 7 / 30 Tage; nur long / long-short (k schwächste short);
+  Momentum (Gewinner kaufen) / Umkehr (Verlierer kaufen); BTC-Filter: keiner / BTC > SMA50 / BTC > SMA200
+  (sonst Cash bzw. bei long-short keine Position).
+B Zeitreihen-Trend (84): long je Coin, wenn Schluss > SMA 10/20/50/100/200 oder Donchian-20/55-Hoch (bis Tief der
+  halben Länge); nur long / long-short; Universum 20/50; BTC-Filter wie A. Gleichgewichtet über aktive Coins.
+Kennzahl: tägliche Rendite; bei nur-long-Varianten ÜBERSCHUSS gegenüber gleichgewichtetem Halten des Universums,
+bei long-short die Rendite selbst. t über Tage.
+Zeiträume: Training 2018-01 bis 2021-12, Bestätigung 2022-01 bis 2023-12, Endtest 2024-01 bis 2026-09.
+Auswahl: Ø > 0, t >= 4 im Training; 3 beste -> Bestätigung Ø > 0, t >= 2,4 -> Endtest Ø > 0, t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 111
+
+- 595 Coins nach Ausschlüssen. Training 2018-2021: 2.676 Varianten, t >= 2: 67, t >= 3: 4, t >= 4: 0
+  -> RUNDE NICHT BESTANDEN.
+- Beste Trainings-t (Information): Trend SMA50 Top50 long-short mit BTC>SMA50 +22,1 bp/Tag (t 3,28) -> +1,5 (t 0,22);
+  Top20 gleich +23,1 (3,21) -> -3,4; DON20 Top50 +17,3 (3,17) -> +3,3 (0,58).
+- Mediane Training -> Bestätigung: Querschnitts-Momentum +2,5 -> -0,5 bp/Tag, Umkehr -7,9 -> +3,7 (Vorzeichen
+  wechselt); Zeitreihen-Trend +3,0 -> +6,7, nur long gegenüber Halten -3,8 -> +7,4 (Regime-abhängig, BTC-Filter
+  ohne Filter -1,3 -> -6,2). Kein stabiles Muster über beide Zeiträume.
