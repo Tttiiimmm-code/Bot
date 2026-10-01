@@ -134,6 +134,31 @@ def test_gui_scan_shows_first_candidate_chart(tmp_path, monkeypatch):
     assert any(h.value == "2. Chart CCC" for h in at.subheader)
 
 
+def test_orb_melder_click_takes_symbol_stop_and_setup(tmp_path, monkeypatch):
+    from tradingbot.orb_scanner import OrbSetup
+
+    env = tmp_path / "copilot.env"
+    env.write_text("ALPACA_API_KEY=x\nALPACA_SECRET_KEY=y\nALPACA_PAPER=true\n")
+    monkeypatch.setenv("COPILOT_ENV", str(env))
+    monkeypatch.setenv("COPILOT_JOURNAL", str(tmp_path / "j.jsonl"))
+    fake = _FakeCopilot()
+    import tradingbot.copilot as copilot_mod
+    monkeypatch.setattr(copilot_mod, "Copilot", lambda *a, **k: fake)
+
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.session_state["orb"] = [
+        OrbSetup("AAA", 4.2, "long", 10.5, 9.9, 10.5, 9.9, 11.7, "wartet", "wartet"),
+        OrbSetup("BBB", 3.1, "short", 20.0, 19.0, 19.0, 20.0, 17.0, "wartet", "wartet"),
+    ]
+    at.run()
+    assert at.button(key="orb_BBB").disabled            # short: im Copilot nicht handelbar
+    at.button(key="orb_AAA").click().run()
+    assert not at.exception
+    assert at.text_input(key="symbol_input").value == "AAA"
+    assert at.number_input(key="stop_AAA").value == 9.9
+    assert at.selectbox(key="setup_choice").value == "orb"
+
+
 def test_chart_is_tradingview_like():
     from datetime import datetime, timedelta
 

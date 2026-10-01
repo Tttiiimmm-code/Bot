@@ -13,6 +13,9 @@ siehe research/PROTOCOL.md (Branch research/ideas) Runden 46-49 und 53:
   Schluss des 4.-letzten bis zum Schluss des letzten Handelstags jedes Monats
   (Runden 73/88); netto 2 bp Kosten und T-Bill-Zins (Überrendite wie im Backtest).
   Ein Monat wird erst erfasst, wenn er abgeschlossen ist.
+- mid_month_spy / mid_month_qqq: SPY bzw. QQQ long vom Schluss des 9. bis zum Schluss des 15. Handelstags
+  jedes Monats (Runde 122, NICHT bestanden -- nur Beobachtung, ob die Monatsmitte-Auffälligkeit der Indizes
+  weiterbesteht); 2 bp Round-Trip.
 
 Es werden keine Orders gesendet. Jeder Lauf lädt die letzten Tage Minutendaten
 per `npx dukascopy-node`, berechnet die Trades und schreibt sie in eine
@@ -41,7 +44,9 @@ TOKYO = "Asia/Tokyo"
 LEDGER_FIELDS = ["strategy", "date", "entry_time", "entry_price", "exit_time", "exit_price", "net_bp"]
 # Erwartung aus dem Backtest (Ø netto je Trade in bp, 2013-2025 bzw. 2017-2025;
 # gotobi = USD/JPY, gotobi_eurjpy = EUR/JPY aus Runde 85)
-EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84, "bond_month_end": 22.3}
+EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84, "bond_month_end": 22.3,
+               # Runde 122 (nicht bestanden, Beobachtung): Monatsmitte, Bestätigung 2018-21 US500/USTEC-CFD
+               "mid_month_spy": 5.4, "mid_month_qqq": 33.7}
 OSE_CLOSE_CHANGE = date(2024, 11, 5)
 # Börsenfreie Tage in Japan (Nationalfeiertage + Jahreswechsel). Der Dukascopy-CFD
 # notiert auch an diesen Tagen, die OSE-Futures nicht -> für nikkei_night
@@ -71,6 +76,7 @@ class ForwardConfig:
     bond_symbol: str = "IEF"
     bond_cost_per_trade: float = 2e-4  # Round-Trip
     tbill_rate: float = 0.037  # p.a., für die Überrendite (bei Bedarf anpassen)
+    mid_month_cost: float = 2e-4  # Round-Trip SPY/QQQ
 
 
 # ------------------------------------------------------------ Daten
@@ -211,6 +217,28 @@ def bond_month_end_trades(adjclose: pd.Series, start: date, end: date, cost: flo
     return rows
 
 
+def mid_month_trades(adjclose: pd.Series, start: date, end: date, cost: float, today: date,
+                     strategy: str) -> list[dict]:
+    """Runde 122 (Beobachtung): Kauf zum Schluss des 9., Verkauf zum Schluss des 15. Handelstags des Monats.
+    Nur Fenster, die vollständig vor `today` liegen und nach Testbeginn eröffnet werden."""
+    rows = []
+    s = adjclose.sort_index()
+    by_month: dict[tuple[int, int], list[date]] = {}
+    for d in s.index:
+        by_month.setdefault((d.year, d.month), []).append(d)
+    for days in by_month.values():
+        if len(days) < 15:
+            continue
+        buy_day, sell_day = days[8], days[14]
+        if sell_day >= today or not (start <= buy_day and sell_day <= end):
+            continue
+        a, b = float(s[buy_day]), float(s[sell_day])
+        rows.append({"strategy": strategy, "date": sell_day.isoformat(), "entry_time": buy_day.isoformat(),
+                     "entry_price": a, "exit_time": sell_day.isoformat(), "exit_price": b,
+                     "net_bp": round((b / a - 1 - cost) * 1e4, 3)})
+    return rows
+
+
 # ------------------------------------------------------------ Ledger
 
 def read_ledger(path: Path) -> list[dict]:
@@ -278,6 +306,9 @@ def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None 
                           strategy="gotobi_eurjpy")
     bond = fetch_daily_yahoo(cfg.bond_symbol, min(start, cfg.first_day - timedelta(days=40)), end)
     rows += bond_month_end_trades(bond, cfg.first_day, today, cfg.bond_cost_per_trade, cfg.tbill_rate, today)
+    for sym in ("SPY", "QQQ"):
+        px = fetch_daily_yahoo(sym, min(start, cfg.first_day - timedelta(days=40)), end)
+        rows += mid_month_trades(px, cfg.first_day, today, cfg.mid_month_cost, today, f"mid_month_{sym.lower()}")
     new = update_ledger(cfg.ledger, rows)
     logger.info("Vorwärtstest: %d Trades berechnet, %d neu.", len(rows), new)
     return summarize(cfg.ledger)

@@ -1695,6 +1695,17 @@ def main():
                                 help="Wie viele Tage je Lauf neu geladen werden (Standard: 10).")
     forward_report = subparsers.add_parser("forward-report", help="Auswertung von forward_trades.csv.")
     forward_report.add_argument("--ledger", default="forward_trades.csv", help="CSV mit den Trades.")
+    fwd_stocks = subparsers.add_parser(
+        "forward-stocks",
+        help="Vorwärtstest Aktien (Papier, keine Orders): ORB Top 5 täglich und Qualitäts-Top-50 monatlich. "
+        "Nutzt Alpaca-Marktdaten (nur Lesen) und SEC-Daten; schreibt forward_orb.csv und forward_quality.csv.",
+    )
+    fwd_stocks.add_argument("--start", type=date.fromisoformat, default=date(2026, 10, 1),
+                            help="Erster Tag (Standard: 2026-10-01); frühere Tage zählen nicht.")
+    fwd_stocks.add_argument("--env-file", default=".env", help="Datei mit Alpaca-Schlüsseln (nur Marktdaten).")
+    fwd_stocks.add_argument("--last-day", type=date.fromisoformat, default=None,
+                            help="Letzter zu verarbeitender Handelstag (Standard: gestern).")
+    subparsers.add_parser("forward-stocks-report", help="Auswertung von forward_orb.csv und forward_quality.csv.")
 
     compare_parser = subparsers.add_parser(
         "momentum-compare",
@@ -1735,6 +1746,16 @@ def main():
         except (RuntimeError, OSError, subprocess.SubprocessError) as e:
             print(f"Fehler: {e}", file=sys.stderr)
             sys.exit(1)
+        return
+
+    if args.command in ("forward-stocks", "forward-stocks-report"):
+        from tradingbot import forward_stocks
+
+        if args.command == "forward-stocks":
+            cfg = forward_stocks.StockForwardConfig(first_day=args.start)
+            print(forward_stocks.run(cfg, args.env_file, args.last_day))
+        else:
+            print(forward_stocks.summarize(forward_stocks.StockForwardConfig(first_day=date(2026, 10, 1))))
         return
 
     # Der Overnight-Bot nutzt ein eigenes Konto und braucht die .env des

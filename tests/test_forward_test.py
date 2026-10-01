@@ -9,6 +9,7 @@ from tradingbot.forward_test import (
     bond_month_end_trades,
     gotobi_days,
     gotobi_trades,
+    mid_month_trades,
     nikkei_trades,
     read_ledger,
     summarize,
@@ -109,3 +110,14 @@ def test_bond_month_end_uses_last_four_trading_days_and_skips_open_month():
     r = rows[0]
     assert r["exit_time"] == "2026-09-30" and r["entry_time"] == "2026-09-25"
     assert r["net_bp"] == round((r["exit_price"] / r["entry_price"] - 1) * 1e4, 3)
+
+
+def test_mid_month_uses_9th_to_15th_trading_day_and_skips_unfinished():
+    days = [d.date() for d in pd.bdate_range("2026-10-01", "2026-11-18")]
+    px = pd.Series([100 + i for i in range(len(days))], index=days, dtype=float)
+    rows = mid_month_trades(px, date(2026, 10, 1), date(2026, 12, 31), cost=2e-4, today=date(2026, 11, 18),
+                            strategy="mid_month_spy")
+    assert len(rows) == 1  # November-Fenster endet am 20.11. -> noch offen
+    r = rows[0]
+    assert r["entry_time"] == "2026-10-13" and r["exit_time"] == "2026-10-21"
+    assert r["net_bp"] == round((r["exit_price"] / r["entry_price"] - 1 - 2e-4) * 1e4, 3)

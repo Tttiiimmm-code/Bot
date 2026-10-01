@@ -1,0 +1,64 @@
+from datetime import date, datetime
+
+import pandas as pd
+
+from tradingbot import orb_scanner as orb
+
+DAY = date(2026, 10, 1)
+
+
+def et(hh, mm):
+    return datetime(2026, 10, 1, hh, mm, tzinfo=orb.NY)
+
+
+def bars5(rows):
+    """rows: [(HH:MM, open, high, low, close)]"""
+    idx = pd.DatetimeIndex([pd.Timestamp(f"2026-10-01 {t}", tz="America/New_York") for t, *_ in rows])
+    return pd.DataFrame([r[1:] for r in rows], columns=["open", "high", "low", "close"], index=idx)
+
+
+GREEN = {"open": 10.0, "high": 10.5, "low": 9.9, "close": 10.4}
+
+
+def test_waiting_then_expired():
+    b = bars5([("09:35", 10.4, 10.45, 10.2, 10.3)])
+    s = orb.evaluate("XYZ", 3.0, GREEN, b, 10.3, et(11, 0))
+    assert s.state == "wartet" and "über 10.50" in s.status and s.stop == 9.9 and s.target == 10.5 + 2 * 0.6
+    assert orb.evaluate("XYZ", 3.0, GREEN, b, 10.3, et(15, 30)).state == "abgelaufen"
+
+
+def test_triggered_running_target_and_stop():
+    run = bars5([("09:35", 10.4, 10.7, 10.4, 10.6), ("09:40", 10.6, 10.8, 10.5, 10.7)])
+    s = orb.evaluate("XYZ", 3.0, GREEN, run, 10.8, et(10, 0))
+    assert s.state == "läuft" and s.entry == 10.5 and abs(s.r_now - 0.5) < 1e-9
+    hit = bars5([("09:35", 10.4, 10.7, 10.4, 10.6), ("09:40", 10.6, 11.8, 10.5, 11.7)])
+    assert orb.evaluate("XYZ", 3.0, GREEN, hit, 11.7, et(10, 0)).state == "ziel"
+    # Stop in der Ausbruchskerze zählt (vorsichtig)
+    stopped = bars5([("09:35", 10.4, 10.7, 9.8, 9.9)])
+    assert orb.evaluate("XYZ", 3.0, GREEN, stopped, 9.9, et(10, 0)).state == "stop"
+
+
+def test_short_and_no_direction():
+    red = {"open": 10.5, "high": 10.6, "low": 10.0, "close": 10.1}
+    s = orb.evaluate("XYZ", 2.0, red, bars5([("09:35", 10.1, 10.2, 10.05, 10.1)]), 10.1, et(10, 0))
+    assert s.side == "short" and s.stop == 10.6 and "unter 10.00" in s.status
+    flat = {"open": 10.0, "high": 10.2, "low": 9.9, "close": 10.0}
+    assert orb.evaluate("XYZ", 2.0, flat, bars5([]), None, et(10, 0)).state == "keine"
+
+
+def test_daily_filter_and_rank_candidates():
+    days = pd.bdate_range("2026-09-01", "2026-09-30").date
+    rows = []
+    for sym, vol, rng in (("BIG", 5e6, 2.0), ("THIN", 5e5, 2.0), ("CALM", 5e6, 0.2)):
+        for d in days:
+            rows.append((sym, d, 20.0, 20 + rng / 2, 20 - rng / 2, 20.0, vol))
+    panel = pd.DataFrame(rows, columns=["symbol", "date", "open", "high", "low", "close", "volume"]).set_index(
+        ["symbol", "date"])
+    f = orb.daily_filter(panel)
+    assert f.loc["BIG", "eligible"] and not f.loc["THIN", "eligible"] and not f.loc["CALM", "eligible"]
+    hist = pd.DataFrame([(d, "BIG", 20, 20.5, 19.5, 20, 1e5) for d in days[-14:]],
+                        columns=["date", "symbol", "open", "high", "low", "close", "volume"]).set_index(["date", "symbol"])
+    today = pd.DataFrame([("BIG", 20, 20.5, 19.8, 20.3, 4e5), ("THIN", 20, 21, 19, 20.5, 9e9)],
+                         columns=["symbol", "open", "high", "low", "close", "volume"]).set_index("symbol")
+    cand = orb.rank_candidates(hist, today, f)
+    assert list(cand.index) == ["BIG"] and abs(cand.loc["BIG", "relvol"] - 4.0) < 1e-9

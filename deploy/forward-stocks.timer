@@ -1,0 +1,10 @@
+[Unit]
+Description=Vorwärtstest Aktien täglich (verarbeitet den vorherigen US-Handelstag)
+
+[Timer]
+# 07:30 UTC Di-Sa: der Vortag ist abgeschlossen; nach dem Nikkei/Gotobi-Lauf um 06:00 UTC.
+OnCalendar=Tue..Sat *-*-* 07:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

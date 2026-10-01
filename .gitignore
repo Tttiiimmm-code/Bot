@@ -10,6 +10,8 @@ data_cache/
 overnight_state.json
 overnight_trades.csv
 forward_trades.csv
+forward_orb.csv
+forward_quality.csv
 news_intel.csv
 copilot_journal.jsonl
 replay_journal.jsonl

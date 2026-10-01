@@ -21,6 +21,8 @@ from gui.chart import CHART_CONFIG, DOWN, UP, build_chart  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
     BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, suggest_stop,
 )
+from tradingbot.orb_scanner import CUTOFF_ET, orb_setups  # noqa: E402
+from tradingbot.orb_scanner import READY_ET as ORB_READY_ET  # noqa: E402
 
 ENV_FILE = Path(os.environ.get("COPILOT_ENV", ROOT / "copilot.env"))
 JOURNAL = Path(os.environ.get("COPILOT_JOURNAL", ROOT / "copilot_journal.jsonl"))
@@ -29,6 +31,8 @@ SETUPS = {
     "vwap-pullback": "Aktie ist heute deutlich im Plus, läuft auf die VWAP-Linie zurück und dreht wieder nach oben.",
     "trend-continuation": "Nach einer ruhigen Mittagsphase bricht die Aktie über ihr Tageshoch aus.",
     "power-hour": "Starker Ausbruch in der letzten Handelsstunde (ab 15:00 New Yorker Zeit, meist 21:00 bei uns).",
+    "orb": "Eröffnungsausbruch aus dem Setup-Melder: Kurs bricht über das Hoch der ersten 5-Minuten-Kerze, "
+           "Stop auf deren Tief.",
 }
 NEUTRAL = "#9598A1"
 ENTRY_CHECKLIST = """\
@@ -74,6 +78,14 @@ def color_pnl(v) -> str:
     except (TypeError, ValueError):
         return ""
     return f"color: {UP if v > 0 else DOWN if v < 0 else NEUTRAL}"
+
+
+def pick_orb(symbol: str, stop: float) -> None:
+    """Setup aus dem Melder übernehmen: Symbol und Stop (Gegenseite der ersten 5-Minuten-Kerze) setzen.
+    Als on_click-Callback, weil die Felder danach im selben Durchlauf schon gezeichnet sind."""
+    st.session_state["symbol_input"] = symbol
+    st.session_state[f"stop_{symbol}"] = round(float(stop), 2)
+    st.session_state["setup_choice"] = "orb"
 
 
 def safe(action) -> None:
@@ -290,6 +302,33 @@ with tab_trade:
             st.caption("Noch keine Suche (oder keine Treffer).")
         symbol = st.text_input("Symbol", key="symbol_input", placeholder="z.B. NVDA").strip().upper()
 
+    with left, st.container(border=True):
+        st.subheader("Setup-Melder: Eröffnungsausbruch")
+        st.caption("Die 5 Aktien mit dem ungewöhnlichsten Volumen in den ersten 5 Minuten. Ist deren erste "
+                   "5-Minuten-Kerze grün: Kauf erst beim Ausbruch über ihr Hoch, Stop auf ihr Tief, Ziel 2 R -- gültig "
+                   f"bis {berlin_time(CUTOFF_ET)} Uhr. Im Test 2016-2026 leicht positiv, aber nicht gesichert; klar besser "
+                   "als enge Stops war der Stop auf der Gegenseite der Kerze.")
+        if now().astimezone(NY).time() < ORB_READY_ET:
+            st.caption(f"Verfügbar ab {berlin_time(ORB_READY_ET)} Uhr (erste Kerze + 15 Min. Datenverzögerung).")
+        elif st.button("Setups laden / aktualisieren", icon=":material/radar:", width="stretch"):
+            with st.spinner("Das erste Laden eines Tages dauert einige Minuten (alle US-Aktien) ..."):
+                try:
+                    st.session_state["orb"] = orb_setups(cp, now())
+                except Exception as e:
+                    st.error(f"Setup-Melder: {e}")
+        for s in st.session_state.get("orb", []):
+            if s.state == "wartet":
+                status = f"wartet auf Ausbruch {'über' if s.side == 'long' else 'unter'} {s.entry:.2f}"
+            elif s.state == "läuft":
+                status = f"ausgelöst {s.triggered_at.astimezone(BERLIN):%H:%M} Uhr, {s.r_now:+.1f} R"
+            else:
+                status = s.status
+            side = {"long": ":green[long]", "short": ":red[short -- im Copilot nicht handelbar]"}.get(s.side, "ohne Richtung")
+            label = (f"**{s.symbol}** · {side} · Vol. {s.relvol:.1f}x  \n{status} · Stop {s.stop:.2f} · Ziel {s.target:.2f}")
+            st.button(label, key=f"orb_{s.symbol}", width="stretch",
+                      disabled=s.side != "long" or s.state in ("stop", "ziel", "abgelaufen"),
+                      on_click=pick_orb, args=(s.symbol, s.stop))
+
     with right, st.container(border=True):
         st.subheader(f"2. Chart {symbol}" if symbol else "2. Chart")
         bars, price = pd.DataFrame(), None
@@ -322,7 +361,7 @@ with tab_trade:
                     # on_click läuft VOR dem Neuaufbau -- danach darf das Stop-Feld nicht mehr geändert werden
                     st.button(f"Vorschlag übernehmen ({stop_default:.2f})", key=f"use_{symbol}", icon=":material/my_location:",
                               on_click=st.session_state.__setitem__, args=(stop_key, float(stop_default)))
-                setup = st.selectbox("Setup", list(SETUPS), help="Welches Muster siehst du?")
+                setup = st.selectbox("Setup", list(SETUPS), key="setup_choice", help="Welches Muster siehst du?")
                 st.caption(SETUPS[setup])
             with b:
                 st.markdown("**Ziel & Begründung**")
@@ -513,6 +552,12 @@ als Zufall. Die meisten Anfänger sind es anfangs nicht -- das ist normal und ko
 5. **Kursziel** bei 2 R setzen, auf Wunsch den Stop auf Einstand nachziehen lassen.
 6. Vorschau prüfen: Alles grün? Dann kaufen. Danach **nicht** den Stop nach unten verschieben.
 7. Verkauft wird, wenn Stop oder Ziel greifen -- spätestens um {berlin_time(rules.flatten_et)} automatisch.
+
+**Setup-Melder (Eröffnungsausbruch):** zeigt die 5 Aktien mit dem auffälligsten Volumen in den ersten 5 Minuten.
+Bei grüner erster Kerze: erst kaufen, wenn der Kurs **über deren Hoch** steigt; Stop auf deren Tief (ein Klick
+übernimmt Symbol und Stop), Ziel 2 R, nur bis {berlin_time(CUTOFF_ET)} Uhr. "wartet" heißt: noch kein Ausbruch --
+nicht vorher kaufen. Ehrlich: im Test 2016-2026 nur leicht positiv und nicht gesichert. Belegt ist vor allem,
+dass ein Stop auf der Gegenseite der Kerze deutlich besser abschneidet als ein enger Stop.
 """)
         with st.container(border=True):
             st.markdown("""

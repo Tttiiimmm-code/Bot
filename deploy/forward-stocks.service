@@ -1,0 +1,18 @@
+[Unit]
+Description=Vorwärtstest Aktien (ORB Top 5, Qualität Top 50) -- Papier, keine Orders
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+# Alpaca-Schlüssel nur für Marktdaten (es werden keine Orders gesendet); verarbeitet den Vortag.
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py forward-stocks --env-file .env
+TimeoutStartSec=3600
+MemoryMax=2G
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
