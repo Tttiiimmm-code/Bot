@@ -3177,3 +3177,63 @@ Training und Bestätigung, 3 beste Trainings-t ohne Hürde.
 - Lehre: Einstiege vor dem Auswahlzeitpunkt des Universums sind im Raster künftig ausgeschlossen. Ein Lücken-
   Mitgehen zur Eröffnung mit einem um 9:30 bekannten Universum (Auswahl nach Lücke/Vortag) wäre eine neue Hypothese
   (bräuchte Minutendaten anderer Aktien; Endtest-Zeitraum teilweise gesehen).
+
+# Runde 109: 1.152 Varianten Lücken-Handel mit 9:30-Universum (Vorab, 2026-10-01)
+
+Anlass: Runde 108 zeigte einen (ungültigen) Lücken-Effekt bei Einstieg 9:30 mit 9:35-Universum. Hier ein Universum,
+das nur Informationen bis 9:30 nutzt, und Einstieg erst um 9:35 (Schluss des ersten 5-Minuten-Bars).
+
+Daten: data_cache/universe (Alpaca SIP, split-bereinigt, inkl. inaktiver Symbole): Grundfilter (Open > 5 $, Ø-Volumen
+14 Vortage > 1 Mio., ATR14 > 0,50 $), erster 5-Minuten-Bar aller Grundfilter-Symbole, Tagesschluss. 2016-01 bis 2026-09.
+Lücke = Open / Vortagesschluss - 1 (bekannt 9:30). Einstieg = Schluss des 9:30-9:35-Bars, Ausstieg = Tagesschluss.
+Kosten je Seite 1 bp + 0,01 $/Aktie. Je Tag gleichgewichtetes Mittel der Positionen; t über Handelstage.
+
+Raster (4 x 4 x 3 x 3 x 2 x 2 x 2 = 1.152):
+- Lücke >= 2 / 4 / 6 / 10 % | Top 5 / 10 / 20 / alle nach |Lücke| | Richtung beide / nur Aufwärts- / nur Abwärtslücken
+- Kurs >= 5 / 10 / 20 $ | Ø-Volumen >= 1 / 3 Mio. | mit / gegen die Lücke
+- Bestätigung durch ersten 5-Minuten-Bar: ohne / nur wenn der Bar in Lückenrichtung schließt (Schluss vs. Open)
+
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09 (Vorbehalt: in Runde 108 wurden Endtest-
+Ergebnisse eines verwandten, ungültigen Lücken-Tests gesehen).
+Auswahl: >= 200 Handelstage mit Position, Ø > 0, t >= 4 im Training; 3 beste t -> Bestätigung Ø > 0, t >= 2,4 ->
+Endtest Ø > 0, t >= 2. Information: Mediane je Merkmal, 3 beste ohne Hürde.
+
+## 2026-10-01 -- Ergebnisse Runde 109
+
+- Tabelle 334.924 Lücken-Tage (|Lücke| >= 2 %). Training: t >= 2: 13, t >= 3: 0, t >= 4: 0; Median -9,3 bp/Tag
+  -> RUNDE NICHT BESTANDEN.
+- Mitgehen +0,9 bp (Training) -> -17,5 bp (Bestätigung); Gegen -18,9 -> -3,4: Vorzeichenwechsel zwischen den
+  Zeiträumen. Beste Trainingsvariante (Lücke >= 4 % Top 5 Abwärtslücken mitgehen mit 5-Min-Bestätigung) +43,9 bp/Tag
+  (t 2,48) -> +0,2 bp (t 0,01). Der Minute-0-Effekt aus Runde 108 ist mit einem 9:30-Universum und Einstieg 9:35
+  nicht vorhanden.
+
+# Runde 110: 1.152 Sitzungs-Range-Konfigurationen (H1, 24 Märkte) (Vorab, 2026-10-01)
+
+Vorgänger: Runde 20 (Gold-Range-Ausbruch), 22 (London-Open-Ausbruch Devisen), 101 (9:30-ORB EUR/USD, Gold) -- alle
+nicht bestanden. Hier breit: 4 Sitzungs-Ranges x Ausbruch/Fehlausbruch x Stop x Ausstieg, je Markt.
+
+Daten: Dukascopy H1 Bid/Ask, 24 Märkte wie Runde 105. Zeiten New York (Sommerzeit-bereinigt). Handelstag beginnt
+19:00 NY. Range = Hoch/Tief (Geld) der Stunden:
+- Asien 19:00-02:00 (Handel bis 11:00), Vor-London 00:00-03:00 (bis 11:00), London-Start 03:00-05:00 (bis 11:00),
+  New-York-Start 09:00-10:00 (bis 14:00). Zwangsausstieg 16:00 NY.
+Modus: Ausbruch (Stop-Einstieg am Range-Hoch long / -Tief short; Füllung Brief = max(Brief-Open, Level + Spread))
+       Fehlausbruch (beim ersten Überschreiten Gegen-Trade per Limit am Level: Hoch -> short zum Geld)
+Stop: Range-Breite / halbe Range-Breite (vom Einstieg) | Ausstieg: Ziel 1R / 2R / 16:00 NY.
+Je Tag und Markt höchstens ein Trade (erstes Signal; beide Seiten in derselben Stunde -> kein Trade).
+Stop und Ziel in einer Stunde -> Stop. Einstiegsstunde: nur Stop geprüft. Kommission 0,5 bp.
+Raster: 24 Märkte x 4 Ranges x 2 Modi x 2 Stops x 3 Ausstiege = 1.152 (je Markt einzeln).
+Ergebnis je Trade in R. Zeiträume, Hürden wie Runde 105 (Training 2012-07..2017, t >= 4 und >= 200 Trades;
+Bestätigung 2018-2021 t >= 2,4; Endtest 2022-2026 t >= 2). Information: Mediane je Range/Modus, Familie.
+
+## 2026-10-01 -- Ergebnisse Runde 110 (UNGÜLTIG) und 110b (korrigiert)
+
+- Roh: t >= 4: 6; zwei Konfigurationen bestanden alle drei Stufen: EURUSD NY 09-10 Ausbruch Stop Range Ziel 1R
+  (+0,147 t 5,29 / +0,079 t 2,67 / Endtest +0,165 t 5,82) und USDJPY gleich (+0,135 / +0,078 / +0,131).
+- Kontrolle mit Dukascopy-Minuten Bid/Ask (r110_check.py): EURUSD -0,022 (t -0,89) / -0,040 (t -1,47) / +0,047
+  (t 1,68); USDJPY ~0. Ursache: Regel 'beide Range-Seiten in derselben H1-Kerze -> kein Trade' nutzt Wissen vom
+  Ende der Stunde. Genau diese Tage enden mit Minutendaten zu 96-99 % im Verlust (Ø ~-1 R); ohne sie (Rückschau)
+  +0,12 / +0,10 / +0,21 R. Runde 110 ist UNGÜLTIG; ihr Endtest wurde dadurch angesehen.
+- 110b (Korrektur: beide Seiten in einer Kerze = -1 R, schlechtester Fall): t >= 2: 7 (Zufall ~26), t >= 4: 0,
+  Median -0,344 R; beste (EURJPY Asien-Ausbruch Ziel 2R) +0,107 (t 3,59) -> -0,027. NICHT BESTANDEN.
+- Lehre für alle Simulationen auf Kerzen: Mehrdeutige Kerzen nie überspringen, sondern schlechtesten Fall
+  annehmen; Kandidaten vor jeder Bewertung mit feineren Daten (Minuten) nachrechnen.
