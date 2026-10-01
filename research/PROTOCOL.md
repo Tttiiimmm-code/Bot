@@ -3113,3 +3113,21 @@ Nur zur Information: die 3 besten Trainings-t ohne t-4-Hürde, ihr Bestätigungs
   empfindlich gegenüber realem Schlupf bei Stop-Einstiegen. Mögliche Folgerunde: EINE vorab festgelegte
   Konfiguration auf dem unberührten Endtest 2023-2026 (noch nicht durchgeführt).
 - Universum mit Rest-Survivorship (Alpaca-Assetliste), Füllung im Einstiegsminuten-Bar im schlechtesten Fall.
+
+# Runde 107b: Einzeltest ORB auf dem Endtest (Vorab, 2026-10-01 14:12)
+
+Genau EINE Konfiguration, festgelegt vor dem Ansehen: OR5, beide Richtungen (Farbe der OR-Kerze), ohne VWAP-Filter,
+Stop OR-Gegenseite, Ziel 2R, Top 5 nach relativem Volumen, Einstieg bis 15:00 ET. Ausführung und Kosten exakt wie
+Runde 107 (1 bp + 0,01 USD/Aktie je Seite, Einstiegsminute schlechtester Fall). Zeitraum: Endtest 2023-01-01 bis
+2026-09-23 (bisher nie angesehen). BESTANDEN: Ø R > 0 und t(Tage) >= 2. Nur Information (zählt nicht): je Jahr,
+und Kosten-Stresstest 2 bp + 0,02 USD/Aktie je Seite.
+
+## 2026-10-01 -- Ergebnis Runde 107b
+
+- Kontrolle: Training/Bestätigung identisch mit Runde 107 (+0,063 t 3,61 / +0,047 t 2,26).
+- Endtest 2023-01 bis 2026-09: n 3.608, Ø +0,026 R, t(Tage) 1,52, Treffer 46 %, PF 1,06, Summe +93 R
+  -> NICHT BESTANDEN (t < 2).
+- Information: Kosten-Stresstest 2 bp + 0,02 USD/Aktie: Ø -0,013 R (t -0,78). Je Jahr: 2016 +0,10, 2017 +0,08,
+  2018 +0,07, 2019 +0,01, 2020 0,00, 2021 +0,05, 2022 +0,10, 2023 +0,03, 2024 +0,03, 2025 0,00, 2026 +0,06 R.
+  Fast durchgehend leicht positiv, aber zu klein, um verlässlich von null unterscheidbar zu sein, und bei
+  doppelten Kosten weg.
