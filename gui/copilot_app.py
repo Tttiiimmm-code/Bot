@@ -18,7 +18,7 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from gui import auth  # noqa: E402
-from gui.chart import CHART_CONFIG, DOWN, UP, build_chart  # noqa: E402
+from gui.chart import CHART_CONFIG, CHART_CONFIG_MOBILE, DOWN, UP, build_chart, is_mobile  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
     BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, suggest_stop,
 )
@@ -58,6 +58,28 @@ st.markdown("""
   .copilot-sub {opacity: .65; font-size: .9rem; margin: -0.2rem 0 0.8rem 0;}
   .copilot-rule {display: flex; justify-content: space-between; padding: .3rem 0;
                  border-bottom: 1px solid rgba(128,128,128,.15); font-size: .9rem;}
+  /* Handy (schmaler als 640 px): Kennzahlen als 2er-Raster statt 5 Karten untereinander, kompaktere Abstände,
+     alle Tabs sichtbar, größere Knöpfe zum Tippen. Am PC ändert sich nichts. */
+  @media (max-width: 640px) {
+    .block-container {padding: 2.9rem .7rem 2rem .7rem !important;}  /* oben Platz für die Streamlit-Leiste */
+    h1 {font-size: 1.3rem !important;}
+    .copilot-sub {display: none;}
+    .st-key-hdr [data-testid="stHorizontalBlock"], [class*="st-key-pos_"] [data-testid="stHorizontalBlock"] {
+      flex-wrap: wrap !important; gap: .5rem !important;}
+    .st-key-hdr [data-testid="stColumn"], [class*="st-key-pos_"] [data-testid="stColumn"] {
+      flex: 1 1 calc(50% - .5rem) !important; min-width: calc(50% - .5rem) !important; width: calc(50% - .5rem) !important;}
+    .st-key-hdr [data-testid="stColumn"]:first-child {display: none !important;}  /* Uhrzeit zeigt das Handy selbst */
+    [class*="st-key-pos_"] [data-testid="stColumn"]:last-child {flex-basis: 100% !important; min-width: 100% !important;}
+    [data-testid="stMetric"] {padding: .45rem .6rem !important;}
+    [data-testid="stMetricValue"] {font-size: 1.15rem !important;}
+    [data-testid="stMetricLabel"] p {font-size: .66rem !important;}
+    [data-testid="stMetricDelta"] {font-size: .72rem !important;}
+    .stTabs [role="tablist"] {gap: .1rem !important;}
+    .stTabs [data-testid="stTab"] {padding-left: .35rem !important; padding-right: .35rem !important;}
+    .stTabs [data-testid="stTab"] p {font-size: .82rem !important;}
+    .stTabs [data-testid="stTab"] p > span:first-child {display: none !important;}  /* Symbole weg: alle 5 Tabs passen */
+    [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-primary"] {min-height: 2.75rem;}
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -193,9 +215,9 @@ with st.sidebar:
     st.markdown("".join(f'<div class="copilot-rule"><span>{k}</span><b>{v}</b></div>' for k, v in rule_rows),
                 unsafe_allow_html=True)
     st.caption("Nur Kaufen (long) · nur Paper-Geld · Uhrzeiten deutsch, heute")
-    st.info("Das Fenster **Copilot-Sicherheit** muss offen bleiben: es stellt bei der Tagesgrenze und "
-            f"um {berlin_time(rules.flatten_et)} glatt und zieht Stops nach. Jede Position hat zusätzlich "
-            "einen Stop direkt bei Alpaca.", icon=":material/shield:")
+    st.info("Die **Sicherheitsüberwachung** (auf dem VPS als Dienst, sonst das Fenster 'Copilot-Sicherheit') stellt "
+            f"bei der Tagesgrenze und um {berlin_time(rules.flatten_et)} glatt und zieht Stops nach. Jede Position hat "
+            "zusätzlich einen Stop direkt bei Alpaca.", icon=":material/shield:")
     if st.button("Notfall: alles schließen", icon=":material/dangerous:", width="stretch"):
         safe(lambda: cp.close(None))
     if st.session_state.get("auth_ok"):
@@ -216,7 +238,7 @@ def header():
         st.error(f"Alpaca nicht erreichbar: {e}")
         return
     unreal = sum(float(p.unrealized_pl) for p in positions)
-    c = st.columns(5)
+    c = st.container(key="hdr").columns(5)
     c[0].metric("Zeit", f"{t.astimezone(BERLIN):%H:%M}", f"New York {t.astimezone(NY):%H:%M}", delta_color="off", delta_arrow="off",
                 border=True)
     # grün "Handel läuft" bzw. grau mit nächster Öffnung
@@ -258,16 +280,18 @@ def chart_view(symbol: str, stop: float, target: float | None) -> None:
         markers = cp.fills_today(symbol, t)  # Pfeile für heutige Käufe/Verkäufe
     except Exception:
         markers = []
-    st.plotly_chart(build_chart(bars, symbol, stop, target, markers=markers), width="stretch", config=CHART_CONFIG,
-                    key=f"chart_{symbol}")
+    mobile = is_mobile()
+    st.plotly_chart(build_chart(bars, symbol, stop, target, markers=markers, mobile=mobile), width="stretch",
+                    config=CHART_CONFIG_MOBILE if mobile else CHART_CONFIG, key=f"chart_{symbol}")
     share = bars.attrs.get("iex_share")
     if share is not None and share < 0.01:
         st.warning(f"IEX sieht nur {share:.1%} des Handels in {symbol}: die letzten 15 Minuten im Chart "
                    "(rechts der gepunkteten Linie) und der Kurs für die Stückzahl sind lückenhaft. "
                    "Links der Linie ist der Chart vollständig, aber 15 Minuten verzögert.")
     info, link = st.columns([3, 1], vertical_alignment="center")
-    info.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag  \n"
-                 "Links der gepunkteten Linie: alle Börsen (15 Min. verzögert) · rechts: live, nur IEX  \n"
+    info.caption(("Am Handy fest, Wischen scrollt die Seite -- zum Zoomen TradingView öffnen  \n" if mobile else
+                  "Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag  \n")
+                 + "Links der gepunkteten Linie: alle Börsen (15 Min. verzögert) · rechts: live, nur IEX  \n"
                  f"Chart-Stand {t.astimezone(BERLIN):%H:%M:%S} -- aktualisiert sich alle 5 Minuten selbst.")
     link.link_button("TradingView", f"https://www.tradingview.com/chart/?symbol={symbol}", icon=":material/open_in_new:",
                      width="stretch")
@@ -328,10 +352,11 @@ with tab_trade:
 
     with left, st.container(border=True):
         st.subheader("Setup-Melder: Eröffnungsausbruch")
-        st.caption("Die 5 Aktien mit dem ungewöhnlichsten Volumen in den ersten 5 Minuten. Ist deren erste "
-                   "5-Minuten-Kerze grün: Kauf erst beim Ausbruch über ihr Hoch, Stop auf ihr Tief, Ziel 2 R -- gültig "
-                   f"bis {berlin_time(CUTOFF_ET)} Uhr. Im Test 2016-2026 leicht positiv, aber nicht gesichert; klar besser "
-                   "als enge Stops war der Stop auf der Gegenseite der Kerze.")
+        with st.expander("Wie funktioniert das?", icon=":material/help:"):
+            st.caption("Die 5 Aktien mit dem ungewöhnlichsten Volumen in den ersten 5 Minuten. Ist deren erste "
+                       "5-Minuten-Kerze grün: Kauf erst beim Ausbruch über ihr Hoch, Stop auf ihr Tief, Ziel 2 R -- "
+                       f"gültig bis {berlin_time(CUTOFF_ET)} Uhr. Im Test 2016-2026 leicht positiv, aber nicht "
+                       "gesichert; klar besser als enge Stops war der Stop auf der Gegenseite der Kerze.")
         if now().astimezone(NY).time() < ORB_READY_ET:
             st.caption(f"Verfügbar ab {berlin_time(ORB_READY_ET)} Uhr (erste Kerze + 15 Min. Datenverzögerung).")
         elif st.button("Setups laden / aktualisieren", icon=":material/radar:", width="stretch"):
@@ -461,7 +486,7 @@ with tab_pos:
         for p in positions:
             risk = cp.journal_risk(p.symbol, t)
             pl = float(p.unrealized_pl)
-            with st.container(border=True):
+            with st.container(border=True, key=f"pos_{p.symbol}"):
                 cols = st.columns([1.3, 1, 1, 1.3, 0.9], vertical_alignment="center")
                 cols[0].markdown(f"#### {p.symbol}\n{p.qty} Stück")
                 cols[1].metric("Einstieg", f"{float(p.avg_entry_price):.2f}")
@@ -469,6 +494,9 @@ with tab_pos:
                 cols[3].metric("Gewinn/Verlust", f"{pl:+.2f} $", f"{pl / risk:+.2f} R" if risk else None)
                 if cols[4].button("Schließen", key=f"close_{p.symbol}", icon=":material/close:", width="stretch"):
                     safe(lambda s=p.symbol: cp.close(s))
+        if len(positions) > 1 and st.button("Notfall: alle schließen", key="panic_pos", icon=":material/dangerous:",
+                                            width="stretch"):
+            safe(lambda: cp.close(None))   # auch hier, weil die Seitenleiste auf dem Handy eingeklappt ist
         st.subheader("Heute abgeschlossen")
         try:
             trades, _ = cp._closed_trades(t)

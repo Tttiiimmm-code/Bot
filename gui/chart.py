@@ -18,11 +18,25 @@ CHART_CONFIG = {
     "displaylogo": False,
     "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d", "toImage"],
 }
+# Handy: Chart fest, damit Wischen die Seite scrollt statt den Chart zu verschieben
+CHART_CONFIG_MOBILE = {"scrollZoom": False, "displayModeBar": False, "displaylogo": False, "doubleClick": False}
+
+
+def is_mobile() -> bool:
+    """Handy/Tablet am Browser-Kennzeichen der laufenden Streamlit-Sitzung erkennen."""
+    try:
+        import streamlit as st
+
+        ua = st.context.headers.get("User-Agent")
+    except Exception:
+        return False
+    return isinstance(ua, str) and any(k in ua for k in ("Mobi", "Android", "iPhone", "iPad"))
 
 
 def build_chart(bars, symbol: str, stop: float | None, target: float | None, markers=(),
-                uirevision: str | None = None) -> go.Figure:
-    """markers: [(Zeit, "buy"/"sell", Kurs)] -- Käufe als grüne, Verkäufe als rote Pfeile an der Kerze."""
+                uirevision: str | None = None, mobile: bool = False) -> go.Figure:
+    """markers: [(Zeit, "buy"/"sell", Kurs)] -- Käufe als grüne, Verkäufe als rote Pfeile an der Kerze.
+    mobile: niedriger und ohne Ziehen/Zoomen (Achsen fest), damit der Chart beim Scrollen nicht im Weg ist."""
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.78, 0.22], vertical_spacing=0.02)
     fig.add_trace(go.Candlestick(
         x=bars.index, open=bars["open"], high=bars["high"], low=bars["low"], close=bars["close"], name=symbol,
@@ -70,8 +84,11 @@ def build_chart(bars, symbol: str, stop: float | None, target: float | None, mar
     fig.update_yaxes(tickformat=".2f", row=1, col=1)
     fig.update_yaxes(showticklabels=False, row=2, col=1)
     fig.update_layout(
-        height=520, margin=dict(l=10, r=60, t=10, b=10), dragmode="pan", hovermode="x",
-        uirevision=uirevision or symbol,  # Zoom/Ausschnitt bleiben beim automatischen Neuladen erhalten
+        height=380 if mobile else 520, margin=dict(l=10, r=60, t=10, b=10), dragmode=False if mobile else "pan",
+        hovermode="x", uirevision=uirevision or symbol,  # Zoom/Ausschnitt bleiben beim automatischen Neuladen erhalten
         showlegend=False, bargap=0.1,
     )
+    if mobile:
+        fig.update_xaxes(fixedrange=True)
+        fig.update_yaxes(fixedrange=True)
     return fig

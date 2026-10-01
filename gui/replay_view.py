@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from gui.chart import CHART_CONFIG, DOWN, UP, build_chart
+from gui.chart import CHART_CONFIG, CHART_CONFIG_MOBILE, DOWN, UP, build_chart, is_mobile
 from tradingbot import replay as rpl
 from tradingbot.copilot import BERLIN, NY, entry_warnings, suggest_stop
 
@@ -181,10 +181,12 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
         st.subheader(f"{rp['symbol']} · {pd.Timestamp(rp['day']):%d.%m.%Y}")
         markers = list(rp["trades"]) + ([(bars.index[pos.entry_idx], "buy", pos.entry)] if pos else [])
         stop_line = pos.stop if pos else SS.get("rp_stop")
+        mobile = is_mobile()
         st.plotly_chart(build_chart(visible, rp["symbol"], stop_line, pos.target if pos else None, markers=markers,
-                                    uirevision=f"replay_{rp['symbol']}_{rp['day']}"),
-                        width="stretch", config=CHART_CONFIG, key="replay_chart")
-        st.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag")
+                                    uirevision=f"replay_{rp['symbol']}_{rp['day']}", mobile=mobile),
+                        width="stretch", config=CHART_CONFIG_MOBILE if mobile else CHART_CONFIG, key="replay_chart")
+        if not mobile:
+            st.caption("Mausrad: zoomen · Ziehen: verschieben · Doppelklick: ganzer Tag")
 
     with side, st.container(border=True):
         m = st.columns(2)

@@ -299,6 +299,19 @@ def test_password_gate_blocks_until_correct(tmp_path, monkeypatch):
     assert at.text_input(key="password_input").value in ("", None)
 
 
+def test_chart_mobile_mode_is_fixed_and_lower():
+    import pandas as pd
+
+    from gui.chart import build_chart
+
+    idx = pd.date_range("2026-10-01 09:30", periods=3, freq="5min", tz="America/New_York")
+    bars = pd.DataFrame({"open": [10, 11, 12], "high": [11, 12, 13], "low": [9, 10, 11], "close": [11, 12, 12.5],
+                         "volume": [100, 200, 300]}, index=idx)
+    desk, mob = build_chart(bars, "XYZ", 9.5, None), build_chart(bars, "XYZ", 9.5, None, mobile=True)
+    assert desk.layout.dragmode == "pan" and desk.layout.height == 520
+    assert mob.layout.dragmode is False and mob.layout.height == 380 and mob.layout.xaxis.fixedrange
+
+
 def test_login_token_is_password_bound():
     from gui import auth
 
