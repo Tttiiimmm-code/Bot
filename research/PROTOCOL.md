@@ -3517,3 +3517,31 @@ Zeiträume Training 2012-07..2017, Bestätigung 2018-2021, Endtest 2022-2026-09.
 - R122 Kalender 24 Märkte (1.248): t >= 2: 59 (Zufall ~29), t >= 4: 8 (alle Monatsregeln mit n < 30, nicht wählbar)
   -> NICHT BESTANDEN. Wählbare Beste: Monatsmitte (Handelstage 10-15) long USTEC +94 bp (t 3,82) -> +34 (t 0,88),
   US500 +72 (3,69) -> +5, Nikkei +109 (3,21) -> +9. t >= 2 in beiden nur bei Monatsregeln mit 4-6 Beobachtungen.
+
+# Runde 123: 1.152 Varianten taktische Vermögensaufteilung (Dual Momentum, GTAA, Rotation) (Vorab, 2026-10-01)
+
+Bei Privatanlegern/Bot-Anbietern verbreitet (Antonacci GEM, Faber GTAA, Keller Vigilant/Defensive AA); bisher nur
+einzelne Trendregeln je ETF getestet (Runden 5, 10, 38), keine Rotation zwischen Anlageklassen.
+Daten: Yahoo-Tageskurse inkl. Dividenden (adjclose), bis 2025-09-19.
+Universen: GEM (SPY, EFA) | GTAA5 (SPY, EFA, IEF, VNQ, DBC) | 10 ETFs (SPY, QQQ, IWM, EFA, EEM, IEF, TLT, GLD, VNQ,
+DBC) | 11 ETFs (SPY, IWM, EFA, EEM, VNQ, DBC, IEF, TLT, GLD, TIP, LQD).
+Signal zum letzten Handelstag des Monats: Kurs über SMA 6/8/10/12 Monatsschlüsse (Rang: Kurs/SMA - 1), Rendite über
+1/3/6/12 Monate, Keller-Mix (12 r1 + 4 r3 + 2 r6 + r12).
+Auswahl: alle mit positivem Signal / Top 1 / Top 2 / Top 3 unter denen mit positivem Signal (leere Plätze -> sicherer
+Hafen) | Gewichtung gleich / invers zur 63-Tage-Volatilität | sicherer Hafen SHY / IEF | Volatilitätsziel: keins /
+10 % p.a. (Anteil = min(1, 10 %/Vola 63 Tage des Portfolios), Rest SHY). 4 x 9 x 4 x 2 x 2 x 2 = 1.152.
+Ausführung: Signal am Monatsende-Schluss, Umschichtung zum Schluss des ersten Handelstags des Folgemonats, gehalten bis
+zum Schluss des ersten Handelstags des übernächsten Monats. Kosten 10 bp je Seite auf den Umsatz.
+Kennzahl: Monatsrendite minus gleichgewichtetes Halten desselben Universums (monatlich ausgeglichen). t über Monate.
+Information: Sharpe-Quote und maximaler Verlust gegenüber dem Halten.
+Zeiträume: Training 2007-03 bis 2013-12, Bestätigung 2014-2019, Endtest 2020-01 bis 2025-09.
+Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 123
+
+- Training 2007-03..2013: t >= 2: 0, t >= 4: 0 (Überschuss gegenüber Halten bis ~+10 % p.a., aber t <= 1,5)
+  -> RUNDE NICHT BESTANDEN. Sharpe besser als Halten: Training 91 % der Varianten (Finanzkrise 2008), Bestätigung
+  2014-2019 nur 9 %. Mediane Überschuss Training -> Bestätigung: alle Merkmale positiv/neutral -> -3 bis -8 % p.a.
+  Beste Trainings-t: 10 ETFs SMA6 Top 3 Hafen IEF +9,7 % p.a. (t 1,47, MaxDD -14 % vs -38 %) -> -5,8 % p.a.
+  (t -1,78, MaxDD -30 % vs -10 %). Rotationsstrategien schützen in langen Crashs (2008), verlieren in
+  Seitwärts-/V-Phasen durch Fehlsignale; kein Vorteil gegenüber gleichgewichtetem Halten.
