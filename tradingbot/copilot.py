@@ -324,7 +324,13 @@ class Copilot:
         deadline = _systime.monotonic() + 10
         while self.trading_client.get_orders(filter=req) and _systime.monotonic() < deadline:
             _systime.sleep(0.5)
-        self.trading_client.close_position(symbol)
+        try:
+            self.trading_client.close_position(symbol)
+        except Exception as e:  # noqa: BLE001 -- Alpaca APIError, z.B. 40410000 "position not found"
+            if "position not found" not in str(e):
+                raise
+            # Der Stop hat schon verkauft (z.B. Stop auf Einstand kurz zuvor ausgelöst).
+            return f"{symbol}: keine offene Position mehr -- der Stop hat bereits verkauft."
         return f"{symbol} geschlossen (Market), Stop-Order storniert."
 
     def status(self, now: datetime) -> str:

@@ -188,6 +188,18 @@ def test_close_waits_until_stop_is_cancelled(tmp_path, monkeypatch):
     assert trading.cancelled == ["stop1"] and trading.closed == ["XYZ"]
 
 
+def test_close_when_stop_already_sold(tmp_path, monkeypatch):
+    import tradingbot.copilot as copilot_mod
+    monkeypatch.setattr(copilot_mod._systime, "sleep", lambda s: None)
+
+    class StoppedOut(ClosingTrading):
+        def close_position(self, symbol):
+            raise RuntimeError('{"code":40410000,"message":"position not found: XYZ"}')
+
+    cp = Copilot(StoppedOut(), FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    assert "bereits verkauft" in cp.close("xyz")
+
+
 def test_buy_rounds_stop_before_checking_rules(tmp_path):
     trading = FakeTrading()
     cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
