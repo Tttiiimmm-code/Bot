@@ -2873,3 +2873,48 @@ Auswertung bei 100 Trades (gesamt, Setups nur berichtet, da nachträglich gruppi
 - sonst NICHT BESTANDEN -> kein Echtgeld.
 Vorzeitiger Abbruch bei 60 Trades: Ø R nach Aufschlag < 0 UND Profit-Faktor < 0,9.
 Regeländerungen (Risiko, Grenzen) nur zwischen Auswertungen und mit Vermerk hier.
+
+# Runde 102: Die veröffentlichten Bots von TikTok @tagebuchmillion (Vorab-Registrierung, 2026-10-01)
+
+Quelle: Discord-Upload (Python/MT5, Ende Aug./Anf. Sep. 2026), vom Nutzer bereitgestellt. Signale mit den
+Formeln aus strategy.py der Bots (C/D direkt über deren signals_vectorized), Ausführung nach bot.py.
+
+Bots:
+- A "Haupt-Bot": nur long. Schluss > EMA150 und RSI14 kreuzt über 35 -> Kauf; Stop 2xATR14, Ziel 2R.
+  XAUUSD/XAGUSD H1, CHFJPY/USDJPY H4 (XPTUSD bei Dukascopy nicht verfügbar -> ausgelassen);
+  max. 3 Positionen, 1 je Symbol.
+- B "Divergenz Gold/Silber": nur long XAUUSD H4. 20-Kerzen-Renditedifferenz Gold-Silber kreuzt von unten
+  über (Mittel - 1,5 Std.-Abw. über 100 Kerzen) und Schluss > EMA150; Stop 2xATR14, Ziel 2R.
+- C "David V2": long+short. EMA200 +/- 0,25 ATR Puffer, RSI 35/65-Kreuz, Stop 1,5xATR, Ziel 2R; "Gewinn sichern":
+  ab +1,6 R Buchgewinn Stop auf +0,2 R; Spread-Filter (Spread > 15 % des Stops -> kein Trade);
+  EURUSD/GBPUSD/USDJPY H1, XAUUSD H4; max. 3 Positionen, 1 je Symbol; Tagesverlust 1 % (= 2 R) -> Sperre (UTC-Tag).
+- D "David V2.0-BenV0.5.1": wie C, RSI 40/60, Puffer 0,30 ATR, ADX14 >= 15, ATR-Perzentil >= 0,10 (100 Kerzen),
+  höherer Zeitrahmen (H4 für H1, D1 für H4) EMA50 nicht dagegen; 12 Märkte (EURUSD GBPUSD USDCHF USDCNH AUDUSD
+  NZDUSD USDSEK USDJPY GBPJPY EURJPY H1, XAUUSD H4, USTEC H1). M1-RSI-Filter NICHT nachbildbar (keine M1-Daten)
+  -> weggelassen.
+
+Daten: Dukascopy H1 Bid/Ask 2012-2026-09; H4/D1 in MT5-Serverzeit (GMT+2/+3) zusammengefasst. Wo eine Kursseite
+fehlt (USDSEK-Bid 2013, USTEC-Ask einzelne Jahre), wird sie über den mittleren Spread ergänzt.
+Ausführung: Signal auf geschlossener Kerze -> Einstieg zur Eröffnung der nächsten H1-Kerze (long Brief-, short
+Geldkurs); Stop/Ziel ab tatsächlichem Einstieg; Ausstiege auf H1-Kerzen (long Geld-, short Briefkurs); Kurslücke
+-> Eröffnungskurs; Stop und Ziel in derselben Kerze -> Stop. Kommission 0,5 bp je Runde; Swap nicht berücksichtigt.
+
+Zeiträume: P1 2012-2018, P2 2019-2026-09. BESTANDEN je Bot nur, wenn Ø R (netto) > 0 mit t >= 2 in P1 UND P2.
+Zusätzlich: Trefferquote, Profit-Faktor, Trades/Jahr, letzte 12 Monate, FTMO-Prüfungssimulation (Start an jedem
+Monatsanfang 2012-06 bis 2026-06, Risiko wie im Bot: A/B 1 %, C/D 0,5 %; bestanden bei +10 % vor -10 % gesamt
+oder -5 % an einem Tag, realisiert). 4 Versuche (A-D), keine Parametervariationen.
+
+## 2026-10-01 -- Ergebnisse Runde 102 (Ø R netto, t; Spread aus Bid/Ask + 0,5 bp Kommission)
+
+- A Haupt-Bot (EMA150+RSI35, long): P1 -0,10 R (t -1,26), P2 +0,02 (t +0,29), PF 0,86/1,03, ~44 Trades/J.
+  FTMO-Simulation 38 % bestanden. NICHT BESTANDEN.
+- B Divergenz Gold/Silber (long Gold H4): P1 -0,05 (t -0,28), P2 +0,31 (t +2,28), ~13 Trades/J. FTMO 99 %
+  "bestanden", aber Median 1.359 Tage bis +10 % -- P2 fällt mit der Gold-Hausse zusammen (nur long). NICHT BESTANDEN.
+- C David V2 (long+short, 4 Märkte): P1 -0,14 (t -3,17), P2 -0,12 (t -2,85), ~136 Trades/J, FTMO 9 %.
+  Ohne jede Kosten: -0,08 / -0,06 R. NICHT BESTANDEN (signifikant negativ).
+- D David V2.0-BenV0.5.1 (12 Märkte, ADX/MTF/ATR-Filter): P1 -0,06 (t -3,04), P2 -0,13 (t -6,74), ~595 Trades/J,
+  letzte 12 Monate -0,20 R, FTMO 10 %. Ohne Kosten: -0,01 / -0,05 R. NICHT BESTANDEN (signifikant negativ).
+Einordnung: Trend-Rücksetzer mit EMA/RSI/ATR und festem 2R-Ziel hat auf H1/H4 keinen Vorteil vor Kosten; die
+Spreads machen bei vielen kurzen Trades ~0,05-0,08 R je Trade aus. Deckt sich mit seinem eigenen FTMO-Test
+(Tag 73-79: -3.081 € unter echten Spreads/Kommissionen). Seine "100.000 getesteten Varianten" sind das
+Mehrfachtest-Problem in Reinform.
