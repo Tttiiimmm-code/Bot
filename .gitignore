@@ -16,3 +16,4 @@ news_intel.csv
 copilot_journal.jsonl
 replay_journal.jsonl
 backups/
+copilot_settings.json

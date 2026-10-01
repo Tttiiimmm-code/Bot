@@ -200,6 +200,23 @@ def test_close_when_stop_already_sold(tmp_path, monkeypatch):
     assert "bereits verkauft" in cp.close("xyz")
 
 
+def test_strict_mode_blocks_tight_stop_and_below_vwap(tmp_path, monkeypatch):
+    import pandas as pd
+
+    trading = FakeTrading()
+    cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")
+    idx = pd.date_range("2026-10-01 09:30", periods=3, freq="5min", tz="America/New_York")
+    bars = pd.DataFrame({"open": [26, 26, 26], "high": [26.5] * 3, "low": [25.5] * 3, "close": [26, 26, 26],
+                         "volume": [1000] * 3}, index=idx)
+    monkeypatch.setattr(cp, "today_bars", lambda s, n: bars)                 # VWAP ~26 > Kurs 25
+    assert cp._strict_problems("XYZ", 25.0, 24.95, ny(12, 0)) == []          # aus: keine Sperre
+    cp.save_settings(strict=True)
+    p = cp._strict_problems("XYZ", 25.0, 24.95, ny(12, 0))
+    assert any("Stop zu eng" in x for x in p) and any("unter der VWAP" in x for x in p)
+    msg = cp.buy("XYZ", stop=24.0, setup="vwap", now=ny(12, 0))
+    assert msg.startswith("KEIN TRADE") and "VWAP" in msg and trading.submitted == []
+
+
 def test_buy_rounds_stop_before_checking_rules(tmp_path):
     trading = FakeTrading()
     cp = Copilot(trading, FakeData(25.0), RULES, tmp_path / "j.jsonl")

@@ -215,6 +215,11 @@ with st.sidebar:
     st.markdown("".join(f'<div class="copilot-rule"><span>{k}</span><b>{v}</b></div>' for k, v in rule_rows),
                 unsafe_allow_html=True)
     st.caption("Nur Kaufen (long) · nur Paper-Geld · Uhrzeiten deutsch, heute")
+    strict = st.toggle("Strenger Modus", value=bool(cp.settings().get("strict")), key="strict_mode",
+                       help="Sperrt Käufe unter der VWAP und Stops enger als 0,5 % (deine zwei häufigsten Fehler), "
+                            "statt nur zu warnen.")
+    if strict != bool(cp.settings().get("strict")):
+        cp.save_settings(strict=strict)
     st.info("Die **Sicherheitsüberwachung** (auf dem VPS als Dienst, sonst das Fenster 'Copilot-Sicherheit') stellt "
             f"bei der Tagesgrenze und um {berlin_time(rules.flatten_et)} glatt und zieht Stops nach. Jede Position hat "
             "zusätzlich einen Stop direkt bei Alpaca.", icon=":material/shield:")

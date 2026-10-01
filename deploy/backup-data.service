@@ -8,4 +8,4 @@ ExecStart=/bin/sh /home/tradingbot/Bot/deploy/backup-data.sh
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/home/tradingbot/backups
+ReadWritePaths=/home/tradingbot/backups /home/tradingbot/Bot/data_cache

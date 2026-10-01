@@ -27,6 +27,14 @@ def test_gui_without_env_file_shows_setup_instructions(tmp_path, monkeypatch):
 class _FakeCopilot:
     """Minimaler Ersatz für Copilot: Markt offen, ein Symbol mit Kerzen, keine Positionen."""
 
+    _settings: dict = {}
+
+    def settings(self):
+        return dict(self._settings)
+
+    def save_settings(self, **kw):
+        self._settings = {**self._settings, **kw}
+
     def __init__(self):
         from datetime import datetime, timedelta, timezone
         from types import SimpleNamespace

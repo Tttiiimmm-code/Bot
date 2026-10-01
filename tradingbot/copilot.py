@@ -33,6 +33,7 @@ FLATTEN_BEFORE_CLOSE_MIN = 5
 # vollständige SIP-Daten erst nach 15 Minuten.
 SIP_DELAY = timedelta(minutes=16)
 MAX_PRICE_AGE = timedelta(minutes=3)
+STRICT_MIN_STOP = 0.005   # strenger Modus: Stop mindestens 0,5 % unter dem Kurs
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,42 @@ class Copilot:
         self.rules = rules
         self.journal_path = journal_path
 
+    # ------------------------------------------------------------ Strenger Modus (Einstellung neben dem Journal)
+    @property
+    def settings_path(self) -> Path:
+        return Path(self.journal_path).with_name("copilot_settings.json")
+
+    def settings(self) -> dict:
+        import json
+
+        try:
+            return json.loads(self.settings_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def save_settings(self, **kw) -> None:
+        import json
+
+        s = {**self.settings(), **kw}
+        self.settings_path.write_text(json.dumps(s), encoding="utf-8")
+
+    def _strict_problems(self, symbol: str, price: float, stop: float, now: datetime) -> list[str]:
+        """Strenger Modus: die zwei häufigsten Anfängerfehler sperren statt nur warnen."""
+        if not self.settings().get("strict"):
+            return []
+        out = []
+        if price > 0 and 0 < (price - stop) / price < STRICT_MIN_STOP:
+            out.append(f"Strenger Modus: Stop zu eng ({(price - stop) / price:.2%} < {STRICT_MIN_STOP:.1%}) -- "
+                       "Stop unter ein sichtbares Tief legen, dafür weniger Stück.")
+        try:
+            bars = self.today_bars(symbol, now)
+            v = float(vwap(bars)[-1]) if len(bars) else None
+        except Exception:  # ohne Kerzen keine VWAP-Sperre
+            v = None
+        if v is not None and price < v:
+            out.append(f"Strenger Modus: Kurs {price:.2f} liegt unter der VWAP {v:.2f} -- nur über der VWAP kaufen.")
+        return out
+
     def latest_trade(self, symbol: str) -> tuple[float, datetime | None]:
         """Letzter IEX-Trade: (Kurs, Zeitpunkt)."""
         from alpaca.data.enums import DataFeed
@@ -283,7 +320,8 @@ class Copilot:
         target = _round_price(target) if target is not None else None
         price, traded_at = self.latest_trade(symbol)
         problems = (self.market_problems(now) + self._price_problems(traded_at, now)
-                    + check_entry(self.rules, self.state(now), now, symbol, price, stop))
+                    + check_entry(self.rules, self.state(now), now, symbol, price, stop)
+                    + self._strict_problems(symbol, price, stop, now))
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         if problems:
@@ -365,7 +403,8 @@ class Copilot:
         target = _round_price(target) if target is not None else None
         price, traded_at = self.latest_trade(symbol)
         problems = (self.market_problems(now) + self._price_problems(traded_at, now)
-                    + check_entry(self.rules, self.state(now), now, symbol, price, stop))
+                    + check_entry(self.rules, self.state(now), now, symbol, price, stop)
+                    + self._strict_problems(symbol, price, stop, now))
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
         buying_power = float(self.trading_client.get_account().buying_power)

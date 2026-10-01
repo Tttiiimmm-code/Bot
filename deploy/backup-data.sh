@@ -12,5 +12,6 @@ for f in copilot_journal.jsonl forward_trades.csv forward_orb.csv forward_qualit
 done
 # shellcheck disable=SC2086
 tar -czf "$DEST/bot-data-$(date +%F).tar.gz" $FILES
+find /home/tradingbot/Bot/data_cache/copilot_orb -mindepth 1 -maxdepth 1 -type d -mtime +3 -exec rm -rf {} + 2>/dev/null || true
 find "$DEST" -name 'bot-data-*.tar.gz' -mtime +14 -delete
 ls -la "$DEST" | tail -3
