@@ -12,6 +12,8 @@ WorkingDirectory=/home/tradingbot/Bot
 # Liest copilot.env und copilot_journal.jsonl im Repo. Nur EINE Überwachung je Konto laufen lassen
 # (das Fenster "Copilot-Sicherheit" am PC dann nicht zusätzlich starten).
 ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py copilot watch
+# Ausgaben sofort ins Journal (journalctl -u copilot-watch), sonst puffert Python sie
+Environment=PYTHONUNBUFFERED=1
 
 Restart=always
 RestartSec=30
