@@ -3484,3 +3484,36 @@ Vorbehalt: Vortagesschluss -> Schluss enthält die Eröffnungslücke (handelbar 
 - R120 Makro-Termine (85 FOMC, 126 CPI, 125 Arbeitsmarkt in 2016-2026): 1.152 Varianten, t >= 2: 5, t >= 4: 0
   -> NICHT BESTANDEN. Beste: TLT long am FOMC-Tag (Vortagesschluss -> Schluss) +36 bp (t 3,12, 78 % Treffer) ->
   Bestätigung +10 bp (t 0,58). Richtung kippt zwischen den Zeiträumen (short -8,5 -> +0,6; long -3,0 -> -12,0).
+
+# Runden 121/122: Saisonalität einzelner Aktien (252) und Kalender-Effekte in 24 Märkten (1.248) (Vorab, 2026-10-01)
+
+## R121 Aktien-Saisonalität (Heston & Sadka 2008; Keloharju, Linnainmaa & Nyberg 2016)
+Daten: Alpaca-Tagespanel aller US-Aktien 2016-2026-09 (split-bereinigt, inkl. delisteter).
+A Kalendermonat (108): Kauf zum Schluss des letzten Handelstags des Vormonats, Halten bis Monatsende. Signal = Ø
+  Rendite desselben Kalendermonats der letzten 3 / 5 / allen (>= 3) Vorjahre, 'roh' oder minus Ø der übrigen Monate
+  dieser Jahre; Top-N / Bottom-N kaufen; N = 20 / 50 / 100; Universum Top 500 / 1.500 / 3.000.
+B Wochentag (108): Kauf zum Schluss des Vortags, Verkauf zum Schluss. Signal = Ø Rendite der Aktie am selben
+  Wochentag über 52 / 104 / 156 Vorwochen, 'roh' oder minus Ø der übrigen Wochentage; Top/Bottom; N; Universum.
+C Monatswechsel je Aktie (36): Fenster erste 3 / letzte 3 Handelstage des Monats; Signal = Ø Rendite der Aktie im
+  selben Fenster der letzten 36 Monate; Top/Bottom; N; Universum.
+Kosten 10 bp je Seite (Rang <= 1.500), 25 bp darüber. Kennzahl: Rendite minus gleichgewichtetes Universum im selben
+Fenster. t über Fenster (A: Monate, B: Tage, C: Fenster). Signal braucht >= 3 Jahre Historie -> Training 2019-2021,
+Bestätigung 2022-2023, Endtest 2024-2026-09. Auswahl Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## R122 Kalender-Effekte in 24 Märkten (Dukascopy D1 aus H1 Bid/Ask, Märkte wie Runde 105)
+Regeln (26): Wochentag Mo-Fr (Schluss Vortag -> Schluss); Kalendermonat Jan-Dez (Schluss letzter Tag Vormonat ->
+Schluss letzter Tag); Monatswechsel-Fenster (letzte k / erste j Handelstage: 1/3, 2/2, 3/1, 1/1, 4/4, 0/3);
+Monatsmitte (Handelstage 10-15); Tag vor / Tag nach US-Börsenfeiertag. x long / short x 24 Märkte = 1.248.
+Einstieg zum D1-Schluss (long Brief, short Geld), Ausstieg zum D1-Schluss (Gegenseite), 0,5 bp Kommission;
+Swap nicht berücksichtigt (bei Monatsregeln relevant). Ergebnis je Fenster in bp; t über Fenster.
+Zeiträume Training 2012-07..2017, Bestätigung 2018-2021, Endtest 2022-2026-09. Auswahl >= 30 Fenster, Ø > 0, t >= 4
+-> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runden 121 und 122
+
+- R121 Aktien-Saisonalität (252): Training 2019-2021 t >= 2: 0, Ø > 0: 62 -> NICHT BESTANDEN. Mediane (bp je Fenster,
+  Überschuss nach Kosten) Kalendermonat +10 -> -50, Wochentag -21 -> -24, Monatswechsel -25 -> -49. Beste:
+  Kalendermonat minus übrige, Bottom-20, Top 3.000 t 1,82 -> -1,29.
+- R122 Kalender 24 Märkte (1.248): t >= 2: 59 (Zufall ~29), t >= 4: 8 (alle Monatsregeln mit n < 30, nicht wählbar)
+  -> NICHT BESTANDEN. Wählbare Beste: Monatsmitte (Handelstage 10-15) long USTEC +94 bp (t 3,82) -> +34 (t 0,88),
+  US500 +72 (3,69) -> +5, Nikkei +109 (3,21) -> +9. t >= 2 in beiden nur bei Monatsregeln mit 4-6 Beobachtungen.
