@@ -3131,3 +3131,49 @@ und Kosten-Stresstest 2 bp + 0,02 USD/Aktie je Seite.
   2018 +0,07, 2019 +0,01, 2020 0,00, 2021 +0,05, 2022 +0,10, 2023 +0,03, 2024 +0,03, 2025 0,00, 2026 +0,06 R.
   Fast durchgehend leicht positiv, aber zu klein, um verlässlich von null unterscheidbar zu sein, und bei
   doppelten Kosten weg.
+
+# Runde 108: ~2.900 Intraday-Setups auf "Stocks in Play" (Vorab, 2026-10-01)
+
+Nutzer: "Suche weiter und probiere so viele Varianten aus wie möglich". Daten, Universum, Kosten, Zeiträume wie
+Runde 107 (Top 20 nach RelVol, Minuten-Bars 9:30-15:59 ET, 2016-01 bis 2026-09; 1 bp + 0,01 $/Aktie je Seite;
+Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09). Je Kandidat und Tag höchstens ein Trade.
+
+Setups (Kandidaten Top 5 / Top 20 in allen):
+S1 Lücke ausblenden: Lücke |Open/Vortagesschluss - 1| >= 2 / 4 / 8 %; Einstieg zur Eröffnung der Minute 0 / 5 / 15
+   gegen die Lücke; Richtung beide / nur short nach Aufwärtslücke / nur long nach Abwärtslücke; Stop 0,25 / 0,5 / 1 ATR;
+   Ausstieg Ziel 1R, 2R, Tagesschluss, Einstand ab +1R + Schluss, Lückenschluss (Vortagesschluss als Ziel). 810
+S2 Lücke mitgehen: wie S1, aber in Lückenrichtung; ohne Lückenschluss-Ausstieg. 648
+S3 VWAP-Rücksetzer: ab Minute 30 / 60 Trend, wenn Schluss der Vorminute >= 0,25 / 0,5 / 1 ATR über dem Tages-Open
+   (short gespiegelt); Einstieg per Limit am VWAP (bis Vorminute) bei erster Berührung; Stop 0,25 / 0,5 / 1 ATR;
+   Ausstieg 1R/2R/Schluss/Einstand; Einstieg bis 12:00 / 15:00; beide / nur long. 576
+S4 Fehlausbruch: OR 5 / 15 / 30; nach Ausbruch über das OR-Hoch schließt eine Minute innerhalb von 5 / 15 / 30
+   Minuten wieder darunter -> short zur nächsten Eröffnung (Tief gespiegelt); Stop Tageshoch bisher / 0,25 / 0,5 ATR;
+   Ausstieg 1R/2R/Schluss/Einstand; beide / nur short nach Hoch; Einstieg bis 15:00. 432
+S5 Nachmittags-Momentum: um 14:00 / 15:00 / 15:30, wenn |Schluss Vorminute - Open| >= 0,25 / 0,5 / 1 ATR; mit / gegen
+   die Tagesbewegung; Stop 0,25 / 0,5 / 1 ATR; Ausstieg Schluss / Einstand+Schluss. 216
+S6 Neues Tageshoch später: ab Minute 60 / 120 Stop-Einstieg über dem bisherigen Tageshoch (Tief gespiegelt); Filter
+   ohne / Vorminute über VWAP; Stop 0,25 / 0,5 / 1 ATR; Ausstieg 1R/2R/Schluss/Einstand; beide / nur long; bis 15:00. 192
+Ausführung: Markt-Einstiege zur Minuten-Eröffnung; Stop-/Limit-Einstiege zum Level, bei Kurslücke zur Eröffnung.
+Einstiegsminute: nur Stop geprüft (schlechtester Fall). Danach Stop vor Ziel, Kurslücken zur Eröffnung.
+
+Auswahl: >= 200 Trades, Ø R > 0, t(Tage) >= 4 im Training (wie bisher; Bonferroni für ~2.900 einseitig ~3,9);
+3 beste t -> Bestätigung Ø > 0, t >= 2,4 -> nur dann Endtest Ø > 0, t >= 2. Information: Mediane je Setup in
+Training und Bestätigung, 3 beste Trainings-t ohne Hürde.
+
+## 2026-10-01 -- Ergebnisse Runde 108 (mit Fehler im Raster, korrigiert)
+
+- Roh: 2.874 Konfigurationen, t >= 4: 20, alle 'S2 Lücke mitgehen >= 2 %, Einstieg Minute 0'; die 3 besten bestanden
+  Bestätigung (t 2,6-3,5) UND Endtest (t 4,4-5,4).
+- FEHLER (vor jeder Umsetzung bemerkt): Einstieg zur Eröffnung 9:30 ist mit diesem Universum nicht möglich -- die
+  Kandidaten werden um 9:35 aus dem Volumen der ersten 5 Minuten ausgewählt (Blick in die Zukunft: eine Lücke, die
+  weiterläuft, erzeugt das hohe Volumen, das die Aktie erst in die Auswahl bringt). Alle Varianten mit Einstieg
+  Minute 0 (S1 und S2, 486 Konfigurationen) sind UNGÜLTIG. Ihr Endtest wurde dadurch angesehen.
+- Gültig (2.388 Konfigurationen, Einstieg ab 9:35): t >= 4: 0, t >= 3: 2, t >= 2: 43 -> RUNDE NICHT BESTANDEN.
+  Beste: S2 Lücke >= 4 % ab Min 5 nur Abwärtslücke 0,25 ATR: t 3,30 -> Bestätigung -0,05 R (t -1,28).
+  S2 Minute 5: Median +0,014 -> -0,069 (6 % positiv); Minute 15: +0,004 -> -0,031.
+- Je Setup Training -> Bestätigung (Median R): S1 Lücke ausblenden -0,104 -> -0,047; S3 VWAP-Rücksetzer -0,025 ->
+  -0,055; S4 Fehlausbruch -0,147 -> -0,120 (0 % positiv); S5 Nachmittag -0,057 -> -0,039; S6 neues Tageshoch +0,001
+  -> -0,010.
+- Lehre: Einstiege vor dem Auswahlzeitpunkt des Universums sind im Raster künftig ausgeschlossen. Ein Lücken-
+  Mitgehen zur Eröffnung mit einem um 9:30 bekannten Universum (Auswahl nach Lücke/Vortag) wäre eine neue Hypothese
+  (bräuchte Minutendaten anderer Aktien; Endtest-Zeitraum teilweise gesehen).
