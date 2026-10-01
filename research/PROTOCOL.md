@@ -3268,3 +3268,47 @@ Auswahl: Ø > 0, t >= 4 im Training; 3 beste -> Bestätigung Ø > 0, t >= 2,4 ->
 - Mediane Training -> Bestätigung: Querschnitts-Momentum +2,5 -> -0,5 bp/Tag, Umkehr -7,9 -> +3,7 (Vorzeichen
   wechselt); Zeitreihen-Trend +3,0 -> +6,7, nur long gegenüber Halten -3,8 -> +7,4 (Regime-abhängig, BTC-Filter
   ohne Filter -1,3 -> -6,2). Kein stabiles Muster über beide Zeiträume.
+
+# Runde 112: 8.640 Varianten ETF-Nachzügler im Minutenbereich (Vorab, 2026-10-01)
+
+Idee: bewegt sich ETF A (Leader) in k Minuten deutlich stärker als ETF B (Folger), holt B auf. Neue Familie.
+Daten: Alpaca-Minuten 2016-01 bis 2026-09, 16 ETFs (SPY QQQ IWM DIA EFA EEM TLT IEF GLD SLV DBC SMH VNQ XLE XLF XLK).
+Raster: 240 geordnete Paare x k = 5 / 15 / 30 Min x Schwelle 2 / 3 / 4 Sigma x Haltedauer 5 / 15 / 30 / 60 Min.
+Signal zum Schluss der Minute t: d = ln-Rendite(A, k) - ln-Rendite(B, k) (Schlusskurse, innerhalb des Tages vorgetragen);
+Sigma = Wurzel des Mittels der täglichen Varianzen von d über die 20 Vortage. |d| >= Schwelle x Sigma -> B in Richtung
+von d handeln. Einstieg zur Eröffnung des ersten ECHTEN B-Bars ab t+1 (spätestens t+2, sonst kein Trade), Ausstieg
+zur Eröffnung des ersten echten B-Bars ab Einstieg + Haltedauer (sonst letzter Schluss des Tages). Signale nur
+9:45-15:00, je Konfiguration höchstens eine Position. Kosten je Seite 1 bp + 0,01 $/Aktie.
+Kennzahl: Tages-Summe der Trade-Ergebnisse (bp), t über Handelstage mit Trades.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09. Auswahl: >= 200 Trades, Ø > 0, t >= 4;
+3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2. Prüfregeln: Kandidaten werden vor jeder Bewertung auf
+Stale-Kurs-Effekte (nur echte Bars) und Zeitstempel geprüft.
+
+## 2026-10-01 -- Ergebnisse Runde 112
+
+- 8.640 Varianten, Training: t >= 2: 0 (!), Ø > 0: 44, Median -5,0 bp je Trade (Kosten ~2-4 bp je Seite
+  übersteigen jeden Aufhol-Effekt). Beste Trainings-t 0,95 (VNQ->IWM). -> RUNDE NICHT BESTANDEN.
+
+# Runde 113: 1.296 Varianten Nacht-/Tag-Renditen im Aktien-Querschnitt (Vorab, 2026-10-01)
+
+Quelle: Lou, Polk & Skouras (2019) "A tug of war: Overnight versus intraday expected returns" -- Aktien mit hohen
+vergangenen Nachtrenditen haben weiter hohe Nachtrenditen, Tagesrenditen kehren um. Neue Familie im Protokoll.
+Daten: data_cache/universe/daily (Alpaca SIP, split-bereinigt, inkl. inaktiver Symbole), 2016-2026-09.
+Universum je Tag: Kurs > 5 $, Top 500 / Top 1.500 nach Ø-Dollar-Umsatz der 20 Vortage.
+Signale zum Schluss t: Ø Nachtrendite (Open/Vortagesschluss), Ø Tagesrendite (Schluss/Open), Differenz Nacht - Tag,
+Gesamtrendite, jeweils über L = 5 / 20 / 60 Tage.
+Raster (4 x 3 x 2 x 3 x 3 x 3 x 2 = 1.296): Signal x L x Top-N oder Bottom-N kaufen x Haltefenster (Nacht: Schluss t
+-> Open t+1; Tag: Open t+1 -> Schluss t+1; voll: Schluss -> Schluss) x Umschichtung alle 1 / 5 / 20 Tage x
+N = 20 / 50 / 100 x Universum 500 / 1.500. Nacht- und Tagesfenster bedeuten täglich Kauf und Verkauf.
+Nur long, gleichgewichtet. Kosten 10 bp je Seite (Hauptkriterium); 2 bp je Seite nur zur Information.
+Kennzahl: tägliche Rendite minus gleichgewichtetes Universum im selben Fenster (ohne Kosten). t über Tage.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09. Auswahl Ø > 0, t >= 4; 3 beste ->
+Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+## 2026-10-01 -- Ergebnisse Runde 113
+
+- 14.562 Symbole. Training (10 bp): t >= 2: 0, Ø > 0: 86/1.296 -> RUNDE NICHT BESTANDEN.
+- Fenster-Mediane (bp/Tag Überschuss): Nacht -17,6 -> -16,4, Tag -21,7 -> -25,4, voll -2,3 -> -5,1 (tägliche
+  Umschichtung kostet 20 bp/Tag). Information 2 bp je Seite: Tauziehen-Effekt sichtbar (Top-20 nach Nacht-Tag L20,
+  nur Nacht halten: t 2,80 -> 1,73 bzw. 2,68 -> 2,28), aber kein Training-t >= 4 und nur mit institutionellen
+  Kosten denkbar. Beste 10-bp-Variante (Bottom-50 Gesamtrendite L20, wöchentlich) t 1,62 -> -0,43.
