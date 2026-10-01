@@ -3591,3 +3591,16 @@ stark korreliert (effektiv ~15 Fälle), mehrere Horizonte angesehen, SOL fiel im
 - Kennzahl: Ø netto je Ereignis; Ereignisse innerhalb derselben 4 Stunden über alle Symbole zu EINEM Cluster
   gemittelt (Korrelation); t über Cluster. BESTANDEN: >= 40 Cluster, Ø > 0, t >= 2.
 - Nur zur Information (zählt nicht): Long-Liquidations-Wellen, Horizonte 15/60 Min., Bybit allein.
+
+# Runde 126: Momentum-Bot (Bull-Flag) -- Diagnose und 48 Varianten (2026-10-01)
+
+Diagnose der 44 Live-Paper-Trades 22.09.-01.10. (Minutendaten): Ø -1,25 %/Trade, 16 % Gewinner, Haltezeit Median 1,6 Min
+(Stop-Treffer; live --weakness-exit none). Länger halten hilft nicht (15/30/60 Min: -1,35/-0,93/-0,31 %). Einstieg nie
+über dem Tageshoch (Median 5,5 % darunter), Kurs Median 2,42 $, 44 Min nach Eröffnung; MFE 60 Min Ø +9,6 %, MAE -7,6 %.
+
+Vorab (r126.py-Kopf): Bull-Flag auf Stocks-in-Play (Kurs > 5 $) 2016-2026, Einstieg jeder Ausbruch / nur über Tageshoch
+x bis 10:30 / 15:00 x Stop min 2 / 4 % x Ziel 2R / 3R / Einstand+Schluss x Top 5 / 20 = 48; Hürde Training t >= 3.
+
+Ergebnis: 0 Varianten mit Ø > 0 im Training, t >= 2: 0 -> NICHT BESTANDEN. Mediane Training -> Bestätigung: jeder
+Ausbruch -0,079 -> -0,048 R, nur über Tageshoch -0,089 -> -0,025 R. Beste (über Tageshoch, bis 10:30, Ziel 2R, Top20)
+-0,038 R (t -0,77) -> +0,025 (t 0,59). Bull-Flag-Ausbrüche haben auch in liquiden Aktien keinen Vorteil.
