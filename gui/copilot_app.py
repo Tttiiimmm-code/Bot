@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
+from gui import auth  # noqa: E402
 from gui.chart import CHART_CONFIG, DOWN, UP, build_chart  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
     BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, suggest_stop,
@@ -129,22 +130,42 @@ ALPACA_PAPER=true
 
 def require_password() -> None:
     """Passwort-Abfrage, wenn COPILOT_PASSWORD in copilot.env steht (Pflicht, sobald die Oberfläche nicht nur
-    am eigenen PC läuft, z.B. auf dem VPS). Gilt je Browser-Sitzung."""
+    am eigenen PC läuft, z.B. auf dem VPS). Nach der Anmeldung bleibt man per Cookie 30 Tage angemeldet
+    (gui/auth.py); "Abmelden" in der Seitenleiste löscht es."""
     import hmac
 
+    import streamlit.components.v1 as components
     from dotenv import dotenv_values
 
     password = (dotenv_values(ENV_FILE).get("COPILOT_PASSWORD") or "").strip()
-    if not password or st.session_state.get("auth_ok"):
+    if not password:
+        return
+    if st.session_state.pop("clear_cookie", False):
+        components.html(auth.clear_cookie_js(), height=0)
+    if (not st.session_state.get("auth_ok") and not st.session_state.get("logged_out")
+            and auth.cookie_ok(st.context.cookies.get(auth.COOKIE), password)):
+        st.session_state["auth_ok"] = True
+    if st.session_state.get("auth_ok"):
+        if st.session_state.pop("set_cookie", False):
+            components.html(auth.set_cookie_js(auth.login_token(password)), height=0)
         return
     st.title(":material/lock: Trading-Copilot")
     entered = st.text_input("Passwort", type="password", key="password_input")
     if entered:
         if hmac.compare_digest(entered.encode(), password.encode()):
             st.session_state["auth_ok"] = True
+            st.session_state["set_cookie"] = True
+            st.session_state.pop("logged_out", None)
             st.rerun()
         st.error("Falsches Passwort.")
     st.stop()
+
+
+def logout() -> None:
+    st.session_state["auth_ok"] = False
+    st.session_state["logged_out"] = True      # das alte Cookie in dieser Sitzung nicht mehr akzeptieren
+    st.session_state["clear_cookie"] = True
+    st.session_state.pop("password_input", None)
 
 
 require_password()
@@ -177,6 +198,9 @@ with st.sidebar:
             "einen Stop direkt bei Alpaca.", icon=":material/shield:")
     if st.button("Notfall: alles schließen", icon=":material/dangerous:", width="stretch"):
         safe(lambda: cp.close(None))
+    if st.session_state.get("auth_ok"):
+        st.button("Abmelden", icon=":material/logout:", width="stretch", on_click=logout,
+                  help="Löscht die gespeicherte Anmeldung in diesem Browser.")
 
 
 # ------------------------------------------------------------ Kopfzeile (aktualisiert sich selbst)

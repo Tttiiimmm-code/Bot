@@ -293,3 +293,18 @@ def test_password_gate_blocks_until_correct(tmp_path, monkeypatch):
     at.text_input(key="password_input").set_value("geheim123").run()
     assert not at.exception
     assert any(m.label == "Heute realisiert" for m in at.metric)
+    next(b for b in at.button if b.label == "Abmelden").click().run()      # Abmelden -> wieder gesperrt
+    assert not at.exception
+    assert not any(m.label == "Heute realisiert" for m in at.metric)
+    assert at.text_input(key="password_input").value in ("", None)
+
+
+def test_login_token_is_password_bound():
+    from gui import auth
+
+    t = auth.login_token("geheim123")
+    assert auth.cookie_ok(t, "geheim123")
+    assert not auth.cookie_ok(t, "anderes-passwort")        # Passwort geändert -> Cookie ungültig
+    assert not auth.cookie_ok(None, "geheim123") and not auth.cookie_ok("", "geheim123")
+    assert "geheim123" not in t and "geheim123" not in auth.set_cookie_js(t)
+    assert f"{auth.COOKIE}={t}" in auth.set_cookie_js(t) and "Max-Age=0" in auth.clear_cookie_js()
