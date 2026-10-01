@@ -124,6 +124,22 @@ class CopilotAlerts:
         self._save(st)
         return sent
 
+    # ------------------------------------------------------------ Wochenbericht
+    def weekly_step(self, now: datetime, build_fn) -> list[str]:
+        """Freitags ab 16:10 ET einmal den Wochenbericht senden. build_fn() -> (Titel, Text), nur wenn fällig."""
+        from datetime import time as dtime
+
+        et = now.astimezone(NY)
+        if et.weekday() != 4 or et.time() < dtime(16, 10):
+            return []
+        st = self._load(et.date().isoformat())
+        if "weekly" in st["sent"]:
+            return []
+        title, text = build_fn()
+        sent = [title] if self._send_once(st, "weekly", title, text, "default", "bar_chart") else []
+        self._save(st)
+        return sent
+
     # ------------------------------------------------------------ Setup-Melder
     def melder_step(self, now: datetime, setups) -> list[str]:
         """setups: Liste von orb_scanner.OrbSetup (aktueller Stand)."""

@@ -171,7 +171,9 @@ def attach_setups(trades: list, journal: list[JournalEntry], window_minutes: int
         risk = e.risk if e and e.risk > 0 else None
         rows.append({"symbol": t.symbol, "entry_time": t.entry_time, "exit_time": t.exit_time,
                      "setup": e.setup if e else "(ohne Journal)", "pnl": t.pnl,
-                     "r": t.pnl / risk if risk else None})
+                     "r": t.pnl / risk if risk else None,
+                     # für den Wochenbericht (Einstieg vs. VWAP, Stop-Abstand)
+                     "planned_price": e.price if e else None, "stop": e.stop if e else None})
     return rows
 
 

@@ -726,6 +726,12 @@ def cmd_copilot(args):
         print(cp.status(now))
     elif sub == "close":
         print(cp.close(None if args.symbol.lower() == "all" else args.symbol))
+    elif sub == "weekly":
+        from tradingbot.weekly_report import build_weekly
+
+        title, text = build_weekly(cp, now)
+        print(title)
+        print(text)
     elif sub == "notify-test":
         from tradingbot.notify import notifier_from_env
 
@@ -741,6 +747,7 @@ def cmd_copilot(args):
         from tradingbot.notify import CopilotAlerts, notifier_from_env
         from tradingbot.orb_scanner import CUTOFF_ET, READY_ET, orb_setups
         from tradingbot.orb_scanner import NY as NY_TZ
+        from tradingbot.weekly_report import build_weekly
 
         print("Copilot-Überwachung läuft (Strg+C beendet): Tagesverlustgrenze, Glattstellen 15:55 ET, "
               "Stop auf Einstand bei +1 R (wenn beim Kauf gewählt).")
@@ -774,6 +781,8 @@ def cmd_copilot(args):
                 if alerts.notifier.enabled:
                     open_syms = {p.symbol for p in cp.trading_client.get_all_positions()}
                     alerts.positions_step(now, open_syms, msg, lambda: cp.state(now).realized_pnl)
+                    for m in alerts.weekly_step(now, lambda: build_weekly(cp, now)):
+                        print(f"{m} gesendet.")
                 if _time.time() - last_status > 300:
                     print(cp.status(now))
                     last_status = _time.time()
@@ -1719,6 +1728,7 @@ def main():
     cp_close.add_argument("symbol", help="Symbol oder 'all'.")
     copilot_sub.add_parser("watch", help="Läuft im Hintergrund: stellt bei Tagesverlustgrenze und um 15:55 ET glatt.")
     copilot_sub.add_parser("notify-test", help="Testnachricht ans Handy (ntfy, NTFY_TOPIC in copilot.env).")
+    copilot_sub.add_parser("weekly", help="Wochenbericht der letzten 7 Tage (kommt freitags auch per ntfy).")
     cp_report = copilot_sub.add_parser("report", help="Auswertung je Setup in R-Vielfachen.")
     cp_report.add_argument("--days", type=_positive_int, default=90)
 
