@@ -55,7 +55,8 @@ def _load(cp, rules) -> None:
 def _close(journal: Path, rules, idx: int, price: float, reason: str) -> None:
     rp, bars = SS.rp, SS.rp_bars
     pos = rp["pos"]
-    res = rpl.make_result(rp["symbol"], rp["day"], bars, pos, idx, price, reason)
+    goal = SS.get("rp_goal", "frei")
+    res = rpl.make_result(rp["symbol"], rp["day"], bars, pos, idx, price, reason, "" if goal == "frei" else goal)
     rpl.append_result(journal, res)
     rp["trades"] += [(bars.index[pos.entry_idx], "buy", pos.entry), (bars.index[idx], "sell", price)]
     rp["pos"] = None
@@ -126,6 +127,17 @@ def _stats(journal: Path) -> None:
     results = rpl.load_results(journal)
     with st.container(border=True):
         st.subheader("Deine Übungs-Statistik")
+        goal = st.selectbox("Übungsziel", ["frei", *rpl.GOALS], key="rp_goal",
+                            help="Trainiere gezielt deine Schwächen aus dem Wochenbericht. Ziel: 8 von 10 eingehalten.")
+        gs = rpl.goal_stats(results, goal)
+        if gs:
+            fmt = (lambda x: "–" if x is None else f"{x:+.2f} R")
+            (st.success if gs["kept"] >= 0.8 * gs["n"] else st.info)(
+                f"Ziel '{goal}': in den letzten {gs['n']} Übungstrades {gs['kept']}x eingehalten "
+                f"(eingehalten Ø {fmt(gs['avg_kept'])}, gebrochen Ø {fmt(gs['avg_broken'])}).",
+                icon=":material/flag:")
+        elif goal != "frei":
+            st.caption("Noch keine Übungstrades mit diesem Ziel -- los geht's: Tag laden und handeln.")
         if not results:
             st.caption("Noch keine Übungs-Trades. Ziel: 30 Trades, dann siehst du erste Muster.")
             return

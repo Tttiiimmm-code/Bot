@@ -161,3 +161,15 @@ def test_chart_draws_trade_markers():
     assert "Kauf" in names and "Verkauf" in names and fig.layout.uirevision == "replay_XYZ"
     buy = next(t for t in fig.data if t.name == "Kauf")
     assert pd.Timestamp(buy.x[0]) == bars.index[1]           # an die Kerze gesetzt
+
+
+def test_goal_stats_and_above_vwap_field():
+    from tradingbot.replay import Result, goal_stats
+
+    def res(r, above, stop=99.0):
+        return Result("X", "2026-09-30", "vwap", "10:00", 100.0, stop, None, "10:30", 101.0, "ziel", r, "", above,
+                      "nur über VWAP kaufen")
+    rs = [res(1.0, True), res(-1.0, False), res(2.0, True)]
+    s = goal_stats(rs, "nur über VWAP kaufen")
+    assert s == {"n": 3, "kept": 2, "avg_kept": 1.5, "avg_broken": -1.0}
+    assert goal_stats(rs, "frei") is None

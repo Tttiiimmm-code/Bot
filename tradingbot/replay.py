@@ -65,6 +65,28 @@ class Result:
     reason: str
     r: float
     note: str = ""
+    above_vwap: bool | None = None   # Einstieg über der VWAP der Kerzen davor
+    goal: str = ""                   # gewähltes Übungsziel
+
+
+# Übungsziele: Prüfung je Übungstrade (True = eingehalten)
+GOALS = {
+    "nur über VWAP kaufen": lambda r: r.above_vwap is True,
+    "Stop mindestens 0,5 % entfernt": lambda r: r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.005,
+    "beides": lambda r: r.above_vwap is True and r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.005,
+}
+
+
+def goal_stats(results: list, goal: str, last: int = 10) -> dict | None:
+    """Für die letzten `last` Übungstrades mit diesem Ziel: eingehalten, Ø R eingehalten / gebrochen."""
+    check = GOALS.get(goal)
+    rs = [r for r in results if r.goal == goal][-last:]
+    if check is None or not rs:
+        return None
+    kept = [r.r for r in rs if check(r)]
+    broken = [r.r for r in rs if not check(r)]
+    avg = (lambda xs: sum(xs) / len(xs) if xs else None)
+    return {"n": len(rs), "kept": len(kept), "avg_kept": avg(kept), "avg_broken": avg(broken)}
 
 
 def open_position(bars, idx: int, stop: float, target: float | None, setup: str, note: str = "",
@@ -98,9 +120,15 @@ def check_exit(bars, pos: Position, idx: int) -> tuple[float, str] | None:
     return None
 
 
-def make_result(symbol: str, day: str, bars, pos: Position, idx: int, exit_price: float, reason: str) -> Result:
+def make_result(symbol: str, day: str, bars, pos: Position, idx: int, exit_price: float, reason: str,
+                goal: str = "") -> Result:
     fmt = "%H:%M"
-    return Result(symbol=symbol, day=day, setup=pos.setup,
+    before = bars.iloc[:pos.entry_idx]
+    above = None
+    if len(before):
+        from tradingbot.copilot import vwap
+        above = bool(pos.entry >= float(vwap(before)[-1]))
+    return Result(symbol=symbol, day=day, setup=pos.setup, above_vwap=above, goal=goal,
                   entry_time=bars.index[pos.entry_idx].astimezone(NY).strftime(fmt), entry=round(pos.entry, 4),
                   stop=round(pos.initial_stop, 4), target=pos.target,
                   exit_time=bars.index[idx].astimezone(NY).strftime(fmt), exit=round(exit_price, 4), reason=reason,
