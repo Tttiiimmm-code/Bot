@@ -2918,3 +2918,46 @@ Einordnung: Trend-Rücksetzer mit EMA/RSI/ATR und festem 2R-Ziel hat auf H1/H4 k
 Spreads machen bei vielen kurzen Trades ~0,05-0,08 R je Trade aus. Deckt sich mit seinem eigenen FTMO-Test
 (Tag 73-79: -3.081 € unter echten Spreads/Kommissionen). Seine "100.000 getesteten Varianten" sind das
 Mehrfachtest-Problem in Reinform.
+
+# Runde 103: Gold-Kurzfrist-Bot-Familie "à la @tagebuchmillion" (M15/M30, ATR, Nachzieh-Stop) (Vorab, 2026-10-01)
+
+Hintergrund: sein aktueller (unveröffentlichter) Bot handelt laut Videos nur Gold, kurzfristig (M15/M30), long+short,
+ATR-Stop, nachgezogener Stop. Statt zu raten, wird die ganze plausible Familie mit Auswahl auf Trainingsdaten und
+unberührter Bestätigung + Endtest geprüft.
+
+Daten: Dukascopy XAU/USD Minuten Bid+Ask 2008-01 bis 2026-09 (data_cache/dukascopy/xau, xau_ask, unseen_xau);
+fehlende Ask-Minuten über den mittleren Spread ergänzt. Signale auf Bid-Kerzen M15/M30 (UTC), Ausstiege auf M5.
+
+Varianten (162 = 2 x 3 x 3 x 3 x 3), long UND short, je Variante höchstens 1 Position:
+- Zeitrahmen: M15, M30
+- Einstieg: E1 Donchian-Ausbruch (Schluss über Hoch/unter Tief der letzten 20 Kerzen);
+  E2 Trend-Rücksetzer (Schluss über EMA50 und EMA50 höher als vor 5 Kerzen, RSI14 kreuzt über 40; short gespiegelt 60);
+  E3 Keltner-Ausbruch (Schluss kreuzt über EMA20 + 2 x ATR bzw. unter EMA20 - 2 x ATR)
+- ATR-Länge: 7, 14, 21 (Wilder)
+- Stop: 1,5 / 2 / 3 x ATR
+- Ausstieg: X1 festes Ziel 2 R; X2 ATR-Nachzieh-Stop (bei jedem Kerzenschluss des Signal-Zeitrahmens auf
+  Hoch seit Einstieg - Stop-Faktor x ATR, nur enger), kein Ziel; X3 Stop auf Einstand ab +1 R, Ziel 2 R.
+- Höchstdauer 5 Tage, dann Ausstieg zum Schluss.
+Ausführung: Signal auf geschlossener Kerze -> Einstieg zur Eröffnung der nächsten M5-Kerze (long Brief, short Geld);
+Ausstiege long auf Geld-, short auf Briefkurs; Kurslücke -> Eröffnungskurs; Stop und Ziel in einer Kerze -> Stop.
+Kommission 0,5 bp je Runde; Swap nicht berücksichtigt.
+
+Auswahl und Bewertung (R netto je Trade):
+1. Training 2008-2016: Varianten mit >= 200 Trades und Ø R > 0, die 3 mit dem höchsten t werden ausgewählt
+   (berichtet wird außerdem, wie viele der 162 Varianten t >= 2 bzw. >= 3 erreichen -- Zufallserwartung bei t >= 2: ~4).
+2. Bestätigung 2017-2021: eine ausgewählte Variante besteht nur mit Ø R > 0 UND t >= 2,4 (Bonferroni über 3).
+3. Endtest 2022-2026-09: nur bestätigte Varianten; BESTANDEN mit Ø R > 0 UND t >= 2.
+Bestehen erfordert alle drei Schritte. Keine nachträglichen Änderungen am Raster.
+
+## 2026-10-01 -- Ergebnisse Runde 103
+
+- Training 2008-2016: 0 von 162 Varianten mit t >= 2 (Zufallserwartung ~4), 21 mit Ø R > 0; Median Ø R -0,10.
+  Median je Einstieg: E1 -0,10 / E2 -0,12 / E3 -0,08; je Ausstieg: Ziel 2R -0,09 / Nachzieh-Stop -0,11 /
+  Einstand+2R -0,09.
+- Ausgewählt (bestes t im Training): M15 E2 ATR7 3x Einstand+2R (+0,13, t 1,88), M15 E2 ATR7 3x Ziel 2R (+0,14,
+  t 1,77), M15 E2 ATR14 3x Nachzieh-Stop (+0,08, t 1,42).
+- Bestätigung 2017-2021: -0,24 (t -2,71), -0,25 (t -2,35), -0,05 (t -0,55) -> alle NICHT bestanden; Endtest nicht
+  angesehen. RUNDE NICHT BESTANDEN.
+Einordnung: Gold-Spread ~0,36 $ (Median M5) gegen ATR14(M15) ~1,3-1,6 $ -> bei 1,5-3 x ATR-Stops kostet allein der
+Spread ~0,08-0,17 R je Trade. Kurzfristige Gold-Trendfolge/-Rücksetzer hat davor keinen Vorteil; die Auswahl der
+"besten" Trainingsvariante kippt in der Bestätigung ins Signifikant-Negative (klassische Überanpassung).
