@@ -3456,3 +3456,31 @@ Universums absolut, Top 20/100 derselben Kombination.
   2024 +0,30, 2025 -0,67, 2026 +1,57. Top 100 gleich: +0,43 % (t 1,74), 9 von 10 Jahren positiv.
   Einordnung: der stabilste Befund aller Aktien-Runden (Qualität ~ +4-5 % p.a. über dem gleichgewichteten Markt),
   statistisch aber nicht gesichert; als Faktor-ETF (Qualität) bereits fertig handelbar.
+
+# Runden 119/120: Intraday-Momentum (768) und Makro-Termine (1.152) auf 16 ETFs (Vorab, 2026-10-01)
+
+Daten: Alpaca-Minuten 2016-01 bis 2026-09, 16 ETFs wie Runde 112. Einstieg zur Eröffnung des ersten echten Bars ab
+Fensterbeginn, Ausstieg zum Schluss des letzten echten Bars vor Fensterende. Kosten je Seite 1 bp + 0,01 $/Aktie.
+Ein Trade je Tag bzw. Ereignis; t über Trades.
+Zeiträume: Training 2016-2019, Bestätigung 2020-2022, Endtest 2023-2026-09.
+
+R119 Intraday-Momentum (Gao, Han, Li & Zhou 2018; bisher nur SPY/QQQ in Runde 1):
+16 ETFs x Signal (Vortagesschluss -> 10:00, Eröffnung -> 10:00, Eröffnung -> 12:00, Vortagesschluss -> 15:00) x
+Haltefenster (15:00-16:00, 15:30-16:00) x Richtung (mit / gegen Signal) x Schwelle (alle Tage / |Signal| >= 0,5 bzw.
+1 Sigma der 60 Vortage) = 768. Signalfenster endet vor Haltebeginn (bei 'Vortagesschluss -> 15:00' und Halten ab
+15:00: Signal bis 14:59-Schluss).
+Auswahl: >= 200 Trades, Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+
+R120 Makro-Termine: Ereignisse FOMC-Entscheid (data_cache/fomc.json), CPI und Arbeitsmarktbericht
+(data_cache/bls_release_dates.json). 16 ETFs x 3 Ereignisarten x Tag relativ zum Ereignis (-1, 0, +1) x Segment
+(Eröffnung -> Schluss, Eröffnung -> 12:00, 12:00 -> Schluss, Vortagesschluss -> Schluss) x Richtung long / short = 1.152.
+Auswahl: >= 30 Ereignisse im Training, Ø > 0, t >= 4 -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+Vorbehalt: Vortagesschluss -> Schluss enthält die Eröffnungslücke (handelbar über Halten über Nacht).
+
+## 2026-10-01 -- Ergebnisse Runden 119 und 120
+
+- R119 Intraday-Momentum: 768 Varianten, t >= 2: 0, Ø > 0: 5, Median -4,9 bp je Trade -> NICHT BESTANDEN.
+  'mit Signal' -4,5 -> -4,1 bp, 'gegen' -5,3 -> -5,5 bp; beste Trainings-t 0,48 (QQQ Vortag->15:00, letzte Stunde).
+- R120 Makro-Termine (85 FOMC, 126 CPI, 125 Arbeitsmarkt in 2016-2026): 1.152 Varianten, t >= 2: 5, t >= 4: 0
+  -> NICHT BESTANDEN. Beste: TLT long am FOMC-Tag (Vortagesschluss -> Schluss) +36 bp (t 3,12, 78 % Treffer) ->
+  Bestätigung +10 bp (t 0,58). Richtung kippt zwischen den Zeiträumen (short -8,5 -> +0,6; long -3,0 -> -12,0).
