@@ -1,0 +1,13 @@
+[Unit]
+Description=Momentum-Vorwärtstest: Prüfpunkte 100/150 Trades per ntfy (je einmal, nur lesend)
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py momentum-checkpoint --env-file .env --notify-env copilot.env --notify
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot/data_cache

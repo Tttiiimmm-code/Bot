@@ -1,0 +1,9 @@
+[Unit]
+Description=Momentum-Prüfpunkte werktags nach US-Börsenschluss
+
+[Timer]
+OnCalendar=Mon..Fri 21:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

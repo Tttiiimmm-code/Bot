@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 BERLIN = ZoneInfo("Europe/Berlin")
 SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled"]
-ONESHOTS = ["forward-test", "forward-stocks", "forward-status"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
+ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
 STATE = Path("data_cache") / "health_state.json"
 LIQ_DIR = Path("data_cache") / "liquidations"
 SUMMARY_AT = (8, 30)                                    # tägliche Meldung (deutsche Zeit)

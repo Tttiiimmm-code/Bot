@@ -1762,6 +1762,11 @@ def main():
         "forward-status", help="Alle Vorwärtstests nach der gemeinsamen Auswertungsregel (nur Information).")
     fstatus.add_argument("--notify", action="store_true", help="Zusätzlich per ntfy senden.")
     fstatus.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    mcheck = subparsers.add_parser(
+        "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
+    mcheck.add_argument("--env-file", default=".env", help="Konto des Momentum-Bots (nur lesend).")
+    mcheck.add_argument("--notify-env", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    mcheck.add_argument("--notify", action="store_true", help="Fällige Prüfpunkte per ntfy senden.")
 
     compare_parser = subparsers.add_parser(
         "momentum-compare",
@@ -1810,6 +1815,25 @@ def main():
 
         for m in health.step(notifier_from_env(args.env_file)):
             print(f"gesendet: {m}")
+        return
+
+    if args.command == "momentum-checkpoint":
+        from datetime import datetime as _dt, timezone as _tz
+
+        from alpaca.trading.client import TradingClient
+
+        from tradingbot import momentum_checkpoint as mcp
+        from tradingbot.notify import notifier_from_env
+        from tradingbot.report import fetch_closed_orders, match_trades, read_account_env
+
+        key, secret, paper = read_account_env(args.env_file)
+        orders = fetch_closed_orders(TradingClient(key, secret, paper=paper), _dt(2026, 9, 20, tzinfo=_tz.utc),
+                                     _dt.now(_tz.utc))
+        trades, _, _ = match_trades(orders)
+        print(mcp.progress(trades))
+        if args.notify:
+            for text in mcp.step(trades, notifier_from_env(args.notify_env)):
+                print(f"gesendet: {text}")
         return
 
     if args.command == "forward-status":
