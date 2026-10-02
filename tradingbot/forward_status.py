@@ -39,10 +39,13 @@ TRACKERS = (
     Tracker("quality_top50", date(2026, 10, 1), 24, date(2028, 10, 1), "%", 0.38, "forward_quality.csv"),
     Tracker("smallvq_top20", date(2026, 10, 1), 24, date(2028, 10, 1), "%", 1.00, "forward_smallvq.csv"),
     # Neustart 2026-10-02: ab dann Dry-Run mit offiziellen Schluss-/Eröffnungskursen (Paper-Auktionsorders unbrauchbar)
-    Tracker("overnight_etf", date(2026, 10, 2), 200, date(2027, 10, 1), "%", None, "overnight_trades.csv"),
+    # Erwartung (nachgetragen 2026-10-02 vor der ersten Dry-Run-Nacht): 2016-01..2025-09 Ø +0,040 % je Nacht und
+    # Position nach 2 bp Kosten (dividendenbereinigt; der Dry-Run nutzt unbereinigte Kurse -> leicht strenger)
+    Tracker("overnight_etf", date(2026, 10, 2), 200, date(2027, 10, 1), "%", 0.040, "overnight_trades.csv"),
     Tracker("liq_r125", date(2026, 10, 2), 40, date(2027, 10, 1), "Cluster", None, "data_cache/liquidations"),
 )
 ORB_EXPECTED_R_PER_TRADE = 0.026      # Erwartung je Tag = 0,026 R x Ø Trades je Tag
+OVERNIGHT_COST_PCT = 0.02             # Dry-Run-Ledger ist brutto: 1 bp je Seite abziehen (wie Backtest Familie E)
 
 
 def t_crit(n: int, alpha: float = ALPHA) -> float:
@@ -101,7 +104,7 @@ def observations(tr: Tracker, base: Path) -> tuple[list[float], float | None] | 
         nights: dict[str, list[float]] = defaultdict(list)
         for r in _rows(base / tr.source):
             if r["bought_on"] >= start and r.get("mode") == "dry-run" and r.get("return", "") != "":
-                nights[r["bought_on"]].append(float(r["return"]) * 100)
+                nights[r["bought_on"]].append(float(r["return"]) * 100 - OVERNIGHT_COST_PCT)
         return [sum(v) / len(v) for _, v in sorted(nights.items())], tr.expected
     return None
 
@@ -125,8 +128,6 @@ def status(base: Path, today: date) -> list[dict]:
                 row["t"] = _t(xs)
             if today >= half and row["mean"] is not None and row["mean"] < 0 and (row["t"] or 0) <= -1.5:
                 row["note"] = "Abbruch erlaubt (Hälfte erreicht, Ø < 0, t <= -1,5)"
-            elif exp is None and tr.name == "overnight_etf":
-                row["note"] = "ohne Backtest-Erwartung: nur t-Hürde"
         out.append(row)
     return out
 

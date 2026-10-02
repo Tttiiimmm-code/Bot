@@ -35,7 +35,8 @@ def test_status_reads_all_ledgers(tmp_path):
     assert rows["orb_or5"]["expected"] == pytest.approx(0.026 * 1.5)
     assert rows["quality_top50"]["n"] == 1 and rows["quality_top50"]["mean"] == pytest.approx(0.4)  # offen zählt nicht
     assert rows["smallvq_top20"]["n"] == 0
-    assert rows["overnight_etf"]["mean"] == pytest.approx(-0.1)                                 # Nacht = Ø Positionen
+    assert rows["overnight_etf"]["mean"] == pytest.approx(-0.1 - 0.02)                          # Ø Positionen - Kosten
+    assert rows["overnight_etf"]["expected"] == pytest.approx(0.040)
     assert rows["liq_r125"]["n"] is None
     text = fs.format_text(list(rows.values()))
     assert "nikkei_night: 2/200" in text and "Termin 01.10.2027" in text
