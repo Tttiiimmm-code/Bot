@@ -75,6 +75,15 @@ def test_dollar_volume_minimum():
 
 
 def test_only_common_stock_drops_preferred_warrants_units():
+    funds = pd.DataFrame({"symbol": ["NOBL", "TQQQ", "QQQ", "SOXL"],
+                          "name": ["ProShares S&P 500 Dividend Aristocrats ETF", "ProShares UltraPro QQQ",
+                                   "Invesco QQQ Trust, Series 1", "Direxion Daily Semiconductor Bull 3X Shares"]})
+    assert orb.only_common_stock(list(funds.symbol), funds) == []
+    stocks = pd.DataFrame({"symbol": ["RARE", "UCTT", "BBW", "IVZ", "IVR", "AVD"],
+                           "name": ["Ultragenyx Pharmaceutical Inc. Common Stock", "Ultra Clean Holdings, Inc. Common Stock",
+                                    "Build-A-Bear Workshop, Inc.", "Invesco LTD", "Invesco Mortgage Capital Inc.",
+                                    "American Vanguard Corporation"]})
+    assert orb.only_common_stock(list(stocks.symbol), stocks) == list(stocks.symbol)
     assets = pd.DataFrame({"symbol": ["GOOGN", "GOOGL", "BABA", "ABCDW", "ABCDU", "XYZ_DELISTED", "PFX"],
                            "name": ["Alphabet Inc. Depositary Shares representing a 1/20th Interest in a Share of "
                                     "Series B Mandatory Convertible Preferred Stock", "Alphabet Inc. Class A Common Stock",

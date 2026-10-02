@@ -133,8 +133,9 @@ def evaluate(symbol: str, relvol: float, opening, bars5: pd.DataFrame, price: fl
 NOT_COMMON = (r"(?i)preferred|warrants?\b|\bunits?\b|\brights?\b|convertible|notes? due|debentures?|"
               r"exchange[- ]traded notes?|\betns?\b|\bsubordinated\b|"
               # Fonds/ETFs wie im Forschungs-Universum (u.a. NOBL am 2.10.2026 als Kandidat)
-              r"\betf\b|\bfund\b|ishares|spdr|proshares|direxion|invesco|vanguard|vaneck|\bultra|\b[23]x\b|"
-              r"\bbull\b|\bbear\b|\bindex\b")
+              # (nicht "Ultra"/"Bull"/"Bear"/"Vanguard"/"Invesco" allein: Ultragenyx, Build-A-Bear, Invesco Ltd ...)
+              r"\betf\b|\bfund\b|ishares|spdr|proshares|direxion|vaneck|invesco[^,]*\b(etf|trust)\b|\b[23]x\b|"
+              r"\bindex\b")
 
 
 def only_common_stock(symbols: list[str], assets: pd.DataFrame) -> list[str]:
