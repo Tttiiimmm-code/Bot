@@ -378,8 +378,8 @@ def quality_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: p
 
 def _spy_ret(o: pd.DataFrame, entry, exit_):
     """SPY Eröffnung (Kauftag) -> Eröffnung (Verkaufstag); "" ohne SPY-Kurse."""
-    if "SPY" not in o.columns or not (o.loc[entry, "SPY"] > 0):
-        return ""
+    if "SPY" not in o.columns or not (o.loc[entry, "SPY"] > 0) or not (o.loc[exit_, "SPY"] > 0):
+        return ""                                  # fehlender Kurs -> leer statt "nan" im Ledger
     return round(float(o.loc[exit_, "SPY"] / o.loc[entry, "SPY"] - 1), 6)
 
 
