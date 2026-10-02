@@ -3825,3 +3825,16 @@ Gewinner ohne Aufmerksamkeits-Sprung. Nutzen: Warnfilter für Kauf-Strategien (l
 - Tests: 2 Schwellen x 2 Haltedauern = 4. Entdeckung 2016-2020, Bestätigung 2021-2026-09.
   Bestanden: Entdeckung Differenz < 0 mit t <= -2,5 (Bonferroni für 4), dann Bestätigung < 0 mit t <= -2.
 - Nur Information: Gewinner mit niedriger Aufmerksamkeit vs. SPY (Nutzer-Maßstab: besser als ETF?).
+
+## 2026-10-02 -- Ergebnisse Runde 132 (Wikipedia-Aufmerksamkeit)
+
+Erster Lauf ungültig (Wikimedia-Sperre HTTP 429, Fehlschläge als leer gecacht -> nur 1.315 Ereignisse); Abruf mit
+Wartezeiten wiederholt, Cache vollständig (2.220 Artikel, 0 leer). Ticker->Artikel per Wikidata (3.516 Ticker;
+wiederverwendete Kürzel = Rauschen). 31.497 Gewinner-Tage (>= 10 %), 27.130 mit Aufrufdaten; hoch 2.114, niedrig 18.296.
+- Differenz hoch - niedrig (je Tag, t): >= 10 % 5 T: Entdeckung +0,80 % (t +0,94) / Bestätigung -1,80 % (t -2,46);
+  >= 10 % 20 T: +0,15 % (t 0,11) / -1,71 % (t -1,62); >= 20 % 5 T: -1,28 % (t -0,53) / +0,98 % (t 0,62);
+  >= 20 % 20 T: -1,88 % (t -0,46) / -0,23 % (t -0,07).
+-> Keine Entdeckung mit t <= -2,5 -> RUNDE NICHT BESTANDEN. Aufmerksamkeit (Wikipedia) trennt Gewinner nicht.
+Nebenbefund (Beschreibung): Tagesgewinner >= 10 % liegen danach generell unter SPY (5 T: Ø -0,7 %, t -4 bis -5 in
+beiden Zeiträumen; 20 T 2021-26: -1,6 %, t -6,1) -> am Folgetag starke Gewinner zu kaufen schlägt den Markt nicht
+(passt zu Momentum-Bot und Runde 128). Kein Leerverkauf (Kleinwerte, Leihe).

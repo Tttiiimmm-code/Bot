@@ -1,0 +1,26 @@
+31497 Gewinner-Ereignisse (>= 10 %) bei 2246 Aktien mit Artikel
+  Aufrufe geladen: 200 Artikel (1071 s)
+  Aufrufe geladen: 400 Artikel (2219 s)
+  Aufrufe geladen: 600 Artikel (3408 s)
+  Aufrufe geladen: 800 Artikel (4543 s)
+  Aufrufe geladen: 1000 Artikel (5688 s)
+  Aufrufe geladen: 1200 Artikel (6844 s)
+  Aufrufe geladen: 1400 Artikel (7986 s)
+  Aufrufe geladen: 1600 Artikel (9096 s)
+  Aufrufe geladen: 1800 Artikel (10196 s)
+  Aufrufe geladen: 2000 Artikel (11345 s)
+  Aufrufe geladen: 2200 Artikel (12410 s)
+27130 Ereignisse mit Aufrufdaten; Aufmerksamkeit hoch (>= 3): 2114, niedrig (<= 1,5): 18296
+    thr  h         per  tage    diff       t  n_hoch    hoch  n_niedrig  niedrig  t_niedrig
++0.1000  5  Entdeckung   429 +0.0080 +0.9368     781 -0.0095       7754  -0.0075    -5.1752
++0.1000  5 Bestätigung   737 -0.0180 -2.4574    1329 -0.0212      10511  -0.0070    -4.3788
++0.1000 20  Entdeckung   429 +0.0015 +0.1127     781 -0.0093       7751  +0.0070    +2.6755
++0.1000 20 Bestätigung   734 -0.0171 -1.6153    1319 -0.0347      10448  -0.0161    -6.1334
++0.2000  5  Entdeckung   113 -0.0128 -0.5271     423 -0.0138        826  -0.0167    -2.8469
++0.2000  5 Bestätigung   248 +0.0098 +0.6236     717 -0.0278       1109  -0.0270    -4.3223
++0.2000 20  Entdeckung   113 -0.0188 -0.4627     423 -0.0173        826  -0.0009    -0.0887
++0.2000 20 Bestätigung   248 -0.0023 -0.0679     711 -0.0350       1106  -0.0549    -4.4943
+
+--- Zählend (Entdeckung Differenz < 0, t <= -2,5): 0
+  keine -> RUNDE NICHT BESTANDEN
+Laufzeit 12723 s
