@@ -3759,3 +3759,10 @@ Trennschärfe der Familie (nur Information): erwartetes t nach einem Jahr = Back
 Overnight ~0,8, Nikkei-Nacht ~0,7, Gotobi ~0,3 -> selbst wenn der Backtest exakt stimmt, liegt die Chance, die Hürde
 (t ~2,6) zu überspringen, bei 1-4 %. Die Regel taugt damit vor allem zum Erkennen von Fehlern/Verschlechterung,
 kaum zum Bestätigen. Eine Änderung der Regel wäre ein neuer, datierter Abschnitt (nur mit Zustimmung des Nutzers).
+
+## 2026-10-02 -- Entscheidung des Nutzers zur Auswertungsregel
+
+Die gemeinsame Regel bleibt unverändert streng (keine schwächere Stufe "passt zum Backtest", keine längere Laufzeit).
+Zusätzlicher Maßstab des Nutzers für Echtgeld: der Gewinn muss nach Kosten HÖHER sein als einfaches Halten eines
+breiten Aktien-ETFs (S&P 500 / MSCI World) im selben Zeitraum -- sonst lieber ETF halten. Gilt für alle künftigen
+Strategien und Tracker zusätzlich zur statistischen Hürde.
