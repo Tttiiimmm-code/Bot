@@ -49,3 +49,16 @@ def test_futility_note_only_after_half(tmp_path):
     late = {r["name"]: r for r in fs.status(tmp_path, date(2027, 4, 1))}
     assert early["gotobi"]["note"] == ""
     assert "Abbruch erlaubt" in late["gotobi"]["note"]
+
+
+def test_vs_etf_for_monthly_portfolios(tmp_path):
+    write(tmp_path / "forward_quality.csv",
+          "signal,entry_date,exit_date,holdings,port_ret,bench_ret,turnover,net_excess,spy_ret",
+          ["2026-09-30,2026-10-01,2026-11-02,A,0.03,0.0,1,0.029,0.01",
+           "2026-10-30,2026-11-02,2026-12-01,A,0.0,0.0,0,0.0,",          # ohne SPY-Wert: nicht gezählt
+           "2026-11-30,2026-12-01,2026-12-31,A,0.01,0.0,0,0.01,0.02"])
+    rows = {r["name"]: r for r in fs.status(tmp_path, date(2027, 1, 5))}
+    # (3 % - 0,1 % Kosten - 1 %) und (1 % - 2 %) -> Ø (1,9 - 1,0) / 2 = 0,45 %
+    assert rows["quality_top50"]["vs_etf"] == pytest.approx(0.45)
+    assert rows["nikkei_night"]["vs_etf"] is None
+    assert "gegen ETF (SPY) +0.45 %/Monat" in fs.format_text(list(rows.values()))

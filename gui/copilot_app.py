@@ -589,12 +589,14 @@ with tab_eval:
             st.dataframe(pd.DataFrame([{
                 "Test": r["name"], "Beobachtungen": f"{r['n']}/{r['min_n']}" if r["n"] is not None else "–",
                 "Ø": r["mean"], "Einheit": r["unit"], "Erwartung": r["expected"], "t": r["t"],
-                "Hürde t": r["t_crit"], "Auswertung": f"{r['eval_date']:%d.%m.%Y}", "Hinweis": r["note"]}
+                "Hürde t": r["t_crit"], "gegen ETF %/Monat": r.get("vs_etf"), "Auswertung": f"{r['eval_date']:%d.%m.%Y}",
+                "Hinweis": r["note"]}
                 for r in fs_rows]).style.format(
-                {"Ø": "{:+.2f}", "Erwartung": "{:+.2f}", "t": "{:.2f}", "Hürde t": "{:.2f}"}, na_rep="–"),
+                {"Ø": "{:+.2f}", "Erwartung": "{:+.2f}", "t": "{:.2f}", "Hürde t": "{:.2f}", "gegen ETF %/Monat": "{:+.2f}"}, na_rep="–"),
                 hide_index=True, width="stretch")
         st.caption(f"Nur Information. Bindend ist EIN Blick zum Termin: bestanden bei t über der Hürde "
-                   f"(p < 0,05/{fstat.K}) und Ø mindestens halb so groß wie die Erwartung.")
+                   f"(p < 0,05/{fstat.K}) und Ø mindestens halb so groß wie die Erwartung. Echtgeld zusätzlich nur, wenn "
+                   f"besser als ETF halten (Spalte gegen ETF, für die Monatsdepots).")
 
 # ------------------------------------------------------------ Anleitung
 

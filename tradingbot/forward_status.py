@@ -109,13 +109,27 @@ def observations(tr: Tracker, base: Path) -> tuple[list[float], float | None] | 
     return None
 
 
+COST_PER_SIDE = {"quality_top50": 10e-4, "smallvq_top20": 75e-4}
+
+
+def vs_etf(tr: Tracker, base: Path) -> tuple[int, float | None]:
+    """Monatsdepots: Ø (Depotrendite nach Kosten - SPY) in %/Monat über abgerechnete Monate mit SPY-Wert
+    (Nutzer-Maßstab: nur interessant, wenn besser als ETF halten)."""
+    if tr.name not in COST_PER_SIDE:
+        return 0, None
+    xs = [(float(r["port_ret"]) - COST_PER_SIDE[tr.name] * float(r["turnover"]) - float(r["spy_ret"])) * 100
+          for r in _rows(base / tr.source)
+          if r["net_excess"] != "" and r.get("spy_ret", "") != "" and r["entry_date"] >= tr.start.isoformat()]
+    return len(xs), (sum(xs) / len(xs) if xs else None)
+
+
 def status(base: Path, today: date) -> list[dict]:
     out = []
     for tr in TRACKERS:
         obs = observations(tr, base)
         row = {"name": tr.name, "unit": tr.unit, "min_n": tr.min_n, "eval_date": tr.eval_date,
                "days_left": (tr.eval_date - today).days, "n": None, "mean": None, "t": None, "t_crit": None,
-               "expected": None, "note": ""}
+               "expected": None, "note": "", "vs_etf": None}
         half = tr.start + (tr.eval_date - tr.start) / 2
         if obs is None:
             row["note"] = "Auswertung per Skript (Runde 125)"
@@ -126,6 +140,7 @@ def status(base: Path, today: date) -> list[dict]:
             if n:
                 row["mean"] = sum(xs) / n
                 row["t"] = _t(xs)
+            row["vs_etf"] = vs_etf(tr, base)[1]
             if today >= half and row["mean"] is not None and row["mean"] < 0 and (row["t"] or 0) <= -1.5:
                 row["note"] = "Abbruch erlaubt (Hälfte erreicht, Ø < 0, t <= -1,5)"
         out.append(row)
@@ -144,5 +159,7 @@ def format_text(rows: list[dict]) -> str:
             continue
         lines.append(f"- {r['name']}: {r['n']}/{r['min_n']} Beob., Ø {_fmt(r['mean'], '+.2f')} {r['unit']} "
                      f"(Erw. {_fmt(r['expected'], '+.2f')}), t {_fmt(r['t'], '.2f')} / Hürde {r['t_crit']:.2f}, "
-                     f"Termin {r['eval_date']:%d.%m.%Y}" + (f" -- {r['note']}" if r["note"] else ""))
+                     f"Termin {r['eval_date']:%d.%m.%Y}"
+                     + (f", gegen ETF (SPY) {r['vs_etf']:+.2f} %/Monat" if r.get("vs_etf") is not None else "")
+                     + (f" -- {r['note']}" if r["note"] else ""))
     return "\n".join(lines)

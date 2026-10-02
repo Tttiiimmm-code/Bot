@@ -157,3 +157,19 @@ def test_smallvq_rows_costs_and_frozen_holdings(tmp_path):
     again = fs.smallvq_rows(cfg, o2, c2, v2, ledger, metrics)
     assert again[0]["holdings"] == "B" and again[0]["net_excess"] != ""
     assert "smallvq_top20: 2 Monate" in fs.summarize(cfg)
+
+
+def test_monthly_rows_record_spy_return(tmp_path):
+    days = pd.bdate_range("2025-06-02", "2026-12-15")
+    c = pd.DataFrame({"A": 20.0, "SPY": 500.0}, index=days)
+    o = c.copy()
+    o["SPY"] = np.linspace(500, 600, len(days))
+    v = pd.DataFrame(1e6, index=days, columns=c.columns)
+    cfg = fs.StockForwardConfig(first_day=date(2026, 10, 1), quality_ledger=tmp_path / "q.csv")
+    rows = fs.quality_rows(cfg, o, c, v, {}, lambda signal, members: ["A"])
+    first = rows[0]
+    entry, exit_ = pd.Timestamp(first["entry_date"]), pd.Timestamp(first["exit_date"])
+    assert first["spy_ret"] == pytest.approx(o.loc[exit_, "SPY"] / o.loc[entry, "SPY"] - 1, abs=1e-6)
+    assert rows[-1]["spy_ret"] == ""                       # laufender Monat
+    fs.update_quality_ledger(cfg.quality_ledger, rows)
+    assert "spy_ret" in cfg.quality_ledger.read_text().splitlines()[0]

@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 NY = "America/New_York"
 ORB_FIELDS = ["date", "symbol", "side", "entry_time", "entry", "stop", "target", "exit_time", "exit", "r_net"]
 QUALITY_FIELDS = ["signal", "entry_date", "exit_date", "holdings", "port_ret", "bench_ret", "turnover",
-                  "net_excess"]
+                  "net_excess", "spy_ret"]   # spy_ret: SPY Eröffnung -> Eröffnung im selben Fenster (Maßstab "besser als ETF")
 ORB_EXPECTED_R = 0.026          # Endtest 2023-26 je Trade
 QUALITY_EXPECTED = 0.0038       # Endtest 2023-26 je Monat (Überschuss)
 SMALLVQ_EXPECTED = 0.0100       # Runde 98, P2 je Monat netto (ungesehen +1,48 %, P1 -0,42 %)
@@ -359,7 +359,7 @@ def quality_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: p
         members = list(univ.columns[univ.loc[signal].to_numpy(bool)])
         holdings = ledger[key]["holdings"].split(";") if key in ledger else pick(signal, members)
         row = {"signal": key, "entry_date": entry.date().isoformat(), "exit_date": "", "holdings": ";".join(holdings),
-               "port_ret": "", "bench_ret": "", "turnover": "", "net_excess": ""}
+               "port_ret": "", "bench_ret": "", "turnover": "", "net_excess": "", "spy_ret": ""}
         if exit_ is not None and holdings:
             r = (o.loc[exit_] / o.loc[entry] - 1).where(o.loc[entry] > 0)
             port = float(r.reindex(holdings).fillna(0.0).mean())
@@ -370,9 +370,17 @@ def quality_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: p
             net = port - bench - cfg.quality_cost_per_side * turn
             row.update(exit_date=exit_.date().isoformat(), port_ret=round(port, 6), bench_ret=round(bench, 6),
                        turnover=round(turn, 3), net_excess=round(net, 6))
+            row.update(spy_ret=_spy_ret(o, entry, exit_))
         rows.append(row)
         ledger[key] = row
     return rows
+
+
+def _spy_ret(o: pd.DataFrame, entry, exit_):
+    """SPY Eröffnung (Kauftag) -> Eröffnung (Verkaufstag); "" ohne SPY-Kurse."""
+    if "SPY" not in o.columns or not (o.loc[entry, "SPY"] > 0):
+        return ""
+    return round(float(o.loc[exit_, "SPY"] / o.loc[entry, "SPY"] - 1), 6)
 
 
 def quality_due(ledger: dict[str, dict], last_day: date) -> bool:
@@ -448,7 +456,7 @@ def smallvq_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: p
         if key in ledger:   # Depot einmal festgelegt -> nicht neu berechnen (SEC-Daten können nachträglich wachsen)
             holdings = [h for h in ledger[key]["holdings"].split(";") if h]
         row = {"signal": key, "entry_date": entry.date().isoformat(), "exit_date": "", "holdings": ";".join(holdings),
-               "port_ret": "", "bench_ret": "", "turnover": "", "net_excess": ""}
+               "port_ret": "", "bench_ret": "", "turnover": "", "net_excess": "", "spy_ret": ""}
         if exit_ is not None and holdings:
             r = (o.loc[exit_] / o.loc[entry] - 1).where(o.loc[entry] > 0)
             port = float(r.reindex(holdings).fillna(0.0).mean())
@@ -456,6 +464,7 @@ def smallvq_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: p
             turn = len(set(holdings) ^ prev_h) / len(holdings)
             row.update(exit_date=exit_.date().isoformat(), port_ret=round(port, 6), bench_ret=round(bench, 6),
                        turnover=round(turn, 3), net_excess=round(port - bench - cfg.smallvq_cost_per_side * turn, 6))
+            row.update(spy_ret=_spy_ret(o, entry, exit_))
         rows.append(row)
         ledger[key] = row
     return rows
