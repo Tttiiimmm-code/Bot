@@ -1,0 +1,151 @@
+2016-01: 74 Beobachtungen
+2016-02: 367 Beobachtungen
+2016-03: 606 Beobachtungen
+2016-04: 845 Beobachtungen
+2016-05: 1040 Beobachtungen
+2016-06: 1178 Beobachtungen
+2016-07: 1332 Beobachtungen
+2016-08: 1583 Beobachtungen
+2016-09: 1755 Beobachtungen
+2016-10: 1921 Beobachtungen
+2016-11: 2205 Beobachtungen
+2016-12: 2361 Beobachtungen
+2017-01: 2538 Beobachtungen
+2017-02: 2750 Beobachtungen
+2017-03: 2909 Beobachtungen
+2017-04: 3004 Beobachtungen
+2017-05: 3169 Beobachtungen
+2017-06: 3314 Beobachtungen
+2017-07: 3481 Beobachtungen
+2017-08: 3697 Beobachtungen
+2017-09: 3853 Beobachtungen
+2017-10: 4076 Beobachtungen
+2017-11: 4320 Beobachtungen
+2017-12: 4509 Beobachtungen
+2018-01: 4716 Beobachtungen
+2018-02: 4969 Beobachtungen
+2018-03: 5188 Beobachtungen
+2018-04: 5429 Beobachtungen
+2018-05: 5678 Beobachtungen
+2018-06: 5872 Beobachtungen
+2018-07: 6048 Beobachtungen
+2018-08: 6301 Beobachtungen
+2018-09: 6471 Beobachtungen
+2018-10: 6651 Beobachtungen
+2018-11: 6903 Beobachtungen
+2018-12: 6996 Beobachtungen
+2019-01: 7305 Beobachtungen
+2019-02: 7547 Beobachtungen
+2019-03: 7745 Beobachtungen
+2019-04: 7910 Beobachtungen
+2019-05: 8150 Beobachtungen
+2019-06: 8329 Beobachtungen
+2019-07: 8559 Beobachtungen
+2019-08: 8806 Beobachtungen
+2019-09: 8974 Beobachtungen
+2019-10: 9209 Beobachtungen
+2019-11: 9432 Beobachtungen
+2019-12: 9610 Beobachtungen
+2020-01: 9826 Beobachtungen
+2020-02: 10082 Beobachtungen
+2020-03: 10363 Beobachtungen
+2020-04: 10653 Beobachtungen
+2020-05: 10989 Beobachtungen
+2020-06: 11303 Beobachtungen
+2020-07: 11669 Beobachtungen
+2020-08: 11942 Beobachtungen
+2020-09: 12153 Beobachtungen
+2020-10: 12413 Beobachtungen
+2020-11: 12752 Beobachtungen
+2020-12: 13033 Beobachtungen
+2021-01: 13275 Beobachtungen
+2021-02: 13560 Beobachtungen
+2021-03: 13892 Beobachtungen
+2021-04: 14154 Beobachtungen
+2021-05: 14455 Beobachtungen
+2021-06: 14728 Beobachtungen
+2021-07: 14974 Beobachtungen
+2021-08: 15330 Beobachtungen
+2021-09: 15596 Beobachtungen
+2021-10: 15878 Beobachtungen
+2021-11: 16118 Beobachtungen
+2021-12: 16385 Beobachtungen
+2022-01: 16618 Beobachtungen
+2022-02: 16973 Beobachtungen
+2022-03: 17307 Beobachtungen
+2022-04: 17513 Beobachtungen
+2022-05: 17876 Beobachtungen
+2022-06: 18121 Beobachtungen
+2022-07: 18396 Beobachtungen
+2022-08: 18780 Beobachtungen
+2022-09: 18989 Beobachtungen
+2022-10: 19270 Beobachtungen
+2022-11: 19573 Beobachtungen
+2022-12: 19831 Beobachtungen
+2023-01: 20096 Beobachtungen
+2023-02: 20414 Beobachtungen
+2023-03: 20738 Beobachtungen
+2023-04: 20977 Beobachtungen
+2023-05: 21321 Beobachtungen
+2023-06: 21629 Beobachtungen
+2023-07: 21862 Beobachtungen
+2023-08: 22186 Beobachtungen
+2023-09: 22364 Beobachtungen
+2023-10: 22578 Beobachtungen
+2023-11: 22949 Beobachtungen
+2023-12: 23193 Beobachtungen
+2024-01: 23469 Beobachtungen
+2024-02: 23811 Beobachtungen
+2024-03: 24060 Beobachtungen
+2024-04: 24270 Beobachtungen
+2024-05: 24596 Beobachtungen
+2024-06: 24801 Beobachtungen
+2024-07: 25076 Beobachtungen
+2024-08: 25393 Beobachtungen
+2024-09: 25629 Beobachtungen
+2024-10: 25954 Beobachtungen
+2024-11: 26237 Beobachtungen
+2024-12: 26497 Beobachtungen
+2025-01: 26744 Beobachtungen
+2025-02: 27051 Beobachtungen
+2025-03: 27363 Beobachtungen
+2025-04: 27643 Beobachtungen
+2025-05: 28030 Beobachtungen
+2025-06: 28313 Beobachtungen
+2025-07: 28662 Beobachtungen
+2025-08: 28973 Beobachtungen
+2025-09: 29277 Beobachtungen
+2025-10: 29617 Beobachtungen
+2025-11: 29935 Beobachtungen
+2025-12: 30232 Beobachtungen
+2026-01: 30489 Beobachtungen
+2026-02: 30840 Beobachtungen
+2026-03: 31190 Beobachtungen
+2026-04: 31542 Beobachtungen
+2026-05: 31907 Beobachtungen
+2026-06: 32213 Beobachtungen
+2026-07: 32536 Beobachtungen
+2026-08: 32887 Beobachtungen
+2026-09: 33096 Beobachtungen
+check         h         per  tage   diff      t  n_ueber  ueber  t_ueber  n_unter  unter  t_unter
+12:00    60 Min    Training   275 -0.009 -0.093     2703 +0.051   +2.128      372 +0.048   +0.678
+12:00    60 Min Bestätigung   332 -0.009 -0.055     2842 +0.004   +0.099      509 -0.005   -0.034
+12:00    60 Min     Endtest   468 -0.081 -0.554     3573 +0.044   +1.259      761 +0.061   +0.535
+12:00 bis 15:55    Training   275 +0.119 +0.779     2703 +0.117   +2.414      372 -0.031   -0.264
+12:00 bis 15:55 Bestätigung   332 +0.187 +0.768     2842 -0.045   -0.571      509 -0.160   -0.800
+12:00 bis 15:55     Endtest   468 +0.030 +0.126     3573 +0.042   +0.617      761 +0.100   +0.494
+13:30    60 Min    Training   304 +0.136 +0.870     2775 +0.008   +0.291      439 +0.056   +0.938
+13:30    60 Min Bestätigung   344 +0.079 +0.574     2873 -0.057   -1.578      541 -0.095   -0.938
+13:30    60 Min     Endtest   472 +0.024 +0.234     3653 +0.067   +2.095      729 +0.082   +0.987
+13:30 bis 15:55    Training   304 +0.049 +0.444     2775 +0.037   +1.030      439 +0.008   +0.088
+13:30 bis 15:55 Bestätigung   344 +0.119 +0.590     2873 +0.029   +0.454      541 -0.142   -1.019
+13:30 bis 15:55     Endtest   472 +0.116 +0.749     3653 +0.060   +1.127      729 -0.104   -0.869
+15:00    60 Min    Training   310 +0.137 +1.570     2906 +0.016   +0.759      415 -0.068   -1.001
+15:00    60 Min Bestätigung   350 -0.045 -0.274     2893 +0.070   +1.863      563 -0.064   -0.537
+15:00    60 Min     Endtest   478 +0.056 +0.550     3757 -0.033   -1.009      792 -0.101   -1.199
+15:00 bis 15:55    Training   310 +0.154 +1.953     2906 +0.012   +0.591      415 -0.052   -0.789
+15:00 bis 15:55 Bestätigung   350 -0.066 -0.419     2893 +0.045   +1.231      563 -0.050   -0.438
+15:00 bis 15:55     Endtest   478 +0.014 +0.158     3757 -0.040   -1.284      792 -0.077   -0.989
+
+--- Zählend (Training t >= 2,6): 0
+  keine -> Annahme NICHT BESTÄTIGT

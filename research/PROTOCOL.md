@@ -3852,3 +3852,14 @@ solche DARUNTER?
 - Kennzahl: je Tag Ø(über) - Ø(unter), t über Tage. 3 x 2 = 6 Tests. Training 2016-2019, Bestätigung 2020-2022,
   Endtest 2023-2026-09. Bestätigt, wenn Training t >= 2,6 (Bonferroni 6), Bestätigung t >= 2, Endtest t >= 2 (beste).
 - Nur Information: Ø-Rendite der Käufe über VWAP absolut (macht die Regel allein schon Geld?) und unter VWAP.
+
+## 2026-10-02 -- Ergebnis Runde 133 ("nur über VWAP kaufen")
+
+~29.000 Beobachtungen (Aktien im Spiel, >= +2 % seit Eröffnung, 2016-2026). Differenz über - unter VWAP je Tag:
+Training -0,01 bis +0,15 % (bestes t 1,95 bei 15:00 bis Schluss), Bestätigung -0,07 bis +0,19 % (t <= 0,77),
+Endtest -0,08 bis +0,12 % (t <= 0,75). 12 von 18 Werten positiv, alle klein. Absolut: Käufe über VWAP Ø -0,06 bis
++0,12 % (vor Kosten), unter VWAP -0,16 bis +0,10 %.
+-> Annahme NICHT BESTÄTIGT. Die VWAP-Lage hat für die folgenden 60 Min. bis Schluss keinen messbaren Einfluss; beide
+Gruppen verdienen vor Kosten ~0. Folgerung: Die Copilot-Regel "nur über VWAP" ist eine Disziplin-/Filterregel ohne
+belegten Vorteil, kein Erfolgsrezept. Der frühere Schluss "Hauptfehler am ersten Tag: unter VWAP gekauft" (5 Trades)
+war nicht belegt -- korrigiert.
