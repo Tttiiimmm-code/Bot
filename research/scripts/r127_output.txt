@@ -1,0 +1,103 @@
+xauusd fertig (1/14, 3 s)
+xagusd fertig (2/14, 3 s)
+eurusd fertig (3/14, 3 s)
+gbpusd fertig (4/14, 4 s)
+usdjpy fertig (5/14, 4 s)
+usdchf fertig (6/14, 4 s)
+usdcnh fertig (7/14, 5 s)
+audusd fertig (8/14, 5 s)
+nzdusd fertig (9/14, 5 s)
+usdsek fertig (10/14, 6 s)
+gbpjpy fertig (11/14, 6 s)
+eurjpy fertig (12/14, 6 s)
+chfjpy fertig (13/14, 7 s)
+usatechidxusd fertig (14/14, 7 s)
+Minuten eurusd fertig (19 s)
+Minuten gbpusd fertig (30 s)
+Minuten xauusd fertig (41 s)
+
+Training: 44 Tests | Ø > 0: 20 | t >= 2: 2 | t >= 3: 0
+  B1 H4 nur long Ziel 1,5R           n   1305  Ø +0.084 R  t +2.36  positiv 43%
+  B3 D1 nur long Ziel 1,5R           n    167  Ø +0.226 R  t +2.33  positiv 49%
+  B2 H4 nur long Signal              n   1207  Ø +0.072 R  t +1.85  positiv 38%
+  B3 D1 nur long Signal              n    372  Ø +0.115 R  t +1.60  positiv 28%
+  B1 H4 beide Ziel 1,5R              n   1888  Ø +0.037 R  t +1.23  positiv 41%
+  B3 H4 nur long Signal              n   2184  Ø +0.033 R  t +1.18  positiv 25%
+  B3 H4 beide Signal                 n   4225  Ø +0.022 R  t +1.10  positiv 24%
+  B2 D1 nur long Signal              n    218  Ø +0.126 R  t +1.08  positiv 35%
+  B3 D1 beide Signal                 n    722  Ø +0.042 R  t +0.84  positiv 25%
+  B1 H4 nur long Signal              n   3273  Ø +0.010 R  t +0.82  positiv 38%
+  B2 D1 nur long Ziel 1,5R           n    160  Ø +0.084 R  t +0.76  positiv 42%
+  B1 D1 nur long Ziel 1,5R           n    227  Ø +0.069 R  t +0.76  positiv 42%
+  B3 H4 nur long Ziel 1,5R           n    966  Ø +0.026 R  t +0.66  positiv 41%
+  B2 D1 beide Signal                 n    352  Ø +0.061 R  t +0.63  positiv 32%
+  B2 H1 nur long Signal              n   4442  Ø +0.011 R  t +0.56  positiv 36%
+  B3 H4 beide Ziel 1,5R              n   1379  Ø +0.018 R  t +0.51  positiv 41%
+  B1 D1 nur long Signal              n    579  Ø +0.013 R  t +0.45  positiv 37%
+  B2 H1 nur long Ziel 1,5R           n   3178  Ø +0.007 R  t +0.32  positiv 41%
+  B2 H4 beide Signal                 n   2018  Ø +0.007 R  t +0.25  positiv 36%
+  B2 H4 nur long Ziel 1,5R           n    857  Ø +0.001 R  t +0.02  positiv 40%
+  B1 D1 beide Signal                 n   1136  Ø -0.010 R  t -0.51  positiv 35%
+  B2 H4 beide Ziel 1,5R              n   1208  Ø -0.021 R  t -0.56  positiv 40%
+  B3 H1 nur long Ziel 1,5R           n   3837  Ø -0.016 R  t -0.82  positiv 40%
+  B1 D1 beide Ziel 1,5R              n    306  Ø -0.064 R  t -0.87  positiv 39%
+  B2 D1 beide Ziel 1,5R              n    211  Ø -0.096 R  t -1.04  positiv 38%
+  B3 D1 beide Ziel 1,5R              n    226  Ø -0.112 R  t -1.31  positiv 37%
+  B1 H4 beide Signal                 n   6489  Ø -0.012 R  t -1.34  positiv 37%
+  B1 H1 nur long Ziel 1,5R           n   5099  Ø -0.030 R  t -1.71  positiv 39%
+  B2 H1 beide Ziel 1,5R              n   4673  Ø -0.049 R  t -2.62  positiv 39%
+  B3 H1 beide Ziel 1,5R              n   5632  Ø -0.045 R  t -2.70  positiv 39%
+  A einfach nur long                 n   1208  Ø -5.134 bp/Tag  t -2.75  positiv 43%
+  A stark beide                      n    665  Ø -6.828 bp/Tag  t -2.78  positiv 43%
+  B2 H1 beide Signal                 n   7695  Ø -0.045 R  t -2.93  positiv 34%
+  A stark nur long                   n    420  Ø -10.614 bp/Tag  t -3.33  positiv 44%
+  B3 H1 nur long Signal              n   8618  Ø -0.045 R  t -3.43  positiv 23%
+  B1 H1 beide Ziel 1,5R              n   7196  Ø -0.052 R  t -3.48  positiv 38%
+  A alle nur long                    n   1300  Ø -6.455 bp/Tag  t -3.78  positiv 43%
+  A einfach beide                    n   1409  Ø -6.334 bp/Tag  t -4.83  positiv 41%
+  A alle beide                       n   1445  Ø -6.209 bp/Tag  t -5.13  positiv 42%
+  B3 H1 beide Signal                 n  16965  Ø -0.062 R  t -6.55  positiv 23%
+  B1 H1 nur long Signal              n  12704  Ø -0.050 R  t -7.71  positiv 33%
+  C beide                            n 105549  Ø -0.939 R  t -8.71  positiv 23%
+  B1 H1 beide Signal                 n  25021  Ø -0.060 R  t -12.31  positiv 33%
+  C nur long                         n  50812  Ø -0.514 R  t -53.47  positiv 26%
+
+--- Zählende Auswahl (n >= 200, Ø > 0, t >= 3): 0
+  keine -> RUNDE NICHT BESTANDEN
+
+--- Nur Information: Bestätigung der 3 besten Trainings-t (Endtest nicht angesehen)
+  ('B1', 'H4', 'nur long', 'Ziel 1,5R'): n   1022  Ø +0.022 R  t +0.58  positiv 41%
+  ('B2', 'H4', 'nur long', 'Signal'): n    931  Ø +0.017 R  t +0.44  positiv 38%
+  ('B3', 'D1', 'nur long', 'Signal'): n    266  Ø +0.013 R  t +0.21  positiv 26%
+
+=== D Wahlzyklus (S&P 500 Kursindex, ohne Dividenden; nur Beschreibung) ===
+ Wahl  Zwischenwahljahr->Wahl  Wahl->Ende Folgejahr
+ 1932                  -65.8%                +37.7%
+ 1936                  +69.8%                -38.6%
+ 1940                   +6.1%                -22.1%
+ 1944                  +45.8%                +34.0%
+ 1948                   -3.2%                 +0.5%
+ 1952                  +47.7%                 +0.9%
+ 1956                  +90.8%                -16.0%
+ 1960                  +36.6%                +29.8%
+ 1964                  +20.0%                 +8.5%
+ 1968                  +11.8%                -10.7%
+ 1972                  +22.6%                -14.4%
+ 1976                   +5.5%                 -7.8%
+ 1980                  +37.5%                 -5.0%
+ 1984                  +38.8%                +24.0%
+ 1988                  +31.3%                +28.4%
+ 1992                  +16.7%                +11.1%
+ 1996                  +53.4%                +35.9%
+ 2000                  +46.9%                -19.8%
+ 2004                   -2.1%                +10.4%
+ 2008                  -20.7%                +10.9%
+ 2012                  +26.1%                +29.4%
+ 2016                  +16.8%                +25.0%
+ 2020                  +25.0%                +41.5%
+ 2024                  +20.6%                +18.4%
+Zyklen 24: im Fenster positiv 20/24, Ø p.a. +6.9% (t 3.12); außerhalb Ø p.a. +7.4% (t 1.89); Differenz je Zyklus t -0.09
+  1932-1976: Fenster Ø p.a. +6.3%, außerhalb -0.2%, Fenster positiv 10/12
+  1980-2024: Fenster Ø p.a. +7.6%, außerhalb +14.9%, Fenster positiv 10/12
+
+Laufzeit 42 s

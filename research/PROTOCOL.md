@@ -3691,3 +3691,19 @@ Endtest Ø > 0, t >= 2. Neue Familie im Sinne der gemeinsamen Regel (kein Vorwä
 
 **D Wahlzyklus (nur Beschreibung, zählt nicht):** S&P 500 (^GSPC, Yahoo) 1928-2026: Rendite vom Jahresbeginn des
 Zwischenwahljahres bis zur Präsidentschaftswahl gegenüber dem Rest, je Zyklus; Anzahl positiver Zyklen.
+
+## 2026-10-02 -- Ergebnisse Runde 127 (TikTok @_tradinglab_)
+
+Training (44 Tests): Ø > 0 bei 20, t >= 2 bei 2, t >= 3 bei 0 -> keine zählende Auswahl -> RUNDE NICHT BESTANDEN.
+- A Tagesrichtung: alle 6 Varianten NEGATIV (alle, beide Richtungen -6,2 bp/Tag, t -5,13; stark nur long -10,6 bp,
+  t -3,33). Die "Liquiditätsabgriff"-Kerze sagt eher das Gegenteil voraus -- nach Kosten in beiden Lesarten wertlos.
+- B Super Trend: H1 durchweg negativ (bis t -12,3 für drei Linien mit Signal-Ausstieg); beste Trainingswerte
+  B1 H4 nur long Ziel 1,5R +0,084 R (t 2,36) und B3 D1 nur long Ziel +0,226 R (t 2,33, n 167). Nur Information,
+  Bestätigung 2018-21: B1 H4 +0,022 R (t 0,58), B2 H4 Signal +0,017 (t 0,44), B3 D1 Signal +0,013 (t 0,21) -- Rest
+  von Long-Drift (Gold, Nasdaq), kein Vorteil.
+- C Williams Fractals 1 Min: -0,94 R/Trade (beide, n 105.549), nur long -0,51 R (t -53) -- Stops so eng, dass der
+  Spread allein den Trade auffrisst.
+- D Wahlzyklus (Beschreibung, 24 Zyklen 1932-2024): Zwischenwahljahr -> Wahl positiv 20/24, Ø +6,9 % p.a.; die
+  übrige Zeit (Wahl -> Ende Folgejahr) aber +7,4 % p.a. -> Differenz je Zyklus t -0,09. 1980-2024 sogar außerhalb
+  besser (+14,9 % vs +7,6 %). Behauptung im Video ("jedes Mal positiv") falsch: 2004 -2,1 %, 2008 -20,7 %.
+  Kein Vorteil gegenüber Halten.
