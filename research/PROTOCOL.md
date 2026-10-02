@@ -3780,3 +3780,20 @@ Einschränkungen: (1) Nikkei auf Dukascopy-CFD gemessen, real nur über OSE-Futu
 MaxDD fast -50 %. (3) Keine der beiden Strategien hat die strengen Hürden bestanden; Vorwärtstest kann sie in einem Jahr
 nicht bestätigen (erwartetes t ~0,7). Nach Nutzerentscheidung (Regel bleibt streng) daher KEINE Freigabe -- nur der
 einzige erkennbare Weg, wie kleine Effekte den ETF überhaupt schlagen könnten.
+
+# Runde 131: Kriege/Konflikte als Handelssignal -- Geopolitical Risk Index (Caldara & Iacoviello) (Vorab, 2026-10-02)
+
+Anlass: Nutzerfrage zu war-watch.com (Konfliktkarte, Meldungen aus X/Telegram, API 29,99 EUR/Monat, keine Historie;
+"Predictions" = Echtgeld-Prognosemärkte, in DE verboten -> nicht nutzbar). Prüfbar ist die Idee mit dem täglichen
+GPR-Index (matteoiacoviello.com, Zeitungsartikel über Krieg/Terror/Spannungen, 1985-01-01 bis 2026-10-01).
+- Signal: GPRD (gesamt) bzw. GPRD_ACT (tatsächliche Handlungen: Kriegsausbruch, Angriffe) am Tag t über dem 95./99.
+  Perzentil der 252 vorangehenden Werktage; danach 60 Werktage Sperre (unabhängige Ereignisse).
+- Einstieg: Schluss des NÄCHSTEN Handelstags (Index erst am Folgetag bekannt), Haltedauer 5 / 20 / 60 Handelstage.
+- Märkte (Yahoo, dividendenbereinigt wo vorhanden): S&P 500 (^GSPC ab 1985, Kursindex), Gold (GC=F ab 2000),
+  Rohöl WTI (CL=F ab 2000), Rüstungs-ETF ITA (ab 2006). Nur long.
+- Kennzahl je Ereignis: Rendite über die Haltedauer minus Ø Rendite aller gleich langen Fenster desselben Markts
+  im selben Zeitraum (Überrendite ggü. Halten). t über Ereignisse.
+- Tests: 2 Signale x 2 Schwellen x 3 Haltedauern x 4 Märkte = 48.
+- Zeiträume: Entdeckung bis 2009, Bestätigung 2010-2026-09. Auswahl: >= 15 Ereignisse, Ø > 0, t >= 3 in der
+  Entdeckung -> 3 beste -> Bestätigung Ø > 0, t >= 2. Zusätzlich Nutzer-Maßstab: als Zusatz zum gehaltenen ETF
+  muss der Mehrertrag die Kosten (10 bp je Seite) übersteigen.
