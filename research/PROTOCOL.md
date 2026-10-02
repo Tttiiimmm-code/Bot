@@ -3809,3 +3809,19 @@ Entdeckung: 48 Tests, Ø > 0 bei 13, t >= 2 bei 0, t >= 3 bei 0 -> keine zählen
   Gold 5 T nach Kriegshandlungen +0,74 % (t 2,39, n 46), Rest |t| < 2.
 Lesart: Konfliktnachrichten sind beim Erscheinen eingepreist; ein Bot auf Basis von Konfliktmeldungen (z.B. war-watch.com)
 hat danach keinen messbaren Vorteil -- weder bei Aktien, Gold, Öl noch Rüstungswerten.
+
+# Runde 132: Wikipedia-Aufmerksamkeit bei starken Tagesgewinnern (Vorab, 2026-10-02)
+
+Hypothese (Aufmerksamkeit -> Überreaktion -> Umkehr; Da, Engelberg & Gao 2011; Barber & Odean 2008): Aktien, die an
+einem Tag stark steigen UND ungewöhnlich viel Wikipedia-Aufmerksamkeit bekommen, entwickeln sich danach schlechter als
+Gewinner ohne Aufmerksamkeits-Sprung. Nutzen: Warnfilter für Kauf-Strategien (long-only: "Gewinner mit Rummel meiden").
+- Universum: US-Aktien mit englischem Wikipedia-Artikel (Wikidata: Börsenticker P249 an NYSE/Nasdaq, P414), Alpaca-
+  Tagespanel (split-bereinigt) 2016-01 bis 2026-09; Schluss > 5 $, Tagesumsatz > 1 Mio. $.
+- Ereignis: Tagesrendite (Schluss/Vortagesschluss) >= +10 % bzw. >= +20 % am Tag t.
+- Aufmerksamkeit: Wikipedia-Aufrufe (Wikimedia REST, nur Nutzer) am Tag t (UTC) / Ø der Tage t-28..t-1.
+  Hoch: >= 3; niedrig: <= 1,5 (dazwischen nicht verwendet).
+- Ergebnis: Eröffnung t+1 -> Schluss t+5 bzw. t+20, minus SPY im selben Fenster.
+- Kennzahl: je Tag Ø(hoch) - Ø(niedrig) (nur Tage mit beiden Gruppen), t über diese Tage (Bündelung je Tag).
+- Tests: 2 Schwellen x 2 Haltedauern = 4. Entdeckung 2016-2020, Bestätigung 2021-2026-09.
+  Bestanden: Entdeckung Differenz < 0 mit t <= -2,5 (Bonferroni für 4), dann Bestätigung < 0 mit t <= -2.
+- Nur Information: Gewinner mit niedriger Aufmerksamkeit vs. SPY (Nutzer-Maßstab: besser als ETF?).
