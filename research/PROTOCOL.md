@@ -3718,3 +3718,21 @@ Korrektur: Messung im Dry-Run mit offiziellen Kursen (Schluss am Kauftag -> Erö
 unbereinigt), wie im Backtest. NEUER START 2026-10-02 (erste Nacht: Kauf am Abend des 02.10.); Zeilen mit
 mode "paper" zählen nicht. Mindestzahl (200 Nächte) und Termin 2027-10-01 unverändert; reichen die Nächte bis dahin
 nicht, gilt die Regel "einmalig +6 Monate".
+
+# Runde 128: LLM-Nachrichtenbewertung der Momentum-Kandidaten (news_intel.csv) -- Beobachtung + Vorab (2026-10-02)
+
+Daten bisher (nur Beschreibung, zählt nicht): 80 Bewertungen an 4 Tagen (28.09.-01.10., je die ersten 20 Kandidaten,
+Median 6 Min. nach Eröffnung). Rendite vom nächsten Minuten-Open nach der Bewertung bis Handelsschluss (SIP):
+- mit Katalysator (alles außer no_news/offering_dilution), n 32: Ø -10,9 % (Median -8,7 %), positiv 19 %;
+  Tagesmittel -12,5 / -11,5 / -12,9 / -6,1 % -- an allen 4 Tagen negativ.
+- keine Nachricht, n 41: Ø +0,1 %, positiv 54 %. Kapitalerhöhung/Verwässerung, n 7: Ø +14,1 %.
+Lesart: Der geplante Filter "Verwässerung sperren" hätte die BESTEN Kandidaten gesperrt; auffällig schwach sind
+Kandidaten mit echter Nachricht (Gewinnmitnahme nach Nachrichten-Sprung?). 4 Tage, 16 Symbole mehrfach -> keine Aussage.
+
+Vorab-Registrierung (Auswertung erst mit Daten AB 2026-10-02; frühestens 2026-12-01 und >= 40 Handelstage):
+- Kennzahl je Tag: Ø Rendite (Bewertung -> Schluss, wie oben) der Kandidaten MIT Katalysator minus Ø der Kandidaten
+  OHNE Nachricht; nur Tage mit beiden Gruppen; t über Tage.
+- H1 (zählt): Differenz < 0 mit t <= -2,5 (zweiseitig wegen nachträglicher Idee strenger). H2 (zählt): Gruppe
+  Verwässerung (offering_dilution oder dilution_risk high) minus "keine Nachricht" ist NICHT negativ (t > -2).
+- Bei H1: nur Konsequenz für den long-only Momentum-Bot (Kandidaten mit Katalysator meiden) -- erst nach Ablauf
+  seines eigenen Vorwärtstests; kein Short-Handel (Kleinwerte, unbegrenztes Risiko).
