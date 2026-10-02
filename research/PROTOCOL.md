@@ -3652,3 +3652,42 @@ t <= -1,5 -> zählt als nicht bestanden (K bleibt 11). Keine Regeländerung an l
 Hinweis zur Ehrlichkeit: Mit dieser Hürde werden voraussichtlich die meisten Tracker nicht bestehen -- die
 Backtest-t-Werte lagen fast alle unter 3 bei mehr Beobachtungen. Das ist gewollt: ein Bestehen soll etwas bedeuten.
 Stand smallvq_top20 beim Start: erstes Depot 121 Aktien (Universum derzeit ~600 statt Ø 858 im Backtest).
+
+# Runde 127: TikTok @_tradinglab_ -- Tagesrichtung, Super Trend, Williams Fractals (Vorab, 2026-10-02)
+
+Quelle: Untertitel aller 27 sichtbaren Videos (2026-02 bis 2026-09). Nur Regeln, die eindeutig formuliert sind.
+Daten: Dukascopy H1 Bid/Ask, 14 Märkte wie Runde 104 (H4/D1 in Broker-Zeit wie Runde 102); Minuten Bid/Ask
+EURUSD, GBPUSD, XAUUSD. Kosten: echter Spread (Kauf Brief, Verkauf Geld) + 0,5 bp Kommission je Trade.
+Ausführung: Signal am Kerzenschluss -> Einstieg Eröffnung der nächsten Kerze; Stop vor Ziel in derselben Kerze;
+Kurslücke über Stop/Ziel -> Eröffnungskurs.
+
+**A Tagesrichtung ("daily bias", 5 Fälle)** -- D1-Kerze t gegen Hoch PH / Tief PL von t-1:
+- bär: H > PH und C < PH und L >= PL; bär stark: H > PH und C < PL;
+- bull (Spiegel): L < PL und C > PL und H <= PH; bull stark: L < PL und C > PH;
+- beide Seiten überschritten (sonst) bzw. innerhalb -> kein Trade.
+Trade: Tag t+1 Eröffnung -> Schluss (Broker-Tag). Kennzahl: netto bp; t über Tage (alle Märkte eines Tages
+gemittelt). Varianten: {alle Signale, nur einfache, nur starke} x {beide Richtungen, nur long} = 6.
+
+**B Super Trend** (ATR nach Wilder; Linie wie TradingView), Zeitebenen H1/H4/D1:
+- B1 drei Linien (12;3), (10;1), (11;2): Einstieg, wenn alle drei NEU gleichfarbig sind; Stop = Linie (12;3).
+- B2 Super Trend (10;3) + EMA 200: Einstieg, wenn (grün und Schluss > EMA200) NEU erfüllt ist (short gespiegelt);
+  Stop = Super-Trend-Linie.
+- B3 Super Trend (10;3) + Ichimoku-Wolke (9/26/52, Wolke 26 vorversetzt): Einstieg, wenn (grün und Schluss über der
+  Wolke) NEU erfüllt ist; Stop = Super-Trend-Linie.
+- Ausstieg: (a) Ziel 1,5 R; (b) Signal-Ausstieg: B1 eine Linie wechselt, B2 Super Trend wechselt, B3 Schluss in der
+  Wolke oder Super-Trend-Wechsel (zum Schluss der Kerze, ausgeführt zur nächsten Eröffnung); Stop gilt immer.
+- Richtung: beide / nur long. 3 x 3 x 2 x 2 = 36 Varianten. Kennzahl R netto je Trade, eine Position je Markt.
+
+**C Williams Fractals 1-Min-Scalping** (EURUSD, GBPUSD, XAUUSD; SMA 20/50/100; Fractal Periode 2, bestätigt
+2 Kerzen nach dem Tief):
+- long: SMA20 > SMA50 > SMA100; seit der letzten Ordnungsherstellung Schluss < SMA20; bestätigtes Tief-Fractal ->
+  Einstieg. Stop unter SMA50 (bzw. unter SMA100, wenn seither ein Schluss < SMA50 lag); Schluss < SMA100 seither ->
+  kein Einstieg. Ziel 1,5 R. Short gespiegelt. Varianten beide / nur long = 2.
+- Zeiträume C: Training 2008-2014, Bestätigung 2015-2019, Endtest 2020-2025.
+
+Zeiträume A/B wie Runde 104: Training 2012-07..2017, Bestätigung 2018-2021, Endtest 2022-2026-09.
+Auswahl (44 Tests): >= 200 Trades, Ø > 0, t >= 3 im Training -> 3 beste -> Bestätigung Ø > 0, t >= 2,4 ->
+Endtest Ø > 0, t >= 2. Neue Familie im Sinne der gemeinsamen Regel (kein Vorwärtstest ohne Bestehen).
+
+**D Wahlzyklus (nur Beschreibung, zählt nicht):** S&P 500 (^GSPC, Yahoo) 1928-2026: Rendite vom Jahresbeginn des
+Zwischenwahljahres bis zur Präsidentschaftswahl gegenüber dem Rest, je Zyklus; Anzahl positiver Zyklen.
