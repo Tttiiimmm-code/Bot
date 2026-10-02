@@ -3797,3 +3797,15 @@ GPR-Index (matteoiacoviello.com, Zeitungsartikel über Krieg/Terror/Spannungen, 
 - Zeiträume: Entdeckung bis 2009, Bestätigung 2010-2026-09. Auswahl: >= 15 Ereignisse, Ø > 0, t >= 3 in der
   Entdeckung -> 3 beste -> Bestätigung Ø > 0, t >= 2. Zusätzlich Nutzer-Maßstab: als Zusatz zum gehaltenen ETF
   muss der Mehrertrag die Kosten (10 bp je Seite) übersteigen.
+
+## 2026-10-02 -- Ergebnisse Runde 131 (Geopolitical Risk Index)
+
+Fehler im ersten Lauf (vor der Wertung behoben, offen vermerkt): Ereignisse vor Datenbeginn von Gold/Öl (2000) und ITA
+(2006) wurden auf die ersten Handelstage gelegt -> verfälschte Werte (u.a. "Rohöl 5 T t 4,66"). Korrigierter Lauf:
+Entdeckung: 48 Tests, Ø > 0 bei 13, t >= 2 bei 0, t >= 3 bei 0 -> keine zählende Auswahl -> RUNDE NICHT BESTANDEN.
+- S&P 500 nach Spitzen (59/38/55/31 Ereignisse seit 1985): Überrendite -1,3 bis +1,0 %, |t| <= 2,2; kein "Kauf
+  nach dem Schreck"-Vorteil ggü. Halten.
+- Gold/Öl/Rüstung: Entdeckung durchweg nahe 0 oder negativ (bestes t 0,71); Bestätigung 2010-26 nur Information:
+  Gold 5 T nach Kriegshandlungen +0,74 % (t 2,39, n 46), Rest |t| < 2.
+Lesart: Konfliktnachrichten sind beim Erscheinen eingepreist; ein Bot auf Basis von Konfliktmeldungen (z.B. war-watch.com)
+hat danach keinen messbaren Vorteil -- weder bei Aktien, Gold, Öl noch Rüstungswerten.
