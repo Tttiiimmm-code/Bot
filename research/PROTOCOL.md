@@ -3736,3 +3736,14 @@ Vorab-Registrierung (Auswertung erst mit Daten AB 2026-10-02; frühestens 2026-1
   Verwässerung (offering_dilution oder dilution_risk high) minus "keine Nachricht" ist NICHT negativ (t > -2).
 - Bei H1: nur Konsequenz für den long-only Momentum-Bot (Kandidaten mit Katalysator meiden) -- erst nach Ablauf
   seines eigenen Vorwärtstests; kein Short-Handel (Kleinwerte, unbegrenztes Risiko).
+
+# Runde 129: Momentum-Bot gespiegelt -- was hätte Short gebracht? (Beschreibung, 2026-10-02)
+
+58 echte Long-Trades 21.09.-01.10. (Fills), Kurs Median 3,00 $, Spread beim Einstieg Median 0,38 % (Ø 0,46 %).
+Long echt: Ø -1,01 %/Trade (t -3,60, 12 % im Plus). Exakt gespiegelt (gleiche Zeiten, beide Spreads): Ø +0,02 % (t 0,08)
+-- der Long-Verlust besteht großteils aus Spreads, das Spiegelbild zahlt sie erneut. Short ab Bot-Einstieg mit
+Notfall-Stop +10/+20 %: 15 Min +0,5/+0,8 %, 30 Min +1,8/+2,0 % (t 1,98/2,11), 60 Min +1,7/+1,5 %, bis Schluss +0,9/+1,0 %;
+Tage stark gebündelt (bis Schluss je Tag -8,9 % bis +5,2 %); 7 von 58 stiegen binnen 60 Min um >= 20 %.
+8 nachträglich gewählte Varianten an 8 Tagen -> bestes t 2,11 erfüllt keine Hürde. Umsetzbarkeit: heute nur 4 von 22
+Symbolen bei Alpaca leihbar (shortable/easy_to_borrow) -> praktisch nicht handelbar. NICHT weiter verfolgt; die
+Beobachtung "Kandidaten fallen nach dem Einstieg" deckt Runde 128 (Nachrichten) bereits mit Vorab-Regel ab.
