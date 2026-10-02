@@ -38,7 +38,8 @@ TRACKERS = (
     Tracker("orb_or5", date(2026, 10, 1), 200, date(2027, 10, 1), "R/Tag", None, "forward_orb.csv"),
     Tracker("quality_top50", date(2026, 10, 1), 24, date(2028, 10, 1), "%", 0.38, "forward_quality.csv"),
     Tracker("smallvq_top20", date(2026, 10, 1), 24, date(2028, 10, 1), "%", 1.00, "forward_smallvq.csv"),
-    Tracker("overnight_etf", date(2026, 9, 26), 200, date(2027, 10, 1), "%", None, "overnight_trades.csv"),
+    # Neustart 2026-10-02: ab dann Dry-Run mit offiziellen Schluss-/Eröffnungskursen (Paper-Auktionsorders unbrauchbar)
+    Tracker("overnight_etf", date(2026, 10, 2), 200, date(2027, 10, 1), "%", None, "overnight_trades.csv"),
     Tracker("liq_r125", date(2026, 10, 2), 40, date(2027, 10, 1), "Cluster", None, "data_cache/liquidations"),
 )
 ORB_EXPECTED_R_PER_TRADE = 0.026      # Erwartung je Tag = 0,026 R x Ø Trades je Tag
@@ -99,7 +100,7 @@ def observations(tr: Tracker, base: Path) -> tuple[list[float], float | None] | 
     if tr.name == "overnight_etf":
         nights: dict[str, list[float]] = defaultdict(list)
         for r in _rows(base / tr.source):
-            if r["bought_on"] >= start and r.get("return", "") != "":
+            if r["bought_on"] >= start and r.get("mode") == "dry-run" and r.get("return", "") != "":
                 nights[r["bought_on"]].append(float(r["return"]) * 100)
         return [sum(v) / len(v) for _, v in sorted(nights.items())], tr.expected
     return None

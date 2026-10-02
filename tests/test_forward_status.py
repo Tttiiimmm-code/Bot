@@ -26,7 +26,8 @@ def test_status_reads_all_ledgers(tmp_path):
     write(tmp_path / "forward_quality.csv", "signal,entry_date,exit_date,holdings,port_ret,bench_ret,turnover,net_excess",
           ["2026-09-30,2026-10-01,2026-11-02,A,0.01,0.0,1,0.004", "2026-10-30,2026-11-02,,A,,,,"])
     write(tmp_path / "overnight_trades.csv", "bought_on,symbol,qty,buy_price,sell_price,pnl,return,mode",
-          ["2026-09-30,XLE,1,1,1,0,-0.004,paper", "2026-09-30,XLK,1,1,1,0,0.002,paper"])
+          ["2026-09-30,XLE,1,1,1,0,-0.03,paper",                                  # vor Neustart: zählt nicht
+           "2026-10-05,XLE,1,1,1,0,-0.004,dry-run", "2026-10-05,XLK,1,1,1,0,0.002,dry-run"])
     rows = {r["name"]: r for r in fs.status(tmp_path, date(2026, 11, 3))}
     assert rows["nikkei_night"]["n"] == 2 and rows["nikkei_night"]["mean"] == pytest.approx(3.0)  # vor Start ignoriert
     assert rows["gotobi"]["n"] == 1
