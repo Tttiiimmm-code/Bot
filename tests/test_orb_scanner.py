@@ -91,3 +91,28 @@ def test_only_common_stock_drops_preferred_warrants_units():
                                     "ABCD Acquisition Corp Units", "XYZ Inc", "PFX 6.5% Notes due 2031"]})
     keep = orb.only_common_stock(["GOOGN", "GOOGL", "BABA", "ABCDW", "ABCDU", "XYZ", "PFX"], assets)
     assert keep == ["GOOGL", "BABA", "XYZ"]
+
+
+def test_load_candidates_ignores_filtered_symbols_in_daily_cache(tmp_path, monkeypatch):
+    from tradingbot.research import universe as uni
+
+    today = date(2026, 10, 2)
+    days = pd.bdate_range("2026-09-01", "2026-10-01").date
+    day_dir = tmp_path / today.isoformat()
+    day_dir.mkdir(parents=True)
+    pd.DataFrame({"symbol": ["GOOD", "GOOGN"], "name": ["Good Corp Common Stock", "Alphabet Inc. Depositary Shares "
+                  "representing a 1/20th Interest in a Share of Series B Mandatory Convertible Preferred Stock"]}
+                 ).to_pickle(day_dir / "assets.pkl")
+    # Cache enthält beide Papiere (vor dem Filter geladen)
+    panel = pd.DataFrame([(s, d, 50.0, 51.0, 49.0, 50.0, 5e6) for s in ("GOOD", "GOOGN") for d in days],
+                         columns=["symbol", "date", "open", "high", "low", "close", "volume"]).set_index(["symbol", "date"])
+    hist = pd.DataFrame([(d, s, 50, 50.5, 49.5, 50, 1e5) for d in days[-14:] for s in ("GOOD", "GOOGN")],
+                        columns=["date", "symbol", "open", "high", "low", "close", "volume"]).set_index(["date", "symbol"])
+    tod = pd.DataFrame([(today, s, 50, 50.6, 49.9, 50.4, 9e5) for s in ("GOOD", "GOOGN")],
+                       columns=["date", "symbol", "open", "high", "low", "close", "volume"]).set_index(["date", "symbol"])
+    monkeypatch.setattr(uni, "fetch_assets", lambda tc, base: ["GOOD", "GOOGN"])
+    monkeypatch.setattr(uni, "fetch_daily", lambda *a, **k: panel)
+    monkeypatch.setattr(uni, "fetch_opening_bars", lambda *a, **k: None)
+    monkeypatch.setattr(uni, "load_opening", lambda base: hist if base.name == "hist" else tod)
+    cand = orb.load_candidates(None, None, today, base=tmp_path)
+    assert list(cand.index) == ["GOOD"]

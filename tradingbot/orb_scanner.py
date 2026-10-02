@@ -161,6 +161,8 @@ def load_candidates(data_client, trading_client, today: date, base: Path = CACHE
     panel = uni.fetch_daily(data_client, symbols, today - timedelta(days=40), today - timedelta(days=1), day_dir)
     panel = panel[panel.index.get_level_values("date") < today]
     feats = daily_filter(panel)
+    # auch hier filtern: ein vorhandener Tages-Cache kann Kurse von bereits aussortierten Papieren enthalten
+    feats.loc[~feats.index.isin(set(symbols)), "eligible"] = False
     eligible = list(feats.index[feats["eligible"]])
     hist_days = sorted(set(panel.index.get_level_values("date")))[-LOOKBACK:]
     uni.fetch_opening_bars(data_client, {d: eligible for d in hist_days}, day_dir / "hist")
