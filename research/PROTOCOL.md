@@ -3863,3 +3863,17 @@ Endtest -0,08 bis +0,12 % (t <= 0,75). 12 von 18 Werten positiv, alle klein. Abs
 Gruppen verdienen vor Kosten ~0. Folgerung: Die Copilot-Regel "nur über VWAP" ist eine Disziplin-/Filterregel ohne
 belegten Vorteil, kein Erfolgsrezept. Der frühere Schluss "Hauptfehler am ersten Tag: unter VWAP gekauft" (5 Trades)
 war nicht belegt -- korrigiert.
+
+# Runde 133b: Copilot-Annahme "Stop mindestens 0,5 %" (Vorab, 2026-10-02)
+Gleiche Beobachtungen wie Runde 133 (alle, egal ob über/unter VWAP). Kauf zur Eröffnung der Prüfminute, Stop 0,3 /
+0,5 / 1 / 2 % darunter, Ziel 2 R, sonst Verkauf 15:55; Stop vor Ziel in derselben Minute, Kurslücke -> Eröffnung.
+Kosten je Seite 0,02 % + 0,005 $/Aktie. Kennzahl Ø R netto je Trade (je Tag gemittelt, t über Tage).
+Frage: Ist 0,3 % deutlich schlechter als 0,5 % (Differenz t <= -2 im Training UND Bestätigung)? Nur Beschreibung
+der Copilot-Regel, kein Handelssystem.
+
+## 2026-10-02 -- Ergebnis Runde 133b (Stop-Abstand)
+33.096 Käufe. Ø R netto je Trade (Training / Bestätigung / Endtest): Stop 0,3 %: -0,23 / -0,24 / -0,25 R;
+0,5 %: -0,13 / -0,17 / -0,17; 1 %: -0,10 / -0,10 / -0,10; 2 %: -0,05 / -0,08 / -0,07. Differenz 0,3 % - 0,5 %:
+-0,10 (t -7,5) / -0,07 (t -4,2) / -0,08 (t -6,8). -> BESTÄTIGT: enge Stops kosten deutlich (Kosten + Rauschen je R),
+weitere Stops verlieren je Risiko-Einheit weniger. Wahllose Käufe von Aktien im Spiel verlieren aber in JEDER
+Variante -- der Stop begrenzt nur den Schaden, er schafft keinen Vorteil.
