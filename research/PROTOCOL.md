@@ -3747,3 +3747,15 @@ Tage stark gebündelt (bis Schluss je Tag -8,9 % bis +5,2 %); 7 von 58 stiegen b
 8 nachträglich gewählte Varianten an 8 Tagen -> bestes t 2,11 erfüllt keine Hürde. Umsetzbarkeit: heute nur 4 von 22
 Symbolen bei Alpaca leihbar (shortable/easy_to_borrow) -> praktisch nicht handelbar. NICHT weiter verfolgt; die
 Beobachtung "Kandidaten fallen nach dem Einstieg" deckt Runde 128 (Nachrichten) bereits mit Vorab-Regel ab.
+
+## 2026-10-02 -- Vermerk: Erwartung Tracker 10 (Overnight-ETF) nachgetragen, vor der ersten Dry-Run-Nacht
+
+Neu gerechnet (Alpaca SIP, dividendenbereinigt, Signal Schluss > SMA200 der Vortage, 1 bp je Seite): 2016-01 bis
+2025-09-21 Ø +0,040 % je Nacht und gehaltener Position (2.166 Nächte, t 2,42, Ø 6,4 ETFs, Portfolio ~9,6 % p.a.).
+Tracker-Kennzahl: Ø der Dry-Run-Renditen je Nacht minus 0,02 % (Kosten); unbereinigte Kurse -> Dividenden-
+abschläge zählen mit (etwas strenger). Hinweis: der Holdout ab 2025-09-22 war bereits verbraucht (+0,073 %, t 1,85).
+
+Trennschärfe der Familie (nur Information): erwartetes t nach einem Jahr = Backtest-t x Wurzel(n_vorwärts/n_backtest):
+Overnight ~0,8, Nikkei-Nacht ~0,7, Gotobi ~0,3 -> selbst wenn der Backtest exakt stimmt, liegt die Chance, die Hürde
+(t ~2,6) zu überspringen, bei 1-4 %. Die Regel taugt damit vor allem zum Erkennen von Fehlern/Verschlechterung,
+kaum zum Bestätigen. Eine Änderung der Regel wäre ein neuer, datierter Abschnitt (nur mit Zustimmung des Nutzers).
