@@ -41,6 +41,7 @@ NY = ZoneInfo("America/New_York")
 DEFAULT_SYMBOLS = ("SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "SMH")
 DRY_RUN_LOG_DELAY_MINUTES = 20
 DRY_RUN_RETRY_MINUTES = 10
+SELL_FILL_WAIT = timedelta(minutes=10)
 _DRY = "dry-run:"  # Kauf-ID im Dry-Run: "dry-run:<Stück>"
 
 
@@ -79,6 +80,7 @@ class _State:
     sells: dict[str, str] = field(default_factory=dict)
     sold_for: str | None = None
     logged_for: str | None = None
+    fallback_for: str | None = None   # Kauftag, für den die Market-Nachverkäufe schon geschickt wurden
 
     @classmethod
     def load(cls, path: Path) -> "_State":
@@ -114,6 +116,7 @@ class OvernightBot:
         self.state = _State.load(config.state_file)
         self._session_cache: tuple[date, _Session | None] | None = None
         self._dry_retry_at: datetime | None = None
+        self._pending_since: datetime | None = None
 
     # ------------------------------------------------------------ Zeitplan
 
@@ -156,7 +159,7 @@ class OvernightBot:
         decide_until = session.close - timedelta(minutes=10)
         if self.state.bought_on != today and decide_from <= now < decide_until:
             if self.state.bought_on and self.state.logged_for != self.state.bought_on:
-                self._finish_night(now)  # Morgen-Abschluss nachholen, bevor neu gekauft wird
+                self._finish_night(now, force=True)  # Morgen-Abschluss nachholen, bevor neu gekauft wird
             self._submit_evening_buys(session)
 
     # ------------------------------------------------------------ Abend
@@ -254,7 +257,7 @@ class OvernightBot:
         logger.info("Morgen: %d Verkaufs-Order(s) zum Eröffnungskurs für Käufe vom %s",
                     len(sells), self.state.bought_on)
 
-    def _finish_night(self, now: datetime) -> None:
+    def _finish_night(self, now: datetime, force: bool = False) -> None:
         """Nach Handelsbeginn: nicht gefüllte Reste per Market verkaufen und
         die Nacht protokollieren."""
         from alpaca.trading.enums import OrderSide, TimeInForce
@@ -272,7 +275,7 @@ class OvernightBot:
             self.state.sold_for = self.state.bought_on
             self.state.save(self.config.state_file)
             return
-        if not self.config.dry_run:
+        if self.state.fallback_for != self.state.bought_on:     # nur einmal je Nacht (auch nach Neustart)
             for p in self.trading_client.get_all_positions():
                 qty = int(float(p.qty))
                 if p.symbol in self.config.symbols and qty > 0:
@@ -280,6 +283,17 @@ class OvernightBot:
                     order = self.trading_client.submit_order(MarketOrderRequest(
                         symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.DAY))
                     self.state.sells[p.symbol] = str(order.id)
+            self.state.fallback_for = self.state.bought_on
+            self.state.save(self.config.state_file)
+        # Market-Verkäufe brauchen Sekunden: erst protokollieren, wenn alle Verkäufe gefüllt sind
+        # (höchstens SELL_FILL_WAIT warten; beim Nachholen am Abend sofort).
+        pending = [s for s, b in self.state.buys.items()
+                   if self._fill(b) is not None and self._fill(self.state.sells.get(s, "")) is None]
+        if pending and not force:
+            self._pending_since = self._pending_since or now
+            if now - self._pending_since < SELL_FILL_WAIT:
+                return
+        self._pending_since = None
         self._log_night(now)
         self.state.logged_for = self.state.bought_on
         self.state.sold_for = self.state.bought_on

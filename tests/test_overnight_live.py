@@ -161,8 +161,30 @@ def test_unfilled_opg_sell_falls_back_to_market(setup):
     trading.positions = {"SPY": 80}
     bot.run_once(ny(DAY2, 9, 21))
     bot.run_once(ny(DAY2, 9, 36))  # OPG nicht gefüllt, Position noch da
-    _, fallback = trading.orders[-1]
+    fb_id, fallback = trading.orders[-1]
     assert fallback.side == OrderSide.SELL and fallback.time_in_force == TimeInForce.DAY
+    assert not cfg.trade_log.exists()                  # Market-Verkauf noch ohne Füllung -> warten
+    n_orders = len(trading.orders)
+    bot2 = OvernightBot(cfg, trading, data)            # Neustart: kein zweiter Market-Verkauf
+    bot2.run_once(ny(DAY2, 9, 37))
+    assert len(trading.orders) == n_orders
+    trading.fills[fb_id] = (80, 502.0)
+    bot2.run_once(ny(DAY2, 9, 38))
+    rows = list(csv.DictReader(cfg.trade_log.open(encoding="utf-8")))
+    assert rows[0]["sell_price"] == "502.0000" and rows[0]["qty"] == "80"
+
+
+def test_unfilled_fallback_is_logged_without_it_after_wait(setup):
+    cfg, trading, data = setup
+    bot = OvernightBot(cfg, trading, data)
+    bot.run_once(ny(DAY1, 15, 46))
+    trading.fills[trading.orders[0][0]] = (80, 500.0)
+    trading.positions = {"SPY": 80}
+    bot.run_once(ny(DAY2, 9, 36))
+    bot.run_once(ny(DAY2, 9, 45))
+    assert not cfg.trade_log.exists()
+    bot.run_once(ny(DAY2, 9, 47))                      # nach 10 Minuten: Nacht abschließen (Fehler im Log)
+    assert bot.state.logged_for == DAY1.isoformat()
 
 
 def test_existing_position_reduces_buy_qty(setup):
