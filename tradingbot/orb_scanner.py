@@ -32,6 +32,7 @@ LOOKBACK = 14
 MIN_HISTORY = 10
 CUTOFF_ET = time(15, 0)
 READY_ET = time(9, 52)        # erste 5-Minuten-Kerze + 15 Min. SIP-Verzögerung
+MIN_DOLLAR_VOLUME = 20e6      # Ø-Tagesumsatz in $ (nur Melder; der Vorwärtstest orb_or5 bleibt unverändert)
 
 
 @dataclass(frozen=True)
@@ -67,7 +68,8 @@ def daily_filter(panel: pd.DataFrame) -> pd.DataFrame:
         "prev_close": last["close"].groupby(level="symbol").last(),
         "n": last["volume"].groupby(level="symbol").size(),
     })
-    out["eligible"] = (out["n"] >= LOOKBACK) & (out["avg_volume"] > 1e6) & (out["atr"] > 0.5) & (out["prev_close"] > 5)
+    out["eligible"] = (out["n"] >= LOOKBACK) & (out["avg_volume"] > 1e6) & (out["atr"] > 0.5) & (out["prev_close"] > 5) \
+        & (out["avg_volume"] * out["prev_close"] >= MIN_DOLLAR_VOLUME)
     return out
 
 
@@ -128,6 +130,20 @@ def evaluate(symbol: str, relvol: float, opening, bars5: pd.DataFrame, price: fl
 
 # ------------------------------------------------------------ Laden (Alpaca)
 
+NOT_COMMON = (r"(?i)preferred|warrants?\b|\bunits?\b|\brights?\b|convertible|notes? due|debentures?|"
+              r"exchange[- ]traded notes?|\betns?\b|\bsubordinated\b")
+
+
+def only_common_stock(symbols: list[str], assets: pd.DataFrame) -> list[str]:
+    """Nur Stammaktien (auch ADRs): Vorzugs-/Wandelpapiere, Optionsscheine, Units, Rights und Anleihen raus.
+    Anlass: GOOGN (Depotschein auf eine Alphabet-Wandelvorzugsaktie, kaum gehandelt) erschien am 2.10.2026 als
+    "Ausbruch", weil schon wenig Umsatz bei einem neuen Papier ein hohes relatives Volumen ergibt."""
+    names = assets.assign(sym=assets["symbol"].str.replace(r"_DELISTED$", "", regex=True)).set_index("sym")["name"]
+    names = names[~names.index.duplicated()].fillna("")
+    bad = set(names.index[names.str.contains(NOT_COMMON, regex=True)])
+    return [s for s in symbols if s not in bad]
+
+
 def load_candidates(data_client, trading_client, today: date, base: Path = CACHE_DIR, top: int = TOP_N) -> pd.DataFrame:
     """Top-N des Tages (Spalten open/high/low/close/volume der ersten 5-Minuten-Kerze, relvol, atr); Tages-Cache."""
     from tradingbot.research import universe as uni
@@ -137,6 +153,7 @@ def load_candidates(data_client, trading_client, today: date, base: Path = CACHE
     if path.exists():
         return pd.read_pickle(path)
     symbols = uni.fetch_assets(trading_client, day_dir)
+    symbols = only_common_stock(symbols, pd.read_pickle(day_dir / "assets.pkl"))
     panel = uni.fetch_daily(data_client, symbols, today - timedelta(days=40), today - timedelta(days=1), day_dir)
     panel = panel[panel.index.get_level_values("date") < today]
     feats = daily_filter(panel)

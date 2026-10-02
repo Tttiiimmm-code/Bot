@@ -62,3 +62,23 @@ def test_daily_filter_and_rank_candidates():
                          columns=["symbol", "open", "high", "low", "close", "volume"]).set_index("symbol")
     cand = orb.rank_candidates(hist, today, f)
     assert list(cand.index) == ["BIG"] and abs(cand.loc["BIG", "relvol"] - 4.0) < 1e-9
+
+
+def test_dollar_volume_minimum():
+    days = pd.bdate_range("2026-09-01", "2026-09-30").date
+    rows = [(sym, d, px, px + 1, px - 1, px, vol) for sym, px, vol in (("OK", 30.0, 1.5e6), ("SMALL", 10.0, 1.5e6))
+            for d in days]
+    panel = pd.DataFrame(rows, columns=["symbol", "date", "open", "high", "low", "close", "volume"]).set_index(
+        ["symbol", "date"])
+    f = orb.daily_filter(panel)
+    assert f.loc["OK", "eligible"] and not f.loc["SMALL", "eligible"]      # 45 Mio. $ vs. 15 Mio. $
+
+
+def test_only_common_stock_drops_preferred_warrants_units():
+    assets = pd.DataFrame({"symbol": ["GOOGN", "GOOGL", "BABA", "ABCDW", "ABCDU", "XYZ_DELISTED", "PFX"],
+                           "name": ["Alphabet Inc. Depositary Shares representing a 1/20th Interest in a Share of "
+                                    "Series B Mandatory Convertible Preferred Stock", "Alphabet Inc. Class A Common Stock",
+                                    "Alibaba Group Holding Limited American Depositary Shares", "ABCD Corp Warrants",
+                                    "ABCD Acquisition Corp Units", "XYZ Inc", "PFX 6.5% Notes due 2031"]})
+    keep = orb.only_common_stock(["GOOGN", "GOOGL", "BABA", "ABCDW", "ABCDU", "XYZ", "PFX"], assets)
+    assert keep == ["GOOGL", "BABA", "XYZ"]
