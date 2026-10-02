@@ -134,7 +134,7 @@ NOT_COMMON = (r"(?i)preferred|warrants?\b|\bunits?\b|\brights?\b|convertible|not
               r"exchange[- ]traded notes?|\betns?\b|\bsubordinated\b|"
               # Fonds/ETFs wie im Forschungs-Universum (u.a. NOBL am 2.10.2026 als Kandidat)
               # (nicht "Ultra"/"Bull"/"Bear"/"Vanguard"/"Invesco" allein: Ultragenyx, Build-A-Bear, Invesco Ltd ...)
-              r"\betf\b|\bfund\b|ishares|spdr|proshares|direxion|vaneck|invesco[^,]*\b(etf|trust)\b|\b[23]x\b|"
+              r"\betf\b|\bfund\b|ishares|spdr|proshares|direxion|vaneck|invesco[^,]*\b(?:etf|trust)\b|\b[23]x\b|"
               r"\bindex\b")
 
 
