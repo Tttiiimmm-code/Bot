@@ -3838,3 +3838,17 @@ wiederverwendete Kürzel = Rauschen). 31.497 Gewinner-Tage (>= 10 %), 27.130 mit
 Nebenbefund (Beschreibung): Tagesgewinner >= 10 % liegen danach generell unter SPY (5 T: Ø -0,7 %, t -4 bis -5 in
 beiden Zeiträumen; 20 T 2021-26: -1,6 %, t -6,1) -> am Folgetag starke Gewinner zu kaufen schlägt den Markt nicht
 (passt zu Momentum-Bot und Runde 128). Kein Leerverkauf (Kleinwerte, Leihe).
+
+# Runde 133: Prüfung einer Copilot-Annahme -- "nur über der VWAP kaufen" (Vorab, 2026-10-02)
+
+Anlass: Überprüfung aller Annahmen. Der Copilot erzwingt im strengen Modus "Kauf nur über VWAP" (Lehre aus Trading-
+Literatur, nie mit eigenen Daten geprüft). Frage: Entwickeln sich Aktien im Spiel ÜBER ihrer VWAP danach besser als
+solche DARUNTER?
+- Universum: Top 20 nach relativem Volumen je Tag (Runde 107, Minutendaten 2016-2026), nur Stammaktien (Namensfilter
+  wie Melder), Kurs >= 5 $, zum Prüfzeitpunkt seit Eröffnung >= +2 % (wie Copilot-Kandidaten, nur long).
+- Prüfzeitpunkte (Handelszeit des Nutzers 18-22 Uhr): 12:00, 13:30, 15:00 ET. VWAP = Σ(typischer Kurs x Volumen) seit
+  9:30 bis einschließlich Vorminute; Lage = Schluss der Vorminute über/unter VWAP.
+- Ergebnis: Eröffnung der Prüfminute -> +60 Min. bzw. -> 15:55 ET.
+- Kennzahl: je Tag Ø(über) - Ø(unter), t über Tage. 3 x 2 = 6 Tests. Training 2016-2019, Bestätigung 2020-2022,
+  Endtest 2023-2026-09. Bestätigt, wenn Training t >= 2,6 (Bonferroni 6), Bestätigung t >= 2, Endtest t >= 2 (beste).
+- Nur Information: Ø-Rendite der Käufe über VWAP absolut (macht die Regel allein schon Geld?) und unter VWAP.
