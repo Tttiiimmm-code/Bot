@@ -3604,3 +3604,51 @@ x bis 10:30 / 15:00 x Stop min 2 / 4 % x Ziel 2R / 3R / Einstand+Schluss x Top 5
 Ergebnis: 0 Varianten mit Ø > 0 im Training, t >= 2: 0 -> NICHT BESTANDEN. Mediane Training -> Bestätigung: jeder
 Ausbruch -0,079 -> -0,048 R, nur über Tageshoch -0,089 -> -0,025 R. Beste (über Tageshoch, bis 10:30, Ziel 2R, Top20)
 -0,038 R (t -0,77) -> +0,025 (t 0,59). Bull-Flag-Ausbrüche haben auch in liquiden Aktien keinen Vorteil.
+
+# Vorab-Registrierung: gemeinsame Auswertungsregel für alle Vorwärtstests (festgelegt 2026-10-02)
+
+Zweck: verhindern, dass später der beste von vielen Vorwärtstests herausgepickt wird. Diese Regel ist bindend;
+Änderungen nur als neuer, datierter Abschnitt, der für bereits gesammelte Daten NICHT gilt.
+
+**Familie (K = 11 Hypothesen, je "Ø Kennzahl > 0"):**
+
+| # | Tracker | Start | Einheit (Kennzahl je Beobachtung) | Mindestzahl | Auswertung |
+|---|---------|-------|-----------------------------------|-------------|------------|
+| 1 | nikkei_night | 2026-09-28 | Nacht, netto bp (forward_trades.csv) | 200 Nächte | 2027-10-01 |
+| 2 | gotobi (USD/JPY) | 2026-09-28 | Trade, netto bp | 60 Trades | 2027-10-01 |
+| 3 | gotobi_eurjpy | 2026-09-28 | Trade, netto bp | 60 Trades | 2027-10-01 |
+| 4 | bond_month_end | 2026-09-28 | Monat, netto bp | 24 Monate | 2028-10-01 |
+| 5 | mid_month_spy | 2026-09-28 | Monat, netto bp | 24 Monate | 2028-10-01 |
+| 6 | mid_month_qqq | 2026-09-28 | Monat, netto bp | 24 Monate | 2028-10-01 |
+| 7 | orb_or5 | 2026-10-01 | Handelstag, Summe R netto (forward_orb.csv) | 200 Tage | 2027-10-01 |
+| 8 | quality_top50 | 2026-10-01 | Monat, net_excess (forward_quality.csv) | 24 Monate | 2028-10-01 |
+| 9 | smallvq_top20 (Runde 98) | 2026-10-01 | Monat, net_excess (forward_smallvq.csv) | 24 Monate | 2028-10-01 |
+| 10 | Overnight-ETF-Bot (Papier) | 2026-09-26 | Nacht, gleichgewichtete Ø-Rendite der Positionen (overnight_trades.csv) | 200 Nächte | 2027-10-01 |
+| 11 | Liquidations-Short Runde 125 | 2026-10-02 | 4-Std.-Cluster, netto (Regeln Runde 125) | 40 Cluster | 2027-10-01 |
+
+**Test:** einseitiger Student-t-Test der Ø-Kennzahl (df = n - 1), p < 0,05 / 11 = 0,0045 (Bonferroni; erlaubt
+getrennte Termine). Kritische t-Werte: n 24 -> 2,85; 40 -> 2,75; 60 -> 2,70; 200 -> 2,63. Zusätzlich muss
+der Ø >= 50 % der Backtest-Erwartung sein (Kosten wie im Code des Trackers). Für Runde 125 ersetzt diese
+Hürde die dortige (t >= 2); deren "frühestens 2027-01-02" ist damit auf 2027-10-01 festgelegt.
+
+**Nur EIN bindender Blick je Tracker**, am Termin der Tabelle (Daten bis zum Vortag). Ist die Mindestzahl dann
+nicht erreicht: einmalig +6 Monate verschieben; danach gilt "nicht auswertbar = nicht bestanden".
+
+**Zwischendurch:** Monats-/Wochenübersichten sind erlaubt, aber nur Information. Einzige erlaubte Entscheidungen:
+(a) technischer Fehler -> Korrektur; ändert sie Ergebnisse, beginnt der Tracker neu (neues Startdatum, alte Zeilen
+zählen nicht, hier vermerken); (b) Abbruch wegen Aussichtslosigkeit nach der Hälfte der Laufzeit, wenn Ø < 0 und
+t <= -1,5 -> zählt als nicht bestanden (K bleibt 11). Keine Regeländerung an laufenden Trackern, keine Zeilen von Hand.
+
+**Ergebnis-Stufen:**
+- BESTANDEN: Hürde oben erfüllt -> Kandidat für Echtgeld mit kleinem Einsatz (eigene Entscheidung des Nutzers,
+  vorher Kosten-/Broker-Prüfung).
+- VIELVERSPRECHEND: Ø > 0, nominal t >= 2,0, Ø >= 50 % der Erwartung, aber Hürde verfehlt -> 12 weitere Monate mit
+  NEUEN Daten als eigener Einzeltest (Hürde dann p < 0,05 / Anzahl der verlängerten Tracker); alte Daten zählen nicht.
+- sonst NICHT BESTANDEN -> Tracker abschalten.
+
+**Nicht in der Familie:** Momentum-Bot (eigene Abbruchregel: nach 100 Trades netto < 0 und PF < 0,8), Copilot
+(manuelles Üben), alle später hinzukommenden Tracker (bilden eine neue Familie mit eigener Bonferroni-Korrektur).
+
+Hinweis zur Ehrlichkeit: Mit dieser Hürde werden voraussichtlich die meisten Tracker nicht bestehen -- die
+Backtest-t-Werte lagen fast alle unter 3 bei mehr Beobachtungen. Das ist gewollt: ein Bestehen soll etwas bedeuten.
+Stand smallvq_top20 beim Start: erstes Depot 121 Aktien (Universum derzeit ~600 statt Ø 858 im Backtest).
