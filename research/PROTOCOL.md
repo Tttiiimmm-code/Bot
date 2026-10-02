@@ -3766,3 +3766,17 @@ Die gemeinsame Regel bleibt unverändert streng (keine schwächere Stufe "passt 
 Zusätzlicher Maßstab des Nutzers für Echtgeld: der Gewinn muss nach Kosten HÖHER sein als einfaches Halten eines
 breiten Aktien-ETFs (S&P 500 / MSCI World) im selben Zeitraum -- sonst lieber ETF halten. Gilt für alle künftigen
 Strategien und Tracker zusätzlich zur statistischen Hürde.
+
+# Runde 130: Maßstab "besser als ETF" -- Nikkei-Nacht/Gotobi als Futures-Zusatz zum gehaltenen ETF (Beschreibung, 2026-10-02)
+
+Kurzzeit-Strategien binden Kapital nur stundenweise -> allein nie besser als ETF halten; denkbar nur als Zusatz
+(Futures mit Sicherheitsleistung) auf ein gehaltenes ETF-Depot. Backtest 2017-01..2026-09 (Kosten wie Vorwärtstest:
+Nikkei 0,5 bp/Seite, Gotobi 0,35 bp/Seite; SPY dividendenbereinigt):
+- SPY halten 15,3 % p.a., MaxDD -33,8 %.
+- + Nikkei-Nacht 0,5x: 21,2 % (MaxDD -40,7 %); 1x: 26,5 % (MaxDD -48,0 %); 1x + Gotobi 3x: 29,3 % (-47,0 %), besser als
+  ETF in 8 von 10 Jahren; Zusatz 2017-21 +12,4, 2022-26 +13,5 %-Punkte p.a.
+Einschränkungen: (1) Nikkei auf Dukascopy-CFD gemessen, real nur über OSE-Futures in Schluss-/Eröffnungsauktion
+(Kurse nicht frei verfügbar); bei 1 bp/Seite fällt der Zusatz deutlich (Runde 53: t 1,85). (2) Nachts 2x Bruttohebel,
+MaxDD fast -50 %. (3) Keine der beiden Strategien hat die strengen Hürden bestanden; Vorwärtstest kann sie in einem Jahr
+nicht bestätigen (erwartetes t ~0,7). Nach Nutzerentscheidung (Regel bleibt streng) daher KEINE Freigabe -- nur der
+einzige erkennbare Weg, wie kleine Effekte den ETF überhaupt schlagen könnten.
