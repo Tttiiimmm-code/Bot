@@ -1,0 +1,9 @@
+[Unit]
+Description=Monatsstand Vorwärtstests am 2. jedes Monats (nach dem Aktien-Lauf)
+
+[Timer]
+OnCalendar=*-*-02 09:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

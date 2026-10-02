@@ -1758,6 +1758,10 @@ def main():
     health_parser = subparsers.add_parser(
         "health", help="Wächter (VPS): Dienste, Platte, Speicher, Recorder prüfen; Probleme und Tagesstatus per ntfy.")
     health_parser.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    fstatus = subparsers.add_parser(
+        "forward-status", help="Alle Vorwärtstests nach der gemeinsamen Auswertungsregel (nur Information).")
+    fstatus.add_argument("--notify", action="store_true", help="Zusätzlich per ntfy senden.")
+    fstatus.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
 
     compare_parser = subparsers.add_parser(
         "momentum-compare",
@@ -1806,6 +1810,16 @@ def main():
 
         for m in health.step(notifier_from_env(args.env_file)):
             print(f"gesendet: {m}")
+        return
+
+    if args.command == "forward-status":
+        from tradingbot import forward_status
+        from tradingbot.notify import notifier_from_env
+
+        text = forward_status.format_text(forward_status.status(forward_status.Path("."), date.today()))
+        print(text)
+        if args.notify:
+            notifier_from_env(args.env_file).send("Vorwaertstests Monatsstand", text, tags="bar_chart")
         return
 
     if args.command in ("forward-stocks", "forward-stocks-report"):

@@ -1,0 +1,13 @@
+[Unit]
+Description=Monatsstand aller Vorwärtstests per ntfy (nur Information)
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py forward-status --notify --env-file copilot.env
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadOnlyPaths=/home/tradingbot/Bot

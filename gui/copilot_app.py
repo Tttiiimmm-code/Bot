@@ -578,6 +578,24 @@ with tab_eval:
     else:
         st.info("Noch keine abgeschlossenen Trades.")
 
+    with st.container(border=True):
+        st.subheader("Bots im Vorwärtstest")
+        from tradingbot import forward_status as fstat
+
+        fs_rows = fstat.status(Path(__file__).resolve().parents[1], datetime.now().date())
+        if not any(r["n"] for r in fs_rows):
+            st.info("Noch keine Vorwärtstest-Daten auf diesem Rechner (die Tracker laufen auf dem VPS).")
+        else:
+            st.dataframe(pd.DataFrame([{
+                "Test": r["name"], "Beobachtungen": f"{r['n']}/{r['min_n']}" if r["n"] is not None else "–",
+                "Ø": r["mean"], "Einheit": r["unit"], "Erwartung": r["expected"], "t": r["t"],
+                "Hürde t": r["t_crit"], "Auswertung": f"{r['eval_date']:%d.%m.%Y}", "Hinweis": r["note"]}
+                for r in fs_rows]).style.format(
+                {"Ø": "{:+.2f}", "Erwartung": "{:+.2f}", "t": "{:.2f}", "Hürde t": "{:.2f}"}, na_rep="–"),
+                hide_index=True, width="stretch")
+        st.caption(f"Nur Information. Bindend ist EIN Blick zum Termin: bestanden bei t über der Hürde "
+                   f"(p < 0,05/{fstat.K}) und Ø mindestens halb so groß wie die Erwartung.")
+
 # ------------------------------------------------------------ Anleitung
 
 with tab_help:
