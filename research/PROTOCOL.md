@@ -3707,3 +3707,14 @@ Training (44 Tests): Ø > 0 bei 20, t >= 2 bei 2, t >= 3 bei 0 -> keine zählend
   übrige Zeit (Wahl -> Ende Folgejahr) aber +7,4 % p.a. -> Differenz je Zyklus t -0,09. 1980-2024 sogar außerhalb
   besser (+14,9 % vs +7,6 %). Behauptung im Video ("jedes Mal positiv") falsch: 2004 -2,1 %, 2008 -20,7 %.
   Kein Vorteil gegenüber Halten.
+
+## 2026-10-02 -- Vermerk zur gemeinsamen Auswertungsregel: Neustart Tracker 10 (Overnight-ETF-Bot)
+
+Technischer Fehler (Regel (a)): Der Bot lief auf dem VPS mit echten Alpaca-Paper-Orders statt im vorgesehenen Dry-Run.
+Alpaca-Paper führt Schlussauktions-Orders (CLS) meist nicht aus (29.09.-01.10.: 18 von 23 verfallen, Rest teilweise
+zu 15:59:55-Kursen statt Schlusskurs), Eröffnungs-Orders (OPG) ebenso (3 von 4 verfallen); dazu fehlten nachverkaufte
+Positionen im Protokoll (behoben, Commit 428283c). Die Paper-Zeilen messen damit nicht die Strategie.
+Korrektur: Messung im Dry-Run mit offiziellen Kursen (Schluss am Kauftag -> Eröffnung am Folgetag, SIP-Tageskerzen
+unbereinigt), wie im Backtest. NEUER START 2026-10-02 (erste Nacht: Kauf am Abend des 02.10.); Zeilen mit
+mode "paper" zählen nicht. Mindestzahl (200 Nächte) und Termin 2027-10-01 unverändert; reichen die Nächte bis dahin
+nicht, gilt die Regel "einmalig +6 Monate".
