@@ -12,6 +12,7 @@ overnight_trades.csv
 forward_trades.csv
 forward_orb.csv
 forward_quality.csv
+forward_smallvq.csv
 news_intel.csv
 copilot_journal.jsonl
 replay_journal.jsonl

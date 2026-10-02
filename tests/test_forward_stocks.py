@@ -93,3 +93,67 @@ def test_orb_ledger_idempotent(tmp_path):
     assert fs.update_orb_ledger(cfg.orb_ledger, rows) == 1
     assert fs.update_orb_ledger(cfg.orb_ledger, rows) == 0
     assert "orb_or5: 1 Trades" in fs.summarize(cfg)
+
+
+def test_smallvq_pick_top20_buy_top40_hold():
+    syms = [f"S{i}" for i in range(10)]
+    m = pd.DataFrame({k: np.arange(10, dtype=float) for k in fs.VQ_KEYS}, index=syms)
+    m["equity"] = 1.0
+    m.loc["S0", "equity"] = -1.0                      # negatives Eigenkapital -> nicht im Universum
+    m.loc["S1", "bm"] = np.nan                        # B/M fehlt -> nicht im Universum
+    hold, members = fs.smallvq_pick(m, syms + ["ZZ"], prev=set())
+    assert members == syms[2:]
+    assert hold == ["S8", "S9"]                       # Top 20 % von 8 = Ränge > 0,8
+    hold, _ = fs.smallvq_pick(m, syms, prev={"S6", "S3"})
+    assert hold == ["S6", "S8", "S9"]                 # S6 in Top 40 % gehalten, S3 nicht
+
+
+def test_value_quality_metrics_point_in_time(tmp_path):
+    import json
+    signal = pd.Timestamp("2026-09-30")               # Quartal 2026Q2 (verfügbar 30.9.), Jahr 2025
+    cik = "0000000001"
+    vals = {"Assets_CY2026Q2I": 100, "Assets_CY2025Q2I": 80, "StockholdersEquity_CY2026Q2I": 50,
+            "EntityCommonStockSharesOutstanding_CY2026Q2I": 10, "EntityCommonStockSharesOutstanding_CY2025Q2I": 8,
+            "NetIncomeLoss_CY2025": 5, "NetCashProvidedByUsedInOperatingActivities_CY2025": 7,
+            "GrossProfit_CY2025": 30}
+    for name, val in vals.items():
+        (tmp_path / f"{name}.json").write_text(json.dumps({cik: val}))
+    m = fs.value_quality_metrics(signal, tmp_path, {cik: "AAA"}, pd.Series({"AAA": 4.0}))
+    r = m.loc["AAA"]
+    assert r["bm"] == pytest.approx(50 / 40) and r["ep"] == pytest.approx(5 / 40) and r["cfp"] == pytest.approx(7 / 40)
+    assert r["gpa"] == pytest.approx(0.3) and r["roa"] == pytest.approx(0.05)
+    assert r["ag"] == pytest.approx(-0.25) and r["iss"] == pytest.approx(-0.25) and r["acc"] == pytest.approx(0.02)
+
+
+def test_smallvq_rows_costs_and_frozen_holdings(tmp_path):
+    days = pd.bdate_range("2025-06-02", "2026-12-15")
+    syms = ["A", "B", "C", "D", "E"]
+    c = pd.DataFrame(10.0, index=days, columns=syms)
+    o = c.copy()
+    o.loc[:, "A"] *= np.linspace(1, 2, len(days))
+    v = pd.DataFrame(50_000, index=days, columns=syms)     # $-Umsatz 0,5 Mio. -> Kandidat
+    v.loc[:, "E"] = 1e6                                    # 10 Mio. $ -> zu liquide
+    cfg = fs.StockForwardConfig(first_day=date(2026, 10, 1), smallvq_ledger=tmp_path / "vq.csv",
+                                quality_ledger=tmp_path / "q.csv", orb_ledger=tmp_path / "o.csv")
+    seen = []
+
+    def metrics(signal, close_row):
+        seen.append(signal)
+        m = pd.DataFrame({k: [5.0, 1, 2, 3, 4] for k in fs.VQ_KEYS}, index=syms)
+        m["equity"] = 1.0
+        return m
+
+    rows = fs.smallvq_rows(cfg, o, c, v, {}, metrics)
+    assert rows[0]["holdings"] == "A"                      # Bester von 4 Kandidaten (E ausgeschlossen)
+    assert rows[0]["turnover"] == 1.0
+    port, bench = rows[0]["port_ret"], rows[0]["bench_ret"]
+    assert rows[0]["net_excess"] == pytest.approx(port - bench - 0.0075, abs=1e-6)
+    assert rows[1]["turnover"] == 0.0 and rows[-1]["net_excess"] == ""
+    fs.update_quality_ledger(cfg.smallvq_ledger, rows)
+    ledger = {r["signal"]: r for r in fs._read(cfg.smallvq_ledger)}
+    ledger[rows[-1]["signal"]]["holdings"] = "B"           # festgelegtes Depot wird nicht neu berechnet
+    o2 = pd.concat([o, o.iloc[[-1]].set_axis([pd.Timestamp("2027-01-04")])])
+    c2, v2 = (pd.concat([w, w.iloc[[-1]].set_axis([pd.Timestamp("2027-01-04")])]) for w in (c, v))
+    again = fs.smallvq_rows(cfg, o2, c2, v2, ledger, metrics)
+    assert again[0]["holdings"] == "B" and again[0]["net_excess"] != ""
+    assert "smallvq_top20: 2 Monate" in fs.summarize(cfg)

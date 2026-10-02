@@ -12,8 +12,13 @@
   >= 252 Handelstage Historie. Kauf zur Eröffnung des ersten Handelstags nach Monatsende, Verkauf zur
   Eröffnung des ersten Handelstags nach dem nächsten Monatsende; 10 bp je Seite. Kennzahl: Rendite minus
   gleichgewichtetes Universum. Backtest Endtest 2023-26 +0,38 %/Monat (t 1,17, nicht bestanden).
+- smallvq_top20 (Runde 98): Value + Qualität bei kleinen, illiquiden Aktien. Kandidaten Schluss > 2 $,
+  Ø-$-Umsatz 20 T 0,1-5 Mio., >= 252 Tage, Eigenkapital > 0 und B/M vorhanden. Score = Ø-Perzentil aus
+  B/M, E/P, CF/P, Bruttogewinn/Vermögen, ROA sowie invertiert Vermögenswachstum, Aktien-Neuausgabe, Accruals
+  (Verfügbarkeit wie Runde 95). Kauf ab Top 20 %, halten solange Top 40 %; gleichgewichtet; Termine wie
+  quality_top50; 75 bp je Seite. Backtest P1 -0,42 %, P2 +1,00 % (t 2,76), ungesehen +1,48 %/Monat.
 
-Beide nutzen Alpaca-Marktdaten (Schlüssel aus einer .env-Datei, nur Lesezugriff) und schreiben je eine
+Alle nutzen Alpaca-Marktdaten (Schlüssel aus einer .env-Datei, nur Lesezugriff) und schreiben je eine
 CSV; gleiche Schlüssel werden ersetzt (idempotent). Nur Tage/Monate ab `first_day` zählen. Der Lauf
 verarbeitet Daten bis einschließlich Vortag (der kostenlose SIP-Zugang erlaubt keine Abfrage bis jetzt).
 """
@@ -42,6 +47,7 @@ QUALITY_FIELDS = ["signal", "entry_date", "exit_date", "holdings", "port_ret", "
                   "net_excess"]
 ORB_EXPECTED_R = 0.026          # Endtest 2023-26 je Trade
 QUALITY_EXPECTED = 0.0038       # Endtest 2023-26 je Monat (Überschuss)
+SMALLVQ_EXPECTED = 0.0100       # Runde 98, P2 je Monat netto (ungesehen +1,48 %, P1 -0,42 %)
 SEC_UA = {"User-Agent": "tradingbot-research-script"}
 
 
@@ -58,6 +64,8 @@ class StockForwardConfig:
     orb_target_r: float = 2.0
     quality_top: int = 50
     quality_cost_per_side: float = 10e-4
+    smallvq_ledger: Path = Path("forward_smallvq.csv")
+    smallvq_cost_per_side: float = 75e-4
 
 
 # ------------------------------------------------------------ ORB (eine Aktie, ein Tag)
@@ -285,20 +293,22 @@ def summarize(cfg: StockForwardConfig) -> str:
                      f"{sum(v > 0 for v in r) / len(r):.0%}, Summe {sum(r):+.1f} R, t(Tage) {_t(list(by_day.values())):.2f}")
     else:
         lines.append("orb_or5: noch keine Trades")
-    rows = _read(cfg.quality_ledger)
-    done = [x for x in rows if x["net_excess"] != ""]
-    if done:
-        ex = [float(x["net_excess"]) for x in done]
-        lines.append(f"quality_top50: {len(ex)} Monate, Ø Überschuss {sum(ex) / len(ex):+.2%}/Monat "
-                     f"(Backtest-Endtest {QUALITY_EXPECTED:+.2%}), Monate positiv {sum(v > 0 for v in ex)}/{len(ex)}")
-    else:
-        lines.append("quality_top50: noch kein abgeschlossener Monat")
-    open_rows = [x for x in rows if x["net_excess"] == ""]
-    if open_rows:
-        h = open_rows[-1]["holdings"].split(";")
-        lines.append(f"  laufendes Papierdepot seit {open_rows[-1]['entry_date']} ({len(h)} Aktien): {', '.join(h[:15])}"
-                     + (" ..." if len(h) > 15 else ""))
-    lines.append("Hinweis: ORB braucht ~1 Jahr, Qualität mehrere Jahre, bis sich etwas Belastbares zeigt.")
+    for name, path, expected in (("quality_top50", cfg.quality_ledger, QUALITY_EXPECTED),
+                                 ("smallvq_top20", cfg.smallvq_ledger, SMALLVQ_EXPECTED)):
+        rows = _read(path)
+        done = [x for x in rows if x["net_excess"] != ""]
+        if done:
+            ex = [float(x["net_excess"]) for x in done]
+            lines.append(f"{name}: {len(ex)} Monate, Ø Überschuss {sum(ex) / len(ex):+.2%}/Monat "
+                         f"(Backtest {expected:+.2%}), Monate positiv {sum(v > 0 for v in ex)}/{len(ex)}")
+        else:
+            lines.append(f"{name}: noch kein abgeschlossener Monat")
+        open_rows = [x for x in rows if x["net_excess"] == ""]
+        if open_rows:
+            h = [s for s in open_rows[-1]["holdings"].split(";") if s]
+            lines.append(f"  laufendes Papierdepot seit {open_rows[-1]['entry_date']} ({len(h)} Aktien): "
+                         f"{', '.join(h[:15])}" + (" ..." if len(h) > 15 else ""))
+    lines.append("Hinweis: ORB braucht ~1 Jahr, Monatsdepots mehrere Jahre, bis sich etwas Belastbares zeigt.")
     return "\n".join(lines)
 
 
@@ -373,11 +383,90 @@ def quality_due(ledger: dict[str, dict], last_day: date) -> bool:
     return last_day.day <= 7 or not any(k.startswith(prev_month) for k in ledger)
 
 
+VQ_KEYS = ("bm", "ep", "cfp", "gpa", "roa", "ag", "iss", "acc")
+
+
+def value_quality_metrics(signal: pd.Timestamp, base: Path, cik2t: dict[str, str], close_row: pd.Series) -> pd.DataFrame:
+    """Runde 98/95: 8 Kennzahlen je Ticker (hoch = gut; Wachstum/Neuausgabe/Accruals invertiert) + equity.
+    Stichtagswerte des verfügbaren Quartals, Jahreswerte des verfügbaren Jahres (wie Runde 95)."""
+    q = available_quarter(signal)
+    if q is None:
+        return pd.DataFrame(columns=[*VQ_KEYS, "equity"])
+    y = annual_year(signal)
+
+    def inst(concept, yy, tax="us-gaap", unit="USD"):
+        return by_ticker(sec_frame(concept, f"CY{yy}Q{q.quarter}I", base, tax, unit), cik2t)
+
+    def ann(concept):
+        return by_ticker(sec_frame(concept, f"CY{y}", base), cik2t)
+
+    assets, assets1 = inst("Assets", q.year), inst("Assets", q.year - 1)
+    equity = inst("StockholdersEquity", q.year)
+    shares = inst("EntityCommonStockSharesOutstanding", q.year, "dei", "shares")
+    shares1 = inst("EntityCommonStockSharesOutstanding", q.year - 1, "dei", "shares")
+    ni, cfo, gp = ann("NetIncomeLoss"), ann("NetCashProvidedByUsedInOperatingActivities"), ann("GrossProfit")
+    mcap = close_row * shares
+    mcap = mcap.where(mcap > 0)
+    pa = assets.where(assets > 0)
+    return pd.DataFrame({"bm": equity / mcap, "ep": ni / mcap, "cfp": cfo / mcap, "gpa": gp / pa, "roa": ni / pa,
+                         "ag": -(assets / assets1.where(assets1 > 0) - 1),
+                         "iss": -(shares / shares1.where(shares1 > 0) - 1),
+                         "acc": -((ni - cfo) / pa), "equity": equity})
+
+
+def smallvq_pick(metrics: pd.DataFrame, candidates: list[str], prev: set[str]) -> tuple[list[str], list[str]]:
+    """(Depot, Universum): Universum = Kandidaten mit Eigenkapital > 0 und B/M vorhanden; Score = Ø-Perzentil
+    der 8 Kennzahlen; kaufen ab Top 20 %, halten solange Top 40 % (Runde 98)."""
+    m = metrics.reindex(candidates)
+    m = m[(m["equity"] > 0) & m["bm"].notna()]
+    if m.empty:
+        return [], []
+    score = sum(cross_rank(m[k]) for k in VQ_KEYS) / len(VQ_KEYS)
+    pct = score.rank(pct=True)
+    hold = set(pct.index[pct > 0.8]) | {s for s in prev if pct.get(s, 0.0) > 0.6}
+    return sorted(hold), list(m.index)
+
+
+def smallvq_rows(cfg: StockForwardConfig, o: pd.DataFrame, c: pd.DataFrame, v: pd.DataFrame,
+                 ledger: dict[str, dict], metrics_fn) -> list[dict]:
+    """Runde 98 (value+quality, kleine illiquide Aktien): Kandidaten Schluss > 2 $, Ø-$-Umsatz 20 T 0,1-5 Mio.,
+    >= 252 Tage Historie; Kauf/Verkauf zur Eröffnung wie quality_top50; 75 bp je Seite auf den Umschlag;
+    Vergleich: gleichgewichtetes Universum. metrics_fn(signal, schlusskurse) -> value_quality_metrics."""
+    dv20 = (c * v).rolling(20).mean()
+    cand_mask = (c > 2) & (dv20 >= 1e5) & (dv20 <= 5e6) & (c.notna().cumsum() >= 252)
+    rows = []
+    for signal, entry, exit_ in month_schedule(c.index):
+        if entry.date() < cfg.first_day:
+            continue
+        key = signal.date().isoformat()
+        if key in ledger and ledger[key]["net_excess"] != "":
+            continue
+        before = [x for k, x in sorted(ledger.items()) if k < key]
+        prev_h = set(before[-1]["holdings"].split(";")) - {""} if before else set()
+        cand = list(cand_mask.columns[cand_mask.loc[signal].to_numpy(bool)])
+        holdings, members = smallvq_pick(metrics_fn(signal, c.loc[signal]), cand, prev_h)
+        if key in ledger:   # Depot einmal festgelegt -> nicht neu berechnen (SEC-Daten können nachträglich wachsen)
+            holdings = [h for h in ledger[key]["holdings"].split(";") if h]
+        row = {"signal": key, "entry_date": entry.date().isoformat(), "exit_date": "", "holdings": ";".join(holdings),
+               "port_ret": "", "bench_ret": "", "turnover": "", "net_excess": ""}
+        if exit_ is not None and holdings:
+            r = (o.loc[exit_] / o.loc[entry] - 1).where(o.loc[entry] > 0)
+            port = float(r.reindex(holdings).fillna(0.0).mean())
+            bench = float(r.reindex(members).mean()) if members else float(r.reindex(cand).mean())
+            turn = len(set(holdings) ^ prev_h) / len(holdings)
+            row.update(exit_date=exit_.date().isoformat(), port_ret=round(port, 6), bench_ret=round(bench, 6),
+                       turnover=round(turn, 3), net_excess=round(port - bench - cfg.smallvq_cost_per_side * turn, 6))
+        rows.append(row)
+        ledger[key] = row
+    return rows
+
+
 def run_quality(cfg: StockForwardConfig, data_client, trading_client, last_day: date) -> int:
     from tradingbot.research import universe as uni
 
     ledger = {r["signal"]: r for r in _read(cfg.quality_ledger)}
-    if not quality_due(ledger, last_day):
+    vq_ledger = {r["signal"]: r for r in _read(cfg.smallvq_ledger)}
+    if not (quality_due(ledger, last_day) or quality_due(vq_ledger, last_day)):
         return 0
     with tempfile.TemporaryDirectory(prefix="forward_quality_") as tmp:
         base = Path(tmp)
@@ -394,7 +483,14 @@ def run_quality(cfg: StockForwardConfig, data_client, trading_client, last_day: 
         opm, iss = fundamentals_as_of(signal, cfg.sec_dir)
         return quality_pick(by_ticker(opm, cache["cik2t"]), by_ticker(iss, cache["cik2t"]), members, cfg.quality_top)
 
-    return update_quality_ledger(cfg.quality_ledger, quality_rows(cfg, o, c, v, ledger, pick))
+    n = update_quality_ledger(cfg.quality_ledger, quality_rows(cfg, o, c, v, ledger, pick))
+
+    def vq_metrics(signal, close_row):
+        if "cik2t" not in cache:
+            cache["cik2t"] = ticker_map()
+        return value_quality_metrics(signal, cfg.sec_dir, cache["cik2t"], close_row)
+
+    return n + update_quality_ledger(cfg.smallvq_ledger, smallvq_rows(cfg, o, c, v, vq_ledger, vq_metrics))
 
 
 def run(cfg: StockForwardConfig, env_file: str, last_day: date | None = None) -> str:
@@ -409,5 +505,5 @@ def run(cfg: StockForwardConfig, env_file: str, last_day: date | None = None) ->
     trading_client = TradingClient(key, secret, paper=paper)
     n_orb = run_orb(cfg, data_client, trading_client, last_day)
     n_q = run_quality(cfg, data_client, trading_client, last_day)
-    logger.info("Vorwärtstest Aktien bis %s: %d neue ORB-Trades, %d neue Qualitäts-Monate.", last_day, n_orb, n_q)
+    logger.info("Vorwärtstest Aktien bis %s: %d neue ORB-Trades, %d neue Monatszeilen (Qualität + Small-Value).", last_day, n_orb, n_q)
     return summarize(cfg)
