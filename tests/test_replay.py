@@ -173,3 +173,30 @@ def test_goal_stats_and_above_vwap_field():
     s = goal_stats(rs, "nur über VWAP kaufen")
     assert s == {"n": 3, "kept": 2, "avg_kept": 1.5, "avg_broken": -1.0}
     assert goal_stats(rs, "frei") is None
+
+
+def test_review_tight_stop_below_vwap_and_target_reached_later():
+    # Vorlauf über 10,10 (VWAP ~10,1), Einstieg 10,00 darunter, Stop 9,98 (0,2 %), Rücksetzer-Tief 9,90
+    bars = bars_from([(10.2, 10.25, 10.15, 10.2), (10.1, 10.12, 9.91, 9.95), (10.0, 10.02, 9.95, 9.97),
+                      (9.97, 10.1, 9.96, 10.08), (10.08, 10.2, 10.05, 10.18)])
+    pos = rpl.open_position(bars, 2, stop=9.98, target=10.06, setup="vwap-pullback")
+    price, reason = rpl.check_exit(bars, pos, 2)
+    assert reason == "Stop"
+    notes = rpl.review(bars, pos, 2, reason, wide_stop=9.90)
+    kinds = [k for k, _ in notes]
+    texts = " ".join(t for _, t in notes)
+    assert "UNTER der VWAP" in texts and "Stop nur 0.20%" in texts
+    assert "hättest du Ziel erreicht" in texts and "Der Stop war zu eng" in texts
+    assert "Nach deinem Stop lief der Kurs noch bis zu deinem Ziel" in texts
+    assert kinds.count("achtung") == 3
+
+
+def test_review_wide_stop_would_also_fail_and_target_praise():
+    bars = bars_from([(10.0, 10.05, 9.95, 10.0), (10.0, 10.0, 9.5, 9.6), (9.6, 9.6, 9.3, 9.4)])
+    pos = rpl.open_position(bars, 1, stop=9.9, target=10.3, setup="x")
+    price, reason = rpl.check_exit(bars, pos, 1)
+    notes = rpl.review(bars, pos, 1, reason, wide_stop=9.7)
+    assert any("die Idee war falsch" in t for _, t in notes)
+    win = bars_from([(10.0, 10.05, 9.95, 10.0), (10.0, 10.4, 9.95, 10.3)])
+    pos2 = rpl.open_position(win, 1, stop=9.9, target=10.3, setup="x")
+    assert ("gut", "Ziel erreicht -- Plan eingehalten.") in rpl.review(win, pos2, 1, "Ziel", wide_stop=9.8)

@@ -14,7 +14,7 @@ import streamlit as st
 
 from gui.chart import CHART_CONFIG, CHART_CONFIG_MOBILE, DOWN, UP, build_chart, is_mobile
 from tradingbot import replay as rpl
-from tradingbot.copilot import BERLIN, NY, entry_warnings, suggest_stop
+from tradingbot.copilot import BERLIN, NY, STRICT_MIN_STOP, entry_warnings, suggest_stop
 
 SS = st.session_state
 
@@ -60,6 +60,8 @@ def _close(journal: Path, rules, idx: int, price: float, reason: str) -> None:
     rpl.append_result(journal, res)
     rp["trades"] += [(bars.index[pos.entry_idx], "buy", pos.entry), (bars.index[idx], "sell", price)]
     rp["pos"] = None
+    wide = suggest_stop(bars.iloc[:pos.entry_idx], pos.entry, rules) if pos.entry_idx > 0 else None
+    rp["review"] = rpl.review(bars, pos, idx, reason, wide, max(rules.min_stop_pct, STRICT_MIN_STOP))
     _msg("success" if res.r > 0 else "error" if res.r < 0 else "info",
          f"{reason} um {(bars.index[idx] + timedelta(minutes=5)).astimezone(BERLIN):%H:%M}: "
          f"{res.r:+.2f} R (Einstieg {res.entry:.2f}, Ausstieg {res.exit:.2f})")
@@ -99,6 +101,7 @@ def _buy(journal: Path, rules) -> None:
     except ValueError as e:
         return _msg("error", f"Kein Kauf: {e}")
     rp["msg"] = None
+    rp["review"] = None
     rp["idx"] = i + 1
     hit = rpl.check_exit(bars, rp["pos"], i)
     if hit:
@@ -211,6 +214,12 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
         if rp["msg"]:
             kind, text = rp["msg"]
             {"success": st.success, "error": st.error, "info": st.info}[kind](text)
+        if rp.get("review") and rp["pos"] is None:
+            with st.container(border=True):
+                st.markdown("**Nachbesprechung**")
+                icons = {"gut": ":material/check_circle:", "achtung": ":material/warning:", "info": ":material/info:"}
+                for kind_, text_ in rp["review"]:
+                    st.markdown(f"{icons[kind_]} {text_}")
 
         if day_over:
             st.button("Nächster zufälliger Tag", icon=":material/casino:", type="primary", width="stretch", on_click=_load,
