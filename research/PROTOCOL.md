@@ -3973,3 +3973,20 @@ Rollover-/Swap-Filter, ECN-Broker nötig) und Signal (416 Wochen, +251 %, zeitwe
   wenn die Bestätigung bestanden ist -- Lehre aus Runde 134).
 - Auswahl: n >= 300, Ø > 0, t >= 3 im Training -> 3 beste -> Bestätigung Ø > 0, t >= 2,4 -> Endtest Ø > 0, t >= 2.
   Zusätzlich Nutzer-Maßstab: Rendite p.a. bei 0,5 % Risiko je Trade > S&P 500 im selben Zeitraum.
+
+# Runde 137: Rückkehr zum Mittelwert auf AUD/NZD/CAD-Kreuzkursen (Vorab, 2026-10-03, VOR dem Ergebnis von Runde 136)
+
+Anlass: Unter den 56 ältesten MQL5-Signalen (von 4.451; Start <= 2020) handeln auffällig viele Überlebende
+Mittelwert-Rückkehr bzw. Nacht-Scalping auf Kreuzkursen, besonders AUDCAD, NZDCAD, AUDNZD (Volkswirtschaften eng
+verbunden -> Seitwärtsbewegung). Starke Auswahlverzerrung (Tausende verschwundene Konten) -> eigener Test nötig.
+- Paare: AUDCAD, NZDCAD, AUDNZD; Dukascopy M1 Geld/Brief 2012-2026-09; Kosten: Spread + 0,35 bp je Seite.
+- Zeitebene {M15, H1} (Geldkurse). Signal am Kerzenschluss: Schluss unter Bollinger(20, k) unten -> Kauf zur nächsten
+  Eröffnung; über oben -> Verkauf. k {2,0; 2,5}. Ziel: Bollinger-Mitte zum Einstiegszeitpunkt. Stop {2; 4} ATR(14)
+  der Zeitebene. Höchstens {12; 48} Kerzen halten, dann Ausstieg zur Eröffnung.
+- Zeit: {ganztags, nur nachts 18:15-00:00 ET}; Filter {kein, ruhig: ATR unter Median der letzten 20 Tage}.
+- Keine Einstiege Fr nach 12:00 ET; je Paar eine Position; Stop vor Ziel in derselben Minute; Kurslücke -> Eröffnung.
+- Swap nicht modelliert (Haltedauer begrenzt; Kreuzkurs-Swaps klein) -- als Einschränkung berichtet.
+- 2 x 2 x 2 x 2 x 2 x 2 = 64 Varianten, gepoolt über 3 Paare; R netto je Trade, t über Tage (Summe R je Tag).
+- Zeiträume wie Runde 136: Training 2012-2017, Bestätigung 2018-2021, Endtest 2022-2026-09 (nur bei bestandener
+  Bestätigung ansehen). Auswahl: n >= 300, Ø > 0, t >= 3,2 im Training (64 Tests) -> 3 beste -> Bestätigung t >= 2,4
+  -> Endtest t >= 2; zusätzlich besser als S&P 500 (Rendite p.a. bei 0,5 % Risiko je Trade).
