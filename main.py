@@ -1762,6 +1762,10 @@ def main():
         "forward-status", help="Alle Vorwärtstests nach der gemeinsamen Auswertungsregel (nur Information).")
     fstatus.add_argument("--notify", action="store_true", help="Zusätzlich per ntfy senden.")
     fstatus.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    gl_p = subparsers.add_parser("gold-live", help="Gold-Ausbruch-Bot mit OANDA-DEMO-Orders (Runde 134, nur Papier).")
+    gl_p.add_argument("--env-file", default="gold.env", help="OANDA_TOKEN, OANDA_ACCOUNT_ID, OANDA_PRACTICE=true.")
+    gl_p.add_argument("--notify-env", default="copilot.env", help="Datei mit NTFY_TOPIC (optional).")
+    gl_p.add_argument("--check", action="store_true", help="Nur Verbindung prüfen (Konto, Kerzen), nichts handeln.")
     subparsers.add_parser("forward-gold", help="Vorwärtstest gold_breakout (Nachbau Gold Reaper, Runde 134; Papier).")
     mcheck = subparsers.add_parser(
         "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
@@ -1816,6 +1820,24 @@ def main():
 
         for m in health.step(notifier_from_env(args.env_file)):
             print(f"gesendet: {m}")
+        return
+
+    if args.command == "gold-live":
+        from tradingbot import gold_live
+        from tradingbot.notify import notifier_from_env
+
+        client = gold_live.client_from_env(args.env_file)
+        if args.check:
+            cs = client.candles(60)
+            lv = gold_live.signal_levels(client.candles(500), gold_live.GoldLiveConfig())
+            print(f"OANDA Practice OK: Kontowert {client.nav():,.2f}, {len(cs)} H1-Kerzen, letzte {cs[-1]['time'][:16]} "
+                  f"Geld {float(cs[-1]['bid']['c']):.2f}; nächster Buy-Stop wäre {lv[0]:.2f} (ATR {lv[1]:.2f})")
+            print(f"Offene Trades {len(client.open_trades())}, eigene Orders {len(client.pending_orders())}")
+            return
+        from pathlib import Path as _P
+
+        notifier = notifier_from_env(args.notify_env) if _P(args.notify_env).exists() else None
+        gold_live.GoldLiveBot(client, notifier=notifier).run_forever()
         return
 
     if args.command == "forward-gold":

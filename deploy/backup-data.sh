@@ -6,7 +6,7 @@ cd /home/tradingbot/Bot
 DEST=/home/tradingbot/backups
 mkdir -p "$DEST"
 FILES=""
-for f in copilot_journal.jsonl replay_journal.jsonl copilot_settings.json forward_trades.csv forward_orb.csv forward_quality.csv forward_smallvq.csv forward_gold.csv news_intel.csv \
+for f in copilot_journal.jsonl replay_journal.jsonl copilot_settings.json forward_trades.csv forward_orb.csv forward_quality.csv forward_smallvq.csv forward_gold.csv gold_live_trades.csv gold_live_state.json news_intel.csv \
          overnight_state.json overnight_trades.csv data_cache/liquidations; do
   [ -e "$f" ] && FILES="$FILES $f"
 done

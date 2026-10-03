@@ -1,0 +1,22 @@
+[Unit]
+Description=Gold-Ausbruch-Bot (Runde 134) mit OANDA-DEMO-Orders -- nur Papiergeld
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+# gold.env: OANDA_TOKEN, OANDA_ACCOUNT_ID, OANDA_PRACTICE=true (der Bot verweigert sonst den Start)
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py gold-live --env-file gold.env --notify-env copilot.env
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
+
+[Install]
+WantedBy=multi-user.target

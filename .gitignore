@@ -19,3 +19,6 @@ copilot_journal.jsonl
 replay_journal.jsonl
 backups/
 copilot_settings.json
+gold.env
+gold_live_state.json
+gold_live_trades.csv
