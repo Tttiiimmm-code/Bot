@@ -3955,3 +3955,21 @@ Auf Wunsch des Nutzers. NICHT Teil der Familie mit K = 11 (eigene Familie, eine 
   BESTANDEN: einseitiger t-Test Ø R > 0 mit t >= 2 UND Rendite bei 1 % Risiko je Trade (Zinseszins) über den Zeitraum
   höher als S&P 500 (SPY, Dividenden bereinigt) im selben Zeitraum (Nutzer-Maßstab "besser als ETF").
 - Erwartung aus dem Backtest (Bericht, nach Swap): +0,165 R je Trade, ~90 Trades/Jahr. Zwischenstände nur Information.
+
+# Runde 136: Nachbau "Luna AI Pro" (MQL5, 399 $, 8-Jahres-Live-Konto ~17 % p.a.) -- Nacht-Scalper (Vorab, 2026-10-03)
+
+Quelle: Produktbeschreibung (Nacht-Scalper, Rückkehr zum Mittelwert, M5, Paare EURAUD/GBPAUD/AUDUSD/AUDCAD, News-/
+Rollover-/Swap-Filter, ECN-Broker nötig) und Signal (416 Wochen, +251 %, zeitweise -47 %). Regeln geheim -> Familie:
+- Daten: Dukascopy M1 Geld/Brief 2012-2026-09 (EURAUD, GBPAUD, AUDCAD, AUDUSD), Signale auf M5-Geldkursen.
+- Handelsfenster (New Yorker Zeit, nach Rollover-Spitze): A 18:15-22:00, B 19:00-00:00. Ausstieg spätestens 01:00 ET.
+- Signal am M5-Schluss: Schluss unter Bollinger(20, k) unten -> Kauf zur nächsten M5-Eröffnung (Brief); über oben ->
+  Verkauf (Geld). k {2,0; 2,5}.
+- Ziel: {Bollinger-Mitte zum Einstiegszeitpunkt, 0,5 ATR(M5,14)}; Stop {1,5; 3} ATR(M5,14).
+- Filter: {kein, nur wenn ATR(M5) unter dem Median der vorangehenden 20 Nächte (ruhige Nacht)}.
+- Keine Einstiege Freitag; je Paar eine Position; Stop vor Ziel in derselben Minute, Kurslücke -> Eröffnung.
+- Kosten: echter Spread (Dukascopy) + Kommission 0,35 bp je Seite (ECN).
+- 2 x 2 x 2 x 2 x 2 = 32 Varianten, gepoolt über die 4 Paare. Kennzahl R netto je Trade; t über NÄCHTE (Summe R je
+  Nacht, wegen gleichzeitiger Trades). Training 2012-2017, Bestätigung 2018-2021, Endtest 2022-2026-09 (nur ansehen,
+  wenn die Bestätigung bestanden ist -- Lehre aus Runde 134).
+- Auswahl: n >= 300, Ø > 0, t >= 3 im Training -> 3 beste -> Bestätigung Ø > 0, t >= 2,4 -> Endtest Ø > 0, t >= 2.
+  Zusätzlich Nutzer-Maßstab: Rendite p.a. bei 0,5 % Risiko je Trade > S&P 500 im selben Zeitraum.
