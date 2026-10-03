@@ -3877,3 +3877,21 @@ der Copilot-Regel, kein Handelssystem.
 -0,10 (t -7,5) / -0,07 (t -4,2) / -0,08 (t -6,8). -> BESTÄTIGT: enge Stops kosten deutlich (Kosten + Rauschen je R),
 weitere Stops verlieren je Risiko-Einheit weniger. Wahllose Käufe von Aktien im Spiel verlieren aber in JEDER
 Variante -- der Stop begrenzt nur den Schaden, er schafft keinen Vorteil.
+
+# Runde 134: Nachbau "The Gold Reaper" (MQL5-Bestseller, 949 $) als Bot-Familie (Vorab, 2026-10-03)
+
+Quelle: Produktbeschreibung (Ausbrüche wichtiger Unterstützungen/Widerstände auf XAUUSD, H1, Pending-Stop-Orders mit
+Ablaufzeit, SL + TP, nachgezogener SL) und Live-Signal 2265877 (101 Wochen, +345 %, 9 Trades/Woche, Haltezeit ~4 h,
+72 % Gewinner, PF 2,41, 62 % long; Gold im selben Zeitraum +51 %). Genaue Einstellungen geheim -> Familie:
+- Level: höchstes Hoch / tiefstes Tief der letzten N abgeschlossenen H1-Kerzen, N {12, 24, 48}.
+- Zu Beginn jeder Stunde (flach, keine Order offen): Buy-Stop Level-Hoch + 0,1 ATR (Füllung Brief), Sell-Stop
+  Level-Tief - 0,1 ATR (Füllung Geld); OCO; gültig E {4, 12} Stunden. ATR14 auf H1 (Geldkurs).
+- SL X {1, 2} ATR, TP Y {2, 4} ATR ab Füllung; nachgezogener SL {aus, an: ab +1 ATR im Gewinn 1 ATR hinter dem
+  Extremkurs}. Richtung {beide, nur long} -> 3 x 2 x 2 x 2 x 2 x 2 = 96 Varianten.
+- Ausführung auf M1 Bid/Ask (Dukascopy 2008-2026-09): Long-Ausstieg auf Geld-, Short auf Briefkurs; Stop vor Ziel in
+  derselben Minute; Kurslücke -> Eröffnungskurs. Keine neuen Orders Fr ab 20:00 UTC, offene Orders Fr 20:55 gelöscht.
+  Kein NFP-Filter (vereinfacht).
+- Kennzahl R netto je Trade. Zeiträume: Training 2008-2016, Bestätigung 2017-2022, Endtest 2023-2026-09.
+  Auswahl: n >= 200, Ø > 0, t >= 3,5 im Training (96 Tests) -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
+- Nur Information: Signal-Zeitraum 2024-10-22..2026-09-25 (zeigt, ob die Familie dort "wie der Gold Reaper" aussieht),
+  Rendite p.a. bei 1 % Risiko je Trade vs. Gold halten und S&P 500.
