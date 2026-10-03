@@ -3914,3 +3914,18 @@ Erster Lauf ungültig (Zeitindex in ms statt ns -> alle Minuten in einer "Stunde
   (unter S&P 500). Nicht modelliert: Ausführungs-Slippage bei Ausbrüchen, NFP-Filter.
 Einordnung: bisher stärkster Gold-Befund, aber nach Protokoll nicht bestanden und regimeabhängig (gut in Gold-Trends,
 schwach 2017-2022). Kandidat höchstens für einen Vorwärtstest in einer eigenen Familie.
+
+# Runde 135: Gold-Ausbruch, großes Raster (12.000 Varianten) + Bündel (Vorab, 2026-10-03)
+
+Anlass: Nutzer fragt, ob andere Einstellungen des Nachbaus (Runde 134) mehr gebracht hätten. Gleiche Simulation wie
+Runde 134 (M1 Bid/Ask, Pending-Stops, OCO, Freitag-Regeln), ZUSÄTZLICH Swap je Trade: long (US-3M-Zins + 2,5 %) p.a.,
+short 1 % p.a. auf den Positionswert, Haltezeit tagesgenau.
+Raster: N {6, 12, 24, 48, 96} x Puffer {0; 0,1; 0,25} ATR x Ablauf {2, 4, 12, 24} h x SL {0,5; 1; 1,5; 2; 3} ATR x
+TP {1, 2, 3, 4, 6} ATR x Trail {aus, an} x Richtung {beide, nur long} x Enge-Filter {aus, nur wenn Spanne der N
+Kerzen <= 3 ATR} = 12.000.
+Zeiträume: Training 2008-2016, Bestätigung 2017-2022. Endtest 2023-2026 ist durch Runde 134 berührt -> nur Bericht.
+A) Einzelauswahl: n >= 200, Ø > 0, t >= 4 im Training -> 3 beste -> Bestätigung Ø > 0, t >= 2,4.
+B) Bündel: alle Varianten mit Training t >= 3 (n >= 200), je 1/k des Risikos (1 % je Trade gesamt), Tages-P&L
+   aufsummiert; Bestätigung: Tagesrenditen Ø > 0 mit t >= 2 UND Rendite p.a. > S&P 500 im selben Zeitraum.
+Gemeldet wird außerdem (nur Information) die Variante mit der höchsten Trainingsrendite und wie sie danach lief --
+als Warnbeispiel für Überanpassung.
