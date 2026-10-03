@@ -4019,3 +4019,11 @@ Frage: Ist der Long-Ausbruch aus Runde 134 ein allgemeines Prinzip oder gold-spe
 - Swap long: US-3M-Zins + 2,5 % p.a. auf den Positionswert (wie Runde 134/135, vereinfachend für alle Märkte).
 - EINE Hypothese: gepoolt über die 13 Märkte 2012-07..2026-09 (je Tag Summe R), Ø > 0 mit t >= 2.
   Je Markt nur Beschreibung, dazu Vergleich mit "Markt halten" im selben Zeitraum.
+
+## 2026-10-03 -- Runde 138: H1-Näherung UNGÜLTIG, Änderung VOR Ansicht der M1-Ergebnisse
+Prüfung XAUUSD-H1 (2012-07..2026-09): Ø -0,082 R (t -2,27) statt +0,17 R mit M1 -> die H1-Näherung ist stark
+verzerrt (in der Einstiegskerze wird jedes Tief als Stop gewertet, auch wenn es VOR dem Ausbruch lag). Die H1-Werte der
+13 Märkte (gepoolt -0,229 R, 1 von 13 positiv) sind damit KEINE gültige Prüfung und werden nicht gewertet.
+Neu (Runde 138b): gleiche eingefrorene Regel mit M1 Geld/Brief auf allen Märkten mit Minutendaten: EURUSD, GBPUSD
+(2012-07..2026-09), USDJPY (ab 2017, Briefkurse erst ab da), EURAUD, GBPAUD, AUDCAD, AUDUSD, NZDCAD, AUDNZD
+(2012..2026-09). Swap wie zuvor. EINE Hypothese: gepoolt über die 9 Märkte, Ø R > 0 mit t(Tage) >= 2.

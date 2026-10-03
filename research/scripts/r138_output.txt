@@ -1,0 +1,17 @@
+Prüfung H1-Näherung XAUUSD 2012-07..2026-09: n 1464, Ø -0.082 R netto (brutto -0.060), t -2.27, -8.9% p.a. bei 1 % Risiko (M1-Backtest Runde 134 nach Swap 2008-2026: Ø +0,165 R)
+xagusd         n  1694  Ø -0.344 R  t -10.87  Bot -34.2% p.a.  Markt halten  +5.8% p.a.
+eurusd         n  1434  Ø -0.232 R  t -6.48  Bot -21.6% p.a.  Markt halten  -0.8% p.a.
+gbpusd         n  1420  Ø -0.209 R  t -5.94  Bot -19.5% p.a.  Markt halten  -1.2% p.a.
+usdjpy         n  1480  Ø -0.016 R  t -0.44  Bot  -2.7% p.a.  Markt halten  +4.9% p.a.
+usdchf         n  1474  Ø -0.273 R  t -8.03  Bot -25.3% p.a.  Markt halten  -0.9% p.a.
+usdcnh         n  1769  Ø -0.483 R  t -10.87  Bot -45.9% p.a.  Markt halten  +0.4% p.a.
+audusd         n  1396  Ø -0.295 R  t -8.48  Bot -25.8% p.a.  Markt halten  -2.7% p.a.
+nzdusd         n  1392  Ø -0.220 R  t -6.17  Bot -20.1% p.a.  Markt halten  -2.4% p.a.
+usdsek         n  1683  Ø -0.391 R  t -12.38  Bot -37.6% p.a.  Markt halten  +2.6% p.a.
+gbpjpy         n  1466  Ø -0.135 R  t -3.66  Bot -13.8% p.a.  Markt halten  +3.6% p.a.
+eurjpy         n  1378  Ø -0.074 R  t -1.92  Bot  -7.8% p.a.  Markt halten  +4.1% p.a.
+chfjpy         n  1538  Ø -0.194 R  t -5.48  Bot -19.7% p.a.  Markt halten  +5.8% p.a.
+usatechidxusd  n  1291  Ø +0.018 R  t +0.44  Bot  +0.7% p.a.  Markt halten +18.8% p.a.
+
+GEPOOLT 13 Märkte: Trades 19415, Ø -0.229 R, t(Tage) -18.00 -> NICHT BESTANDEN
+Märkte mit Ø > 0: 1 von 13
