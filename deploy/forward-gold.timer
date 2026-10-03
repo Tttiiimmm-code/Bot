@@ -1,0 +1,9 @@
+[Unit]
+Description=Vorwärtstest gold_breakout täglich (Dukascopy-Minuten des Vortags)
+
+[Timer]
+OnCalendar=Tue..Sat 06:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

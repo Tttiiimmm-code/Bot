@@ -1762,6 +1762,7 @@ def main():
         "forward-status", help="Alle Vorwärtstests nach der gemeinsamen Auswertungsregel (nur Information).")
     fstatus.add_argument("--notify", action="store_true", help="Zusätzlich per ntfy senden.")
     fstatus.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    subparsers.add_parser("forward-gold", help="Vorwärtstest gold_breakout (Nachbau Gold Reaper, Runde 134; Papier).")
     mcheck = subparsers.add_parser(
         "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
     mcheck.add_argument("--env-file", default=".env", help="Konto des Momentum-Bots (nur lesend).")
@@ -1815,6 +1816,12 @@ def main():
 
         for m in health.step(notifier_from_env(args.env_file)):
             print(f"gesendet: {m}")
+        return
+
+    if args.command == "forward-gold":
+        from tradingbot import forward_gold
+
+        print(forward_gold.run(forward_gold.GoldConfig()))
         return
 
     if args.command == "momentum-checkpoint":

@@ -44,6 +44,9 @@ TRACKERS = (
     Tracker("overnight_etf", date(2026, 10, 2), 200, date(2027, 10, 1), "%", 0.040, "overnight_trades.csv"),
     Tracker("liq_r125", date(2026, 10, 2), 40, date(2027, 10, 1), "Cluster", None, "data_cache/liquidations"),
 )
+# Eigene Familie 2 (Vorab-Regel 2026-10-03): eine Hypothese, Hürde t >= 2 und besser als SPY
+FAMILY2 = (Tracker("gold_breakout", date(2026, 10, 5), 150, date(2028, 10, 1), "R", 0.165, "forward_gold.csv"),)
+FAMILY2_T = 2.0
 ORB_EXPECTED_R_PER_TRADE = 0.026      # Erwartung je Tag = 0,026 R x Ø Trades je Tag
 OVERNIGHT_COST_PCT = 0.02             # Dry-Run-Ledger ist brutto: 1 bp je Seite abziehen (wie Backtest Familie E)
 
@@ -100,6 +103,9 @@ def observations(tr: Tracker, base: Path) -> tuple[list[float], float | None] | 
         xs = [float(r["net_excess"]) * 100 for r in _rows(base / tr.source)
               if r["net_excess"] != "" and r["entry_date"] >= start]
         return xs, tr.expected
+    if tr.source == "forward_gold.csv":
+        xs = [float(r["r_net"]) for r in _rows(base / tr.source) if r["entry_time"][:10] >= start]
+        return xs, tr.expected
     if tr.name == "overnight_etf":
         nights: dict[str, list[float]] = defaultdict(list)
         for r in _rows(base / tr.source):
@@ -125,7 +131,7 @@ def vs_etf(tr: Tracker, base: Path) -> tuple[int, float | None]:
 
 def status(base: Path, today: date) -> list[dict]:
     out = []
-    for tr in TRACKERS:
+    for tr in TRACKERS + FAMILY2:
         obs = observations(tr, base)
         row = {"name": tr.name, "unit": tr.unit, "min_n": tr.min_n, "eval_date": tr.eval_date,
                "days_left": (tr.eval_date - today).days, "n": None, "mean": None, "t": None, "t_crit": None,
@@ -136,7 +142,7 @@ def status(base: Path, today: date) -> list[dict]:
         else:
             xs, exp = obs
             n = len(xs)
-            row.update(n=n, expected=exp, t_crit=t_crit(max(n, tr.min_n)))
+            row.update(n=n, expected=exp, t_crit=FAMILY2_T if tr in FAMILY2 else t_crit(max(n, tr.min_n)))
             if n:
                 row["mean"] = sum(xs) / n
                 row["t"] = _t(xs)
