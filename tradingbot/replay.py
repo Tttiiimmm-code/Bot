@@ -72,8 +72,8 @@ class Result:
 # Übungsziele: Prüfung je Übungstrade (True = eingehalten)
 GOALS = {
     "nur über VWAP kaufen": lambda r: r.above_vwap is True,
-    "Stop mindestens 0,5 % entfernt": lambda r: r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.005,
-    "beides": lambda r: r.above_vwap is True and r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.005,
+    "Stop mindestens 1 % entfernt": lambda r: r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.01,
+    "beides": lambda r: r.above_vwap is True and r.entry > 0 and (r.entry - r.stop) / r.entry >= 0.01,
 }
 
 
@@ -136,7 +136,7 @@ def make_result(symbol: str, day: str, bars, pos: Position, idx: int, exit_price
 
 
 def review(bars, pos: Position, exit_idx: int, reason: str, wide_stop: float | None,
-           min_stop_pct: float = 0.005) -> list[tuple[str, str]]:
+           min_stop_pct: float = 0.01) -> list[tuple[str, str]]:
     """Nachbesprechung eines Übungstrades: (Art, Text) mit Art "gut" / "achtung" / "info".
     wide_stop: Stop unter dem letzten Rücksetzer, wie er zum Einstieg vorgeschlagen worden wäre."""
     out: list[tuple[str, str]] = []
@@ -147,8 +147,8 @@ def review(bars, pos: Position, exit_idx: int, reason: str, wide_stop: float | N
         if pos.entry >= v:
             out.append(("gut", f"Einstieg {pos.entry:.2f} über der VWAP ({v:.2f}) -- mit dem Trend des Tages."))
         else:
-            out.append(("achtung", f"Einstieg {pos.entry:.2f} UNTER der VWAP ({v:.2f}) -- gegen die Käufer des Tages. "
-                                   "Die VWAP wirkt dann oft als Deckel."))
+            out.append(("info", f"Einstieg {pos.entry:.2f} unter der VWAP ({v:.2f}). In unseren Daten kein messbarer "
+                                "Nachteil (Runde 133) -- entscheidend sind Stop-Abstand und Plan."))
     dist = (pos.entry - pos.initial_stop) / pos.entry
     if dist < min_stop_pct:
         out.append(("achtung", f"Stop nur {dist:.2%} unter dem Einstieg (Mindestabstand {min_stop_pct:.1%}) -- "

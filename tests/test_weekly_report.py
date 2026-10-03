@@ -20,8 +20,8 @@ def test_summary_counts_vwap_split_tight_stops_and_tips():
     assert title == "Wochenbericht 28.09.-02.10."
     assert "5 Trades, 1 Gewinner (20%), Summe -1.5 R (-75 $)" in text
     assert "über VWAP: 2x Ø +0.50 R · unter VWAP: 2x Ø -1.00 R" in text
-    assert "eng (< 0,5 %): 2x Ø -1.00 R" in text
-    assert "nur über der VWAP kaufen" in text and "Enge Stops" in text and "Bestes Setup diese Woche: orb" in text
+    assert "eng (< 1 %): 2x Ø -1.00 R" in text
+    assert "kein messbarer Nachteil" in text and "Enge Stops" in text and "Bestes Setup diese Woche: orb" in text
     assert "12 von 100 Trades" in text
 
 

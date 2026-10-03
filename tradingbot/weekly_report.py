@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 NY = ZoneInfo("America/New_York")
-TIGHT_STOP = 0.005   # unter 0,5 % Abstand gilt als eng
+TIGHT_STOP = 0.01    # unter 1 % Abstand gilt als eng (Runde 133b)
 NO_JOURNAL = "(ohne Journal)"
 
 
@@ -48,11 +48,12 @@ def summarize_week(rows: list[dict], total_trades: int, start: datetime, end: da
     tight = [r["r"] for r, d in dist if d < TIGHT_STOP]
     wide = [r["r"] for r, d in dist if d >= TIGHT_STOP]
     if dist:
-        lines.append(f"Stop-Abstand Ø {sum(d for _, d in dist) / len(dist):.2%}; eng (< 0,5 %): {len(tight)}x "
+        lines.append(f"Stop-Abstand Ø {sum(d for _, d in dist) / len(dist):.2%}; eng (< 1 %): {len(tight)}x "
                      f"Ø {_fmt_r(_avg(tight))} · weiter: {len(wide)}x Ø {_fmt_r(_avg(wide))}")
     tips = []
     if below and (_avg(below) or 0) < 0 and (_avg(below) or 0) < (_avg(above) if above else 0):
-        tips.append("Unter der VWAP gekaufte Trades schneiden schlechter ab -- nur über der VWAP kaufen.")
+        tips.append("Diese Woche schnitten deine Käufe unter der VWAP schlechter ab. Über viele Jahre war das kein "
+                    "messbarer Nachteil (Runde 133) -- erst über viele Trades bewerten, nicht nach einer Woche.")
     if len(tight) >= 2 and (_avg(tight) or 0) < 0 and (_avg(tight) or 0) < (_avg(wide) if wide else 0):
         tips.append("Enge Stops werden oft ausgelöst -- Stop unter ein sichtbares Tief bzw. die Gegenseite der "
                     "ersten Kerze legen, dafür weniger Stück kaufen.")

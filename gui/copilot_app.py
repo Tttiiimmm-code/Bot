@@ -37,10 +37,10 @@ SETUPS = {
 }
 NEUTRAL = "#9598A1"
 ENTRY_CHECKLIST = """\
-1. **Trend passt:** Kurs liegt **über der VWAP**, und die Hochs und Tiefs werden höher.
+1. **Trend passt:** Die Hochs und Tiefs werden höher (die VWAP hilft beim Einordnen, ist aber kein belegter Vorteil).
 2. **Setup erkennbar:** Du kannst es in einem Satz benennen (VWAP-Rücksetzer, Ausbruch übers Tageshoch, Power Hour).
 3. **Bestätigung da:** Nicht in eine fallende Kerze kaufen -- warten, bis eine Kerze über das Hoch der vorherigen steigt.
-4. **Klarer Stop-Punkt:** Stop unter einem sichtbaren Tief oder der VWAP, nicht willkürlich.
+4. **Klarer Stop-Punkt:** Stop unter einem sichtbaren Tief, mindestens 1 % entfernt -- enge Stops kosten nachweislich.
 5. **Chance mindestens 2 R:** Bis zum Tageshoch bzw. zum nächsten Widerstand ist Platz für das Doppelte des Stop-Abstands.
 6. **Kopf frei:** Kein Frust vom letzten Trade, kein "ich muss heute noch was verdienen".
 """
@@ -216,8 +216,8 @@ with st.sidebar:
                 unsafe_allow_html=True)
     st.caption("Nur Kaufen (long) · nur Paper-Geld · Uhrzeiten deutsch, heute")
     strict = st.toggle("Strenger Modus", value=bool(cp.settings().get("strict")), key="strict_mode",
-                       help="Sperrt Käufe unter der VWAP und Stops enger als 0,5 % (deine zwei häufigsten Fehler), "
-                            "statt nur zu warnen.")
+                       help="Sperrt Stops enger als 1 % (belegt: enge Stops kosten deutlich mehr). Die VWAP-Lage bleibt ein "
+                            "Hinweis -- dafür fand sich in den Daten kein Vorteil.")
     if strict != bool(cp.settings().get("strict")):
         cp.save_settings(strict=strict)
     st.info("Die **Sicherheitsüberwachung** (auf dem VPS als Dienst, sonst das Fenster 'Copilot-Sicherheit') stellt "
@@ -615,8 +615,9 @@ als Zufall. Die meisten Anfänger sind es anfangs nicht -- das ist normal und ko
   Alpaca -- auch wenn dein PC ausgeht.
 - **R:** Dein geplanter Verlust je Trade ({rules.risk_per_trade:.0f} $). +2 R = doppelt so viel gewonnen wie riskiert.
   Der Copilot rechnet die Stückzahl so, dass ein Stop immer ~1 R kostet.
-- **VWAP (orange Linie):** Durchschnittspreis des Tages, gewichtet nach Volumen. Große Käufer orientieren
-  sich daran; über dem VWAP haben die Käufer die Oberhand.
+- **VWAP (orange Linie):** Durchschnittspreis des Tages, gewichtet nach Volumen. Viele Händler orientieren
+  sich daran. Ehrlich: Unsere Daten (2016-2026) zeigen keinen messbaren Vorteil für Käufe über der VWAP --
+  sie hilft beim Einordnen des Tages, ist aber kein Erfolgsrezept. Belegt ist dagegen: Stops ab 1 % schlagen enge Stops.
 - **Kerze:** Ein 5-Minuten-Abschnitt. Grün = gestiegen, rot = gefallen; die Striche zeigen Hoch und Tief.
 """)
         with st.container(border=True):

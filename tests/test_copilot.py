@@ -200,7 +200,7 @@ def test_close_when_stop_already_sold(tmp_path, monkeypatch):
     assert "bereits verkauft" in cp.close("xyz")
 
 
-def test_strict_mode_blocks_tight_stop_and_below_vwap(tmp_path, monkeypatch):
+def test_strict_mode_blocks_stops_under_1pct_but_not_below_vwap(tmp_path, monkeypatch):
     import pandas as pd
 
     trading = FakeTrading()
@@ -212,9 +212,10 @@ def test_strict_mode_blocks_tight_stop_and_below_vwap(tmp_path, monkeypatch):
     assert cp._strict_problems("XYZ", 25.0, 24.95, ny(12, 0)) == []          # aus: keine Sperre
     cp.save_settings(strict=True)
     p = cp._strict_problems("XYZ", 25.0, 24.95, ny(12, 0))
-    assert any("Stop zu eng" in x for x in p) and any("unter der VWAP" in x for x in p)
-    msg = cp.buy("XYZ", stop=24.0, setup="vwap", now=ny(12, 0))
-    assert msg.startswith("KEIN TRADE") and "VWAP" in msg and trading.submitted == []
+    assert any("Stop zu eng" in x for x in p) and not any("VWAP" in x for x in p)   # VWAP nur noch Hinweis
+    assert cp._strict_problems("XYZ", 25.0, 24.0, ny(12, 0)) == []                    # 4 % Stop, unter VWAP: ok
+    msg = cp.buy("XYZ", stop=24.8, setup="vwap", now=ny(12, 0))                     # 0,8 %: Standard ok, streng nicht
+    assert msg.startswith("KEIN TRADE") and "Strenger Modus: Stop zu eng" in msg and trading.submitted == []
 
 
 def test_buy_rounds_stop_before_checking_rules(tmp_path):
@@ -259,7 +260,7 @@ def test_suggest_stop_below_recent_low_and_min_distance():
     from tradingbot.copilot import suggest_stop
     bars = {"low": [24.0, 24.5, 24.3, 24.8, 24.9, 24.7, 24.6]}
     assert suggest_stop(bars, 25.0, RULES) == pytest.approx(24.29)       # Tief der letzten 6 = 24,30
-    assert suggest_stop({"low": [24.99]}, 25.0, RULES) == pytest.approx(24.92)  # mind. 0,3 % Abstand
+    assert suggest_stop({"low": [24.99]}, 25.0, RULES) == pytest.approx(24.87)  # mind. 0,5 % Abstand
     assert suggest_stop({"low": []}, 25.0, RULES) is None
 
 

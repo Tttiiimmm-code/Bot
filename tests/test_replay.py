@@ -185,10 +185,10 @@ def test_review_tight_stop_below_vwap_and_target_reached_later():
     notes = rpl.review(bars, pos, 2, reason, wide_stop=9.90)
     kinds = [k for k, _ in notes]
     texts = " ".join(t for _, t in notes)
-    assert "UNTER der VWAP" in texts and "Stop nur 0.20%" in texts
+    assert "unter der VWAP" in texts and "Stop nur 0.20%" in texts
     assert "hättest du Ziel erreicht" in texts and "Der Stop war zu eng" in texts
     assert "Nach deinem Stop lief der Kurs noch bis zu deinem Ziel" in texts
-    assert kinds.count("achtung") == 3
+    assert kinds.count("achtung") == 2 and kinds[0] == "info"    # VWAP nur Info (Runde 133)
 
 
 def test_review_wide_stop_would_also_fail_and_target_praise():

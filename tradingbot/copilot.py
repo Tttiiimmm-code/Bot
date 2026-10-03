@@ -33,7 +33,7 @@ FLATTEN_BEFORE_CLOSE_MIN = 5
 # vollständige SIP-Daten erst nach 15 Minuten.
 SIP_DELAY = timedelta(minutes=16)
 MAX_PRICE_AGE = timedelta(minutes=3)
-STRICT_MIN_STOP = 0.005   # strenger Modus: Stop mindestens 0,5 % unter dem Kurs
+STRICT_MIN_STOP = 0.01    # strenger Modus: Stop mindestens 1 % unter dem Kurs (Runde 133b: 1 % ~-0,10 R vs 0,5 % ~-0,16 R)
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,7 @@ class CopilotRules:
     max_trades_per_day: int = 6
     loss_streak: int = 2                    # nach so vielen Verlusten in Folge ...
     cooldown_minutes: int = 20              # ... so lange Pause
-    min_stop_pct: float = 0.003             # Stop enger als 0,3 % = Rauschen
+    min_stop_pct: float = 0.005             # Stop enger als 0,5 % = Rauschen + Kosten (Runde 133b: 0,3 % klar schlechter)
     first_entry_et: time = time(9, 35)
     last_entry_et: time = time(15, 45)
     flatten_et: time = time(15, 55)
@@ -242,20 +242,14 @@ class Copilot:
         self.settings_path.write_text(json.dumps(s), encoding="utf-8")
 
     def _strict_problems(self, symbol: str, price: float, stop: float, now: datetime) -> list[str]:
-        """Strenger Modus: die zwei häufigsten Anfängerfehler sperren statt nur warnen."""
+        """Strenger Modus: Stops unter 1 % sperren (belegt, Runde 133b). Die VWAP-Lage ist nur ein Hinweis
+        (entry_warnings): in den Daten kein messbarer Vorteil (Runde 133), daher keine Sperre mehr."""
         if not self.settings().get("strict"):
             return []
         out = []
         if price > 0 and 0 < (price - stop) / price < STRICT_MIN_STOP:
             out.append(f"Strenger Modus: Stop zu eng ({(price - stop) / price:.2%} < {STRICT_MIN_STOP:.1%}) -- "
                        "Stop unter ein sichtbares Tief legen, dafür weniger Stück.")
-        try:
-            bars = self.today_bars(symbol, now)
-            v = float(vwap(bars)[-1]) if len(bars) else None
-        except Exception:  # ohne Kerzen keine VWAP-Sperre
-            v = None
-        if v is not None and price < v:
-            out.append(f"Strenger Modus: Kurs {price:.2f} liegt unter der VWAP {v:.2f} -- nur über der VWAP kaufen.")
         return out
 
     def latest_trade(self, symbol: str) -> tuple[float, datetime | None]:
@@ -557,16 +551,16 @@ def vwap(bars) -> list[float]:
 
 
 def entry_warnings(bars, price: float, stop: float, recent: int = 3) -> list[str]:
-    """Hinweise (keine Sperre) zu den häufigsten Anfängerfehlern: Long-Kauf UNTER der VWAP und ein
-    Stop, der nicht unter einem sichtbaren Tief liegt (Tief der letzten `recent` Kerzen)."""
+    """Hinweise (keine Sperre): Long-Kauf UNTER der VWAP (nur Information -- Runde 133 fand keinen messbaren
+    Nachteil) und ein Stop, der nicht unter einem sichtbaren Tief liegt (Tief der letzten `recent` Kerzen)."""
     lows = list(bars["low"])
     if not lows:
         return []
     warnings = []
     v = vwap(bars)[-1]
     if v == v and price < v:  # v == v: nicht NaN
-        warnings.append(f"Kurs liegt {price / v - 1:.1%} unter der VWAP ({v:.2f}): von unten wirkt die VWAP oft wie "
-                        "eine Decke -- das passt zu keinem der Long-Setups.")
+        warnings.append(f"Kurs liegt {price / v - 1:.1%} unter der VWAP ({v:.2f}). Nur zur Info: in unseren Daten "
+                        "(2016-2026) war das kein messbarer Nachteil -- passt aber nicht zu den Long-Setups im Plan.")
     recent_low = min(lows[-recent:])
     if stop > recent_low:
         warnings.append(f"Stop {stop:.2f} liegt über dem Tief der letzten {recent * 5} Minuten ({recent_low:.2f}): "
