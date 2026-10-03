@@ -4027,3 +4027,12 @@ verzerrt (in der Einstiegskerze wird jedes Tief als Stop gewertet, auch wenn es 
 Neu (Runde 138b): gleiche eingefrorene Regel mit M1 Geld/Brief auf allen Märkten mit Minutendaten: EURUSD, GBPUSD
 (2012-07..2026-09), USDJPY (ab 2017, Briefkurse erst ab da), EURAUD, GBPAUD, AUDCAD, AUDUSD, NZDCAD, AUDNZD
 (2012..2026-09). Swap wie zuvor. EINE Hypothese: gepoolt über die 9 Märkte, Ø R > 0 mit t(Tage) >= 2.
+
+## 2026-10-03 -- Ergebnis Runde 138b (Gold-Ausbruch eingefroren, M1, 9 andere Märkte)
+Gepoolt: 11.743 Trades, Ø -0,181 R (nach Swap), t(Tage) -12,21 -> NICHT BESTANDEN.
+Je Markt (Ø R netto / brutto): EURUSD -0,060/-0,014; GBPUSD -0,049/-0,007; USDJPY (ab 2017) +0,039/+0,098 (t 0,84);
+EURAUD -0,063/-0,022; GBPAUD -0,181/-0,143; AUDCAD -0,343/-0,294; AUDUSD -0,167/-0,128; NZDCAD -0,339/-0,303;
+AUDNZD -0,373/-0,313. Hauptwährungen brutto ~0, Kreuzkurse (seitwärts) stark negativ -- Ausbrüche scheitern dort.
+Folgerung: Der Long-Ausbruch ist KEIN allgemeines Prinzip; er funktioniert nur bei Gold (und schwach bei USDJPY),
+also in Märkten mit langen Trends. Das stützt die Lesart "Gold-Trend-Abhängigkeit" (Runde 134) und senkt die
+Erwartung an den laufenden Vorwärtstest gold_breakout (Regel bleibt unverändert, Auswertung 2028-10-01).

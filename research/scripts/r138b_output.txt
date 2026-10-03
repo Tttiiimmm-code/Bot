@@ -1,0 +1,11 @@
+eurusd: 2012-07..2026-09  n  1254  Ø -0.060 R (brutto -0.014)  t -1.49  Bot  -6.0% p.a.  Kurs  -0.7% p.a.
+gbpusd: 2012-07..2026-09  n  1288  Ø -0.049 R (brutto -0.007)  t -1.26  Bot  -5.2% p.a.  Kurs  -1.2% p.a.
+usdjpy: 2017-01..2026-09  n   976  Ø +0.039 R (brutto +0.098)  t +0.84  Bot  +2.9% p.a.  Kurs  +3.1% p.a.
+euraud: 2012-07..2026-09  n  1348  Ø -0.063 R (brutto -0.022)  t -1.65  Bot  -6.7% p.a.  Kurs  +1.9% p.a.
+gbpaud: 2012-07..2026-09  n  1423  Ø -0.181 R (brutto -0.143)  t -4.98  Bot -17.3% p.a.  Kurs  +1.5% p.a.
+audcad: 2012-07..2026-09  n  1270  Ø -0.343 R (brutto -0.294)  t -9.24  Bot -27.0% p.a.  Kurs  -0.3% p.a.
+audusd: 2012-07..2026-09  n  1258  Ø -0.167 R (brutto -0.128)  t -4.29  Bot -14.4% p.a.  Kurs  -2.6% p.a.
+nzdcad: 2012-07..2026-09  n  1489  Ø -0.339 R (brutto -0.303)  t -9.71  Bot -30.5% p.a.  Kurs  -0.1% p.a.
+audnzd: 2012-07..2026-09  n  1437  Ø -0.373 R (brutto -0.313)  t -10.35  Bot -32.0% p.a.  Kurs  -0.2% p.a.
+
+GEPOOLT 9 Märkte: Trades 11743, Ø -0.181 R, t(Tage) -12.21 -> NICHT BESTANDEN
