@@ -3929,3 +3929,17 @@ B) Bündel: alle Varianten mit Training t >= 3 (n >= 200), je 1/k des Risikos (1
    aufsummiert; Bestätigung: Tagesrenditen Ø > 0 mit t >= 2 UND Rendite p.a. > S&P 500 im selben Zeitraum.
 Gemeldet wird außerdem (nur Information) die Variante mit der höchsten Trainingsrendite und wie sie danach lief --
 als Warnbeispiel für Überanpassung.
+
+## 2026-10-03 -- Ergebnisse Runde 135 (12.000 Gold-Ausbruch-Varianten)
+Abweichung (vor der Auswertung bemerkt, strenger als festgelegt): Swap für ALLE Trades mit dem Long-Satz (Zins + 2,5 %)
+abgezogen, auch für Leerverkäufe (Simulator gibt die Richtung je Trade nicht aus).
+- Training: Ø > 0 bei 3.760/12.000, t >= 3 bei 77, t >= 4 bei 0; Median -0,027 R. Korrelation der Ø R über Varianten
+  Training->Bestätigung +0,78 (die Struktur ist stabil, aber überwiegend negativ nach Kosten).
+- A) Einzelauswahl (t >= 4): keine -> NICHT BESTANDEN.
+- B) Bündel (53 Varianten, Training t >= 3): Training +11,0 % p.a. (t 4,89, MaxDD -5 %) vs S&P 500 +7,2 %;
+  Bestätigung 2017-22 +2,8 % p.a. (t 1,07) vs S&P 500 +11,2 % -> NICHT BESTANDEN (weder t noch besser als ETF);
+  Endtest (berührt) +12,7 % vs S&P 500 +22,0 %.
+- Warnbeispiel: höchste Trainingsrendite (N24, 12 h, SL 1,5, TP 6, nur long, Enge-Filter) +0,83 R/Trade -> Bestätigung
+  +0,23 R (t 0,99).
+Fazit: Mehr Einstellungen bringen keinen belastbaren Mehrertrag; die Variante aus Runde 134 gehört schon zu den besten,
+und auch sie schlägt den ETF außerhalb der Gold-Hausse nicht.

@@ -1,0 +1,29 @@
+1000 Varianten (51 s)
+2000 Varianten (74 s)
+3000 Varianten (98 s)
+4000 Varianten (120 s)
+5000 Varianten (142 s)
+6000 Varianten (161 s)
+7000 Varianten (179 s)
+8000 Varianten (198 s)
+9000 Varianten (217 s)
+10000 Varianten (237 s)
+11000 Varianten (257 s)
+12000 Varianten (277 s)
+
+Training: Ø > 0 bei 3760 von 12000 | t >= 3: 77 | t >= 4: 0 | Median Ø R -0.027
+Bestätigung: Ø > 0 bei 2443 | Korrelation Training->Bestätigung (Ø R) +0.78
+  Median Ø R je nur long: False: Tr -0.022 / Best -0.047, True: Tr -0.032 / Best -0.026
+  Median Ø R je Enge-Filter: 0.0: Tr -0.008 / Best -0.032, 3.0: Tr -0.058 / Best -0.049
+  Median Ø R je Trail: False: Tr -0.027 / Best -0.035, True: Tr -0.027 / Best -0.041
+
+--- A) Einzelauswahl (t >= 4): 0
+  keine
+
+--- B) Bündel: 53 Varianten mit Training t >= 3
+  Training: Bündel +11.0% p.a. (t Tage 4.89, MaxDD -5.4%) | S&P 500 +7.2% p.a.
+  Bestätigung: Bündel +2.8% p.a. (t Tage 1.07, MaxDD -13.5%) | S&P 500 +11.2% p.a.
+  Endtest (berührt): Bündel +12.7% p.a. (t Tage 3.26, MaxDD -8.9%) | S&P 500 +22.0% p.a.
+
+Warnbeispiel höchste Trainingsrendite: N24 Puffer 0 Ablauf 12h SL 1.5 TP 6 - long eng: Training +0.827 R (n 134.0) -> Bestätigung +0.229 R (t 0.99)
+Laufzeit 278 s
