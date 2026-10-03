@@ -1,0 +1,12 @@
+OHNE SPREAD ('A', 2.0, '0.5atr', 3.0, False) Training: n 22750, Ø -0.031 R, Treffer 86%, t -7.26
+OHNE SPREAD ('A', 2.0, '0.5atr', 3.0, False) Bestätigung: n 14308, Ø -0.036 R, Treffer 87%, t -6.32
+OHNE SPREAD ('A', 2.0, '0.5atr', 3.0, False) Endtest: n 17062, Ø -0.052 R, Treffer 85%, t -10.26
+OHNE SPREAD ('A', 2.5, 'mid', 3.0, False) Training: n 8712, Ø -0.031 R, Treffer 56%, t -2.09
+OHNE SPREAD ('A', 2.5, 'mid', 3.0, False) Bestätigung: n 5275, Ø -0.007 R, Treffer 57%, t -0.37
+OHNE SPREAD ('A', 2.5, 'mid', 3.0, False) Endtest: n 6475, Ø -0.042 R, Treffer 57%, t -2.36
+OHNE SPREAD ('B', 2.0, 'mid', 3.0, False) Training: n 17707, Ø -0.036 R, Treffer 58%, t -3.72
+OHNE SPREAD ('B', 2.0, 'mid', 3.0, False) Bestätigung: n 11278, Ø -0.040 R, Treffer 58%, t -3.23
+OHNE SPREAD ('B', 2.0, 'mid', 3.0, False) Endtest: n 14483, Ø -0.054 R, Treffer 58%, t -4.91
+OHNE SPREAD ('A', 2.0, 'mid', 1.5, False) Training: n 21032, Ø -0.061 R, Treffer 44%, t -4.27
+OHNE SPREAD ('A', 2.0, 'mid', 1.5, False) Bestätigung: n 13323, Ø -0.042 R, Treffer 45%, t -2.30
+OHNE SPREAD ('A', 2.0, 'mid', 1.5, False) Endtest: n 16292, Ø -0.087 R, Treffer 44%, t -5.35

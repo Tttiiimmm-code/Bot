@@ -3990,3 +3990,13 @@ verbunden -> Seitwärtsbewegung). Starke Auswahlverzerrung (Tausende verschwunde
 - Zeiträume wie Runde 136: Training 2012-2017, Bestätigung 2018-2021, Endtest 2022-2026-09 (nur bei bestandener
   Bestätigung ansehen). Auswahl: n >= 300, Ø > 0, t >= 3,2 im Training (64 Tests) -> 3 beste -> Bestätigung t >= 2,4
   -> Endtest t >= 2; zusätzlich besser als S&P 500 (Rendite p.a. bei 0,5 % Risiko je Trade).
+
+## 2026-10-03 -- Ergebnisse Runde 136 (Nachbau Luna AI Pro, Nacht-Scalper)
+Daten vollständig (6 Paare x 15 Jahre x Geld/Brief; ein abgeschnittener Download erkannt und neu geladen).
+Training 2012-2017: alle 32 Varianten NEGATIV (Ø -0,15 bis -0,46 R, t(Nächte) -11 bis -46) -> NICHT BESTANDEN;
+Bestätigung/Endtest nicht angesehen.
+Diagnose (nur Information): ohne Spread (Mittelkurs, Kommission bleibt) weiterhin leicht negativ in allen drei
+Zeiträumen (Ø -0,01 bis -0,09 R; trotz bis zu 86 % Trefferquote) -> die einfache Bollinger-Nacht-Rückkehr hat
+schon vor Kosten keinen Vorteil; die Nacht-Spreads machen sie deutlich negativ. Das 8-Jahres-Konto von Luna lässt
+sich damit nicht erklären -- entweder geheime Zusatzregeln (Filter, Paarauswahl, Risikosteuerung je Paar) oder
+Überleben einer von vielen Varianten (Auswahlverzerrung: Verkäufer betreibt 29 Signale).

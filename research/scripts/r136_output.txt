@@ -1,0 +1,42 @@
+euraud fertig (21 s)
+gbpaud fertig (41 s)
+audcad fertig (57 s)
+audusd fertig (74 s)
+
+Training 2012-2017: Ø > 0 bei 0 von 32 | t >= 2: 0 | t >= 3: 0
+  ('A', 2.5, 'mid', 3.0, True): n 4627, Ø -0.225 R, Treffer 49%, t(Nächte) -11.40
+  ('A', 2.5, 'mid', 3.0, False): n 8798, Ø -0.173 R, Treffer 49%, t(Nächte) -11.53
+  ('B', 2.5, 'mid', 3.0, True): n 4900, Ø -0.232 R, Treffer 47%, t(Nächte) -12.59
+  ('B', 2.5, 'mid', 3.0, False): n 9810, Ø -0.179 R, Treffer 48%, t(Nächte) -13.01
+  ('A', 2.0, 'mid', 3.0, False): n 16350, Ø -0.177 R, Treffer 53%, t(Nächte) -16.41
+  ('A', 2.0, 'mid', 3.0, True): n 9596, Ø -0.223 R, Treffer 53%, t(Nächte) -16.97
+  ('A', 2.5, 'mid', 1.5, False): n 11123, Ø -0.347 R, Treffer 30%, t(Nächte) -17.41
+  ('A', 2.5, 'mid', 1.5, True): n 5781, Ø -0.447 R, Treffer 28%, t(Nächte) -17.45
+  ('A', 2.5, '0.5atr', 3.0, True): n 3951, Ø -0.183 R, Treffer 59%, t(Nächte) -17.72
+  ('B', 2.5, '0.5atr', 3.0, True): n 4290, Ø -0.177 R, Treffer 59%, t(Nächte) -18.18
+  ('B', 2.5, 'mid', 1.5, True): n 6054, Ø -0.446 R, Treffer 29%, t(Nächte) -18.34
+  ('B', 2.0, 'mid', 3.0, True): n 10355, Ø -0.224 R, Treffer 51%, t(Nächte) -18.38
+  ('B', 2.0, 'mid', 3.0, False): n 18130, Ø -0.182 R, Treffer 51%, t(Nächte) -18.53
+  ('B', 2.5, 'mid', 1.5, False): n 12533, Ø -0.351 R, Treffer 31%, t(Nächte) -19.22
+  ('A', 2.5, '0.5atr', 3.0, False): n 8381, Ø -0.152 R, Treffer 65%, t(Nächte) -20.12
+  ('B', 2.5, '0.5atr', 3.0, False): n 9781, Ø -0.147 R, Treffer 66%, t(Nächte) -20.95
+  ('B', 2.5, '0.5atr', 1.5, True): n 4978, Ø -0.368 R, Treffer 46%, t(Nächte) -24.79
+  ('A', 2.5, '0.5atr', 1.5, True): n 4633, Ø -0.382 R, Treffer 46%, t(Nächte) -24.94
+  ('A', 2.0, '0.5atr', 3.0, True): n 9340, Ø -0.189 R, Treffer 57%, t(Nächte) -25.91
+  ('B', 2.0, '0.5atr', 3.0, True): n 10472, Ø -0.181 R, Treffer 57%, t(Nächte) -26.22
+  ('A', 2.0, 'mid', 1.5, True): n 14108, Ø -0.457 R, Treffer 31%, t(Nächte) -26.94
+  ('A', 2.0, 'mid', 1.5, False): n 24130, Ø -0.370 R, Treffer 32%, t(Nächte) -27.06
+  ('B', 2.0, 'mid', 1.5, True): n 15075, Ø -0.452 R, Treffer 31%, t(Nächte) -27.74
+  ('A', 2.5, '0.5atr', 1.5, False): n 9917, Ø -0.312 R, Treffer 52%, t(Nächte) -28.13
+  ('B', 2.5, '0.5atr', 1.5, False): n 11586, Ø -0.300 R, Treffer 53%, t(Nächte) -28.93
+  ('B', 2.0, 'mid', 1.5, False): n 27214, Ø -0.368 R, Treffer 32%, t(Nächte) -29.40
+  ('A', 2.0, '0.5atr', 3.0, False): n 18064, Ø -0.156 R, Treffer 64%, t(Nächte) -29.45
+  ('B', 2.0, '0.5atr', 3.0, False): n 21602, Ø -0.150 R, Treffer 64%, t(Nächte) -31.17
+  ('A', 2.0, '0.5atr', 1.5, True): n 12282, Ø -0.406 R, Treffer 44%, t(Nächte) -37.00
+  ('B', 2.0, '0.5atr', 1.5, True): n 13507, Ø -0.386 R, Treffer 44%, t(Nächte) -37.03
+  ('A', 2.0, '0.5atr', 1.5, False): n 23641, Ø -0.331 R, Treffer 51%, t(Nächte) -42.94
+  ('B', 2.0, '0.5atr', 1.5, False): n 28224, Ø -0.313 R, Treffer 52%, t(Nächte) -45.82
+
+--- Zählende Auswahl (n >= 300, Ø > 0, t >= 3): 0
+  keine -> RUNDE NICHT BESTANDEN
+Laufzeit 74 s
