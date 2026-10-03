@@ -4036,3 +4036,17 @@ AUDNZD -0,373/-0,313. Hauptwährungen brutto ~0, Kreuzkurse (seitwärts) stark n
 Folgerung: Der Long-Ausbruch ist KEIN allgemeines Prinzip; er funktioniert nur bei Gold (und schwach bei USDJPY),
 also in Märkten mit langen Trends. Das stützt die Lesart "Gold-Trend-Abhängigkeit" (Runde 134) und senkt die
 Erwartung an den laufenden Vorwärtstest gold_breakout (Regel bleibt unverändert, Auswertung 2028-10-01).
+
+# Neubewertung Runde 9 (Short-Volatilität SVXY bei Contango) nach Nutzer-Maßstab "besser als ETF" (2026-10-03)
+Gleiche Regel (SVXY halten, wenn VIX < VIX3M am Vortagesschluss, sonst Cash; 10 bp je Wechsel), keine neue Suche.
+Yahoo 2011-10..2026-10: gesamt +28,2 % p.a. (MaxDD -49,7 %) vs S&P 500 +15,7 % (-33,7 %). ABER: der Vorsprung stammt
+aus der Zeit vor 03/2018, als SVXY noch -1x war (2016..02/2018 +77,9 % p.a.). Seit SVXY -0,5x (2018-03..2025):
++14,7 % p.a. vs S&P 500 +14,3 %, MaxDD -36,3 % vs -33,7 %; 2026 bis heute +2 % vs +14 %. Volmageddon (05./06.02.2018)
+wurde nur knapp vermieden (Vorsignal VIX 17,3 vs VIX3M 17,0). Zudem: SVXY ist ein US-ETF -> für EU-Privatanleger
+(PRIIPs) nicht kaufbar. -> Nach Nutzer-Maßstab KEIN Kandidat (im heutigen Produkt kein Vorsprung vor dem ETF).
+
+# Runde 139: Gold-Ausbruch (eingefroren) auf Silber mit M1 (Vorab, 2026-10-03)
+Frage: Funktioniert die Regel auf dem "Schwester-Markt" Silber (lange Trends wie Gold)? Runde 138 (H1) war ungültig.
+Regel unverändert wie Runde 134 (N48, 12 h, SL 2 / TP 4 ATR, nur long, Swap Zins + 2,5 %). Daten: Dukascopy XAGUSD M1
+Geld/Brief 2012-07..2026-09. EINE Hypothese: Ø R netto > 0 mit t(Tage) >= 2. Zusätzlich Bericht je Zeitraum und vs.
+"Silber halten" sowie S&P 500.
