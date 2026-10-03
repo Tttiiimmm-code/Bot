@@ -140,7 +140,9 @@ void OnTimer()
    if(hourKey != lastHourKey && g.min < 10)
      {
       lastHourKey = hourKey;
-      if(!(friday && g.hour >= 20) && !HasOwnPosition() && OwnOrders(own) == 0)
+      // Wochenende: Markt geschlossen (Sa ganztags, So vor 22:00 UTC) -> keine Versuche
+      bool weekend = (g.day_of_week == 6) || (g.day_of_week == 0 && g.hour < 22);
+      if(!weekend && !(friday && g.hour >= 20) && !HasOwnPosition() && OwnOrders(own) == 0)
          PlaceOrder();
      }
   }
