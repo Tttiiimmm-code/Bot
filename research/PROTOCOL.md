@@ -4007,3 +4007,15 @@ Training 2012-2017: Ø > 0 bei 0 von 64 Varianten, Median -0,105 R; beste (H1, k
 Fazit Runden 136/137: Die bei langlebigen MQL5-Signalen häufigen Ansätze (Nacht-Scalping, Rückkehr zum Mittelwert auf
 Kreuzkursen) zeigen in einfacher, nachprüfbarer Form mit echten Spreads keinen Vorteil. Die überlebenden Konten
 sind mit Auswahlverzerrung (4.451 Signale, davon 28 seit <= 2019) und geheimen Zusatzregeln vereinbar.
+
+# Runde 138: Gold-Ausbruch (Runde 134, eingefroren) auf 13 anderen Märkten (Vorab, 2026-10-03)
+
+Frage: Ist der Long-Ausbruch aus Runde 134 ein allgemeines Prinzip oder gold-spezifisch (Hausse/Glück)?
+- Regel UNVERÄNDERT: N48, Puffer 0,1 ATR, Ablauf 12 h, SL 2 ATR, TP 4 ATR, ohne Trail, nur long, Freitag-Regeln.
+- Daten: Dukascopy H1 Geld/Brief (wie Runde 104): XAGUSD, EURUSD, GBPUSD, USDJPY, USDCHF, USDCNH, AUDUSD, NZDUSD,
+  USDSEK, GBPJPY, EURJPY, CHFJPY, USATECHIDXUSD (+ XAUUSD nur zur Prüfung der H1-Näherung).
+- H1-Näherung: Füllung in der Kerze, in der der Briefkurs das Level erreicht; in der Einstiegskerze nur Stop
+  (schlechtester Fall); danach Stop vor Ziel; Kurslücke -> Eröffnung. Prüfung: XAUUSD-H1 vs. M1-Ergebnis Runde 134.
+- Swap long: US-3M-Zins + 2,5 % p.a. auf den Positionswert (wie Runde 134/135, vereinfachend für alle Märkte).
+- EINE Hypothese: gepoolt über die 13 Märkte 2012-07..2026-09 (je Tag Summe R), Ø > 0 mit t >= 2.
+  Je Markt nur Beschreibung, dazu Vergleich mit "Markt halten" im selben Zeitraum.
