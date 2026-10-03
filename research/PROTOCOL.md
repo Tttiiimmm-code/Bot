@@ -4056,3 +4056,20 @@ Geld/Brief 2012-07..2026-09. EINE Hypothese: Ø R netto > 0 mit t(Tage) >= 2. Zu
 Je Zeitraum: 2012-16 -0,247 R (Silber -11,5 % p.a.), 2017-22 -0,234 R (Silber +7,0 %), 2023-26 -0,113 R (t -1,66)
 obwohl Silber +30,1 % p.a. stieg. -> Selbst im stärksten Silber-Aufwärtstrend verliert die Regel; der Befund aus
 Runde 134 ist gold-spezifisch (oder Zufall im Gold), kein Edelmetall-Prinzip. Erwartung an gold_breakout weiter gesenkt.
+
+# Runde 140: Gehebelte Misch-Portfolios statt Timing ("besser als ETF" bei ähnlichem Risiko) (Vorab, 2026-10-03)
+
+Neue Klasse (bisher nur Timing/Signale getestet): feste Mischungen aus Aktien, Anleihen, Gold mit moderatem Hebel
+(Risk-Parity-Gedanke; in DE umsetzbar z. B. mit UCITS "Efficient Core"-ETFs 90/60 oder Terminkontrakten).
+Daten (Yahoo, Gesamtrendite): SPY (Aktien, ab 1993), VFITX (mittelfristige US-Staatsanleihen), VUSTX (lange), GC=F
+(Gold, ab 2000-09). Hebelkosten: geliehener Anteil x (3M-T-Bill DTB3 + 0,5 %) p.a.; Fondskosten 0,2 % p.a. auf das
+Gesamtexposure. Monatliches Rebalancing zum Monatsende, 0,05 % Kosten je Umschlag.
+- P0 Benchmark: 100 % SPY.
+- P1: 90 % SPY + 60 % VFITX (1,5x 60/40, mittlere Anleihen).
+- P2: 90 % SPY + 60 % VUSTX (1,5x 60/40, lange Anleihen).
+- P3 (ab 2000-09): 90 % SPY + 37,5 % VFITX + 22,5 % Gold (1,5x 60/25/15).
+- P4 nur Information ("HFEA", tägl. 3x-Hebel-ETFs): 55 % 3xSPY + 45 % 3xVUSTX, vierteljährlich; 3x-Tagesrendite
+  = 3r - 2 x (T-Bill + 0,5 %)/252 - 0,9 %/252.
+Kriterien (vorab): (a) Rendite p.a. > SPY über den Gesamtzeitraum UND in mindestens 2 von 3 Teilzeiträumen
+(1993-2007, 2008-2021, 2022-2026-09); (b) größter Verlust nicht schlechter als SPY; (c) monatliche Überrendite ggü.
+SPY t >= 2,5 (Bonferroni für P1-P3). Bestanden nur bei (a)+(b)+(c).
