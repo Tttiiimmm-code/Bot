@@ -4050,3 +4050,9 @@ Frage: Funktioniert die Regel auf dem "Schwester-Markt" Silber (lange Trends wie
 Regel unverändert wie Runde 134 (N48, 12 h, SL 2 / TP 4 ATR, nur long, Swap Zins + 2,5 %). Daten: Dukascopy XAGUSD M1
 Geld/Brief 2012-07..2026-09. EINE Hypothese: Ø R netto > 0 mit t(Tage) >= 2. Zusätzlich Bericht je Zeitraum und vs.
 "Silber halten" sowie S&P 500.
+
+## 2026-10-03 -- Ergebnis Runde 139 (Gold-Ausbruch auf Silber, M1)
+1.525 Trades 2012-07..2026-09: Ø -0,206 R netto (brutto -0,194), t(Tage) -6,00 -> NICHT BESTANDEN.
+Je Zeitraum: 2012-16 -0,247 R (Silber -11,5 % p.a.), 2017-22 -0,234 R (Silber +7,0 %), 2023-26 -0,113 R (t -1,66)
+obwohl Silber +30,1 % p.a. stieg. -> Selbst im stärksten Silber-Aufwärtstrend verliert die Regel; der Befund aus
+Runde 134 ist gold-spezifisch (oder Zufall im Gold), kein Edelmetall-Prinzip. Erwartung an gold_breakout weiter gesenkt.

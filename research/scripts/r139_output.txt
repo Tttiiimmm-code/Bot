@@ -1,0 +1,4 @@
+XAGUSD 2012-07..2026-09: Trades 1525, Ø -0.206 R netto (brutto -0.194), t(Tage) -6.00 -> NICHT BESTANDEN
+  2012-07..2016: n 445, Ø -0.247 R, t -3.94, Bot -22.4% p.a. (1 % Risiko) | Silber halten -11.5% | S&P 500 +13.9%
+  2017-2022: n 677, Ø -0.234 R, t -4.57, Bot -24.0% p.a. (1 % Risiko) | Silber halten +7.0% | S&P 500 +11.2%
+  2023-2026-09: n 403, Ø -0.113 R, t -1.66, Bot -12.4% p.a. (1 % Risiko) | Silber halten +30.1% | S&P 500 +22.4%
