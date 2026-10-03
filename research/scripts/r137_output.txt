@@ -1,0 +1,21 @@
+audcad fertig (15 s)
+nzdcad fertig (31 s)
+audnzd fertig (46 s)
+
+Training 2012-2017: Ø > 0 bei 0 von 64 | t >= 2: 0 | t >= 3,2: 0 | Median Ø R -0.105
+  (60, 2.5, 4.0, 12, 'nachts', True): n 234, Ø -0.023 R, Treffer 56%, t(Tage) -0.70
+  (60, 2.5, 4.0, 48, 'nachts', True): n 227, Ø -0.037 R, Treffer 65%, t(Tage) -0.77
+  (60, 2.5, 2.0, 12, 'nachts', True): n 241, Ø -0.060 R, Treffer 51%, t(Tage) -1.08
+  (60, 2.5, 4.0, 48, 'nachts', False): n 650, Ø -0.035 R, Treffer 59%, t(Tage) -1.24
+  (60, 2.5, 2.0, 48, 'nachts', True): n 239, Ø -0.126 R, Treffer 49%, t(Tage) -1.95
+  (60, 2.0, 4.0, 48, 'nachts', False): n 1385, Ø -0.041 R, Treffer 62%, t(Tage) -2.14
+  (60, 2.0, 4.0, 12, 'nachts', True): n 697, Ø -0.041 R, Treffer 56%, t(Tage) -2.15
+  (60, 2.5, 2.0, 48, 'nachts', False): n 708, Ø -0.104 R, Treffer 44%, t(Tage) -2.46
+  (60, 2.0, 4.0, 48, 'nachts', True): n 654, Ø -0.067 R, Treffer 64%, t(Tage) -2.58
+  (60, 2.0, 2.0, 12, 'nachts', True): n 727, Ø -0.088 R, Treffer 51%, t(Tage) -2.71
+  (60, 2.5, 4.0, 12, 'nachts', False): n 691, Ø -0.053 R, Treffer 48%, t(Tage) -2.80
+  (60, 2.5, 4.0, 12, 'ganztags', True): n 1152, Ø -0.045 R, Treffer 52%, t(Tage) -2.94
+
+--- Zählende Auswahl (n >= 300, Ø > 0, t >= 3,2): 0
+  keine -> RUNDE NICHT BESTANDEN
+Laufzeit 46 s

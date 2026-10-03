@@ -4000,3 +4000,10 @@ Zeiträumen (Ø -0,01 bis -0,09 R; trotz bis zu 86 % Trefferquote) -> die einfac
 schon vor Kosten keinen Vorteil; die Nacht-Spreads machen sie deutlich negativ. Das 8-Jahres-Konto von Luna lässt
 sich damit nicht erklären -- entweder geheime Zusatzregeln (Filter, Paarauswahl, Risikosteuerung je Paar) oder
 Überleben einer von vielen Varianten (Auswahlverzerrung: Verkäufer betreibt 29 Signale).
+
+## 2026-10-03 -- Ergebnisse Runde 137 (Mittelwert-Rückkehr AUD/NZD/CAD-Kreuzkurse)
+Training 2012-2017: Ø > 0 bei 0 von 64 Varianten, Median -0,105 R; beste (H1, k 2,5, Stop 4 ATR, nachts, ruhig)
+-0,023 R (t -0,70) -> NICHT BESTANDEN; Bestätigung/Endtest nicht angesehen.
+Fazit Runden 136/137: Die bei langlebigen MQL5-Signalen häufigen Ansätze (Nacht-Scalping, Rückkehr zum Mittelwert auf
+Kreuzkursen) zeigen in einfacher, nachprüfbarer Form mit echten Spreads keinen Vorteil. Die überlebenden Konten
+sind mit Auswahlverzerrung (4.451 Signale, davon 28 seit <= 2019) und geheimen Zusatzregeln vereinbar.
