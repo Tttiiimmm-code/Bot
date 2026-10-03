@@ -4073,3 +4073,17 @@ Gesamtexposure. Monatliches Rebalancing zum Monatsende, 0,05 % Kosten je Umschla
 Kriterien (vorab): (a) Rendite p.a. > SPY über den Gesamtzeitraum UND in mindestens 2 von 3 Teilzeiträumen
 (1993-2007, 2008-2021, 2022-2026-09); (b) größter Verlust nicht schlechter als SPY; (c) monatliche Überrendite ggü.
 SPY t >= 2,5 (Bonferroni für P1-P3). Bestanden nur bei (a)+(b)+(c).
+
+## Ergebnis Runde 140 (2026-10-03, research/scripts/r140.py, Ausgabe r140_output.txt)
+
+Daten 1993-02 bis 2026-09 (P3 ab 2000-09). Rendite p.a. / größter Verlust / Sharpe (Monate) / Überrendite-t:
+- P0 SPY: +11,0 % / -55,2 % / 0,79.
+- P1 90/60 mittlere Anleihen: +10,7 % / -47,4 % / 0,83 / t -0,93. Teilzeiträume +10,9 vs 10,7; +11,4 vs 11,0;
+  +8,1 vs 12,4. (a) nein (gesamt unter SPY), (b) ja, (c) nein -> NICHT bestanden.
+- P2 90/60 lange Anleihen: +11,3 % / -46,5 % / 0,81 / t +0,12. +12,0 vs 10,7; +13,6 vs 11,0; +3,2 vs 12,4.
+  (a) ja, (b) ja, (c) nein -> NICHT bestanden.
+- P3 90/37,5/22,5 Gold (ab 2000-09, SPY dort +8,4 %): +10,1 % / -46,8 % / 0,76 / t +1,60. (a) ja, (b) ja, (c) nein
+  -> NICHT bestanden (bester Kandidat, aber Vorsprung statistisch nicht gesichert).
+- P4 HFEA (Info): +16,5 % / -69,2 % / t +2,46; 2022: -62,9 %, 2022-2026: -5,5 % p.a. vs SPY +12,4 %.
+Fazit: Hebel-Mischungen bringen kleineren größten Verlust bei etwa gleicher Rendite, aber keine gesicherte
+Mehrrendite; der Vorteil hing an fallenden Zinsen 1993-2021 (2022 Anleihen-Crash). Kein Ersatz für das ETF-Ziel.
