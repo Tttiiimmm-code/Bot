@@ -3895,3 +3895,22 @@ Ablaufzeit, SL + TP, nachgezogener SL) und Live-Signal 2265877 (101 Wochen, +345
   Auswahl: n >= 200, Ø > 0, t >= 3,5 im Training (96 Tests) -> 3 beste -> Bestätigung t >= 2,4 -> Endtest t >= 2.
 - Nur Information: Signal-Zeitraum 2024-10-22..2026-09-25 (zeigt, ob die Familie dort "wie der Gold Reaper" aussieht),
   Rendite p.a. bei 1 % Risiko je Trade vs. Gold halten und S&P 500.
+
+## 2026-10-03 -- Ergebnisse Runde 134 (Nachbau Gold Reaper)
+
+Erster Lauf ungültig (Zeitindex in ms statt ns -> alle Minuten in einer "Stunde", 0 Trades); korrigiert.
+- Training 2008-2016: Ø > 0 bei 56/96, t >= 2 bei 13, t >= 3,5 bei 1. Bestätigung: Ø > 0 bei 36/96. Endtest: 78/96.
+  Signal-Zeitraum 2024-10..2026-09: Ø > 0 bei 93/96 (Median +0,08 R) -> die Familie bildet das beworbene Konto
+  qualitativ nach.
+- Zählende Auswahl: N48, Ablauf 12 h, SL 2 ATR, TP 4 ATR, ohne Trail, NUR LONG: Training +0,218 R (t 3,70, n 702)
+  -> Bestätigung 2017-22 +0,112 R (t 1,83) -> NICHT BESTANDEN. Beide Richtungen deutlich schwächer (Bestätigung t 0,27)
+  -> der Vorteil hängt am Long-Überhang (Gold-Aufwärtstrend).
+- PROTOKOLLFEHLER: Der Informationsteil gab den Endtest der 3 besten Trainingsvarianten aus, obwohl die Bestätigung
+  nicht bestanden war (+0,248 R, t 3,31) -> der Endtest 2023-26 ist für diese Familie NICHT mehr unberührt.
+- Nachträglich (Beschreibung): Swap-Kosten long (US-3M-Zins + 2,5 % p.a. auf den Positionswert; Haltedauer Median
+  12 h, Ø 26 h; Position ~2,1x Kontowert bei 1 % Risiko): Ø -0,024 R je Trade -> Training +0,201 (t 3,42 -- wäre
+  knapp unter der Auswahlhürde), Bestätigung +0,086 (t 1,41), Endtest +0,215 (t 2,88). Bei 1 % Risiko je Trade
+  2008-2026: +14,7 % p.a. (Gold +8,7 %, S&P 500 +11,5 %), MaxDD -21 %, 5 Verlustjahre von 19; 2017-22 nur ~7,7 % p.a.
+  (unter S&P 500). Nicht modelliert: Ausführungs-Slippage bei Ausbrüchen, NFP-Filter.
+Einordnung: bisher stärkster Gold-Befund, aber nach Protokoll nicht bestanden und regimeabhängig (gut in Gold-Trends,
+schwach 2017-2022). Kandidat höchstens für einen Vorwärtstest in einer eigenen Familie.
