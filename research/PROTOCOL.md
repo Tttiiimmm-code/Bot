@@ -3943,3 +3943,15 @@ abgezogen, auch für Leerverkäufe (Simulator gibt die Richtung je Trade nicht a
   +0,23 R (t 0,99).
 Fazit: Mehr Einstellungen bringen keinen belastbaren Mehrertrag; die Variante aus Runde 134 gehört schon zu den besten,
 und auch sie schlägt den ETF außerhalb der Gold-Hausse nicht.
+
+# Vorwärtstest "gold_breakout" (Runde 134, eigene Familie 2) -- Vorab-Regel (2026-10-03)
+
+Auf Wunsch des Nutzers. NICHT Teil der Familie mit K = 11 (eigene Familie, eine Hypothese).
+- Regeln exakt wie Runde 134, Variante N48 / Ablauf 12 h / Puffer 0,1 ATR / SL 2 ATR / TP 4 ATR / ohne Trail / nur
+  long, Freitag-Regeln wie dort. Kurse: Dukascopy XAUUSD M1 Geld/Brief (täglicher Abruf, wie die übrigen Tracker).
+- Swap je Trade: 6,3 % p.a. (US-3M 3,8 % + 2,5 %) auf den Positionswert, Haltezeit tagesgenau; Zinssatz fest.
+- Gezählt: Trades mit Einstieg ab Montag 2026-10-05. Kennzahl R netto je Trade.
+- EIN bindender Blick am 2028-10-01 (Daten bis Vortag), mindestens 150 Trades (sonst einmalig +6 Monate).
+  BESTANDEN: einseitiger t-Test Ø R > 0 mit t >= 2 UND Rendite bei 1 % Risiko je Trade (Zinseszins) über den Zeitraum
+  höher als S&P 500 (SPY, Dividenden bereinigt) im selben Zeitraum (Nutzer-Maßstab "besser als ETF").
+- Erwartung aus dem Backtest (Bericht, nach Swap): +0,165 R je Trade, ~90 Trades/Jahr. Zwischenstände nur Information.
