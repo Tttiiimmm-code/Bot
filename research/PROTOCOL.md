@@ -4126,3 +4126,9 @@ Nachprüfung (nach dem Urteil): Yahoo "FB" liefert nicht Meta -> FB->META, SQ->X
 t 2,91; Hauptzeitraum unverändert t 1,78. Gegen QQQ (Nasdaq-100) 2022-26 +25,0 % vs +14,4 %, t 1,80 -> nicht nur
 Tech-Beta. Pelosi ist nachträglich wegen ihres Erfolgs ausgewählt; der Hauptzeitraum liegt nach dieser Auswahl.
 Fazit: kein Bestehen nach Regel, aber ein Kandidat für einen eigenen Vorwärtstest (Meldungen öffentlich, 2 Tage Puffer).
+Nachtrag 2026-10-04 (nur Info, nach dem Urteil; FB->META, SQ->XYZ): Haltedauer 21/63/126/252/504 Tage, 2015-21 vs
+2022-26: +9,5/-0,8 | +30,4/+16,0 | +27,6/+38,1 | +34,2/+25,0 | +30,3/+18,4 % p.a. (SPY 14,8/11,9); 252 Tage am
+gleichmäßigsten. Ausstieg bei gemeldetem Pelosi-Verkauf (Median 540 Tage, 29/85 nie verkauft): 2015-21 +28,4 %
+(t 2,73), 2022-26 +14,0 % (t 0,83). Erster Monat nach Meldung kein Vorteil -> kein kurzfristiger Informationsvorsprung
+nach der Meldung (Trade -> Meldung im Median 26 Tage, 90 % <= 42); der Vorsprung entsteht über Monate.
+Vorwärtstest pelosi_copy (tradingbot/forward_pelosi.py, Familie 3) ab 2026-10-05, Auswertung 2029-10-01.
