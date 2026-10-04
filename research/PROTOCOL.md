@@ -4227,3 +4227,14 @@ Grenze 10/s -> gedrosselt), 16.148 mit heutigem Ticker, 5.310 erste je Ziel/365 
 - B bekannte Aktivisten: 2015-21 +7,8 % (t -0,47); 2022-26 +7,1 % (t -0,92) -> NICHT BESTANDEN.
 Info: 21/63/126 Tage ähnlich (A 2022-26 jeweils t <= -3,3; B 126 Tage +10,4 % vs 11,9 %).
 Fazit: Nach der öffentlichen Meldung ist bei Aktivisten nichts mehr zu holen; 13D allgemein seit 2022 klar negativ.
+
+# Runde 146: Eingefrorene Gold-Ausbruchsregel auf Aktienindizes und WTI (Vorab, 2026-10-04)
+
+Frage: Ist der Gold-Ausbruch (Runde 134: Buy-Stop über 48-Stunden-Hoch + 0,1 ATR, 12 h gültig, SL 2 / TP 4 ATR ab
+Füllkurs, Freitagsregeln, nur long) ein allgemeiner Trend-Ausbruchseffekt oder goldspezifisch? Devisen (138b) und
+Silber (139) negativ; Indizes/Öl nie getestet.
+Daten: Dukascopy M1 Geld (vorhanden), 2013/14..2026-09: usa500, usatech, deuidx (DAX), fraidx, gbridx, jpnidx,
+hkgidx, ausidx, WTI. Brief = Geld + fester CFD-Spread (vorab, eher großzügig): US500 0,5; NAS 1,5; DAX 1,5; CAC 1,5;
+FTSE 1,5; Nikkei 10; HSI 10; ASX 2; WTI 0,04. Finanzierung long wie Gold: US-3M-Zins + 2,5 % p.a.
+Simulation: r134.sim unverändert (Parameter eingefroren). Kriterium wie 138b: gepoolt Ø R netto > 0 und t (Tagessummen)
+>= 2,0. Info je Markt: Ø R, t, Bot-Rendite p.a. bei 1 % Risiko vs Kaufen-und-Halten.
