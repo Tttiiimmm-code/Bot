@@ -4216,3 +4216,14 @@ Legion Partners, Sachem Head, Corvex, Cevian, Mantle Ridge, Politan, Irenic, Bla
 Stilwell, Driver Management, Engine Capital, Macellum, Inclusive Capital, D. E. Shaw, Anson, 22NW).
 Kriterium je Hypothese: 2022-01..2026-09 Rendite > SPY UND t >= 2,3 UND 2015-21 Überrendite > 0.
 Info: Haltedauer 21/63/126 Tage.
+
+## Ergebnis Runde 145 (2026-10-04, research/scripts/r145*.py, Ausgabe r145_output.txt)
+
+30.289 13D-Meldungen 2014Q4-2026Q3 (data_cache/sec13d; Kopf über *.hdr.sgml, Ranged-Requests ignoriert die SEC,
+Grenze 10/s -> gedrosselt), 16.148 mit heutigem Ticker, 5.310 erste je Ziel/365 Tage, 264 bekannte Aktivisten
+(davon 95 Saba = geschlossene Fonds).
+- A alle 13D: 2015-21 +20,7 % vs SPY +14,8 % (t 1,06); 2022-26 -15,2 % vs +11,9 % (t -3,91) -> NICHT BESTANDEN.
+  1.300 Signale unter 5 $ ausgeschlossen; seit 2022 dominieren Kleinst-/Problemwerte.
+- B bekannte Aktivisten: 2015-21 +7,8 % (t -0,47); 2022-26 +7,1 % (t -0,92) -> NICHT BESTANDEN.
+Info: 21/63/126 Tage ähnlich (A 2022-26 jeweils t <= -3,3; B 126 Tage +10,4 % vs 11,9 %).
+Fazit: Nach der öffentlichen Meldung ist bei Aktivisten nichts mehr zu holen; 13D allgemein seit 2022 klar negativ.

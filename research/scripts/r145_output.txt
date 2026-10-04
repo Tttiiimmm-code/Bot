@@ -1,0 +1,32 @@
+13D-Meldungen mit Ticker: 16148, erste je Ziel/365 Tage: 5310, bekannte Aktivisten: 264
+Aktivisten je Melder: {'Saba Capital Management, ': 95, 'Starboard Value LP': 32, 'ICAHN CARL C': 15, 'JANA PARTNERS LLC': 10, 'Legion Partners Asset Man': 10, 'Engaged Capital LLC': 10, 'Pershing Square Capital M': 8, 'Ancora Advisors, LLC': 7, 'ELLIOTT ASSOCIATES, L.P.': 7, 'Cevian Capital II GP LTD': 5, 'Sachem Head Capital Manag': 5, 'STILWELL JOSEPH': 5} 
+
+HAUPTERGEBNIS (K=2: 2022-26 > SPY, t >= 2,3; 2015-21 > 0)
+  A alle 13D                         2015-21: +20.7% vs SPY +14.8%  MaxDD -41.9%  t +1.06
+  A alle 13D                         2022-26: -15.2% vs SPY +11.9%  MaxDD -54.1%  t -3.91
+                                     genutzt 3613, ohne Kurs 387, unter 5 $ 1300, investiert 97%
+  -> A alle 13D: nicht bestanden
+  B bekannte Aktivisten              2015-21:  +7.8% vs SPY +14.8%  MaxDD -53.0%  t -0.47
+  B bekannte Aktivisten              2022-26:  +7.1% vs SPY +11.9%  MaxDD -26.0%  t -0.92
+                                     genutzt 221, ohne Kurs 6, unter 5 $ 36, investiert 97%
+  -> B bekannte Aktivisten: nicht bestanden
+
+NUR INFO (Haltedauer)
+  A alle, 21 Tage                    2015-21: +32.4% vs SPY +14.8%  MaxDD -41.1%  t +1.57
+  A alle, 21 Tage                    2022-26: -25.7% vs SPY +11.9%  MaxDD -76.1%  t -3.28
+                                     genutzt 3613, ohne Kurs 387, unter 5 $ 1300, investiert 97%
+  B Aktivisten, 21 Tage              2015-21: +30.5% vs SPY +14.8%  MaxDD -59.3%  t +1.51
+  B Aktivisten, 21 Tage              2022-26:  -8.4% vs SPY +11.9%  MaxDD -60.5%  t -1.20
+                                     genutzt 221, ohne Kurs 6, unter 5 $ 36, investiert 71%
+  A alle, 63 Tage                    2015-21: +25.7% vs SPY +14.8%  MaxDD -42.1%  t +1.47
+  A alle, 63 Tage                    2022-26: -17.1% vs SPY +11.9%  MaxDD -59.0%  t -3.31
+                                     genutzt 3613, ohne Kurs 387, unter 5 $ 1300, investiert 97%
+  B Aktivisten, 63 Tage              2015-21: +21.0% vs SPY +14.8%  MaxDD -48.2%  t +1.00
+  B Aktivisten, 63 Tage              2022-26:  -0.9% vs SPY +11.9%  MaxDD -54.5%  t -1.24
+                                     genutzt 221, ohne Kurs 6, unter 5 $ 36, investiert 93%
+  A alle, 126 Tage                   2015-21: +21.3% vs SPY +14.8%  MaxDD -42.1%  t +1.11
+  A alle, 126 Tage                   2022-26: -17.1% vs SPY +11.9%  MaxDD -58.9%  t -3.75
+                                     genutzt 3613, ohne Kurs 387, unter 5 $ 1300, investiert 97%
+  B Aktivisten, 126 Tage             2015-21:  +5.9% vs SPY +14.8%  MaxDD -46.7%  t -0.59
+  B Aktivisten, 126 Tage             2022-26: +10.4% vs SPY +11.9%  MaxDD -28.5%  t -0.06
+                                     genutzt 221, ohne Kurs 6, unter 5 $ 36, investiert 96%
