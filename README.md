@@ -767,6 +767,7 @@ Jede Fehlerbehebung bekommt einen Regressionstest.
 
 ```
 main.py                  CLI-Einstiegspunkt für alle Befehle (python main.py --help)
+tradingbot/cli/          Parser (parser.py) und Befehle je Gruppe: sma, momentum, overnight, copilot, forward
 tradingbot/
   config.py, broker.py   Konfiguration, Alpaca-Wrapper (lehnt Live-Konten ab)
   strategy.py, bot.py    Referenz-Bot SMA-Crossover

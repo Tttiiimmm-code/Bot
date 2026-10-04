@@ -532,3 +532,30 @@ def test_momentum_run_passes_news_intel_only_when_enabled(monkeypatch, tmp_path)
     assert seen[0] is None
     assert seen[1] is not None and seen[1].config.filter_mode == "block_dilution"
     seen[1].shutdown()
+
+
+def test_forward_command_table_matches_parser():
+    """Jeder Eintrag der Befehlstabelle (tradingbot/cli/forward.py) muss ein echter Unterbefehl sein."""
+    from tradingbot.cli import forward
+    from tradingbot.cli.parser import build_parser
+
+    parser = build_parser()
+    choices = next(a for a in parser._actions if a.dest == "command").choices
+    assert set(forward.COMMANDS) <= set(choices)
+    assert {"forward-run", "forward-report", "health", "gold-live", "forward-gold", "pelosi-bot", "forward-pelosi",
+            "momentum-checkpoint", "forward-status", "forward-stocks", "forward-stocks-report"} == set(forward.COMMANDS)
+
+
+def test_forward_command_dispatches_without_momentum_env(monkeypatch):
+    """forward-gold läuft über die Befehlstabelle und liest dabei nie die .env des Momentum-Bots."""
+    import main as main_module
+    from tradingbot.cli import forward
+
+    seen = []
+    monkeypatch.setitem(forward.COMMANDS, "forward-gold", lambda args: seen.append(args.command))
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: pytest.fail("keine .env lesen")))
+    monkeypatch.setattr("sys.argv", ["main.py", "forward-gold"])
+
+    main_module.main()
+
+    assert seen == ["forward-gold"]
