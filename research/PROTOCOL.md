@@ -4157,3 +4157,13 @@ Kriterium (eine Hauptregel, t >= 2,0): Hauptzeitraum Rendite p.a. > SPY UND t >=
   2023/2024 kein einziger Kauf der Top 5 -> nur 54 % der Tage investiert. Rangkorrelation Fenster -> Folgejahr
   +0,59/+0,46/-0,27/+0,22/+0,35/-0,16/+0,32 (2019-2025): schwache Beständigkeit, eher Markt-/Sektorlage als Können.
 Fazit: Erfolg einzelner Abgeordneter ist ohne Nachhinein-Auswahl nicht nutzbar; Pelosi bleibt Einzelfall (Vorwärtstest).
+
+# Runde 143: Aktienkäufe von US-Senatoren nachhandeln (Vorab, 2026-10-04)
+
+Daten: efdsearch.senate.gov (Nutzungsbedingungen mit Zustimmung des Nutzers akzeptiert), Periodic Transaction
+Reports seit 2014, nur elektronische (HTML-Tabelle; Papier-Scans übersprungen). Regeln exakt wie Runde 141:
+Kaufzeilen (Type "Purchase", Asset Type Stock oder Stock Option, Ticker vorhanden; Option -> Aktie), je Meldung und
+Ticker einmal, Einstieg Schluss 2. Handelstag nach Meldedatum, 252 Tage, 0,1 % je Seite, gleichgewichtet, sonst SPY.
+- A (Hauptthese): alle Senatoren. Kriterium: 2022-01..2026-09 Rendite > SPY UND t >= 2,0 UND 2015-21 Überrendite > 0.
+- Nur Info: B Parteiführung (McConnell, Schumer, Thune, Durbin, Cornyn, Barrasso), C nach Betragsklasse gewichtet,
+  D einzelne Senatoren mit >= 30 Käufen (nur beschreibend, keine Auswahl für Handel -- siehe Runde 142).
