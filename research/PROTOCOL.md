@@ -4132,3 +4132,18 @@ gleichmäßigsten. Ausstieg bei gemeldetem Pelosi-Verkauf (Median 540 Tage, 29/8
 (t 2,73), 2022-26 +14,0 % (t 0,83). Erster Monat nach Meldung kein Vorteil -> kein kurzfristiger Informationsvorsprung
 nach der Meldung (Trade -> Meldung im Median 26 Tage, 90 % <= 42); der Vorsprung entsteht über Monate.
 Vorwärtstest pelosi_copy (tradingbot/forward_pelosi.py, Familie 3) ab 2026-10-05, Auswertung 2029-10-01.
+
+# Runde 142: Die erfolgreichsten Abgeordneten des Vorjahres-Fensters kopieren (Vorab, 2026-10-04)
+
+Frage: Hält guter Erfolg einzelner House-Mitglieder an (Informationsvorsprung) -- lässt er sich ohne nachträgliche
+Auswahl nutzen? Daten wie Runde 141 (data_cache/congress/trades.csv, Käufe [ST]/[OP], Ticker FB->META, SQ->XYZ).
+Regeln:
+- Kennzahl je Mitglied (Name + Vorname) zu Beginn jedes Kalenderjahres Y: Ø 12-Monats-Überrendite ggü. SPY (nach
+  0,2 % Kosten) aller Kaufsignale mit Meldedatum in Y-3..Y-1, deren 252-Tage-Haltedauer vor dem 1.1. von Y endete
+  (nur damals bekannte Ergebnisse); mindestens 5 solche Signale.
+- Auswahl: die 5 Mitglieder mit der höchsten Kennzahl (Hauptregel); Info: Top 10, Top 3, Kennzahl = t-Wert.
+- Handel in Y: alle Käufe der Ausgewählten mit Meldedatum in Y, Einstieg Schluss 2. Handelstag nach Meldung,
+  252 Tage halten, 0,1 % je Seite, gleichgewichtet, ohne Position SPY.
+- Zeiträume: erste mögliche Auswahl 2019 (Fenster 2015-2018 braucht abgeschlossene Signale) -> Einordnung
+  2019-2021, Hauptzeitraum 2022-01..2026-09.
+Kriterium (eine Hauptregel, t >= 2,0): Hauptzeitraum Rendite p.a. > SPY UND t >= 2,0 UND 2019-21 Überrendite > 0.
