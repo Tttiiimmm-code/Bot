@@ -4198,3 +4198,21 @@ French BIG HiPRIOR nach 1 % Kosten vs Markt: 1994-2026/08 +11,0 % vs +11,0 % p.a
 Fazit: Lehrbuchfall Nach-Veröffentlichungs-Verfall; SPMO-Vorsprung seit 2015 ist methoden-/phasenspezifisch, kein
 belastbarer Faktor. Dazu Live-Vergleich 31 Strategie-ETFs vs SPY: keiner t >= 2 (SPMO 1,48, SMH 1,46, QQQ 1,44;
 AIEQ KI -5,3 %/J, BUZZ -5,6 %/J, FFTY -10,3 %/J, Min-Vola/Dividenden -3,6 bis -4,5 %/J).
+
+# Runde 145: Aktivisten-/Großaktionärs-Meldungen (Schedule 13D) nachhandeln (Vorab, 2026-10-04)
+
+Literatur: Brav, Jiang, Partnoy & Thomas (2008), Bebchuk/Brav/Jiang (2015): Kursanstieg um die 13D-Meldung, keine
+spätere Umkehr. Frage: Bringt ein Kauf NACH der öffentlichen Meldung noch mehr als SPY?
+Daten: SEC EDGAR full-index (form.gz) 2014Q4-2026Q3, Formtypen "SC 13D" und ab 2025 "SCHEDULE 13D" (keine /A);
+Kopf jeder Meldung (SUBJECT COMPANY CIK, FILED BY Name, Veröffentlichungstag). Ticker der Zielfirma aus SEC
+company_tickers.json (nur heute existierende Ticker -> übernommene/delistete Ziele fehlen: Verzerrung in beide
+Richtungen, wird berichtet). Kurse Yahoo (dividendenbereinigt).
+Regeln: je Zielfirma nur die erste 13D innerhalb von 365 Tagen; Melder != Zielfirma; Einstieg Schlusskurs des
+1. Handelstags nach dem Meldedatum; Kurs >= 5 $ beim Einstieg; Haltedauer 252 Handelstage; 0,1 % je Seite;
+gleichgewichtet über offene Signale, sonst SPY.
+Hypothesen (K=2, Hürde t >= 2,3): A alle 13D-Meldungen; B bekannte Aktivisten (Name des Melders enthält: Icahn,
+Elliott, Starboard, Trian, Pershing Square, Third Point, ValueAct, JANA, Engaged Capital, Land & Buildings, Ancora,
+Legion Partners, Sachem Head, Corvex, Cevian, Mantle Ridge, Politan, Irenic, Blackwells, Carl C, Barington, Saba,
+Stilwell, Driver Management, Engine Capital, Macellum, Inclusive Capital, D. E. Shaw, Anson, 22NW).
+Kriterium je Hypothese: 2022-01..2026-09 Rendite > SPY UND t >= 2,3 UND 2015-21 Überrendite > 0.
+Info: Haltedauer 21/63/126 Tage.
