@@ -4167,3 +4167,14 @@ Ticker einmal, Einstieg Schluss 2. Handelstag nach Meldedatum, 252 Tage, 0,1 % j
 - A (Hauptthese): alle Senatoren. Kriterium: 2022-01..2026-09 Rendite > SPY UND t >= 2,0 UND 2015-21 Überrendite > 0.
 - Nur Info: B Parteiführung (McConnell, Schumer, Thune, Durbin, Cornyn, Barrasso), C nach Betragsklasse gewichtet,
   D einzelne Senatoren mit >= 30 Käufen (nur beschreibend, keine Auswahl für Handel -- siehe Runde 142).
+
+## Ergebnis Runde 143 (2026-10-04, research/scripts/r143*.py, Ausgabe r143_output.txt)
+
+2.203 Senats-PTRs, 1.827 elektronisch geladen (data_cache/congress/senate), 16.717 Zeilen; 3.953 Aktienkäufe von 39
+Personen (Filter "alle Melder" enthält auch wenige Kandidaten/Ehemalige), 12 % ohne Kurs.
+- A alle Senatoren: 2015-21 +15,6 % vs SPY +14,8 % (t 0,25); 2022-26 +10,7 % vs +11,9 % (t -0,31) -> NICHT BESTANDEN.
+- B Führung: praktisch keine Aktienkäufe (Cornyn 1; McConnell 35 Käufe 2015-26 +8,2 % vs 13,7 %).
+- C nach Betrag gewichtet: 2015-21 +19,6 % (t 0,83), 2022-26 +5,5 % (t -1,00).
+- D Einzelne (>= 30 Käufe, 2015-26): keiner mit t >= 2; bester Moran +19,1 % (t 1,37), Loeffler +15,8 % (t 1,42);
+  Tuberville (413 Käufe) +10,0 % (t -1,60).
+Fazit: Senatoren-Käufe kopieren bringt nichts über SPY hinaus; deckt sich mit NANC/GOP und Runde 141 C/142.

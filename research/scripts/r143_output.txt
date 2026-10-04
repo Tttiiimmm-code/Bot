@@ -1,0 +1,41 @@
+3953 Kaufsignale von 39 Senatoren, 971 Ticker; je Jahr {2015: 229, 2016: 379, 2017: 503, 2018: 382, 2019: 308, 2020: 456, 2021: 266, 2022: 190, 2023: 317, 2024: 174, 2025: 237, 2026: 512}
+
+HAUPTERGEBNIS A alle Senatoren (Kriterium 2022-26 > SPY, t >= 2,0; 2015-21 > 0)
+  A alle Senatoren                   2015-21: +15.6% vs SPY +14.8%  MaxDD -38.2%  t +0.25
+  A alle Senatoren                   2022-26: +10.7% vs SPY +11.9%  MaxDD -24.8%  t -0.31
+                                     Signale genutzt 3487, ohne Kurs 466, investiert 95% der Tage
+  -> nicht bestanden
+
+NUR INFO
+  Führung: {'Cornyn': 1}
+  B Parteiführung                    2015-21: +13.0% vs SPY +14.8%  MaxDD -33.7%  t -0.36
+  B Parteiführung                    2022-26: +11.9% vs SPY +11.9%  MaxDD -24.5%  t +0.32
+                                     Signale genutzt 1, ohne Kurs 0, investiert 8% der Tage
+  C nach Betragsklasse gewichtet     2015-21: +19.6% vs SPY +14.8%  MaxDD -39.1%  t +0.83
+  C nach Betragsklasse gewichtet     2022-26:  +5.5% vs SPY +11.9%  MaxDD -39.7%  t -1.00
+                                     Signale genutzt 3487, ohne Kurs 466, investiert 95% der Tage
+
+  D Senatoren mit >= 30 Käufen (beschreibend):
+    A. Mitchell McConnell, Jr.         35 Käufe  2015-26  +8.2% vs SPY +13.7%  t -0.50  investiert 68%
+    Alan Armstrong                    304 Käufe  2015-26 +13.3% vs SPY +13.7%  t -0.82  investiert 2%
+    Angus S King, Jr.                  33 Käufe  2015-26  +8.1% vs SPY +13.7%  t -1.49  investiert 53%
+    David A Perdue , Jr               620 Käufe  2015-26 +14.3% vs SPY +13.7%  t +0.50  investiert 56%
+    Gary C Peters                      48 Käufe  2015-26 +13.2% vs SPY +13.7%  t +0.04  investiert 72%
+    James M Inhofe                     80 Käufe  2015-26 +11.6% vs SPY +13.7%  t -0.70  investiert 37%
+    Jerry Moran,                       74 Käufe  2015-26 +19.1% vs SPY +13.7%  t +1.37  investiert 52%
+    John Boozman                      229 Käufe  2015-26 +12.0% vs SPY +13.7%  t -1.48  investiert 25%
+    John F Reed                        54 Käufe  2015-26 +12.9% vs SPY +13.7%  t -0.19  investiert 30%
+    John Hoeven                       107 Käufe  2015-26 +13.3% vs SPY +13.7%  t +0.13  investiert 49%
+    John W Hickenlooper                32 Käufe  2015-26  +3.4% vs SPY +13.7%  t -2.08  investiert 43%
+    Kelly Loeffler                     65 Käufe  2015-26 +15.8% vs SPY +13.7%  t +1.42  investiert 13%
+    Markwayne Mullin                  271 Käufe  2015-26 +14.0% vs SPY +13.7%  t +0.37  investiert 24%
+    Pat Roberts                       229 Käufe  2015-26 +15.2% vs SPY +13.7%  t +0.31  investiert 57%
+    Patrick J Toomey                   68 Käufe  2015-26 +10.5% vs SPY +13.7%  t -0.12  investiert 60%
+    Patty Murray                       78 Käufe  2015-26 +12.8% vs SPY +13.7%  t -2.08  investiert 8%
+    Ron L Wyden                       134 Käufe  2015-26 +14.1% vs SPY +13.7%  t +0.36  investiert 32%
+    Sheldon Whitehouse                293 Käufe  2015-26  +9.9% vs SPY +13.7%  t -0.40  investiert 81%
+    Shelley M Capito                  271 Käufe  2015-26 +11.6% vs SPY +13.7%  t -0.36  investiert 90%
+    Susan M Collins                    66 Käufe  2015-26 +12.8% vs SPY +13.7%  t -0.14  investiert 54%
+    Thomas H Tuberville               413 Käufe  2015-26 +10.0% vs SPY +13.7%  t -1.60  investiert 42%
+    Thomas R Carper                   284 Käufe  2015-26  +9.6% vs SPY +13.7%  t -1.13  investiert 72%
+    William Cassidy                    89 Käufe  2015-26 +14.7% vs SPY +13.7%  t +0.66  investiert 49%
