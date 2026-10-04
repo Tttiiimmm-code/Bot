@@ -4238,3 +4238,14 @@ hkgidx, ausidx, WTI. Brief = Geld + fester CFD-Spread (vorab, eher großzügig):
 FTSE 1,5; Nikkei 10; HSI 10; ASX 2; WTI 0,04. Finanzierung long wie Gold: US-3M-Zins + 2,5 % p.a.
 Simulation: r134.sim unverändert (Parameter eingefroren). Kriterium wie 138b: gepoolt Ø R netto > 0 und t (Tagessummen)
 >= 2,0. Info je Markt: Ø R, t, Bot-Rendite p.a. bei 1 % Risiko vs Kaufen-und-Halten.
+
+## Ergebnis Runde 146 (2026-10-04, research/scripts/r146.py, Ausgabe r146_output.txt)
+
+Gepoolt 9 Märkte: 9.507 Trades, Ø +0,009 R netto, t 0,42 -> NICHT BESTANDEN (nur Indizes: +0,016 R, t 0,68).
+Je Markt (Ø R / t / Bot p.a. bei 1 % Risiko vs Kurs p.a.): NAS +0,120 / 2,69 / +10,1 % vs +19,2 %; DAX +0,081 /
+1,73 / +5,7 % vs +8,8 %; HSI +0,080 / 1,35; Nikkei +0,046 / 1,01; US500 +0,042 / 0,97 / +2,7 % vs +13,0 %; CAC -0,023;
+WTI -0,030; ASX -0,083; FTSE -0,151 / -3,49.
+Deutung: Ergebnis folgt grob dem Grundtrend des Marktes (stark steigend -> positiv, seitwärts -> negativ); auch wo
+positiv weit unter Kaufen-und-Halten. Stützt die Lesart, dass der Gold-Ausbruch v. a. den Gold-Aufwärtstrend
+2008-2026 einfängt, nicht einen allgemeinen Ausbruchseffekt. Für den Vorwärtstest gold_breakout heißt das: Er
+hängt am weiteren Goldtrend.

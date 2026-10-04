@@ -1,0 +1,12 @@
+usa500idxusd   2013-01..2026-09  n  1181  Ø +0.042 R (brutto +0.086)  t +0.97  bis 2019 -0.005 / ab 2020 +0.079  Bot  +2.7% p.a.  Kurs +13.0% p.a.
+usatechidxusd  2013-01..2026-09  n  1223  Ø +0.120 R (brutto +0.150)  t +2.69  bis 2019 +0.116 / ab 2020 +0.123  Bot +10.1% p.a.  Kurs +19.2% p.a.
+deuidxeur      2013-09..2026-09  n  1017  Ø +0.081 R (brutto +0.117)  t +1.73  bis 2019 +0.166 / ab 2020 +0.030  Bot  +5.7% p.a.  Kurs  +8.8% p.a.
+fraidxeur      2013-01..2026-09  n   752  Ø -0.023 R (brutto +0.020)  t -0.42  bis 2019 -0.005 / ab 2020 -0.040  Bot  -1.8% p.a.  Kurs  +5.9% p.a.
+gbridxgbp      2013-01..2026-09  n  1076  Ø -0.151 R (brutto -0.113)  t -3.49  bis 2019 -0.139 / ab 2020 -0.160  Bot -11.9% p.a.  Kurs  +4.4% p.a.
+jpnidxjpy      2013-01..2026-09  n  1144  Ø +0.046 R (brutto +0.072)  t +1.01  bis 2019 +0.057 / ab 2020 +0.036  Bot  +2.9% p.a.  Kurs +14.3% p.a.
+hkgidxhkd      2013-06..2026-09  n   698  Ø +0.080 R (brutto +0.111)  t +1.35  bis 2019 +0.177 / ab 2020 -0.001  Bot  +3.7% p.a.  Kurs  +0.7% p.a.
+ausidxaud      2014-06..2026-09  n   990  Ø -0.083 R (brutto -0.043)  t -1.84  bis 2019 -0.018 / ab 2020 -0.131  Bot  -7.2% p.a.  Kurs  +3.8% p.a.
+wti            2012-01..2026-09  n  1426  Ø -0.030 R (brutto -0.018)  t -0.79  bis 2019 +0.004 / ab 2020 -0.069  Bot  -3.9% p.a.  Kurs  -0.5% p.a.
+
+GEPOOLT 9 Märkte: Trades 9507, Ø +0.009 R, t(Tage) +0.42 -> NICHT BESTANDEN
+nur 8 Indizes: Ø +0.016 R, t +0.68
