@@ -4261,3 +4261,14 @@ orb_scanner.NOT_COMMON), Schluss >= 5 $, Ø-Tagesumsatz 20 Tage >= 1 Mio. $; Ver
 0,1 % je Seite; gleichgewichtet über offene Positionen, ohne Position SPY.
 Kriterium (eine These): 2021-01..2026-09 Rendite > SPY UND t (monatl. Überrendite) >= 2,0 UND 2016-2020 Überrendite > 0.
 Info: Haltedauer 21/63/126 Tage; Splits großer Firmen (Kurs vor Split >= 100 $).
+
+## Ergebnis Runde 147 (2026-10-04, research/scripts/r147.py, Ausgabe r147_output.txt)
+
+601 Vorwärtssplits (>= 1,25), 293 mit Panel-Kursen, 242 nach Filtern gehandelt.
+- 252 Tage: 2016-20 +11,1 % vs SPY +13,3 % (t -0,64); 2021-26 +6,0 % vs +13,7 % (t -1,62) -> NICHT BESTANDEN.
+- Info: 63 Tage etwa SPY (t -0,19 / +0,11); 21/126 Tage schlechter; große Firmen (Kurs vor Split >= 100 $) 2021-26
+  -1,5 % vs 13,7 % (t -2,50).
+Datenhinweise: Panel-Namen bei inaktiven Titeln leer -> einige ETFs/ETNs rutschen durch (BRZU, UXI, SVXY, OIL);
+41 Splits mit Sprüngen > 40 % im Folgejahr (teils echte spätere Reverse-Splits, teils fehlende Bereinigung am
+Ex-Tag, der vor dem Einstieg liegt). Verdrehen das Ergebnis nicht ins Positive.
+Fazit: Keine Drift nach Splits mehr (seit Ikenberry & Ramnath 2002 verschwunden, passt zu McLean & Pontiff).

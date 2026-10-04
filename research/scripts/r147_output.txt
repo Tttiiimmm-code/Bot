@@ -1,0 +1,21 @@
+Vorwärtssplits (Verhältnis >= 1,25, Stammaktien): 601, mit Kursen 293
+
+HAUPTERGEBNIS (2021-26 > SPY, t >= 2,0; 2016-20 > 0)
+  A alle Splits, 252 Tage        2016-20: +11.1% vs SPY +13.3%  MaxDD -39.9%  t -0.64
+  A alle Splits, 252 Tage        2021-26:  +6.0% vs SPY +13.7%  MaxDD -34.7%  t -1.62
+                                 genutzt 242, übersprungen 359, investiert 100%
+  -> nicht bestanden
+
+NUR INFO
+  A alle Splits, 21 Tage         2016-20: -11.3% vs SPY +13.3%  MaxDD -66.5%  t -1.76
+  A alle Splits, 21 Tage         2021-26: -12.8% vs SPY +13.7%  MaxDD -90.5%  t -0.20
+                                 genutzt 242, übersprungen 359, investiert 78%
+  A alle Splits, 63 Tage         2016-20: +10.9% vs SPY +13.3%  MaxDD -40.3%  t -0.19
+  A alle Splits, 63 Tage         2021-26: +13.1% vs SPY +13.7%  MaxDD -40.2%  t +0.11
+                                 genutzt 242, übersprungen 359, investiert 99%
+  A alle Splits, 126 Tage        2016-20: +11.6% vs SPY +13.3%  MaxDD -42.1%  t -0.36
+  A alle Splits, 126 Tage        2021-26:  +6.9% vs SPY +13.7%  MaxDD -31.7%  t -1.15
+                                 genutzt 242, übersprungen 359, investiert 100%
+  B Kurs vor Split >= 100 $      2016-20: +12.3% vs SPY +13.3%  MaxDD -38.0%  t -0.08
+  B Kurs vor Split >= 100 $      2021-26:  -1.5% vs SPY +13.7%  MaxDD -46.0%  t -2.50
+                                 genutzt 114, übersprungen 487, investiert 95%
