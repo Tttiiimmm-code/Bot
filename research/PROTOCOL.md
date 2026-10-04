@@ -4290,3 +4290,14 @@ Strategien (Kosten 0,1 % je Seite auf den Umschlag, Cash = 0 % Zins, Bewertung T
 Kriterium (K=3, t >= 2,4): Hauptzeitraum 2023-01..2026-09: Rendite p.a. > SPY UND t monatl. Überrendite ggü. SPY
 >= 2,4 UND Einordnung 2020-07..2022-12 (fast nur DOGE) Überrendite > 0. Info: BTC halten, größter Verlust,
 Absturzquote (Anteil zulässiger Coins mit > 90 % Verlust vom Hoch).
+
+## Ergebnis Runde 148 (2026-10-05, research/scripts/r148.py, Ausgabe r148_output.txt)
+
+Hauptzeitraum 2023-01..2026-09 (p.a. vs SPY +22,4 %, t): A Korb -19,8 % (t -0,28, MaxDD -92 %); B Trendfilter
++28,2 % (t 0,56, MaxDD -66 %, 39 % der Tage investiert); C Rotation +5,6 % (t 0,10) -> alle NICHT BESTANDEN.
+BTC halten +54,8 % (t 1,15). Einordnung 2020-22 (2021 nur DOGE): A +28,1 %, B +47,1 %, C +79,1 % (je t < 1,3).
+Kalenderjahre: 2021 +360..+504 %, 2022 -29..-60 %, 2024 +83..+232 %, 2025 -5..-77 %, 2026 -34..-40 %.
+Absturz: von 11 je zulässigen Coins 8 mit > 88 % Verlust vom Hoch (MEME -97 %, PEOPLE -96 %, BONK -94 %, FLOKI -94 %,
+DOGE -92 %, PEPE -91 %, WIF -89 %, SHIB -89 %); auch etablierte Memecoins sind ohne Rug Pull fast Totalverluste.
+Delistete Memecoins fehlen (nur aktive Paare) -> echte Ergebnisse eher schlechter.
+Fazit: keine Memecoin-Strategie schlägt SPY verlässlich; Ergebnis hängt an 1-2 Hype-Jahren; BTC war besser.
