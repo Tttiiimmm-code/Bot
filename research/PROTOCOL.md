@@ -4087,3 +4087,25 @@ Daten 1993-02 bis 2026-09 (P3 ab 2000-09). Rendite p.a. / größter Verlust / Sh
 - P4 HFEA (Info): +16,5 % / -69,2 % / t +2,46; 2022: -62,9 %, 2022-2026: -5,5 % p.a. vs SPY +12,4 %.
 Fazit: Hebel-Mischungen bringen kleineren größten Verlust bei etwa gleicher Rendite, aber keine gesicherte
 Mehrrendite; der Vorteil hing an fallenden Zinsen 1993-2021 (2022 Anleihen-Crash). Kein Ersatz für das ETF-Ziel.
+
+# Runde 141: Aktienkäufe von US-Kongressmitgliedern nachhandeln (Pelosi, Führung, alle) (Vorab, 2026-10-04)
+
+Anlass: Recherche 2026-10-04 (Wei & Zhou, NBER w34524, 2025: Führungsmitglieder +47 Pp. p.a. nach Aufstieg, Effekt
+bleibt mit Meldedatum statt Handelsdatum bestehen); Wunsch des Nutzers, Pelosi anzusehen. Bisher nie getestet.
+Daten: amtliche House-Clerk-Meldungen (disclosures-clerk.house.gov, Jahres-Index YYYYFD.zip, FilingType P =
+Periodic Transaction Report), nur elektronische Meldungen (DocID beginnt mit 2) 2015-2026, PDF-Text geparst.
+Senat nicht (eFD verlangt Zustimmung zu Nutzungsbedingungen). Kurse: Yahoo, dividendenbereinigt.
+Regeln (für alle Gruppen gleich):
+- Signal: jede Zeile mit Transaktion "P" (Kauf), Wertpapierart [ST] Aktie oder [OP] Option (dann Basiswert; Optionen
+  werden NICHT nachgebildet, Kaufsignal = Aktie kaufen), Ticker in Klammern. Verkäufe werden ignoriert (kein Short).
+- Einstieg: Schlusskurs des 2. Handelstags nach dem Meldedatum (FilingDate im Index) -- Puffer für Veröffentlichung.
+- Haltedauer 252 Handelstage (bzw. bis Datenende/Delisting). Gleichgewichtet über alle offenen Signale (tägliche
+  Durchschnittsrendite der offenen Positionen); ohne offene Position: SPY. Kosten 0,1 % je Seite.
+- Gruppen: A Nancy Pelosi (Hauptthese); B House-Parteiführung ohne Pelosi während der Amtszeit (Speaker, Mehrheits-/
+  Minderheitsführer, Whips: Boehner, Ryan, McCarthy, Johnson, Scalise, Hoyer, Clyburn, Jeffries, Emmer, Clark);
+  C alle House-Mitglieder (Vergleich wie NANC/GOP).
+- Zeiträume: Pelosi wurde erst durch ihre Erfolge bis 2021 bekannt ("Pelosi-Tracker") -> Auswahl ist nachträglich.
+  Hauptzeitraum (unabhängig von der Auswahl) 2022-01-01 bis 2026-09-30; 2015-2021 nur zur Einordnung.
+Kriterien (vorab, Bonferroni K=3 -> t >= 2,4): bestanden, wenn im Hauptzeitraum Rendite p.a. > SPY UND monatliche
+Überrendite ggü. SPY t >= 2,4 UND 2015-2021 Überrendite > 0. Zusatz nur zur Info: Gewichtung nach Betragsklasse,
+Ausstieg bei gemeldetem Verkauf, Haltedauer 3/6 Monate, Partei.
