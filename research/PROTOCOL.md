@@ -4147,3 +4147,13 @@ Regeln:
 - Zeiträume: erste mögliche Auswahl 2019 (Fenster 2015-2018 braucht abgeschlossene Signale) -> Einordnung
   2019-2021, Hauptzeitraum 2022-01..2026-09.
 Kriterium (eine Hauptregel, t >= 2,0): Hauptzeitraum Rendite p.a. > SPY UND t >= 2,0 UND 2019-21 Überrendite > 0.
+
+## Ergebnis Runde 142 (2026-10-04, research/scripts/r142.py, Ausgabe r142_output.txt)
+
+18.071 Kaufsignale, 206 Mitglieder, 14.209 mit abgeschlossenem 12-Monats-Ergebnis.
+- Hauptregel Top 5 nach Ø: 2019-21 +37,0 % vs SPY +26,0 % (t 1,80); 2022-26 +7,1 % vs +11,9 % (t 0,06), MaxDD -46 %
+  -> NICHT BESTANDEN. Info: Top 10 / Top 3 / Top 5 nach t ebenfalls unter SPY 2022-26.
+- Problem: Viele Ausgewählte kaufen im Folgejahr nichts (ausgeschieden/aufgehört, z. B. Beyer, Lawrence, Davis);
+  2023/2024 kein einziger Kauf der Top 5 -> nur 54 % der Tage investiert. Rangkorrelation Fenster -> Folgejahr
+  +0,59/+0,46/-0,27/+0,22/+0,35/-0,16/+0,32 (2019-2025): schwache Beständigkeit, eher Markt-/Sektorlage als Können.
+Fazit: Erfolg einzelner Abgeordneter ist ohne Nachhinein-Auswahl nicht nutzbar; Pelosi bleibt Einzelfall (Vorwärtstest).

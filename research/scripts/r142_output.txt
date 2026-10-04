@@ -1,0 +1,28 @@
+18071 Kaufsignale, 206 Mitglieder, 14209 mit 12-M-Ergebnis
+
+HAUPTREGEL (Kriterium: 2022-26 > SPY und t >= 2,0; 2019-21 Überrendite > 0); Auswahl je Jahr:
+  2019: Nancy Pelosi (+54%, n=7, 3 Käufe); Debbie Wasserman Schultz (+23%, n=8, 0 Käufe); Susan A. Davis (+23%, n=7, 5 Käufe); Suzan K. DelBene (+13%, n=12, 6 Käufe); Kathy Castor (+12%, n=8, 4 Käufe)
+  2020: Suzan K. DelBene (+23%, n=10, 5 Käufe); Susan A. Davis (+20%, n=5, 13 Käufe); Nancy Pelosi (+19%, n=11, 10 Käufe); David B. McKinley (+9%, n=31, 43 Käufe); Frank A. LoBiondo (+9%, n=7, 0 Käufe)
+  2021: Donald Sternoff Beyer (+67%, n=39, 0 Käufe); Brenda Lulenar Lawrence (+43%, n=12, 0 Käufe); Suzan K. DelBene (+30%, n=12, 3 Käufe); James R. Langevin (+28%, n=50, 20 Käufe); Alan S. Lowenthal (+13%, n=111, 41 Käufe)
+  2022: Donald Sternoff Beyer (+58%, n=189, 15 Käufe); Brenda Lulenar Lawrence (+43%, n=12, 0 Käufe); James R. Langevin (+36%, n=69, 35 Käufe); Roger W. Marshall (+33%, n=16, 0 Käufe); Susan A. Davis (+32%, n=15, 0 Käufe)
+  2023: Donald Sternoff Beyer (+56%, n=150, 0 Käufe); Adam Kinzinger (+45%, n=7, 0 Käufe); Susan A. Davis (+39%, n=13, 0 Käufe); Roger W. Marshall (+34%, n=12, 0 Käufe); Mark Green (+31%, n=79, 0 Käufe)
+  2024: Mo Brooks (+28%, n=7, 0 Käufe); Mark Dr Green (+17%, n=66, 0 Käufe); Bob Gibbs (+14%, n=16, 0 Käufe); Kathy Castor (+12%, n=6, 0 Käufe); John Rutherford (+7%, n=19, 0 Käufe)
+  2025: Pete Sessions (+33%, n=18, 0 Käufe); Mark Dr Green (+27%, n=20, 0 Käufe); William R. Keating (+16%, n=14, 8 Käufe); Nancy Pelosi (+15%, n=17, 7 Käufe); Daniel Crenshaw (+10%, n=9, 0 Käufe)
+  2026: Debbie Wasserman Schultz (+45%, n=5, 0 Käufe); Pete Sessions (+36%, n=16, 0 Käufe); Morgan McGarvey (+32%, n=9, 0 Käufe); Nancy Pelosi (+31%, n=8, 9 Käufe); Mark Dr Green (+18%, n=6, 0 Käufe)
+  Top 5 nach mean 2019-21: +37.0% vs SPY +26.0%  MaxDD -26.9%  t +1.80
+  Top 5 nach mean 2022-26:  +7.1% vs SPY +11.9%  MaxDD -45.7%  t +0.06
+                       Signale 210, ohne Kurs 17, investiert 54%
+  -> nicht bestanden
+
+NUR INFO
+  Top 10 nach mean 2019-21: +35.2% vs SPY +26.0%  MaxDD -15.2%  t +0.90
+  Top 10 nach mean 2022-26:  +9.4% vs SPY +11.9%  MaxDD -38.1%  t +0.15
+                       Signale 574, ohne Kurs 51, investiert 62%
+  Top 3 nach mean 2019-21: +43.6% vs SPY +26.0%  MaxDD -27.2%  t +1.81
+  Top 3 nach mean 2022-26:  +3.9% vs SPY +11.9%  MaxDD -41.5%  t -0.41
+                       Signale 92, ohne Kurs 5, investiert 48%
+  Top 5 nach t    2019-21: +22.8% vs SPY +26.0%  MaxDD -22.3%  t -0.71
+  Top 5 nach t    2022-26:  +9.5% vs SPY +11.9%  MaxDD -39.4%  t +0.14
+                       Signale 496, ohne Kurs 53, investiert 63%
+
+Rangkorrelation (Fenster -> Folgejahr): 2019: +0.59 (n=29), 2020: +0.46 (n=29), 2021: -0.27 (n=27), 2022: +0.22 (n=27), 2023: +0.35 (n=20), 2024: -0.16 (n=17), 2025: +0.32 (n=19)
