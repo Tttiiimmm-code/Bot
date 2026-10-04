@@ -4109,3 +4109,20 @@ Regeln (für alle Gruppen gleich):
 Kriterien (vorab, Bonferroni K=3 -> t >= 2,4): bestanden, wenn im Hauptzeitraum Rendite p.a. > SPY UND monatliche
 Überrendite ggü. SPY t >= 2,4 UND 2015-2021 Überrendite > 0. Zusatz nur zur Info: Gewichtung nach Betragsklasse,
 Ausstieg bei gemeldetem Verkauf, Haltedauer 3/6 Monate, Partei.
+
+## Ergebnis Runde 141 (2026-10-04, research/scripts/r141*.py, Ausgabe r141_output.txt)
+
+5.656 elektronische House-PTRs 2015-2026 geladen (data_cache/congress), 4.389 mit Aktien-/Optionszeilen; 18.072
+Kaufsignale (je Meldung und Ticker), 3.608 Ticker, 13 % der Signale ohne Yahoo-Kurs (delistet/umbenannt).
+Hauptzeitraum 2022-01..2026-09 / Einordnung 2015-2021 (Rendite p.a. vs SPY, t monatl. Überrendite):
+- A Pelosi (85 Käufe, 77 mit Kurs; v. a. AAPL, NVDA, DIS, AMZN, GOOGL, MSFT): 2022-26 +25,0 % vs +11,9 %, t 1,78,
+  MaxDD -43,8 %; 2015-21 +25,7 % vs +14,8 %, t 1,86 -> NICHT BESTANDEN (t < 2,4), aber stärkstes Kopier-Ergebnis.
+- B Führung ohne Pelosi: nur 17 Käufe (Boehner, Clark; McCarthy/Scalise/Hoyer/Jeffries/Johnson/Emmer/Clyburn ohne
+  Aktienkäufe) -> 2022-26 +13,6 % vs +11,9 %, t 1,22; 2015-21 negativ -> nicht bestanden, kaum Daten.
+- C alle House-Mitglieder: 2022-26 +8,4 % vs +11,9 %, t -1,35; 2015-21 gleichauf -> nicht bestanden (wie NANC/GOP).
+Info: Pelosi 126 Tage Haltedauer 2022-26 +38,1 %, t 2,32 (nachträglich gewählt, zählt nicht); 63 Tage schwächer.
+Alle Mitglieder nach Betragsklasse gewichtet +17,7 % vs 11,9 % (t 1,40), Käufe >= 50.001 $ +15,3 % (t 1,09).
+Nachprüfung (nach dem Urteil): Yahoo "FB" liefert nicht Meta -> FB->META, SQ->XYZ korrigiert: 2015-21 +34,2 %,
+t 2,91; Hauptzeitraum unverändert t 1,78. Gegen QQQ (Nasdaq-100) 2022-26 +25,0 % vs +14,4 %, t 1,80 -> nicht nur
+Tech-Beta. Pelosi ist nachträglich wegen ihres Erfolgs ausgewählt; der Hauptzeitraum liegt nach dieser Auswahl.
+Fazit: kein Bestehen nach Regel, aber ein Kandidat für einen eigenen Vorwärtstest (Meldungen öffentlich, 2 Tage Puffer).

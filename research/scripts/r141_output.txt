@@ -1,0 +1,33 @@
+Käufe gesamt 18072 (aus 4389 Meldungen), Pelosi 85, Führung 17 (Boehner, Clark)
+
+HAUPTERGEBNIS (Kriterium: 2022-26 Rendite > SPY, t >= 2,4; 2015-21 Überrendite > 0)
+  A Pelosi                           2015-21: +25.7% vs SPY +14.8%  MaxDD -36.7%  t +1.86
+  A Pelosi                           2022-26: +25.0% vs SPY +11.9%  MaxDD -43.8%  t +1.78
+                                     Signale genutzt 77, ohne Kurs 8, investiert 95% der Tage
+  B Führung ohne Pelosi              2015-21:  +9.6% vs SPY +14.8%  MaxDD -33.7%  t -0.89
+  B Führung ohne Pelosi              2022-26: +13.6% vs SPY +11.9%  MaxDD -19.8%  t +1.22
+                                     Signale genutzt 16, ohne Kurs 1, investiert 22% der Tage
+  C alle House-Mitglieder            2015-21: +14.7% vs SPY +14.8%  MaxDD -36.9%  t -0.13
+  C alle House-Mitglieder            2022-26:  +8.4% vs SPY +11.9%  MaxDD -24.0%  t -1.35
+                                     Signale genutzt 15761, ohne Kurs 2305, investiert 95% der Tage
+
+  A Pelosi                           -> nicht bestanden
+  B Führung ohne Pelosi              -> nicht bestanden
+  C alle House-Mitglieder            -> nicht bestanden
+
+NUR INFO
+  A Pelosi, Haltedauer 63 Tage       2015-21: +26.2% vs SPY +14.8%  MaxDD -52.3%  t +1.49
+  A Pelosi, Haltedauer 63 Tage       2022-26: +16.0% vs SPY +11.9%  MaxDD -56.1%  t +0.80
+                                     Signale genutzt 77, ohne Kurs 8, investiert 62% der Tage
+  A Pelosi, Haltedauer 126 Tage      2015-21: +22.1% vs SPY +14.8%  MaxDD -44.4%  t +1.24
+  A Pelosi, Haltedauer 126 Tage      2022-26: +38.1% vs SPY +11.9%  MaxDD -43.2%  t +2.32
+                                     Signale genutzt 77, ohne Kurs 8, investiert 90% der Tage
+  C alle, nach Betragsklasse gewichtet 2015-21: +18.2% vs SPY +14.8%  MaxDD -30.5%  t +1.49
+  C alle, nach Betragsklasse gewichtet 2022-26: +17.7% vs SPY +11.9%  MaxDD -28.3%  t +1.40
+                                     Signale genutzt 15761, ohne Kurs 2305, investiert 95% der Tage
+  C alle, Käufe >= 50.001 $          2015-21: +16.0% vs SPY +14.8%  MaxDD -34.4%  t +0.54
+  C alle, Käufe >= 50.001 $          2022-26: +15.3% vs SPY +11.9%  MaxDD -22.0%  t +1.09
+                                     Signale genutzt 996, ohne Kurs 214, investiert 95% der Tage
+
+Pelosi-Käufe je Jahr: {2015: 4, 2016: 4, 2017: 3, 2018: 8, 2019: 3, 2020: 10, 2021: 16, 2022: 13, 2023: 4, 2024: 4, 2025: 7, 2026: 9}
+Pelosi häufigste Ticker: {'AAPL': 14, 'NVDA': 8, 'DIS': 7, 'AMZN': 7, 'GOOGL': 4, 'MSFT': 4, 'FB': 3, 'CRM': 3, 'AXP': 3, 'PYPL': 3, 'HTZ': 2, 'SQ': 2, 'NFLX': 2, 'AB': 2, 'TSLA': 2}
