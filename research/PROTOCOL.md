@@ -4189,3 +4189,12 @@ Portfolio BIG HiPRIOR (große Aktien, oberste 30 % 12-1-Monats-Rendite); Markt =
 Kosten: 1,0 % p.a. vom Momentum-Portfolio abgezogen (Umschlag ~ 100-150 %/Jahr + ETF-Gebühr).
 Kriterium (eine Hauptthese): Zeitraum 1994-01..Datenende: Ø monatliche Überrendite nach Kosten > 0 mit t >= 2,0
 UND auch 2010-01..Datenende > 0. Info: 1927-1993, Jahrzehnte, größter Verlust, schlechteste Phasen (Momentum-Crash).
+
+## Ergebnis Runde 144 (2026-10-04, research/scripts/r144.py, Ausgabe r144_output.txt)
+
+French BIG HiPRIOR nach 1 % Kosten vs Markt: 1994-2026/08 +11,0 % vs +11,0 % p.a., t 0,08 -> NICHT BESTANDEN;
+2010-heute -1,0 %/J (t -0,50). Vor der Veröffentlichung 1927-1993 +3,1 %/J, t 3,53. Jahrzehnte: 1990er +3,9 %,
+2000er -0,2 %, 2010er -0,7 %, 2020er -1,5 %; seit 1996 nur 48 % der 3-Jahres-Phasen besser als der Markt.
+Fazit: Lehrbuchfall Nach-Veröffentlichungs-Verfall; SPMO-Vorsprung seit 2015 ist methoden-/phasenspezifisch, kein
+belastbarer Faktor. Dazu Live-Vergleich 31 Strategie-ETFs vs SPY: keiner t >= 2 (SPMO 1,48, SMH 1,46, QQQ 1,44;
+AIEQ KI -5,3 %/J, BUZZ -5,6 %/J, FFTY -10,3 %/J, Min-Vola/Dividenden -3,6 bis -4,5 %/J).

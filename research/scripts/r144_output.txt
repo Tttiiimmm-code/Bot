@@ -1,0 +1,13 @@
+Daten 1927-01 bis 2026-08, Kosten 1,0 % p.a.
+
+HAUPT 1994-heute  : +11.0% vs Markt +11.0% p.a. (Diff -0.0%), t +0.08, MaxDD -48.7% vs -50.3%
+Zusatz 2010-heute : +13.3% vs Markt +14.3% p.a. (Diff -1.0%), t -0.50, MaxDD -24.9% vs -24.8%
+Info 1927-1993    : +13.1% vs Markt +10.0% p.a. (Diff +3.1%), t +3.53, MaxDD -77.9% vs -83.7%
+Info gesamt       : +12.4% vs Markt +10.3% p.a. (Diff +2.1%), t +2.95, MaxDD -77.9% vs -83.7%
+
+-> nicht bestanden
+
+Jahrzehnte (Überrendite p.a.): 1920er +10.0%, 1930er +1.9%, 1940er +2.4%, 1950er +3.7%, 1960er +4.7%, 1970er +3.2%, 1980er +0.5%, 1990er +3.9%, 2000er -0.2%, 2010er -0.7%, 2020er -1.5%
+Schlechteste 3-Jahres-Phasen (Überrendite): bis 1940-07 -18%, bis 1941-03 -17%, bis 2023-08 -17%, bis 1983-11 -17%, bis 2012-02 -14%
+Anteil 3-Jahres-Phasen mit Momentum > Markt (seit 1994): 48%
+Kalenderjahre seit 2015: 2015: +4%, 2016: -10%, 2017: +1%, 2018: +3%, 2019: -4%, 2020: +3%, 2021: -13%, 2022: +5%, 2023: -9%, 2024: +6%, 2025: -9%, 2026: +6%
