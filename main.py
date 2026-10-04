@@ -1767,6 +1767,8 @@ def main():
     gl_p.add_argument("--notify-env", default="copilot.env", help="Datei mit NTFY_TOPIC (optional).")
     gl_p.add_argument("--check", action="store_true", help="Nur Verbindung prüfen (Konto, Kerzen), nichts handeln.")
     subparsers.add_parser("forward-gold", help="Vorwärtstest gold_breakout (Nachbau Gold Reaper, Runde 134; Papier).")
+    fpel = subparsers.add_parser("forward-pelosi", help="Vorwärtstest pelosi_copy (Kongress-Meldungen, Runde 141; Papier).")
+    fpel.add_argument("--notify-env", default="", help="Datei mit NTFY_TOPIC: neue Pelosi-Käufe aufs Handy.")
     mcheck = subparsers.add_parser(
         "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
     mcheck.add_argument("--env-file", default=".env", help="Konto des Momentum-Bots (nur lesend).")
@@ -1844,6 +1846,14 @@ def main():
         from tradingbot import forward_gold
 
         print(forward_gold.run(forward_gold.GoldConfig()))
+        return
+
+    if args.command == "forward-pelosi":
+        from tradingbot import forward_pelosi
+        from tradingbot.notify import notifier_from_env
+
+        notifier = notifier_from_env(args.notify_env) if args.notify_env else None
+        print(forward_pelosi.run(notifier=notifier))
         return
 
     if args.command == "momentum-checkpoint":

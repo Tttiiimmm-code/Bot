@@ -14,6 +14,7 @@ forward_orb.csv
 forward_quality.csv
 forward_smallvq.csv
 forward_gold.csv
+forward_pelosi.csv
 news_intel.csv
 copilot_journal.jsonl
 replay_journal.jsonl

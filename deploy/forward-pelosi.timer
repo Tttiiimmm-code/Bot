@@ -1,0 +1,9 @@
+[Unit]
+Description=Vorwärtstest pelosi_copy: neue Pelosi-Meldungen prüfen (werktags nach US-Börsenschluss)
+
+[Timer]
+OnCalendar=Mon..Fri 22:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

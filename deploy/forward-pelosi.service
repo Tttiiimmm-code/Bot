@@ -1,0 +1,15 @@
+[Unit]
+Description=Vorwärtstest pelosi_copy (Kongress-Meldungen, Runde 141) -- Papier, keine Orders
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py forward-pelosi --notify-env copilot.env
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
