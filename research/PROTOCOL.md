@@ -4178,3 +4178,14 @@ Personen (Filter "alle Melder" enthält auch wenige Kandidaten/Ehemalige), 12 % 
 - D Einzelne (>= 30 Käufe, 2015-26): keiner mit t >= 2; bester Moran +19,1 % (t 1,37), Loeffler +15,8 % (t 1,42);
   Tuberville (413 Käufe) +10,0 % (t -1,60).
 Fazit: Senatoren-Käufe kopieren bringt nichts über SPY hinaus; deckt sich mit NANC/GOP und Runde 141 C/142.
+
+# Runde 144: Momentum großer Aktien long-only (Basis von SPMO/MTUM) über 1927-2026 (Vorab, 2026-10-04)
+
+Anlass: Live-Vergleich von 31 Strategie-ETFs mit SPY (2026-10-04, Nachrechnung Yahoo): keiner mit t >= 2; vorne nur
+SPMO (+4,4 %/J, t 1,48, seit 2015) und Tech (QQQ/SMH). Frage: Ist "große Gewinneraktien halten" langfristig und nach
+der Veröffentlichung (Jegadeesh & Titman 1993) besser als der Markt?
+Daten: Kenneth French Data Library, "6 Portfolios Formed on Size and Momentum (2-12)", monatlich, wertgewichtet;
+Portfolio BIG HiPRIOR (große Aktien, oberste 30 % 12-1-Monats-Rendite); Markt = Mkt-RF + RF (Fama/French Faktoren).
+Kosten: 1,0 % p.a. vom Momentum-Portfolio abgezogen (Umschlag ~ 100-150 %/Jahr + ETF-Gebühr).
+Kriterium (eine Hauptthese): Zeitraum 1994-01..Datenende: Ø monatliche Überrendite nach Kosten > 0 mit t >= 2,0
+UND auch 2010-01..Datenende > 0. Info: 1927-1993, Jahrzehnte, größter Verlust, schlechteste Phasen (Momentum-Crash).
