@@ -1767,6 +1767,10 @@ def main():
     gl_p.add_argument("--notify-env", default="copilot.env", help="Datei mit NTFY_TOPIC (optional).")
     gl_p.add_argument("--check", action="store_true", help="Nur Verbindung prüfen (Konto, Kerzen), nichts handeln.")
     subparsers.add_parser("forward-gold", help="Vorwärtstest gold_breakout (Nachbau Gold Reaper, Runde 134; Papier).")
+    pbot = subparsers.add_parser("pelosi-bot", help="Pelosi-Käufe kopieren, 12 Monate halten (Alpaca-PAPER, Runde 141).")
+    pbot.add_argument("--env-file", default="overnight.env", help="Alpaca-Papierkonto (Standard: Overnight-Konto).")
+    pbot.add_argument("--notify-env", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    pbot.add_argument("--check", action="store_true", help="Nur Konto und Stand anzeigen, nichts handeln.")
     fpel = subparsers.add_parser("forward-pelosi", help="Vorwärtstest pelosi_copy (Kongress-Meldungen, Runde 141; Papier).")
     fpel.add_argument("--notify-env", default="", help="Datei mit NTFY_TOPIC: neue Pelosi-Käufe aufs Handy.")
     mcheck = subparsers.add_parser(
@@ -1846,6 +1850,39 @@ def main():
         from tradingbot import forward_gold
 
         print(forward_gold.run(forward_gold.GoldConfig()))
+        return
+
+    if args.command == "pelosi-bot":
+        from alpaca.data.enums import DataFeed
+        from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests import StockLatestTradeRequest
+        from alpaca.trading.client import TradingClient
+
+        from tradingbot import pelosi_bot
+        from tradingbot.notify import notifier_from_env
+        from tradingbot.report import read_account_env
+
+        key, secret, paper = read_account_env(args.env_file)
+        if not paper:
+            raise RuntimeError(f"{args.env_file}: ALPACA_PAPER=false -- der Pelosi-Bot handelt nur auf Papierkonten.")
+        tc, dc = TradingClient(key, secret, paper=True), StockHistoricalDataClient(key, secret)
+
+        def last_price(sym):
+            try:
+                t = dc.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols=sym, feed=DataFeed.IEX))
+                return float(t[sym].price)
+            except Exception:  # noqa: BLE001
+                return None
+
+        cfg = pelosi_bot.PelosiBotConfig()
+        if args.check:
+            acct = tc.get_account()
+            print(f"Konto paper, Wert {float(acct.equity):.2f} $, Bargeld {float(acct.cash):.2f} $, "
+                  f"Positionen {len(tc.get_all_positions())}; NVDA {last_price('NVDA')}")
+            print(pelosi_bot.summarize(cfg.state_file, cfg.trade_log))
+            return
+        notifier = notifier_from_env(args.notify_env) if args.notify_env else None
+        pelosi_bot.PelosiBot(cfg, tc, last_price, notifier=notifier).run_forever()
         return
 
     if args.command == "forward-pelosi":

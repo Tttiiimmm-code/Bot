@@ -1,0 +1,21 @@
+[Unit]
+Description=Pelosi-Kopier-Bot (Alpaca, Paper-Trading, Overnight-Konto; Runde 141)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py pelosi-bot --env-file overnight.env --notify-env copilot.env
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot
+
+[Install]
+WantedBy=multi-user.target

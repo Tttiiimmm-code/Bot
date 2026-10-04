@@ -17,6 +17,7 @@ import io
 import logging
 import math
 import re
+import urllib.error
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -72,9 +73,15 @@ def filings(cfg: PelosiConfig, today: date, fetch=_get) -> list[dict]:
     cfg.cache.mkdir(parents=True, exist_ok=True)
     out = []
     for y in range(max(cfg.first_day.year, today.year - 1), today.year + 1):
-        raw = fetch(f"{BASE}/financial-pdfs/{y}FD.zip")
-        with zipfile.ZipFile(io.BytesIO(raw)) as z:
-            txt = z.read(f"{y}FD.txt").decode("utf-8", "replace")
+        try:
+            raw = fetch(f"{BASE}/financial-pdfs/{y}FD.zip")
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                txt = z.read(f"{y}FD.txt").decode("utf-8", "replace")
+        except (urllib.error.HTTPError, zipfile.BadZipFile, KeyError) as e:
+            if y < today.year:
+                raise                                   # Vorjahr muss da sein; nur das neue Jahr darf fehlen
+            logger.warning("Meldeverzeichnis %d noch nicht verfügbar (%s)", y, e)
+            continue
         for r in csv.DictReader(io.StringIO(txt), delimiter="\t"):
             if (r["Last"] == cfg.last and cfg.first in r["First"] and r["FilingType"] == "P"
                     and r["DocID"].startswith("2")):
