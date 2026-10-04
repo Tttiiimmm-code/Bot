@@ -568,6 +568,20 @@ def entry_warnings(bars, price: float, stop: float, recent: int = 3) -> list[str
     return warnings
 
 
+STOP_FILL_BUFFER = 0.001   # Einstieg liegt nach der Ausführung oft etwas über dem Kurs beim Vorschlag
+
+
+def stop_rules(rules: CopilotRules, strict: bool) -> CopilotRules:
+    """Regeln für den Stop-Vorschlag: im strengen Modus und in der Übung (Nachbesprechung prüft 1 %) mindestens
+    STRICT_MIN_STOP plus kleinem Puffer, damit der Vorschlag auch nach dem Kauf zur nächsten Kerze/Marktorder noch
+    den Mindestabstand einhält."""
+    if not strict:
+        return rules
+    from dataclasses import replace
+
+    return replace(rules, min_stop_pct=max(rules.min_stop_pct, STRICT_MIN_STOP) + STOP_FILL_BUFFER)
+
+
 def suggest_stop(bars, price: float, rules: CopilotRules, lookback: int = 6) -> float | None:
     """Vorschlag: 1 Cent unter dem Tief der letzten `lookback` Kerzen (letzter Rücksetzer), mindestens
     rules.min_stop_pct unter dem Kurs. None ohne Kerzen."""

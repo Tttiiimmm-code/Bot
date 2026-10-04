@@ -14,7 +14,7 @@ import streamlit as st
 
 from gui.chart import CHART_CONFIG, CHART_CONFIG_MOBILE, DOWN, UP, build_chart, is_mobile
 from tradingbot import replay as rpl
-from tradingbot.copilot import BERLIN, NY, STRICT_MIN_STOP, entry_warnings, suggest_stop
+from tradingbot.copilot import BERLIN, NY, STRICT_MIN_STOP, entry_warnings, stop_rules, suggest_stop
 
 SS = st.session_state
 
@@ -22,7 +22,7 @@ SS = st.session_state
 def _suggest(rules) -> float | None:
     bars, idx = SS.rp_bars, SS.rp["idx"]
     visible = bars.iloc[:idx]
-    return suggest_stop(visible, float(visible["close"].iloc[-1]), rules)
+    return suggest_stop(visible, float(visible["close"].iloc[-1]), stop_rules(rules, True))
 
 
 def _msg(kind: str, text: str) -> None:
@@ -60,7 +60,7 @@ def _close(journal: Path, rules, idx: int, price: float, reason: str) -> None:
     rpl.append_result(journal, res)
     rp["trades"] += [(bars.index[pos.entry_idx], "buy", pos.entry), (bars.index[idx], "sell", price)]
     rp["pos"] = None
-    wide = suggest_stop(bars.iloc[:pos.entry_idx], pos.entry, rules) if pos.entry_idx > 0 else None
+    wide = suggest_stop(bars.iloc[:pos.entry_idx], pos.entry, stop_rules(rules, True)) if pos.entry_idx > 0 else None
     rp["review"] = rpl.review(bars, pos, idx, reason, wide, max(rules.min_stop_pct, STRICT_MIN_STOP))
     _msg("success" if res.r > 0 else "error" if res.r < 0 else "info",
          f"{reason} um {(bars.index[idx] + timedelta(minutes=5)).astimezone(BERLIN):%H:%M}: "
@@ -246,7 +246,7 @@ def render(cp, rules, journal: Path, setups: dict[str, str], checklist: str) -> 
             if "rp_stop" not in SS:
                 SS.rp_stop = _suggest(rules) or round(price * 0.99, 2)
             st.number_input("Stop", min_value=0.0, step=0.01, format="%.2f", key="rp_stop")
-            suggestion = suggest_stop(visible, price, rules)
+            suggestion = suggest_stop(visible, price, stop_rules(rules, True))
             if suggestion:
                 st.button(f"Vorschlag übernehmen ({suggestion:.2f})", icon=":material/my_location:", key="rp_use",
                           on_click=_use_suggestion, args=(suggestion,))

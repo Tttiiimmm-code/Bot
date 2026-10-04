@@ -20,7 +20,7 @@ import streamlit as st  # noqa: E402
 from gui import auth  # noqa: E402
 from gui.chart import CHART_CONFIG, CHART_CONFIG_MOBILE, DOWN, UP, build_chart, is_mobile  # noqa: E402
 from tradingbot.copilot import (  # noqa: E402
-    BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, suggest_stop,
+    BERLIN, NY, Copilot, CopilotRules, attach_setups, de_weekday, entry_warnings, load_journal, setup_stats, stop_rules, suggest_stop,
 )
 from tradingbot.orb_scanner import CUTOFF_ET, orb_setups  # noqa: E402
 from tradingbot.orb_scanner import READY_ET as ORB_READY_ET  # noqa: E402
@@ -397,7 +397,7 @@ with tab_trade:
                 st.error(f"Kursdaten für {symbol} nicht abrufbar: {e}")
         else:
             st.info("Links Kandidaten suchen oder ein Symbol eingeben.", icon=":material/arrow_back:")
-        stop_default = suggest_stop(bars, price, rules) if price and not bars.empty else None
+        stop_default = suggest_stop(bars, price, stop_rules(rules, strict)) if price and not bars.empty else None
         chart_slot = st.empty()
 
     if symbol and price:

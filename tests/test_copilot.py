@@ -376,3 +376,14 @@ def test_old_journal_lines_without_breakeven_still_load(tmp_path):
                     '"stop": 9.0, "target": null, "risk": 1.0, "note": "", "order_id": "o"}' + chr(10), encoding="utf-8")
     [e] = load_journal(path)
     assert e.breakeven is False
+
+
+def test_stop_suggestion_meets_strict_minimum_after_fill():
+    from tradingbot.copilot import STRICT_MIN_STOP, stop_rules, suggest_stop
+    bars = {"low": [24.99, 24.95, 24.97]}                      # letztes Tief nur 0,2 % unter dem Kurs
+    loose = suggest_stop(bars, 25.0, stop_rules(RULES, False))
+    strict = suggest_stop(bars, 25.0, stop_rules(RULES, True))
+    assert loose == pytest.approx(24.87)                        # normal: 0,5 %
+    assert (25.0 - strict) / 25.0 >= STRICT_MIN_STOP            # streng/Übung: >= 1 %
+    entry = 25.0 * 1.0009                                       # Einstieg zur nächsten Kerze etwas höher
+    assert (entry - strict) / entry >= STRICT_MIN_STOP          # hält die Nachbesprechung trotzdem ein
