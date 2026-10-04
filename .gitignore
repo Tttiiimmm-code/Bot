@@ -25,3 +25,7 @@ copilot_settings.json
 gold.env
 gold_live_state.json
 gold_live_trades.csv
+
+# Persönliche Claude-Code-Einstellungen und Sperrdateien
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
