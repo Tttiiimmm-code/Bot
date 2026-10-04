@@ -1,13 +1,69 @@
-# Tradingbot (Alpaca, Moving-Average-Crossover)
+# Tradingbot-Projekt (Alpaca, OANDA, MT5) -- nur Papiergeld
 
-Ein Python-Tradingbot für US-Aktien/Forex-Symbole über die [Alpaca](https://alpaca.markets)-API.
-Standardmäßig läuft er im **Paper-Trading**-Modus (simuliertes Geld, kein echtes Risiko).
+Selbst entwickelte Bots und Strategie-Forschung mit einem einzigen Maßstab: **Eine Strategie zählt nur, wenn sie
+nach Kosten mehr bringt als ein S&P-500-ETF (SPY).** Alles läuft auf Paper-/Demokonten; Live-Konten werden im Code
+abgelehnt (Alpaca `ALPACA_PAPER=true`, OANDA `OANDA_PRACTICE=true`, MT5-EA `AllowLive=false`).
 
-⚠️ **Risikohinweis**: Automatisierter Handel kann zu finanziellen Verlusten führen. Dieser Bot
-ist eine einfache Referenzimplementierung, keine Anlageberatung. Vor Live-Trading gründlich
-testen und nur Kapital einsetzen, dessen Verlust du dir leisten kannst.
+**Risikohinweis:** Automatisierter Handel kann zu Verlusten führen. Nichts hier ist Anlageberatung, und bisher ist
+keine Strategie als besser als der ETF nachgewiesen (siehe unten).
 
-## Strategie
+## Stand (Oktober 2026)
+
+**Forschung:** 148 vorregistrierte Runden (Branch `research/ideas`, `research/PROTOCOL.md`). Trendfolge,
+Mean Reversion, Tageszeit-Effekte, Eröffnungsausbrüche (ORB), Krypto, Memecoins, Insider-/13D-/Kongress-Kopien,
+Faktoren, Saisonalität, ML-Ranking, News, TikTok/YouTube- und MQL5-Nachbauten, gehebelte Mischungen: **keine
+hat das Bestehenskriterium erreicht.** Robust, aber klein und kostenabhängig sind der Nikkei-Nachteffekt und
+Gotobi (USD/JPY); beide laufen als Vorwärtstest.
+
+**Vorwärtstests (Papier, eine bindende Auswertung zum festen Termin, vorher keine Entscheidung):**
+
+| Test | Was | Auswertung |
+|---|---|---|
+| Gemeinsame Regel, K = 11 Hypothesen | Nikkei-Nacht, Gotobi, Gotobi EUR/JPY, Anleihen-Monatsende, ORB Top 5, Qualität Top 50, Small-Cap Value+Qualität u. a. | 2027-10-01 / 2028-10-01 |
+| `gold_breakout` (eigene Familie) | Nachbau "The Gold Reaper", Runde 134 | 2028-10-01 |
+| `pelosi_copy` (eigene Familie) | Pelosi-Käufe ab Meldung 12 Monate halten, Runde 141 | 2029-10-01 |
+| Momentum-Bot | Prüfpunkte nach 100 und 150 Trades (`momentum-checkpoint`) | nach Trades |
+
+Zwischenstand aller Tests: `python main.py forward-status` (nur Information).
+
+**Was wo läuft:**
+
+| Wo | Dienst | Zweck |
+|---|---|---|
+| VPS | `momentum` | Momentum-Day-Trading-Bot, Alpaca-Paper (`.env`), Vorwärtstest ohne Parameteränderung |
+| VPS | `overnight` | Overnight-ETF-Portfolio, seit 2026-10-02 nur Dry-Run (`overnight.env`) |
+| VPS | `pelosi-bot` | Pelosi-Kopier-Bot, Alpaca-Paper (Overnight-Konto) |
+| VPS | `copilot-gui`, `copilot-watch` | Diskretionärer Trading-Copilot (Streamlit über Tailscale) und seine Sicherheitsüberwachung (`copilot.env`) |
+| VPS | `liq-recorder` | Krypto-Liquidationen aufzeichnen (nur Daten) |
+| VPS, Timer | `forward-test`, `forward-stocks`, `forward-gold`, `forward-pelosi`, `forward-status`, `momentum-checkpoint` | Vorwärtstests ohne Orders, Monatsstand per ntfy |
+| VPS, Timer | `health`, `backup-data` | Wächter alle 10 Minuten, nächtliche Datensicherung |
+| PC | `mql5/GoldBreakout.mq5` | Gold-Ausbruch als MT5-EA auf einem OANDA-Demokonto |
+| PC | `Copilot starten.bat`, `VPS-Sicherung holen.bat` | Copilot öffnen (lokal oder VPS), Sicherungen nach `backups/` holen |
+
+## Setup
+
+```bash
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt        # Linux/VPS: .venv/bin/pip
+.venv/Scripts/pip install -r requirements-gui.txt    # nur für den Copilot (Streamlit, Plotly)
+
+cp .env.example .env
+# .env mit Alpaca-PAPER-Keys befüllen (kostenlos unter https://alpaca.markets), ALPACA_PAPER=true lassen
+```
+
+Jeder Bot mit Orders braucht ein **eigenes** Paper-Konto in einer eigenen Datei (`.env` Momentum,
+`overnight.env` Overnight + Pelosi, `copilot.env` Copilot + `NTFY_TOPIC`, `gold.env` OANDA-Demo). Die Dateien
+sind per `*.env` von git ausgeschlossen. Der Momentum-Bot stellt fremde Positionen in seinem Konto glatt.
+
+Zusätzlich nötig: Node.js, denn `forward-run` und `forward-gold` laden Dukascopy-Kurse über
+`npx dukascopy-node`.
+
+## Referenz-Bot: SMA-Crossover (`run`, `backtest`, `validate`, `walkforward`)
+
+Der ursprüngliche Bot des Projekts: ein einfacher Moving-Average-Crossover für ein Symbol. Er ist eine
+Referenzimplementierung und wird nicht mehr betrieben (`deploy/tradingbot.service` ist auf dem VPS nicht installiert).
+
+### Strategie
 
 Moving-Average-Crossover mit optionalen Bestätigungsfiltern:
 - **BUY**, wenn der kurze gleitende Durchschnitt (SMA) den langen von unten nach oben kreuzt
@@ -18,20 +74,20 @@ Moving-Average-Crossover mit optionalen Bestätigungsfiltern:
 
 Fenstergrößen sind über `SHORT_WINDOW` / `LONG_WINDOW` konfigurierbar.
 
-### Trendfilter (`TREND_FILTER_WINDOW`)
+#### Trendfilter (`TREND_FILTER_WINDOW`)
 
 BUY nur, wenn der Kurs über dem gleitenden Durchschnitt dieses (längeren) Fensters liegt, z.B.
 der 200-Tage-SMA. Soll verhindern, in einem übergeordneten Abwärtstrend zu kaufen, nur weil
 kurzfristig ein Rebound einen Golden Cross auslöst. `0` deaktiviert den Filter.
 
-### RSI-Filter (`RSI_WINDOW`)
+#### RSI-Filter (`RSI_WINDOW`)
 
 BUY nur, wenn der RSI (Relative Strength Index) über 50 liegt, also aufwärts gerichtetes
 Momentum den Crossover bestätigt. `0` deaktiviert den Filter.
 
-## Risikomanagement
+### Risikomanagement
 
-### Trailing-Stop-Loss (`STOP_LOSS_PCT`)
+#### Trailing-Stop-Loss (`STOP_LOSS_PCT`)
 
 Sobald eine Position offen ist, wird bei jedem Zyklus geprüft, ob der aktuelle Kurs um mehr als
 `STOP_LOSS_PCT` unter den **höchsten seit dem Einstieg beobachteten Kurs** gefallen ist (nicht
@@ -49,14 +105,14 @@ Schwelle mit nach oben und sichert so einen Teil des bereits erzielten Gewinns.
   Daten verfügbar), ausgelöste Stop-Exits erscheinen im Ergebnis als eigener Trade-Typ `STOP`.
 - `STOP_LOSS_PCT=0` deaktiviert den Stop vollständig.
 
-### Take-Profit (`TAKE_PROFIT_PCT`)
+#### Take-Profit (`TAKE_PROFIT_PCT`)
 
 Überschreitet der Kurs den Einstiegspreis um mehr als `TAKE_PROFIT_PCT`, wird der Gewinn sofort
 mitgenommen -- unabhängig vom Crossover-Signal. Anders als der Trailing-Stop bezieht sich das
 Ziel immer auf den Einstiegspreis, nicht auf einen laufenden Höchststand. Erscheint im
 Backtest-Ergebnis als Trade-Typ `TP`. `TAKE_PROFIT_PCT=0` deaktiviert Take-Profit.
 
-### Risikobasierte Positionsgröße (`RISK_PER_TRADE_PCT`)
+#### Risikobasierte Positionsgröße (`RISK_PER_TRADE_PCT`)
 
 Standardmäßig setzt jeder Trade das volle verfügbare Kapital ein (Backtest) bzw. die feste
 Stückzahl `QTY` (Live-Bot). Mit `RISK_PER_TRADE_PCT > 0` wird die Positionsgröße stattdessen so
@@ -65,7 +121,7 @@ dieser Anteil des aktuellen Kapitals verloren geht -- klassisches Money-Manageme
 X% pro Trade riskieren"). Nur wirksam, wenn `STOP_LOSS_PCT > 0` ist (sonst gibt es keinen
 Bezugspunkt für "Risiko"). `RISK_PER_TRADE_PCT=0` deaktiviert die Berechnung.
 
-⚠️ **Diese Funktionen sind kein Allheilmittel und keine garantierte Profitsteigerung** -- sie
+**Achtung: Diese Funktionen sind kein Allheilmittel und keine garantierte Profitsteigerung** -- sie
 verschieben das Verhältnis von Risiko zu Ertrag, verbessern es nicht automatisch:
 
 - Ein fixer/trailender Stop kann bei volatilen Trendmärkten dazu führen, dass Positionen durch
@@ -80,7 +136,7 @@ verschieben das Verhältnis von Risiko zu Ertrag, verbessern es nicht automatisc
 - Mit `validate` lässt sich prüfen, ob eine bestimmte Kombination für ein konkretes Symbol
   tatsächlich hilft oder eher schadet -- und ob sie out-of-sample überhaupt stabil ist.
 
-## Robustheit & bekannte Grenzen
+### Robustheit & bekannte Grenzen
 
 - **Keine doppelten Orders, aber Stop-Loss wird nie blockiert**: Vor jeder Kauf-/Verkaufs-
   entscheidung prüft der Bot *richtungsspezifisch*, ob für das Symbol bereits eine offene
@@ -105,18 +161,7 @@ verschieben das Verhältnis von Risiko zu Ertrag, verbessern es nicht automatisc
   Parametern im Live-Bot so nicht erreichbar -- der Backtest dient der Strategie-/Parameter-
   Bewertung, nicht als exakte Vorhersage der Live-Performance.
 
-## Setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-cp .env.example .env
-# .env mit deinen Alpaca-Paper-API-Keys befüllen (kostenlos unter https://alpaca.markets)
-```
-
-## Nutzung
+### Nutzung
 
 **Backtest gegen historische Kurse:**
 
@@ -201,6 +246,24 @@ python main.py run
 ```
 
 Mit `Strg+C` sauber beenden.
+
+### Konfiguration des Referenz-Bots (`.env`)
+
+| Variable                | Beschreibung                                             | Default |
+|--------------------------|-----------------------------------------------------------|---------|
+| `ALPACA_API_KEY`         | Alpaca API Key                                            | –       |
+| `ALPACA_SECRET_KEY`      | Alpaca Secret Key                                         | –       |
+| `ALPACA_PAPER`           | `true` = Paper-Trading, `false` = Live-Trading             | `true`  |
+| `SYMBOL`                 | Handelssymbol, z.B. `AAPL`                                 | `AAPL`  |
+| `QTY`                    | Stückzahl pro Order                                        | `1`     |
+| `SHORT_WINDOW`           | Fenstergröße kurzer SMA                                    | `20`    |
+| `LONG_WINDOW`            | Fenstergröße langer SMA                                    | `50`    |
+| `POLL_INTERVAL_SECONDS`  | Abfrageintervall im Live-Loop (Sekunden)                   | `60`    |
+| `STOP_LOSS_PCT`          | Trailing-Stop als Anteil unter dem Höchststand, `0` = aus  | `0.08`  |
+| `TAKE_PROFIT_PCT`        | Take-Profit als Anteil über dem Einstieg, `0` = aus        | `0.15`  |
+| `RISK_PER_TRADE_PCT`     | Kapitalrisiko pro Trade (nur mit Stop-Loss), `0` = volles Kapital/feste QTY | `0.0` |
+| `TREND_FILTER_WINDOW`    | Trendfilter-SMA, BUY nur über diesem Wert, `0` = aus       | `200`   |
+| `RSI_WINDOW`             | RSI-Filter, BUY nur wenn RSI > 50, `0` = aus                | `14`    |
 
 ## Momentum-Day-Trading-Backtest (experimentell)
 
@@ -472,7 +535,7 @@ jedes der 8 ETFs SPY, QQQ, IWM, DIA, XLK, XLF, XLE, SMH mit je 1/8 des Kapitals 
 der Kurs über dem 200-Tage-Durchschnitt liegt (Market-on-Close), am nächsten Morgen alles zum
 Eröffnungskurs verkaufen (Market-on-Open).
 
-⚠️ **Nicht als profitabel nachgewiesen.** Im Backtest 2016-2025 +7,75 % p.a., Sharpe 1,0,
+**Nicht als profitabel nachgewiesen.** Im Backtest 2016-2025 +7,75 % p.a., Sharpe 1,0,
 Alpha ggü. SPY 5,3 % p.a. -- nach 191 getesteten Varianten ist das aber statistisch nicht
 von Glück zu unterscheiden. Der Paper-Betrieb ist ein Vorwärtstest auf neuen Daten, keine
 Empfehlung für echtes Geld.
@@ -493,7 +556,8 @@ python main.py overnight-report             # Auswertung von overnight_trades.cs
   OPG-Verkäufe ab 10 Minuten vor Open, nicht gefüllte Reste 5 Minuten nach Open per Market.
 - Zustand in `overnight_state.json` (übersteht Neustarts über Nacht), jede Nacht mit
   Kauf-/Verkaufskurs und P&L in `overnight_trades.csv`.
-- Dauerbetrieb: `deploy/overnight.service` analog zum Abschnitt unten.
+- Dauerbetrieb: `deploy/overnight.service`, seit 2026-10-02 nur mit `--dry-run` (Entscheidungen loggen, keine
+  Orders), weil Alpaca-Paper Auktionsorders (CLS/OPG) kaum ausführt.
 
 ### Vorwärtstest: Nikkei-Nachteffekt und Gotobi (ohne Broker)
 
@@ -549,6 +613,93 @@ python -m tradingbot.liquidations data_cache/liquidations
   data.binance.vision.
 - Dauerbetrieb: `deploy/liq-recorder.service` (`Restart=always`, `MemoryMax=120M`).
 
+## Pelosi-Kopier-Bot (`pelosi-bot`, Alpaca-Paper)
+
+Dieselben Regeln wie der Vorwärtstest `pelosi_copy` (Runde 141), aber mit echten Papier-Orders, um Ausführung und
+Depot real zu sehen. Im Backtest t 1,78 -- **nicht bestanden**, deshalb nur als eigener Vorwärtstest.
+
+- Neue Meldungen (House Clerk, elektronische Periodic Transaction Reports) stündlich prüfen.
+- Je Kaufzeile (Aktie, oder Option -> Basiswert) ein Los: Kauf am 2. Handelstag nach dem Meldedatum,
+  10 Minuten vor Schluss per Market-Order, 10 % des Kontowerts (höchstens das freie Bargeld, kein Hebel).
+- Verkauf desselben Loses 252 Handelstage später, ebenfalls kurz vor Schluss; verpasste Fenster werden am nächsten
+  Handelstag nachgeholt.
+- Zustand (`pelosi_bot_state.json`) wird sofort nach jeder Order gespeichert (kein Doppelkauf nach Teil-Fehlern);
+  vorübergehende API-Fehler lassen ein Los geplant statt es zu verwerfen. Trades in `pelosi_bot_trades.csv`.
+
+```bash
+python main.py pelosi-bot --env-file overnight.env --check   # nur Konto und Stand anzeigen
+python main.py pelosi-bot --env-file overnight.env --notify-env copilot.env
+```
+
+## Gold-Ausbruch (Runde 134, Nachbau "The Gold Reaper")
+
+Regel: zu Beginn jeder Stunde (UTC), wenn flach und keine eigene Order offen, Buy-Stop 0,1 ATR über dem höchsten
+Hoch der letzten 48 abgeschlossenen H1-Kerzen, gültig 12 Stunden; Stop 2 ATR, Ziel 4 ATR ab Füllkurs; nur long.
+ATR14 nach Wilder. Keine neuen Orders freitags ab 20:00 UTC, eigene Orders freitags ab 20:55 UTC löschen.
+Risiko 1 % des Kontowerts je Trade.
+
+Drei Umsetzungen derselben Regel:
+
+- **`forward-gold`** (VPS-Timer, keine Orders): rechnet mit Dukascopy-XAUUSD-M1-Geld/Brief inkl. 6,3 % p.a. Swap
+  und schreibt `forward_gold.csv`. Das ist der bindende Vorwärtstest (Auswertung 2028-10-01).
+- **`mql5/GoldBreakout.mq5`** (MT5 auf dem PC, OANDA-Demo): protokolliert jeden Trade in
+  `MQL5/Files/gold_breakout_trades.csv`. Kompilieren mit
+  `MetaEditor64.exe /compile:"...\GoldBreakout.mq5" /log:"..."`.
+- **`gold-live`** (Python, OANDA fxTrade Practice über `gold.env`): startet nur mit `OANDA_PRACTICE=true`;
+  `--check` prüft nur die Verbindung. Unit `deploy/gold-live.service`, auf dem VPS derzeit nicht installiert.
+
+Zweck von EA/Bot: Ausführung, Slippage, Spread und Swap im echten Betrieb mit der Simulation vergleichen.
+
+## Trading-Copilot (diskretionär, `copilot`, Streamlit-Oberfläche)
+
+Der Nutzer entscheidet (Symbol, Stop, Setup), der Copilot erzwingt die Regeln: Positionsgröße aus dem Risiko
+(1 R, Standard 50 $), Stop direkt bei Alpaca, Tagesverlustgrenze (Standard 150 $), höchstens 6 Einstiege pro Tag,
+nur long. Ein Journal (`copilot_journal.jsonl`) speichert Setup, Notiz und geplantes Risiko. Ziel ist ein
+ehrlicher Test, ob diskretionäre Entscheidungen einen Vorteil haben: nach mindestens 100 Trades wertet
+`copilot report` je Setup in R-Vielfachen aus.
+
+```bash
+python main.py copilot scan                                     # Aktien im Spiel
+python main.py copilot buy ABCD --stop 4.80 --setup vwap-pullback --breakeven
+python main.py copilot status                                   # ebenso: close ABCD, report, weekly, notify-test
+python main.py copilot watch                                    # Sicherheit im Hintergrund
+.venv/Scripts/python -m streamlit run gui/copilot_app.py         # Oberfläche
+```
+
+- **`copilot watch`** stellt bei Erreichen der Tagesverlustgrenze und um 15:55 ET glatt und zieht den Stop bei
+  +1 R auf Einstand (`--breakeven`).
+- **Oberfläche** (`gui/`): TradingView-ähnlicher Kerzenchart, ORB-Setup-Melder (`tradingbot/orb_scanner.py`,
+  Top 5 nach relativem Eröffnungsvolumen), Übungsmodus "Replay" (vergangener Tag Kerze für Kerze, eigenes Journal
+  `replay_journal.jsonl`), Anmeldung per Passwort (`COPILOT_PASSWORD`, Cookie 30 Tage).
+- **Benachrichtigungen** über ntfy (`NTFY_TOPIC` in `copilot.env`): Setups, Ausgänge, Eingriffe der
+  Überwachung, freitags der Wochenbericht.
+- Auf dem VPS als `copilot-gui` (nur 127.0.0.1, Zugriff über Tailscale) und `copilot-watch`.
+  `Copilot starten.bat` öffnet die VPS-Seite, wenn `COPILOT_VPS_URL` in `copilot.env` steht, sonst startet sie
+  Oberfläche und Überwachung lokal.
+
+## Weitere Vorwärtstests (ohne Orders)
+
+| Befehl | Inhalt | Ausgabe |
+|---|---|---|
+| `forward-stocks` | ORB Top 5 täglich (Runden 107/107b), Qualität Top 50 monatlich (Runden 118/118b), Small-Cap Value+Qualität Top 20 (Runde 98); Alpaca-Marktdaten nur lesend + SEC-XBRL | `forward_orb.csv`, `forward_quality.csv`, `forward_smallvq.csv` |
+| `forward-gold` | Gold-Ausbruch (siehe oben) | `forward_gold.csv` |
+| `forward-pelosi` | Pelosi-Käufe, Schlusskurs 2. Handelstag nach Meldung, 252 Tage, 0,1 % Kosten je Seite | `forward_pelosi.csv` |
+| `forward-status` | Alle Tests nach der gemeinsamen Regel (K = 11, einseitiger t-Test p < 0,05/11, Ø >= 50 % der Backtest-Erwartung) | Text, `--notify` per ntfy |
+| `momentum-checkpoint` | Momentum-Bot: Abbruch bei 100 Trades, wenn Netto < 0 und PF < 0,8; bestanden bei 150 Trades nur mit Netto > 0, PF >= 1,3 und t >= 2 | ntfy, je einmal |
+
+Auswertungen: `forward-report`, `forward-stocks-report`. Alle Läufe sind idempotent; verpasste Tage holt der
+nächste Lauf nach. Einziger vorzeitiger Abbruch nach der gemeinsamen Regel: nach der Hälfte der Laufzeit bei
+Ø < 0 und t <= -1,5.
+
+## Überwachung und Datensicherung
+
+- **`health`** (alle 10 Minuten): prüft die Dienste und Timer-Läufe (`SERVICES`/`ONESHOTS` in
+  `tradingbot/health.py`), Plattenplatz, Speicher und die Aktualität der Liquidationsdaten. Meldet nur
+  Zustandswechsel per ntfy, dazu täglich um 8:30 einen Status.
+- **`backup-data`** (03:00): `deploy/backup-data.sh` packt Journale, Vorwärtstest-CSVs, Bot-Zustände und
+  Liquidationsdaten nach `/home/tradingbot/backups` (14 Tage). Keine Schlüssel, keine neu ladbaren Caches.
+  `VPS-Sicherung holen.bat` holt die Archive per scp nach `backups/` auf dem PC.
+
 ## Dauerbetrieb auf einem eigenen Server/VPS (systemd)
 
 Für 24/7-Betrieb (statt eines Terminal-Fensters, das offen bleiben muss) liegt unter
@@ -583,54 +734,71 @@ Passe in `deploy/tradingbot.service` `User=`/`WorkingDirectory=`/`ExecStart=` an
 anderen User oder Pfad verwendest. Neu starten nach einer `.env`-Änderung:
 `sudo systemctl restart tradingbot`. Dauerhaft stoppen: `sudo systemctl disable --now tradingbot`.
 
-Genauso gibt es `deploy/momentum.service` (Momentum-Bot, `.env`) und `deploy/overnight.service`
-(Overnight-Bot mit eigenem Konto in `overnight.env`, zunächst `--dry-run`). Wichtig: `tradingbot`
-und `momentum` NICHT gleichzeitig mit derselben `.env` betreiben -- beide würden im selben
-Alpaca-Konto handeln und sich gegenseitig Positionen verändern.
+Die Units aller Dienste liegen in `deploy/` (Übersicht oben unter "Was wo läuft"). Wichtig: zwei Bots nie mit
+derselben `.env` betreiben -- beide würden im selben Alpaca-Konto handeln und sich gegenseitig Positionen
+verändern.
 
-## Konfiguration (`.env`)
+**Änderungen ausrollen** (VPS `root@116.203.115.99`, Repo `/home/tradingbot/Bot`, Branch `feature/forward-test`):
 
-| Variable                | Beschreibung                                             | Default |
-|--------------------------|-----------------------------------------------------------|---------|
-| `ALPACA_API_KEY`         | Alpaca API Key                                            | –       |
-| `ALPACA_SECRET_KEY`      | Alpaca Secret Key                                         | –       |
-| `ALPACA_PAPER`           | `true` = Paper-Trading, `false` = Live-Trading             | `true`  |
-| `SYMBOL`                 | Handelssymbol, z.B. `AAPL`                                 | `AAPL`  |
-| `QTY`                    | Stückzahl pro Order                                        | `1`     |
-| `SHORT_WINDOW`           | Fenstergröße kurzer SMA                                    | `20`    |
-| `LONG_WINDOW`            | Fenstergröße langer SMA                                    | `50`    |
-| `POLL_INTERVAL_SECONDS`  | Abfrageintervall im Live-Loop (Sekunden)                   | `60`    |
-| `STOP_LOSS_PCT`          | Trailing-Stop als Anteil unter dem Höchststand, `0` = aus  | `0.08`  |
-| `TAKE_PROFIT_PCT`        | Take-Profit als Anteil über dem Einstieg, `0` = aus        | `0.15`  |
-| `RISK_PER_TRADE_PCT`     | Kapitalrisiko pro Trade (nur mit Stop-Loss), `0` = volles Kapital/feste QTY | `0.0` |
-| `TREND_FILTER_WINDOW`    | Trendfilter-SMA, BUY nur über diesem Wert, `0` = aus       | `200`   |
-| `RSI_WINDOW`             | RSI-Filter, BUY nur wenn RSI > 50, `0` = aus                | `14`    |
+```bash
+# lokal committen und pushen, dann auf dem VPS:
+cd /home/tradingbot/Bot && sudo -u tradingbot git pull
+sudo cp deploy/<dienst>.service deploy/<dienst>.timer /etc/systemd/system/   # nur bei geänderten Units
+sudo systemctl daemon-reload && sudo systemctl restart <dienst>
+```
+
+- Nicht schnell hintereinander neu starten (StartLimit; falls ausgelöst: `systemctl reset-failed <dienst>`).
+- API-lastige Arbeiten erst nach 17:30 deutscher Zeit, solange die Bots handeln.
+- Neue Abhängigkeiten in `requirements.txt` eintragen und auf dem VPS installieren; neue Dienste/Timer in
+  `tradingbot/health.py` (`SERVICES`/`ONESHOTS`), neue Datendateien in `deploy/backup-data.sh` und `.gitignore`.
+- `/opt/ict-bot` auf dem VPS gehört nicht zu diesem Projekt und bleibt unangetastet.
 
 ## Tests
 
-Die Strategie- und Backtest-Logik ist ohne Netzwerkzugriff testbar:
+Alle Tests laufen ohne Netzwerkzugriff:
 
 ```bash
-pytest
+.venv/Scripts/python -m pytest tests/ -q -p no:warnings
 ```
+
+Jede Fehlerbehebung bekommt einen Regressionstest.
 
 ## Projektstruktur
 
 ```
-main.py               CLI-Einstiegspunkt (run / backtest / validate / walkforward / momentum-backtest / scan / momentum-run / momentum-report / momentum-compare)
+main.py                  CLI-Einstiegspunkt für alle Befehle (python main.py --help)
 tradingbot/
-  config.py            Konfiguration aus Umgebungsvariablen
-  broker.py            Alpaca-API-Wrapper (Marktdaten, Orders, Positionen)
-  strategy.py           Signal-Logik: Crossover + Trendfilter + RSI-Filter
-  bot.py               Live-/Paper-Trading-Loop (Moving-Average-Crossover)
-  backtest.py          Vektor-Backtest inkl. Transaktionskosten
-  validation.py         Out-of-Sample-Validierung (ein Train-/Test-Split)
-  walkforward.py        Out-of-Sample-Validierung über mehrere Zeitfenster
-  momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten (experimentell)
-  scanner.py             Marktweiter Aktien-Scanner, aktueller Marktzustand (experimentell)
-  momentum_live.py       Live-Momentum-Bot: Scanner + Momentum-Engine + echte Orders (experimentell)
-  report.py               P&L-Report aus Alpacas Order-Historie (momentum-report/-compare)
-tests/                 Unit-Tests (kein API-Zugriff nötig)
+  config.py, broker.py   Konfiguration, Alpaca-Wrapper (lehnt Live-Konten ab)
+  strategy.py, bot.py    Referenz-Bot SMA-Crossover
+  backtest.py, validation.py, walkforward.py   Backtest und Out-of-Sample-Prüfung des Referenz-Bots
+  momentum.py            Bull-Flag/Flat-Top-Engine + Momentum-Backtest auf Minutendaten
+  scanner.py             Marktweiter Aktien-Scanner
+  momentum_live.py       Live-Momentum-Bot (Paper)
+  momentum_checkpoint.py Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests
+  news_intel.py          LLM-Einschätzung von News/SEC-Meldungen (Schattenmodus)
+  report.py              P&L-Report aus Alpacas Order-Historie (momentum-report/-compare)
+  overnight_live.py      Overnight-ETF-Portfolio-Bot
+  pelosi_bot.py          Pelosi-Kopier-Bot (Paper)
+  gold_live.py           Gold-Ausbruch mit OANDA-Demo-Orders
+  copilot.py             Trading-Copilot: Regeln, Positionsgröße, Stop, Journal
+  orb_scanner.py         ORB-Setup-Melder für den Copilot
+  replay.py              Übungsmodus (vergangener Tag Kerze für Kerze)
+  weekly_report.py       Wochenbericht der Copilot-Trades
+  notify.py              ntfy-Benachrichtigungen
+  forward_test.py        Vorwärtstest Nikkei-Nacht, Gotobi, Anleihen-Monatsende
+  forward_stocks.py      Vorwärtstest ORB Top 5, Qualität Top 50, Small-Cap Value+Qualität
+  forward_gold.py        Vorwärtstest gold_breakout
+  forward_pelosi.py      Vorwärtstest pelosi_copy
+  forward_status.py      Gemeinsame Auswertungsregel K = 11, Monatsstand
+  health.py              Wächter für den VPS
+  liquidations.py        Liquidations-Recorder (eigenständig, ohne main.py)
+  research/              Backtest-Werkzeuge der Forschung (engine, metrics, orb, swing, universe, strategies)
+gui/                     Streamlit-Oberfläche des Copilots (copilot_app, chart, replay_view, auth)
+mql5/GoldBreakout.mq5    Gold-Ausbruch als MT5-EA (nur Demo)
+deploy/                  systemd-Units und -Timer, backup-data.sh, setup_copilot_vps.sh
+research/                PROTOCOL.md und Ergebnisse; die Rundenskripte liegen auf Branch research/ideas
+tests/                   Unit-Tests (kein API-Zugriff nötig)
+data_cache/              Daten-Cache der Forschung (nicht in git)
 ```
 
 ## Erweitern
