@@ -4272,3 +4272,21 @@ Datenhinweise: Panel-Namen bei inaktiven Titeln leer -> einige ETFs/ETNs rutsche
 41 Splits mit Sprüngen > 40 % im Folgejahr (teils echte spätere Reverse-Splits, teils fehlende Bereinigung am
 Ex-Tag, der vor dem Einstieg liegt). Verdrehen das Ergebnis nicht ins Positive.
 Fazit: Keine Drift nach Splits mehr (seit Ikenberry & Ramnath 2002 verschwunden, passt zu McLean & Pontiff).
+
+# Runde 148: Etablierte Memecoins mit Rug-Pull-Filter (Vorab, 2026-10-05)
+
+Nutzer: Memecoins erlaubt, Sorge ist ein Rug Pull. Daher nur etablierte, liquide Coins auf Binance (kein Team kann
+Liquidität abziehen; Risiko ist Wertverfall, nicht Rug Pull).
+Universum (vorab, CoinGecko-Kategorie meme-token geschnitten mit Binance-USDT-Spot, Namensdoppelungen entfernt):
+1000CAT, 1000CHEEMS, 1MBABYDOGE, ACT, BANANAS31, BOME, BONK, DOGE, DOGS, FLOKI, GIGGLE, MEME, MUBARAK, NEIRO, NOT,
+PENGU, PEOPLE, PEPE, PNUT, SHIB, TRUMP, TST, TURBO, TUT, WIF. Daten: data_cache/crypto (Binance-Tageskerzen, nur
+heute aktive Paare -> delistete Memecoins fehlen; wird berichtet).
+Rug-/Qualitätsfilter (zeitpunktgenau): seit >= 365 Tagen gelistet UND Ø Tagesumsatz 30 Tage >= 20 Mio. USDT.
+Strategien (Kosten 0,1 % je Seite auf den Umschlag, Cash = 0 % Zins, Bewertung Tagesschluss UTC):
+- A Korb: alle zulässigen gleichgewichtet, monatlich neu gewichtet.
+- B Korb mit Trendfilter: wie A, aber nur investiert, wenn der Korb-Index (A ohne Kosten) über seinem 50-Tage-
+  Durchschnitt schließt (tägliche Prüfung, Wechsel am nächsten Tag).
+- C Rotation: wöchentlich (Montag) die 3 zulässigen mit der höchsten 28-Tage-Rendite, nur wenn diese > 0, je 1/3.
+Kriterium (K=3, t >= 2,4): Hauptzeitraum 2023-01..2026-09: Rendite p.a. > SPY UND t monatl. Überrendite ggü. SPY
+>= 2,4 UND Einordnung 2020-07..2022-12 (fast nur DOGE) Überrendite > 0. Info: BTC halten, größter Verlust,
+Absturzquote (Anteil zulässiger Coins mit > 90 % Verlust vom Hoch).
