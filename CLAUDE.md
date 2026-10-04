@@ -13,7 +13,10 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
   Vorwärtstest-Regel bleibt streng (Nutzer: "lass es streng").
 - **Momentum-Bot:** während des Vorwärtstests keine Parameteränderungen; nur bei RAM-Not anhalten.
 - `/opt/ict-bot` auf dem VPS nicht anfassen.
-- Keine Memecoins/neuen Listings, keine Prognosemärkte (Polymarket in DE illegal).
+- Memecoins dürfen untersucht werden; Sorge des Nutzers ist ein Rug Pull (Team/Insider ziehen Liquidität ab oder
+  verkaufen alles). Jeder Vorschlag muss dieses Risiko ausdrücklich behandeln (Alter, Liquidität, gesperrte
+  Liquidität, Konzentration der Halter, Delisting-/Absturzquote im Backtest). Keine Prognosemärkte (Polymarket in
+  DE illegal).
 - API-lastige Arbeit auf dem VPS erst nach 17:30 deutscher Zeit (Bots handeln bis dahin).
 
 ## Forschungsprotokoll (Branch `research/ideas`, Datei `research/PROTOCOL.md`)
