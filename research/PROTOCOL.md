@@ -4249,3 +4249,15 @@ Deutung: Ergebnis folgt grob dem Grundtrend des Marktes (stark steigend -> posit
 positiv weit unter Kaufen-und-Halten. Stützt die Lesart, dass der Gold-Ausbruch v. a. den Gold-Aufwärtstrend
 2008-2026 einfängt, nicht einen allgemeinen Ausbruchseffekt. Für den Vorwärtstest gold_breakout heißt das: Er
 hängt am weiteren Goldtrend.
+
+# Runde 147: Kursdrift nach Aktiensplits (Ikenberry, Rankine & Stice 1996; Ikenberry & Ramnath 2002) (Vorab, 2026-10-04)
+
+Daten: data_cache/splits.pkl (Alpaca Corporate Actions, forward_splits, Ex-Tag 2016-01..2026-09), Kurse
+data_cache/universe/daily (Alpaca SIP, split-bereinigt, OHNE Dividenden, inkl. später delisteter Titel).
+Benchmark SPY aus demselben Panel (ebenfalls ohne Dividenden -> fairer Vergleich).
+Regeln: Kauf zum Schlusskurs am Ex-Tag (Ex-Tag wird Wochen vorher angekündigt -> kein Vorgriff), Haltedauer 252
+Handelstage oder bis Datenende/Delisting (letzter Kurs); nur Stammaktien (Name ohne ETF/Fund/Trust/etc., Filter
+orb_scanner.NOT_COMMON), Schluss >= 5 $, Ø-Tagesumsatz 20 Tage >= 1 Mio. $; Verhältnis neu/alt >= 1,25;
+0,1 % je Seite; gleichgewichtet über offene Positionen, ohne Position SPY.
+Kriterium (eine These): 2021-01..2026-09 Rendite > SPY UND t (monatl. Überrendite) >= 2,0 UND 2016-2020 Überrendite > 0.
+Info: Haltedauer 21/63/126 Tage; Splits großer Firmen (Kurs vor Split >= 100 $).
