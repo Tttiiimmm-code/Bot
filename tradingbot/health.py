@@ -75,7 +75,13 @@ def step(notifier, state_path: Path = STATE, now: datetime | None = None, check=
         if notifier.send("VPS: Tagesstatus", text, "low", "sunny" if not current else "warning"):
             st["summary_date"] = today
             sent.append(text)
-    st["problems"] = current
+    # nur gemeldete Änderungen übernehmen: scheitert ntfy, gilt das Problem beim nächsten Lauf weiter als neu
+    known = set(before)
+    if new and set(new) <= set(sent):
+        known |= set(new)
+    if fixed and set(fixed) <= set(sent):
+        known -= set(fixed)
+    st["problems"] = [p for p in current if p in known] + [p for p in before if p not in current and p in known]
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(st))
     return sent

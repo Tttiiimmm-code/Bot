@@ -148,7 +148,8 @@ class GoldLiveBot:
         if self.state.last_hour != hour_key and now.minute < 10:
             self.state.last_hour = hour_key
             self.state.save(self.cfg.state_file)
-            if not (fri and now.hour >= 20) and not self.c.open_trades() and not self.c.pending_orders():
+            weekend = now.weekday() == 5 or (now.weekday() == 6 and now.hour < 22)   # Markt zu (wie forward_gold/EA)
+            if not (fri and now.hour >= 20) and not weekend and not self.c.open_trades() and not self.c.pending_orders():
                 self._place(now)
         self._sync_ledger()
 

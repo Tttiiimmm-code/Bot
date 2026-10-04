@@ -33,7 +33,9 @@ class FakeTC:
 
     def get_asset(self, sym):
         if sym not in self.tradable:
-            raise ValueError("unbekannt")
+            e = ValueError("asset not found")                # wie Alpaca APIError 404
+            e.status_code = 404
+            raise e
         t, f = self.tradable[sym]
         return SimpleNamespace(tradable=t, fractionable=f)
 
@@ -113,3 +115,43 @@ def test_restart_keeps_state_and_no_duplicate_orders(bot):
     again.step(ny(2026, 10, 8, 15, 53))
     again.step(ny(2026, 10, 8, 17, 0))                                 # nächste Prüfung der Meldungen
     assert len(bot.tc.orders) == 1 and len(again.state.lots) == 2
+
+
+def test_failed_calendar_after_order_does_not_buy_twice(bot):
+    bot.step(ny(2026, 10, 6, 12, 0))
+    real = bot._nth_session_after
+    calls = {"n": 0}
+
+    def flaky(day, n):
+        if n == pb.HOLD_SESSIONS:
+            calls["n"] += 1
+            raise ConnectionError("Kalender weg")
+        return real(day, n)
+    bot._nth_session_after = flaky
+    bot.step(ny(2026, 10, 8, 15, 52))
+    bot.step(ny(2026, 10, 8, 15, 53))
+    nv = next(x for x in bot.state.lots if x["ticker"] == "NVDA")
+    assert len(bot.tc.orders) == 1 and nv["status"] == "gekauft" and nv["sell_on"]
+
+
+def test_transient_errors_keep_lot_planned(bot):
+    bot.step(ny(2026, 10, 6, 12, 0))
+    bot.tc.get_asset = lambda s: (_ for _ in ()).throw(TimeoutError("Netz"))
+    with pytest.raises(TimeoutError):
+        bot.step(ny(2026, 10, 8, 15, 52))
+    assert next(x for x in bot.state.lots if x["ticker"] == "NVDA")["status"] == "geplant"
+    bot.tc.get_asset = FakeTC().get_asset
+    bot.price = lambda s: None                                          # kein Kurs: später erneut
+    bot.step(ny(2026, 10, 8, 15, 53))
+    assert next(x for x in bot.state.lots if x["ticker"] == "NVDA")["status"] == "geplant"
+    bot.price = lambda s: 180.0
+    bot.step(ny(2026, 10, 8, 15, 54))
+    assert next(x for x in bot.state.lots if x["ticker"] == "NVDA")["status"] == "gekauft"
+
+
+def test_filing_errors_do_not_block_trading(bot):
+    bot.step(ny(2026, 10, 6, 12, 0))
+    bot.fetch = lambda url: (_ for _ in ()).throw(ConnectionError("Clerk down"))
+    bot.state.checked_at = ""                                           # Abruf fällig
+    bot.step(ny(2026, 10, 8, 15, 52))
+    assert len(bot.tc.orders) == 1

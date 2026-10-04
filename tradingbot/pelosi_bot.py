@@ -27,6 +27,7 @@ from tradingbot.overnight_live import NY, _as_ny
 logger = logging.getLogger(__name__)
 
 HOLD_SESSIONS = 252
+MAX_PRICE_MISSES = 20       # ~2 Kauffenster à 10 Abfragen
 LOG_FIELDS = ["doc", "ticker", "filing_date", "buy_date", "buy_price", "qty", "sell_date", "sell_price", "ret"]
 
 
@@ -62,6 +63,7 @@ class PelosiBot:
         """price_fn(symbol) -> letzter Kurs (float) oder None."""
         self.cfg, self.tc, self.price, self.notifier, self.fetch = cfg, trading_client, price_fn, notifier, fetch
         self.state = _State.load(cfg.state_file)
+        self._filings_retry_at = datetime.min.replace(tzinfo=NY)
 
     def _say(self, title: str, text: str) -> None:
         logger.info("%s: %s", title, text)
@@ -123,7 +125,9 @@ class PelosiBot:
         try:
             asset = self.tc.get_asset(sym)
             tradable, fractionable = bool(asset.tradable), bool(getattr(asset, "fractionable", False))
-        except Exception:  # noqa: BLE001 -- unbekanntes Symbol
+        except Exception as e:  # noqa: BLE001
+            if getattr(e, "status_code", None) != 404 and "not found" not in str(e).lower():
+                raise                                     # vorübergehend (Netz/Limit): Los bleibt "geplant"
             tradable, fractionable = False, False
         if not tradable:
             lot["status"] = "nicht handelbar"
@@ -132,9 +136,15 @@ class PelosiBot:
         acct = self.tc.get_account()
         amount = min(self.cfg.position_pct * float(acct.equity), float(acct.cash))
         price = self.price(sym)
-        if amount < 1 or not price:
-            lot["status"] = "kein Geld/Kurs"
-            self._say("Pelosi-Bot", f"{sym}: Kauf nicht möglich (Betrag {amount:.0f} $, Kurs {price})")
+        if not price:
+            lot["price_misses"] = lot.get("price_misses", 0) + 1
+            if lot["price_misses"] >= MAX_PRICE_MISSES:
+                lot["status"] = "kein Kurs"
+                self._say("Pelosi-Bot", f"{sym}: {MAX_PRICE_MISSES}x kein Kurs, Los übersprungen")
+            return                                        # sonst nächster Versuch (nächste Abfrage/nächster Tag)
+        if amount < 1:
+            lot["status"] = "kein Geld"
+            self._say("Pelosi-Bot", f"{sym}: Kauf nicht möglich, kein freies Bargeld ({amount:.0f} $)")
             return
         qty = math.floor(amount / price)
         if qty >= 1:
@@ -145,9 +155,15 @@ class PelosiBot:
             lot["status"] = "zu teuer"
             self._say("Pelosi-Bot", f"{sym}: 1 Aktie ({price:.2f} $) kostet mehr als {amount:.0f} $")
             return
-        sell_on = self._nth_session_after(today, HOLD_SESSIONS)
-        lot.update(status="gekauft", bought_on=today.isoformat(),
-                   sell_on=sell_on.isoformat() if sell_on else (today + timedelta(days=365)).isoformat())
+        # sofort als gekauft speichern: scheitert ein späterer Aufruf, darf der nächste Takt nicht erneut kaufen
+        lot.update(status="gekauft", bought_on=today.isoformat(), sell_on=(today + timedelta(days=365)).isoformat())
+        self.state.save(self.cfg.state_file)
+        try:
+            sell_on = self._nth_session_after(today, HOLD_SESSIONS)
+            if sell_on:
+                lot["sell_on"] = sell_on.isoformat()
+        except Exception:  # noqa: BLE001 -- Kalender nicht erreichbar: Näherung 365 Kalendertage bleibt
+            logger.exception("%s: Verkaufstag nicht berechenbar, nutze %s", sym, lot["sell_on"])
         self._say("Pelosi-Bot kauft",
                   f"{sym}: Market-Order ~{amount:.0f} $ (Kurs {price:.2f}), Verkauf am {lot['sell_on']}")
 
@@ -157,8 +173,9 @@ class PelosiBot:
             lot["status"] = "Kauf nicht gefüllt"
             self._say("Pelosi-Bot", f"{lot['ticker']}: Kauf-Order wurde nie ausgeführt, nichts zu verkaufen")
             return
-        lot.update(qty=fill[0], buy_price=fill[1], status="verkauft", sold_on=today.isoformat())
-        lot["sell_id"] = self._order(lot["ticker"].replace("-", "."), "sell", qty=fill[0])
+        sell_id = self._order(lot["ticker"].replace("-", "."), "sell", qty=fill[0])   # scheitert -> bleibt "gekauft"
+        lot.update(qty=fill[0], buy_price=fill[1], status="verkauft", sold_on=today.isoformat(), sell_id=sell_id)
+        self.state.save(self.cfg.state_file)
 
     def _log_closed(self) -> None:
         changed = False
@@ -187,8 +204,12 @@ class PelosiBot:
     def step(self, now: datetime) -> None:
         now = now.astimezone(NY)
         last = datetime.fromisoformat(self.state.checked_at) if self.state.checked_at else None
-        if last is None or now - last >= self.cfg.check_every:
-            self.check_filings(now)
+        if (last is None or now - last >= self.cfg.check_every) and now >= self._filings_retry_at:
+            try:
+                self.check_filings(now)
+            except Exception:  # noqa: BLE001 -- Meldungsabruf darf Käufe/Verkäufe nicht blockieren
+                logger.exception("Meldungen nicht abrufbar, neuer Versuch in 10 Minuten")
+                self._filings_retry_at = now + timedelta(minutes=10)
         today = now.date()
         sess = self.sessions(today, today)
         if not sess or sess[0][0] != today:

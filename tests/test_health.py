@@ -36,3 +36,13 @@ def test_step_reports_changes_once_and_daily_summary(tmp_path):
     health.step(n, state, datetime(2026, 10, 2, 8, 40, tzinfo=health.BERLIN), check=lambda: [])
     health.step(n, state, datetime(2026, 10, 2, 9, 0, tzinfo=health.BERLIN), check=lambda: [])
     assert sum(m[0] == "VPS: Tagesstatus" for m in n.msgs) == 1 and "Alles läuft" in n.msgs[-1][1]
+
+
+def test_failed_alert_is_retried(tmp_path):
+    n, state = FakeNotifier(), tmp_path / "s.json"
+    t = datetime(2026, 10, 2, 7, 0, tzinfo=health.BERLIN)
+    n.send = lambda *a, **k: False                                     # ntfy nicht erreichbar
+    health.step(n, state, t, check=lambda: ["Dienst pelosi-bot läuft nicht (failed)"])
+    n.send = FakeNotifier.send.__get__(n)
+    health.step(n, state, t, check=lambda: ["Dienst pelosi-bot läuft nicht (failed)"])
+    assert [m[0] for m in n.msgs] == ["VPS: Problem"]                  # beim nächsten Lauf nachgeholt

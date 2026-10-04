@@ -102,3 +102,13 @@ def test_demo_only(tmp_path):
         gl.client_from_env(str(env))
     env.write_text("OANDA_TOKEN=x\nOANDA_ACCOUNT_ID=101-004-1-001\nOANDA_PRACTICE=true\n")
     assert gl.client_from_env(str(env)).base.startswith("https://api-fxpractice")
+
+
+def test_no_orders_on_weekend(cfg):
+    c = FakeClient()
+    bot = gl.GoldLiveBot(c, cfg)
+    bot.step(datetime(2026, 10, 10, 10, 1, tzinfo=timezone.utc))   # Samstag
+    bot.step(datetime(2026, 10, 11, 21, 1, tzinfo=timezone.utc))   # Sonntag vor 22 UTC
+    assert c.placed == []
+    bot.step(datetime(2026, 10, 11, 22, 1, tzinfo=timezone.utc))   # Sonntag 22 UTC: Markt offen
+    assert len(c.placed) == 1
