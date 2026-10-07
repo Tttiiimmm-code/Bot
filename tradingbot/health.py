@@ -7,7 +7,6 @@ damit ein Ausfall nicht alle 10 Minuten neu gemeldet wird.
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 import time
@@ -15,9 +14,11 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from tradingbot.state_io import load_state, save_state
+
 BERLIN = ZoneInfo("Europe/Berlin")
 SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled", "pelosi-bot"]
-ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
+ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi", "backup-data"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
 STATE = Path("data_cache") / "health_state.json"
 LIQ_DIR = Path("data_cache") / "liquidations"
 SUMMARY_AT = (8, 30)                                    # tägliche Meldung (deutsche Zeit)
@@ -35,6 +36,9 @@ def problems(run=_systemctl, disk_path: str = "/", liq_dir: Path = LIQ_DIR, now:
         if state != "active":
             out.append(f"Dienst {s} läuft nicht ({state or 'unbekannt'})")
     for s in ONESHOTS:
+        state = run("is-active", f"{s}.timer")
+        if state != "active":
+            out.append(f"Timer {s} läuft nicht ({state or 'unbekannt'})")
         result = run("show", "-p", "Result", "--value", f"{s}.service")
         if result and result != "success":
             out.append(f"Letzter Lauf {s} fehlgeschlagen ({result})")
@@ -56,10 +60,7 @@ def problems(run=_systemctl, disk_path: str = "/", liq_dir: Path = LIQ_DIR, now:
 def step(notifier, state_path: Path = STATE, now: datetime | None = None, check=problems) -> list[str]:
     """Vergleicht mit dem letzten Zustand, sendet neue Probleme / Entwarnungen und einmal täglich den Status."""
     now = now or datetime.now(BERLIN)
-    try:
-        st = json.loads(state_path.read_text())
-    except (OSError, ValueError):
-        st = {"problems": [], "summary_date": ""}
+    st = load_state(state_path, {"problems": [], "summary_date": ""}, strict=False)
     current = check()
     before = set(st.get("problems", []))
     sent = []
@@ -83,5 +84,5 @@ def step(notifier, state_path: Path = STATE, now: datetime | None = None, check=
         known -= set(fixed)
     st["problems"] = [p for p in current if p in known] + [p for p in before if p not in current and p in known]
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(st))
+    save_state(state_path, st)
     return sent

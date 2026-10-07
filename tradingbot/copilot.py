@@ -23,6 +23,9 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from tradingbot.order_recovery import client_order_id, submit_once
+from tradingbot.state_io import load_state, save_state
+
 NY = ZoneInfo("America/New_York")
 BERLIN = ZoneInfo("Europe/Berlin")
 # relativ zum tatsächlichen Börsenschluss (Alpaca-Uhr), gilt zusätzlich zu den festen ET-Zeiten
@@ -228,18 +231,11 @@ class Copilot:
         return Path(self.journal_path).with_name("copilot_settings.json")
 
     def settings(self) -> dict:
-        import json
-
-        try:
-            return json.loads(self.settings_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
+        return load_state(self.settings_path, {}, strict=False)
 
     def save_settings(self, **kw) -> None:
-        import json
-
         s = {**self.settings(), **kw}
-        self.settings_path.write_text(json.dumps(s), encoding="utf-8")
+        save_state(self.settings_path, s)
 
     def _strict_problems(self, symbol: str, price: float, stop: float, now: datetime) -> list[str]:
         """Strenger Modus: Stops unter 1 % sperren (belegt, Runde 133b). Die VWAP-Lage ist nur ein Hinweis
@@ -306,8 +302,8 @@ class Copilot:
         """Prüft die Regeln, rechnet die Stückzahl und sendet eine Market-Order mit Stop (und optional
         Ziel) bei Alpaca. Gibt eine Meldung zurück; bei Regelverstoß wird NICHT gehandelt.
         breakeven: `watch` zieht den Stop auf den Einstiegskurs nach, sobald der Trade +1 R im Plus ist."""
-        from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
-        from alpaca.trading.requests import MarketOrderRequest, StopLossRequest, TakeProfitRequest
+        from alpaca.trading.enums import OrderClass, OrderSide, QueryOrderStatus, TimeInForce
+        from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest, StopLossRequest, TakeProfitRequest
 
         symbol = symbol.upper()
         stop = _round_price(stop)
@@ -318,6 +314,11 @@ class Copilot:
                     + self._strict_problems(symbol, price, stop, now))
         if target is not None and target <= price:
             problems.append(f"Ziel {target:.2f} muss über dem Kurs {price:.2f} liegen")
+        # Eine noch ungefüllte Kauf-Order ist keine Position -- ohne diese Prüfung ginge ein zweiter Kauf durch
+        open_buys = self.trading_client.get_orders(filter=GetOrdersRequest(
+            status=QueryOrderStatus.OPEN, symbols=[symbol], side=OrderSide.BUY))
+        if open_buys:
+            problems.append(f"Für {symbol} ist schon eine Kauf-Order offen -- erst ausführen lassen oder stornieren")
         if problems:
             return "KEIN TRADE:\n  - " + "\n  - ".join(problems)
         buying_power = float(self.trading_client.get_account().buying_power)
@@ -329,8 +330,15 @@ class Copilot:
             order_class=OrderClass.BRACKET if target is not None else OrderClass.OTO,
             stop_loss=StopLossRequest(stop_price=stop),
             take_profit=TakeProfitRequest(limit_price=target) if target is not None else None,
+            # feste ID je Symbol und Minute: geht die Antwort verloren oder wird doppelt geklickt, lehnt Alpaca
+            # die Wiederholung als Duplikat ab und submit_once findet die erste Order wieder
+            client_order_id=client_order_id("cp", symbol, now.astimezone(ZoneInfo("UTC")).strftime("%Y%m%d%H%M")),
         )
-        order = self.trading_client.submit_order(req)
+        try:
+            order = submit_once(self.trading_client, req)
+        except Exception as exc:  # noqa: BLE001
+            return (f"ORDER-STATUS UNKLAR: {exc} -- im Alpaca-Dashboard prüfen, bevor erneut gekauft wird "
+                    "(ein zweiter Klick in derselben Minute sendet keine zweite Order)")
         planned_risk = shares * (price - stop)
         append_journal(self.journal_path, JournalEntry(
             time=now.astimezone(ZoneInfo("UTC")).isoformat(), symbol=symbol, setup=setup, shares=shares,

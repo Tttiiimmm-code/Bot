@@ -311,6 +311,8 @@ class LiveMomentumBot:
         news_intel: NewsIntel | None = None,
         state_path: Path | None = None,
     ):
+        if not config.paper:
+            raise RuntimeError("ALPACA_PAPER=false: Orders sind nur auf Paper-Konten erlaubt.")
         self.config = config
         self.state_path = state_path
         self._state_loaded = False

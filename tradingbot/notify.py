@@ -14,12 +14,13 @@ einem Neustart nichts doppelt kommt:
 
 from __future__ import annotations
 
-import json
 import logging
 import urllib.request
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+from tradingbot.state_io import load_state, save_state
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +78,14 @@ class CopilotAlerts:
 
     # ------------------------------------------------------------ Zustand
     def _load(self, day: str) -> dict:
-        try:
-            st = json.loads(self.state_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            st = {}
+        st = load_state(self.state_path, {}, strict=False)
         if st.get("date") != day:
             st = {"date": day, "sent": [], "positions": st.get("positions", [])}
         return st
 
     def _save(self, st: dict) -> None:
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.state_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(st), encoding="utf-8")
-        tmp.replace(self.state_path)
+        save_state(self.state_path, st)
 
     def _send_once(self, st: dict, key: str, title: str, msg: str, priority: str = "default", tags: str = "") -> bool:
         if key in st["sent"]:

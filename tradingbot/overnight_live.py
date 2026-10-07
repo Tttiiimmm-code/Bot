@@ -26,7 +26,6 @@ wird in `trade_log` (CSV) protokolliert.
 from __future__ import annotations
 
 import csv
-import json
 import logging
 import math
 import time
@@ -34,6 +33,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+from tradingbot.order_recovery import client_order_id, submit_once
+from tradingbot.state_io import load_state, save_state
 
 logger = logging.getLogger(__name__)
 
@@ -81,15 +83,26 @@ class _State:
     sold_for: str | None = None
     logged_for: str | None = None
     fallback_for: str | None = None   # Kauftag, für den die Market-Nachverkäufe schon geschickt wurden
+    # Tag, dessen Abendrunde vollständig durchlief. `bought_on` wird schon zu Beginn der Runde gesetzt und
+    # `buys` nach jeder Order gespeichert -- ein Teil-Fehler holt so nur die fehlenden Symbole nach.
+    buys_done_for: str | None = None
+    # Nächte, die beim nächsten Abendkauf noch nicht protokolliert waren (Dry-Run: Kurse fehlten) -- werden
+    # nachgeholt statt überschrieben. Je Eintrag: {"bought_on", "buys", "sells"}.
+    unlogged_nights: list[dict] = field(default_factory=list)
 
     @classmethod
     def load(cls, path: Path) -> "_State":
-        if not path.exists():
+        data = load_state(path, None)
+        if data is None:
             return cls()
-        return cls(**json.loads(path.read_text(encoding="utf-8")))
+        if "buys_done_for" not in data:
+            # Datei aus der Zeit vor buys_done_for: damals wurde bought_on erst nach der vollständigen
+            # Abendrunde gesetzt -- dieser Tag ist also abgeschlossen (kein erneuter Kauf).
+            data["buys_done_for"] = data.get("bought_on")
+        return cls(**data)
 
     def save(self, path: Path) -> None:
-        path.write_text(json.dumps(self.__dict__, indent=2), encoding="utf-8")
+        save_state(path, self.__dict__)
 
 
 def trend_signal(price: float, prior_closes: list[float], window: int) -> tuple[bool, float | None]:
@@ -117,6 +130,7 @@ class OvernightBot:
         self._session_cache: tuple[date, _Session | None] | None = None
         self._dry_retry_at: datetime | None = None
         self._pending_since: datetime | None = None
+        self._parked_retry_at: datetime | None = None
 
     # ------------------------------------------------------------ Zeitplan
 
@@ -154,12 +168,21 @@ class OvernightBot:
             if now >= fallback_at and self.state.logged_for != self.state.bought_on:
                 self._finish_night(now)
 
+        # Zurückgestellte Nächte nachholen, sobald Eröffnungskurse abrufbar sein können
+        if self.state.unlogged_nights and now >= session.open + timedelta(minutes=DRY_RUN_LOG_DELAY_MINUTES):
+            self._log_unlogged_nights(now)
+
         # Abend: neue Käufe zum Schlusskurs
         decide_from = session.close - timedelta(minutes=cfg.decision_minutes_before_close)
         decide_until = session.close - timedelta(minutes=10)
-        if self.state.bought_on != today and decide_from <= now < decide_until:
-            if self.state.bought_on and self.state.logged_for != self.state.bought_on:
-                self._finish_night(now, force=True)  # Morgen-Abschluss nachholen, bevor neu gekauft wird
+        if self.state.buys_done_for != today and decide_from <= now < decide_until:
+            if self.state.bought_on != today:
+                if self.state.bought_on and self.state.logged_for != self.state.bought_on:
+                    self._finish_night(now, force=True)  # Morgen-Abschluss nachholen, bevor neu gekauft wird
+                    if self.state.logged_for != self.state.bought_on:
+                        self._park_unlogged_night()
+                self.state.bought_on, self.state.buys, self.state.sells = today, {}, {}
+                self.state.save(cfg.state_file)
             self._submit_evening_buys(session)
 
     # ------------------------------------------------------------ Abend
@@ -204,8 +227,10 @@ class OvernightBot:
         closes = self._prior_closes(session.day)
         equity = float(self.trading_client.get_account().equity)
         held = {p.symbol: int(float(p.qty)) for p in self.trading_client.get_all_positions()}
-        buys: dict[str, str] = {}
+        buys = self.state.buys
         for sym in cfg.symbols:
+            if sym in buys:
+                continue                     # in diesem Abend schon bestellt (Neustart/Teil-Fehler)
             price = prices.get(sym)
             if price is None:
                 logger.warning("%s: kein aktueller Kurs, übersprungen", sym)
@@ -221,12 +246,12 @@ class OvernightBot:
             if cfg.dry_run:
                 buys[sym] = f"{_DRY}{qty}"
                 continue
-            order = self.trading_client.submit_order(MarketOrderRequest(
-                symbol=sym, qty=qty, side=OrderSide.BUY, time_in_force=TimeInForce.CLS))
+            order = submit_once(self.trading_client, MarketOrderRequest(
+                symbol=sym, qty=qty, side=OrderSide.BUY, time_in_force=TimeInForce.CLS,
+                client_order_id=client_order_id("on", session.day.isoformat(), sym, "buy")))
             buys[sym] = str(order.id)
-        self.state.bought_on = session.day.isoformat()
-        self.state.buys = buys
-        self.state.sells = {}
+            self.state.save(cfg.state_file)  # sofort: ein späterer Fehler darf diesen Kauf nicht wiederholen
+        self.state.buys_done_for = session.day.isoformat()
         self.state.save(cfg.state_file)
         logger.info("Abend %s: %d Kauf-Order(s) zum Schlusskurs (Kapital %.2f)", session.day, len(buys), equity)
 
@@ -236,22 +261,23 @@ class OvernightBot:
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import MarketOrderRequest
 
-        sells: dict[str, str] = {}
+        sells = self.state.sells             # beim Abendkauf geleert; Einträge = schon bestellt
         for p in self.trading_client.get_all_positions():
             if p.symbol not in self.config.symbols:
                 logger.warning("Fremde Position %s im Konto -- bleibt unberührt (eigenes Konto verwenden!)",
                                p.symbol)
                 continue
             qty = int(float(p.qty))
-            if qty <= 0:
+            if qty <= 0 or p.symbol in sells:
                 continue
             if self.config.dry_run:
                 sells[p.symbol] = "dry-run"
                 continue
-            order = self.trading_client.submit_order(MarketOrderRequest(
-                symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.OPG))
+            order = submit_once(self.trading_client, MarketOrderRequest(
+                symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.OPG,
+                client_order_id=client_order_id("on", self.state.bought_on, p.symbol, "sell")))
             sells[p.symbol] = str(order.id)
-        self.state.sells = sells
+            self.state.save(self.config.state_file)
         self.state.sold_for = self.state.bought_on
         self.state.save(self.config.state_file)
         logger.info("Morgen: %d Verkaufs-Order(s) zum Eröffnungskurs für Käufe vom %s",
@@ -280,9 +306,13 @@ class OvernightBot:
                 qty = int(float(p.qty))
                 if p.symbol in self.config.symbols and qty > 0:
                     logger.error("%s: %d Stück nach Handelsbeginn noch im Depot -- Market-Verkauf", p.symbol, qty)
-                    order = self.trading_client.submit_order(MarketOrderRequest(
-                        symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.DAY))
+                    # Feste ID: nach Neustart mitten in der Schleife lehnt Alpaca die Wiederholung als
+                    # Duplikat ab und submit_once findet die erste Order wieder.
+                    order = submit_once(self.trading_client, MarketOrderRequest(
+                        symbol=p.symbol, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.DAY,
+                        client_order_id=client_order_id("on", self.state.bought_on, p.symbol, "fallback")))
                     self.state.sells[p.symbol] = str(order.id)
+                    self.state.save(self.config.state_file)
             self.state.fallback_for = self.state.bought_on
             self.state.save(self.config.state_file)
         # Market-Verkäufe brauchen Sekunden: erst protokollieren, wenn alle Verkäufe gefüllt sind
@@ -330,26 +360,47 @@ class OvernightBot:
                 out[sym] = (float(buy_bar["close"].iloc[0]), float(next_bars["open"].iloc[0]))
         return out
 
-    def _log_night(self, now: datetime) -> bool:
-        """Schreibt die Nacht ins CSV. False nur im Dry-Run, wenn die Kurse noch fehlen
-        (dann später erneut versuchen)."""
+    def _park_unlogged_night(self) -> None:
+        """Die Vornacht ist beim Abendkauf noch nicht protokolliert (Dry-Run: Kurse fehlen weiter) --
+        zurückstellen statt vom neuen Kauf überschreiben lassen."""
+        night = {"bought_on": self.state.bought_on, "buys": dict(self.state.buys), "sells": dict(self.state.sells)}
+        self.state.unlogged_nights.append(night)
+        logger.error("Nacht ab %s noch nicht protokolliert -- zurückgestellt, wird nachgeholt", night["bought_on"])
+
+    def _log_unlogged_nights(self, now: datetime) -> None:
+        """Zurückgestellte Nächte der Reihe nach protokollieren (gedrosselt wie der Dry-Run-Abschluss)."""
+        if self._parked_retry_at and now < self._parked_retry_at:
+            return
+        while self.state.unlogged_nights:
+            if not self._log_night(now, self.state.unlogged_nights[0]):
+                self._parked_retry_at = now + timedelta(minutes=DRY_RUN_RETRY_MINUTES)
+                return
+            self.state.unlogged_nights.pop(0)
+            self.state.save(self.config.state_file)
+
+    def _log_night(self, now: datetime, night: dict | None = None) -> bool:
+        """Schreibt die Nacht (Standard: die aktuelle aus dem Zustand) ins CSV. False nur im Dry-Run, wenn
+        die Kurse noch fehlen (dann später erneut versuchen)."""
+        if night is None:
+            night = {"bought_on": self.state.bought_on, "buys": self.state.buys, "sells": self.state.sells}
+        bought_on, buys, sells = night["bought_on"], night["buys"], night["sells"]
         path = self.config.trade_log
-        dry = {s: int(i[len(_DRY):]) for s, i in self.state.buys.items() if i.startswith(_DRY)}
+        dry = {s: int(i[len(_DRY):]) for s, i in buys.items() if i.startswith(_DRY)}
         prices: dict[str, tuple[float, float]] = {}
         if dry:
             try:
-                prices = self._dry_run_prices(date.fromisoformat(self.state.bought_on), now, list(dry))
+                prices = self._dry_run_prices(date.fromisoformat(bought_on), now, list(dry))
             except Exception:
                 logger.exception("Dry-Run: Kurse für die Nacht ab %s nicht abrufbar -- neuer Versuch später",
-                                 self.state.bought_on)
+                                 bought_on)
                 return False
             if not prices:
                 logger.warning("Dry-Run: Eröffnungskurse für die Nacht ab %s noch nicht verfügbar",
-                               self.state.bought_on)
+                               bought_on)
                 return False
         mode = "paper" if self.paper else "live"
         rows, total = [], 0.0
-        for sym, buy_id in self.state.buys.items():
+        for sym, buy_id in buys.items():
             if sym in dry:
                 if sym not in prices:
                     logger.warning("%s: Dry-Run-Kurse fehlen, Position nicht protokolliert", sym)
@@ -357,7 +408,7 @@ class OvernightBot:
                 qty, (buy_px, sell_px), row_mode = dry[sym], prices[sym], "dry-run"
             else:
                 buy = self._fill(buy_id)
-                sell = self._fill(self.state.sells.get(sym, ""))
+                sell = self._fill(sells.get(sym, ""))
                 if buy is None:
                     logger.info("%s: Kauf-Order nicht gefüllt", sym)
                     continue
@@ -367,7 +418,7 @@ class OvernightBot:
                 (qty, buy_px), (_, sell_px), row_mode = buy, sell, mode
             pnl = qty * (sell_px - buy_px)
             total += pnl
-            rows.append([self.state.bought_on, sym, int(qty), f"{buy_px:.4f}", f"{sell_px:.4f}",
+            rows.append([bought_on, sym, int(qty), f"{buy_px:.4f}", f"{sell_px:.4f}",
                          f"{pnl:.2f}", f"{sell_px / buy_px - 1:.6f}", row_mode])
         if rows:
             new = not path.exists()
@@ -376,7 +427,7 @@ class OvernightBot:
                 if new:
                     w.writerow(["bought_on", "symbol", "qty", "buy_price", "sell_price", "pnl", "return", "mode"])
                 w.writerows(rows)
-        logger.info("Nacht ab %s abgeschlossen%s: %d Positionen, P&L %.2f $", self.state.bought_on,
+        logger.info("Nacht ab %s abgeschlossen%s: %d Positionen, P&L %.2f $", bought_on,
                     " (hypothetisch, Dry-Run)" if dry else "", len(rows), total)
         return True
 

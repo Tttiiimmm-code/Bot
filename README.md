@@ -253,7 +253,7 @@ Mit `Strg+C` sauber beenden.
 |--------------------------|-----------------------------------------------------------|---------|
 | `ALPACA_API_KEY`         | Alpaca API Key                                            | –       |
 | `ALPACA_SECRET_KEY`      | Alpaca Secret Key                                         | –       |
-| `ALPACA_PAPER`           | `true` = Paper-Trading, `false` = Live-Trading             | `true`  |
+| `ALPACA_PAPER`           | `true` = Paper-Trading; `false` wird für Orders abgelehnt             | `true`  |
 | `SYMBOL`                 | Handelssymbol, z.B. `AAPL`                                 | `AAPL`  |
 | `QTY`                    | Stückzahl pro Order                                        | `1`     |
 | `SHORT_WINDOW`           | Fenstergröße kurzer SMA                                    | `20`    |
@@ -556,8 +556,11 @@ python main.py overnight-report             # Auswertung von overnight_trades.cs
 - Zeitplan (America/New_York, Frühschluss-Tage über Alpacas Handelskalender): Entscheidung
   und CLS-Orders 15 Minuten vor Schluss (Alpaca nimmt CLS nur bis 10 Minuten vorher an),
   OPG-Verkäufe ab 10 Minuten vor Open, nicht gefüllte Reste 5 Minuten nach Open per Market.
-- Zustand in `overnight_state.json` (übersteht Neustarts über Nacht), jede Nacht mit
-  Kauf-/Verkaufskurs und P&L in `overnight_trades.csv`.
+- Zustand in `overnight_state.json` (übersteht Neustarts über Nacht; atomar geschrieben, nach jeder Order
+  gespeichert, feste `client_order_id` je Tag/Symbol -- ein Teil-Fehler holt nur die fehlenden Symbole nach), jede
+  Nacht mit Kauf-/Verkaufskurs und P&L in `overnight_trades.csv`. Ist eine Nacht beim nächsten Abendkauf noch nicht
+  protokolliert (Dry-Run: Kurse fehlen), wird sie zurückgestellt und später nachgetragen statt überschrieben.
+  Eine beschädigte Zustandsdatei stoppt den Start mit klarer Meldung (kein Weiterlaufen mit leerem Zustand).
 - Dauerbetrieb: `deploy/overnight.service`, seit 2026-10-02 nur mit `--dry-run` (Entscheidungen loggen, keine
   Orders), weil Alpaca-Paper Auktionsorders (CLS/OPG) kaum ausführt.
 
@@ -626,7 +629,10 @@ Depot real zu sehen. Im Backtest t 1,78 -- **nicht bestanden**, deshalb nur als 
 - Verkauf desselben Loses 252 Handelstage später, ebenfalls kurz vor Schluss; verpasste Fenster werden am nächsten
   Handelstag nachgeholt.
 - Zustand (`pelosi_bot_state.json`) wird sofort nach jeder Order gespeichert (kein Doppelkauf nach Teil-Fehlern);
-  vorübergehende API-Fehler lassen ein Los geplant statt es zu verwerfen. Trades in `pelosi_bot_trades.csv`.
+  vorübergehende API-Fehler (auch beim Kursabruf) lassen ein Los geplant statt es zu verwerfen. Jede Order trägt
+  eine feste `client_order_id`: geht die Antwort verloren, wird die Order wiedergefunden statt doppelt gesendet.
+  Ein Verkauf gilt erst bei vollständiger Ausführung als abgeschlossen; ein Rest wird im nächsten Fenster erneut
+  verkauft. Trades in `pelosi_bot_trades.csv`.
 
 ```bash
 python main.py pelosi-bot --env-file overnight.env --check   # nur Konto und Stand anzeigen
@@ -695,8 +701,8 @@ nächste Lauf nach. Einziger vorzeitiger Abbruch nach der gemeinsamen Regel: nac
 
 ## Überwachung und Datensicherung
 
-- **`health`** (alle 10 Minuten): prüft die Dienste und Timer-Läufe (`SERVICES`/`ONESHOTS` in
-  `tradingbot/health.py`), Plattenplatz, Speicher und die Aktualität der Liquidationsdaten. Meldet nur
+- **`health`** (alle 10 Minuten): prüft die Dienste, ob die Timer aktiv sind und ihr letzter Lauf erfolgreich war
+  (`SERVICES`/`ONESHOTS` in `tradingbot/health.py`, inkl. `backup-data`), Plattenplatz, Speicher und die Aktualität der Liquidationsdaten. Meldet nur
   Zustandswechsel per ntfy, dazu täglich um 8:30 einen Status.
 - **`backup-data`** (03:00): `deploy/backup-data.sh` packt Journale, Vorwärtstest-CSVs, Bot-Zustände und
   Liquidationsdaten nach `/home/tradingbot/backups` (14 Tage). Keine Schlüssel, keine neu ladbaren Caches.

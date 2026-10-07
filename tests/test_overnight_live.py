@@ -42,9 +42,20 @@ class FakeTrading:
         return [SimpleNamespace(symbol=s, qty=str(q)) for s, q in self.positions.items() if q]
 
     def submit_order(self, req):
+        cid = getattr(req, "client_order_id", None)
+        if cid and any(getattr(r, "client_order_id", None) == cid for _, r in self.orders):
+            raise ValueError("client_order_id must be unique")    # wie Alpaca (422)
         oid = f"o{len(self.orders)}"
         self.orders.append((oid, req))
         return SimpleNamespace(id=oid)
+
+    def get_order_by_client_id(self, cid):
+        for oid, r in self.orders:
+            if getattr(r, "client_order_id", None) == cid:
+                return SimpleNamespace(id=oid)
+        e = ValueError("order not found")
+        e.status_code = 404
+        raise e
 
     def get_order_by_id(self, oid):
         qty, px = self.fills.get(oid, (0, None))

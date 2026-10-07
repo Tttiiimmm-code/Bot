@@ -583,11 +583,6 @@ def build_parser() -> argparse.ArgumentParser:
         "(Standard: 5).",
     )
     momentum_run_parser.add_argument(
-        "--allow-live-trading", action="store_true",
-        help="Erlaubt den Start mit ALPACA_PAPER=false (ECHTES Geld). Ohne dieses Flag bricht "
-        "momentum-run im Live-Modus ab.",
-    )
-    momentum_run_parser.add_argument(
         "--no-broker-stop", dest="broker_stop_orders", action="store_false",
         help="Keine zusätzliche Stop-Order bei Alpaca hinterlegen (nur Software-Stop). Standard: "
         "Stop-Order wird hinterlegt und greift auch, wenn der Bot ausfällt.",
@@ -626,8 +621,6 @@ def build_parser() -> argparse.ArgumentParser:
                                   help="Datei mit den Keys des eigenen Overnight-Kontos (Standard: overnight.env).")
     overnight_parser.add_argument("--dry-run", action="store_true",
                                   help="Nur Entscheidungen loggen, keine Orders platzieren.")
-    overnight_parser.add_argument("--allow-live-trading", action="store_true",
-                                  help="Erlaubt Echtgeld, falls ALPACA_PAPER=false (nicht empfohlen).")
     subparsers.add_parser("overnight-report", help="Auswertung von overnight_trades.csv.")
 
     copilot_parser = subparsers.add_parser(

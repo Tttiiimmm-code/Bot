@@ -71,11 +71,8 @@ def cmd_pelosi_bot(args):
     tc, dc = TradingClient(key, secret, paper=True), StockHistoricalDataClient(key, secret)
 
     def last_price(sym):
-        try:
-            t = dc.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols=sym, feed=DataFeed.IEX))
-            return float(t[sym].price)
-        except Exception:  # noqa: BLE001
-            return None
+        t = dc.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols=sym, feed=DataFeed.IEX))
+        return float(t[sym].price) if sym in t else None
 
     cfg = pelosi_bot.PelosiBotConfig()
     if args.check:

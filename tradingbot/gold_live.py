@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from tradingbot.state_io import load_state, save_state
+
 logger = logging.getLogger(__name__)
 
 PRACTICE_URL = "https://api-fxpractice.oanda.com/v3"
@@ -121,10 +123,11 @@ class _State:
 
     @classmethod
     def load(cls, path: Path) -> "_State":
-        return cls(**json.loads(path.read_text())) if path.exists() else cls()
+        return cls(**load_state(path, {}))
 
     def save(self, path: Path) -> None:
-        path.write_text(json.dumps(self.__dict__))
+        save_state(path, self.__dict__)
+
 
 
 class GoldLiveBot:
@@ -146,11 +149,14 @@ class GoldLiveBot:
                 self._say("Gold-Bot", f"Order {o['id']} vor dem Wochenende gelöscht")
         hour_key = now.strftime("%Y-%m-%dT%H")
         if self.state.last_hour != hour_key and now.minute < 10:
-            self.state.last_hour = hour_key
-            self.state.save(self.cfg.state_file)
             weekend = now.weekday() == 5 or (now.weekday() == 6 and now.hour < 22)   # Markt zu (wie forward_gold/EA)
             if not (fri and now.hour >= 20) and not weekend and not self.c.open_trades() and not self.c.pending_orders():
                 self._place(now)
+            # Erst nach vollständiger Prüfung als erledigt markieren: scheitert ein API-Aufruf, versucht es der
+            # nächste Zyklus derselben Stunde erneut. Eine schon platzierte Order fangen pending_orders()/
+            # open_trades() ab, ein Duplikat lehnt OANDA über die feste clientExtensions-ID ab.
+            self.state.last_hour = hour_key
+            self.state.save(self.cfg.state_file)
         self._sync_ledger()
 
     def _place(self, now: datetime) -> None:
@@ -169,10 +175,25 @@ class GoldLiveBot:
         logger.info("Buy-Stop %s: %d oz @ %.3f (SL %.2f, TP %.2f, gültig %d h)", ref, units, price, sl, tp,
                     self.cfg.expiry_h)
 
+    def _ledger_ids(self) -> set[str]:
+        """Trade-IDs, die schon im Ergebnisprotokoll stehen (Schutz vor Doppelzeilen, falls nach dem Schreiben
+        das Speichern des Zustands scheiterte)."""
+        if not self.cfg.ledger.exists():
+            return set()
+        with self.cfg.ledger.open(newline="", encoding="utf-8") as f:
+            return {r["trade_id"] for r in csv.DictReader(f)}
+
     def _sync_ledger(self) -> None:
-        new_rows = []
-        for t in self.c.closed_trades():
-            if t.get("clientExtensions", {}).get("tag") != TAG or t["id"] in self.state.seen_trades:
+        new_rows, new_ids = [], []
+        seen = set(self.state.seen_trades)
+        closed = [t for t in self.c.closed_trades()
+                  if t.get("clientExtensions", {}).get("tag") == TAG and t["id"] not in seen]
+        if not closed:
+            return
+        logged = self._ledger_ids()
+        for t in closed:
+            if t["id"] in logged:
+                new_ids.append(t["id"])
                 continue
             comment = t.get("clientExtensions", {}).get("comment", "")
             sd = float(comment.split("=")[1]) if comment.startswith("sd=") else float("nan")
@@ -185,8 +206,7 @@ class GoldLiveBot:
                    "sl_dist": sd, "realized_pl": round(pl, 2), "financing": round(fin, 2),
                    "r": round(pl / risk, 4) if ok else "", "r_net": round((pl + fin) / risk, 4) if ok else ""}
             new_rows.append(row)
-            self.state.seen_trades.append(t["id"])
-            self._say("Gold-Bot", f"Trade {t['id']} geschlossen: {row['r_net']} R netto ({pl + fin:+.2f} $)")
+            new_ids.append(t["id"])
         if new_rows:
             new = not self.cfg.ledger.exists()
             with self.cfg.ledger.open("a", newline="", encoding="utf-8") as f:
@@ -194,7 +214,13 @@ class GoldLiveBot:
                 if new:
                     w.writeheader()
                 w.writerows(new_rows)
-            self.state.save(self.cfg.state_file)
+        # erst nach erfolgreichem Schreiben als gesehen markieren -- scheitert das Protokoll, kommt der Trade
+        # im nächsten Zyklus erneut
+        self.state.seen_trades.extend(new_ids)
+        self.state.save(self.cfg.state_file)
+        for row in new_rows:
+            self._say("Gold-Bot", f"Trade {row['trade_id']} geschlossen: {row['r_net']} R netto "
+                                  f"({row['realized_pl'] + row['financing']:+.2f} $)")
 
     def run_forever(self) -> None:
         logger.info("Gold-Bot (OANDA Practice) gestartet")

@@ -330,9 +330,9 @@ def _make_live_config(symbol: str):
     return dataclasses.replace(_make_config(symbol), paper=False)
 
 
-def test_momentum_run_refuses_live_trading_without_flag(monkeypatch, capsys):
-    """Regression: momentum-run ist nur für Paper-Trading gedacht, startete
-    aber mit ALPACA_PAPER=false kommentarlos mit echtem Geld."""
+def test_momentum_run_refuses_live_trading(monkeypatch, capsys):
+    """Regression: momentum-run ist nur für Paper-Trading gedacht -- ALPACA_PAPER=false wird immer
+    abgelehnt (CLAUDE.md: Live-Konten werden im Code abgelehnt), es gibt keine Freigabe-Option mehr."""
     import main as main_module
     import tradingbot.momentum_live as momentum_live
 
@@ -340,36 +340,23 @@ def test_momentum_run_refuses_live_trading_without_flag(monkeypatch, capsys):
     monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_live_config("AAPL")))
     monkeypatch.setattr(
         momentum_live, "LiveMomentumBot",
-        lambda *a, **k: pytest.fail("LiveMomentumBot darf ohne --allow-live-trading nicht starten"),
+        lambda *a, **k: pytest.fail("LiveMomentumBot darf mit ALPACA_PAPER=false nicht starten"),
     )
 
     with pytest.raises(SystemExit) as exc_info:
         main_module.main()
 
     assert exc_info.value.code == 1
-    assert "--allow-live-trading" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "ALPACA_PAPER=false" in err and "--allow-live-trading" not in err
 
 
-def test_momentum_run_allows_live_trading_with_flag(monkeypatch):
-    import main as main_module
-    import tradingbot.momentum_live as momentum_live
+@pytest.mark.parametrize("command", ["momentum-run", "overnight-run"])
+def test_allow_live_trading_option_is_gone(command):
+    from tradingbot.cli.parser import build_parser
 
-    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", "--allow-live-trading"])
-    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_live_config("AAPL")))
-    started = []
-
-    class FakeBot:
-        def __init__(self, config, criteria, live_config, news_intel=None, state_path=None):
-            started.append(config.paper)
-
-        def run_forever(self):
-            pass
-
-    monkeypatch.setattr(momentum_live, "LiveMomentumBot", FakeBot)
-
-    main_module.main()
-
-    assert started == [False]
+    with pytest.raises(SystemExit):
+        build_parser().parse_args([command, "--allow-live-trading"])
 
 
 @pytest.mark.parametrize("argv, expected", [([], True), (["--no-broker-stop"], False)])

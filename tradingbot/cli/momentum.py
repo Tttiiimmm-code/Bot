@@ -519,7 +519,6 @@ def cmd_momentum_run(
     order_fill_timeout_seconds: int,
     order_poll_interval_seconds: float,
     flatten_minutes_before_close: int,
-    allow_live_trading: bool = False,
     broker_stop_orders: bool = True,
     min_stop_pct: float = 0.02,
     max_position_dollars: float = 25_000.0,
@@ -537,10 +536,10 @@ def cmd_momentum_run(
     # Der Live-Momentum-Bot ist nur im Paper-Modus erprobt -- ein
     # versehentliches ALPACA_PAPER=false (z.B. eine .env eines anderen
     # Projekts) darf nicht unbemerkt mit echtem Geld handeln.
-    if not config.paper and not allow_live_trading:
+    if not config.paper:
         raise RuntimeError(
             "momentum-run ist nur für Paper-Trading gedacht, aber ALPACA_PAPER=false ist gesetzt. "
-            "Für echtes Geld zusätzlich --allow-live-trading angeben (auf eigenes Risiko)."
+            "Live-Konten werden abgelehnt -- ALPACA_PAPER=true setzen."
         )
 
     criteria = ScanCriteria(
@@ -581,11 +580,7 @@ def cmd_momentum_run(
         weakness_exit=weakness_exit,
     )
 
-    trading_mode_warning = (
-        "nur für Paper-Trading gedacht."
-        if config.paper
-        else "!!! ECHTES GELD (--allow-live-trading gesetzt) !!! Nur im Paper-Modus erprobt."
-    )
+    trading_mode_warning = "nur für Paper-Trading gedacht."
     print(
         f"Starte Live-Momentum-Bot (paper={config.paper}) -- Scanner alle {scan_interval_seconds}s, "
         f"Balken-Polling alle {poll_interval_seconds}s, max. {max_concurrent_positions} gleichzeitige "

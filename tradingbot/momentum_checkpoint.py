@@ -8,11 +8,12 @@ wird NICHT automatisch gestoppt -- die Entscheidung trifft der Nutzer.
 
 from __future__ import annotations
 
-import json
 import math
 from datetime import date
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+from tradingbot.state_io import load_state, save_state
 
 START = date(2026, 9, 23)
 COST_PER_SHARE = 0.01
@@ -53,7 +54,7 @@ def message(s: dict, checkpoint: int) -> str:
 
 def step(trades: list, notifier, state_path: Path = STATE) -> list[str]:
     """Sendet fällige Prüfpunkt-Meldungen genau einmal; gibt die gesendeten Texte zurück."""
-    done = json.loads(state_path.read_text()) if state_path.exists() else []
+    done = load_state(state_path, [])
     ts = counted(trades)
     sent = []
     for cp in (100, 150):
@@ -63,7 +64,7 @@ def step(trades: list, notifier, state_path: Path = STATE) -> list[str]:
                 done.append(cp)
                 sent.append(text)
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(done))
+    save_state(state_path, done)
     return sent
 
 

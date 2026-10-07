@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 
-def cmd_overnight_run(env_file: str, dry_run: bool, allow_live_trading: bool):
+def cmd_overnight_run(env_file: str, dry_run: bool):
     """Overnight-Portfolio als Paper-Bot (tradingbot/overnight_live.py). Liest
     die Keys bewusst NUR aus `env_file` (eigenes Alpaca-Konto), nicht aus .env."""
     from pathlib import Path
@@ -26,10 +26,10 @@ def cmd_overnight_run(env_file: str, dry_run: bool, allow_live_trading: bool):
     if paper_raw not in ("1", "true", "yes", "0", "false", "no"):
         raise ValueError(f"ALPACA_PAPER in {env_file} muss true/false sein, nicht {paper_raw!r}.")
     paper = paper_raw in ("1", "true", "yes")
-    if not paper and not allow_live_trading:
+    if not paper:
         raise RuntimeError(
             "overnight-run ist nur für Paper-Trading gedacht, aber ALPACA_PAPER=false ist gesetzt. "
-            "Für echtes Geld zusätzlich --allow-live-trading angeben (auf eigenes Risiko)."
+            "Live-Konten werden abgelehnt -- ALPACA_PAPER=true setzen."
         )
     bot = OvernightBot(
         OvernightConfig(dry_run=dry_run),

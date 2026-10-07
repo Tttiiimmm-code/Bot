@@ -13,7 +13,6 @@ Konto: overnight.env (Overnight-Bot läuft seit 2026-10-02 nur im Dry-Run und se
 from __future__ import annotations
 
 import csv
-import json
 import logging
 import math
 import time
@@ -22,7 +21,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from tradingbot import forward_pelosi as fp
+from tradingbot.order_recovery import client_order_id, submit_once
 from tradingbot.overnight_live import NY, _as_ny
+from tradingbot.state_io import load_state, save_state
 
 logger = logging.getLogger(__name__)
 
@@ -50,17 +51,16 @@ class _State:
 
     @classmethod
     def load(cls, path: Path) -> "_State":
-        return cls(**json.loads(path.read_text(encoding="utf-8"))) if path.exists() else cls()
+        return cls(**load_state(path, {}))
 
     def save(self, path: Path) -> None:
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.__dict__, indent=1), encoding="utf-8")
-        tmp.replace(path)
+        save_state(path, self.__dict__, indent=1)
 
 
 class PelosiBot:
     def __init__(self, cfg: PelosiBotConfig, trading_client, price_fn, notifier=None, fetch=fp._get):
-        """price_fn(symbol) -> letzter Kurs (float) oder None."""
+        """price_fn(symbol) -> letzter Kurs (float) oder None (kein Kurs). Eine Ausnahme (Netz/API) gilt als
+        vorübergehend: das Los bleibt geplant und der Versuch zählt nicht als Fehlversuch."""
         self.cfg, self.tc, self.price, self.notifier, self.fetch = cfg, trading_client, price_fn, notifier, fetch
         self.state = _State.load(cfg.state_file)
         self._filings_retry_at = datetime.min.replace(tzinfo=NY)
@@ -104,13 +104,22 @@ class PelosiBot:
                 f"{self.cfg.position_pct:.0%} des Kontos, Verkauf nach 12 Monaten" for x in new))
 
     # ------------------------------------------------------------ Orders
-    def _order(self, symbol: str, side: str, qty: float | None = None, notional: float | None = None) -> str:
+    def _order(self, symbol: str, side: str, cid: str, qty: float | None = None,
+               notional: float | None = None) -> str:
+        """Market-Order mit fester client_order_id: geht die Antwort verloren, wird die Order wiedergefunden
+        statt ein zweites Mal gesendet (siehe order_recovery)."""
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import MarketOrderRequest
 
         req = MarketOrderRequest(symbol=symbol, side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
-                                 time_in_force=TimeInForce.DAY, qty=qty, notional=notional)
-        return str(self.tc.submit_order(req).id)
+                                 time_in_force=TimeInForce.DAY, qty=qty, notional=notional, client_order_id=cid)
+        return str(submit_once(self.tc, req).id)
+
+    def _save_cid(self, lot: dict, key: str, cid: str) -> None:
+        """client_order_id VOR dem Senden sichern: nach einem Absturz ist nachvollziehbar, welche Order zum
+        Los gehört."""
+        lot[key] = cid
+        self.state.save(self.cfg.state_file)
 
     def _fill(self, order_id: str) -> tuple[float, float] | None:
         if not order_id:
@@ -147,10 +156,13 @@ class PelosiBot:
             self._say("Pelosi-Bot", f"{sym}: Kauf nicht möglich, kein freies Bargeld ({amount:.0f} $)")
             return
         qty = math.floor(amount / price)
+        cid = client_order_id("pelosi", lot["doc"], lot["ticker"], "buy")
         if qty >= 1:
-            lot["buy_id"] = self._order(sym, "buy", qty=qty)
+            self._save_cid(lot, "buy_cid", cid)
+            lot["buy_id"] = self._order(sym, "buy", cid, qty=qty)
         elif fractionable:
-            lot["buy_id"] = self._order(sym, "buy", notional=round(amount, 2))
+            self._save_cid(lot, "buy_cid", cid)
+            lot["buy_id"] = self._order(sym, "buy", cid, notional=round(amount, 2))
         else:
             lot["status"] = "zu teuer"
             self._say("Pelosi-Bot", f"{sym}: 1 Aktie ({price:.2f} $) kostet mehr als {amount:.0f} $")
@@ -173,7 +185,12 @@ class PelosiBot:
             lot["status"] = "Kauf nicht gefüllt"
             self._say("Pelosi-Bot", f"{lot['ticker']}: Kauf-Order wurde nie ausgeführt, nichts zu verkaufen")
             return
-        sell_id = self._order(lot["ticker"].replace("-", "."), "sell", qty=fill[0])   # scheitert -> bleibt "gekauft"
+        # Restmenge: nach einem Teil-Fill eines früheren Verkaufs nur noch den unverkauften Rest
+        remaining = fill[0] - sum(q for q, _ in lot.get("sell_fills", []))
+        attempt = lot.get("sell_attempt", 0)
+        cid = client_order_id("pelosi", lot["doc"], lot["ticker"], "sell", attempt)
+        self._save_cid(lot, "sell_cid", cid)
+        sell_id = self._order(lot["ticker"].replace("-", "."), "sell", cid, qty=remaining)  # scheitert -> bleibt "gekauft"
         lot.update(qty=fill[0], buy_price=fill[1], status="verkauft", sold_on=today.isoformat(), sell_id=sell_id)
         self.state.save(self.cfg.state_file)
 
@@ -182,11 +199,25 @@ class PelosiBot:
         for lot in self.state.lots:
             if lot["status"] != "verkauft" or lot.get("logged"):
                 continue
-            fill = self._fill(lot["sell_id"])
-            if fill is None:
+            o = self.tc.get_order_by_id(lot["sell_id"])
+            status = str(getattr(o.status, "value", o.status)).lower()
+            filled = float(o.filled_qty or 0)
+            fills = lot.get("sell_fills", []) + ([[filled, float(o.filled_avg_price)]] if filled else [])
+            if status in ("canceled", "expired", "rejected"):
+                # Verkauf endete ohne vollständige Ausführung: Teil-Fill merken, Rest im nächsten Fenster
+                # erneut verkaufen (neue client_order_id je Versuch)
+                lot.update(sell_fills=fills, status="gekauft", sell_id="", sell_attempt=lot.get("sell_attempt", 0) + 1,
+                           qty_open=lot["qty"] - sum(q for q, _ in fills))
+                changed = True
+                self._say("Pelosi-Bot", f"{lot['ticker']}: Verkauf {status}, {filled:g} von {lot['qty']:g} Stück "
+                                        f"ausgeführt -- Rest {lot['qty_open']:g} wird erneut verkauft")
                 continue
-            lot["sell_price"] = fill[1]
-            ret = fill[1] / lot["buy_price"] - 1
+            if status != "filled":
+                continue                                  # noch offen bzw. teilweise ausgeführt: warten
+            sold = sum(q for q, _ in fills)
+            avg = sum(q * px for q, px in fills) / sold
+            lot.update(sell_fills=fills, sell_price=avg)
+            ret = avg / lot["buy_price"] - 1
             new = not self.cfg.trade_log.exists()
             with self.cfg.trade_log.open("a", newline="", encoding="utf-8") as f:
                 w = csv.DictWriter(f, fieldnames=LOG_FIELDS)
@@ -194,7 +225,7 @@ class PelosiBot:
                     w.writeheader()
                 w.writerow({"doc": lot["doc"], "ticker": lot["ticker"], "filing_date": lot["filing_date"],
                             "buy_date": lot.get("bought_on", ""), "buy_price": lot["buy_price"], "qty": lot["qty"],
-                            "sell_date": lot.get("sold_on", ""), "sell_price": fill[1], "ret": round(ret, 6)})
+                            "sell_date": lot.get("sold_on", ""), "sell_price": avg, "ret": round(ret, 6)})
             lot["logged"] = changed = True
             self._say("Pelosi-Bot verkauft", f"{lot['ticker']}: {ret:+.1%} nach 12 Monaten")
         if changed:

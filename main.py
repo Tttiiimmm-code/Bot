@@ -76,7 +76,7 @@ def main():
     if args.command in ("overnight-run", "overnight-report"):
         try:
             if args.command == "overnight-run":
-                cmd_overnight_run(args.env_file, args.dry_run, args.allow_live_trading)
+                cmd_overnight_run(args.env_file, args.dry_run)
             else:
                 from pathlib import Path
 
@@ -243,7 +243,6 @@ def main():
                 args.order_fill_timeout_seconds,
                 args.order_poll_interval_seconds,
                 args.flatten_minutes_before_close,
-                args.allow_live_trading,
                 args.broker_stop_orders,
                 args.min_stop_pct,
                 args.max_position_dollars,

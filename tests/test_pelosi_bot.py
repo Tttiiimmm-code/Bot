@@ -40,10 +40,25 @@ class FakeTC:
         return SimpleNamespace(tradable=t, fractionable=f)
 
     def submit_order(self, req):
+        if req.client_order_id and self._by_cid(req.client_order_id) is not None:
+            raise ValueError("client_order_id must be unique")    # wie Alpaca (422)
         oid = str(len(self.orders) + 1)
         qty = req.qty if req.qty is not None else req.notional / 100
-        self.orders[oid] = SimpleNamespace(req=req, filled_qty=str(qty), filled_avg_price="100.0")
+        self.orders[oid] = SimpleNamespace(id=oid, req=req, status="filled", filled_qty=str(qty),
+                                           filled_avg_price="100.0")
         return SimpleNamespace(id=oid)
+
+    def _by_cid(self, cid):
+        return next((o for o in self.orders.values() if getattr(o, "req", None)
+                     and o.req.client_order_id == cid), None)
+
+    def get_order_by_client_id(self, cid):
+        order = self._by_cid(cid)
+        if order is None:
+            e = ValueError("order not found")
+            e.status_code = 404
+            raise e
+        return order
 
     def get_order_by_id(self, oid):
         return self.orders[oid]

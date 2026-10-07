@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 class TradingBot:
     def __init__(self, config: Config, broker: Broker | None = None):
+        if not config.paper:
+            raise RuntimeError("ALPACA_PAPER=false: Orders sind nur auf Paper-Konten erlaubt.")
         self.config = config
         self.broker = broker or Broker(config)
         # Höchster seit Einstieg beobachteter Kurs je Symbol, für den

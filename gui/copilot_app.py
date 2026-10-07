@@ -465,7 +465,7 @@ with tab_trade:
                     try:
                         msg = cp.buy(symbol, stop, setup, now(), target=target, note=note, breakeven=breakeven)
                     except Exception as e:
-                        msg = f"Alpaca hat abgelehnt oder ist nicht erreichbar: {e}"
+                        msg = f"Order-Status unklar ({e}) -- im Alpaca-Dashboard prüfen, bevor erneut gekauft wird."
                     # Häkchen zurücksetzen: ein zweiter Klick darf nicht versehentlich ein zweites Mal kaufen
                     st.session_state["last_buy_msg"] = msg
                     del st.session_state["confirmed"]
