@@ -426,15 +426,17 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   Stückzahl und Risiko werden mit diesem Limit gerechnet, der tatsächliche Verlust beim
   Stop bleibt so nahe an `--max-risk-dollars`. Füllt die Order nicht rechtzeitig, wird sie
   storniert und der Trade ausgelassen.
-- **Neustart mit offener Position:** Findet der Bot beim Start Positionen im Depot, die er
-  nicht kennt, stellt er sie samt offener Orders sofort glatt (sonst hätten sie keinen Stop
-  und würden nicht vor Handelsschluss geschlossen). Neustarts daher möglichst ohne offene
-  Position, also vor 15:30 oder nach 17:30 deutscher Zeit.
-- Rückstände werden nachgeholt, aber niemals real gehandelt: wird ein Symbol erst Stunden nach
+- **Neustart mit offener Position:** Der Bot speichert seinen Zustand in `momentum_state.json`
+  (anderer Pfad: `--state-file`; deaktivieren: `--no-state-file`). Offene Positionen werden nach
+  einem Neustart weitergeführt und mit dem Depot abgeglichen. Ohne/mit kaputter Datei werden
+  Positionen wie bisher samt offener Orders glattgestellt; kaputte Dateien werden als
+  `.corrupt` aufbewahrt. Ein beim Absturz noch laufender Kauf wird storniert bzw. vom
+  Depot-Abgleich verkauft. Positionen vom Vortag werden sofort glattgestellt.
+- Rückstände werden nachgeholt, aber Einstiege daraus niemals real gehandelt: wird ein Symbol erst Stunden nach
   Sitzungsbeginn neu aufgenommen, oder war der Bot eine Weile offline (Neustart!), holt er die
   fehlenden Minuten-Bars auf einmal nach, damit Muster (Flagge/Pullback/Swing-Tief) korrekt aus
-  der echten Historie erkannt werden -- Signale aus diesem Rückstand lösen aber KEINE echte Order
-  mehr aus, sondern werden nur simuliert nachgezogen. Nur ein Signal auf einem aktuellen Balken
+  der echten Historie erkannt werden. Ausstiegssignale für übernommene offene Positionen werden
+  auch aus dem Rückstand real ausgeführt. Nur ein Einstiegssignal auf einem aktuellen Balken
   (innerhalb der letzten `2 * --poll-interval-seconds`, mind. 120s) kann real ausgeführt werden.
   Außerdem muss der Breakout auf der neuesten abgerufenen Kerze liegen -- gibt es schon eine
   neuere, ist das Signal überholt.
@@ -454,11 +456,11 @@ Ausstieg ohne Rückgriff auf frühere Log-Zeilen nachvollziehbar ist.
   Abbild des Marktes.
 - **Kein WebSocket-Streaming, sondern Polling** -- die Reaktionszeit auf ein Setup ist durch
   `--poll-interval-seconds` nach unten begrenzt.
-- **Kein Zustand übersteht einen Neustart.** Bei einem Absturz mit offener(n) Position(en)
-  verliert der Bot jede Kenntnis davon (kein Persistenz-Layer) -- nach einem Absturz IMMER
-  manuell im Alpaca-Dashboard prüfen, ob noch offene Positionen/Orders existieren. Die
-  Broker-Stop-Order (s.o.) schützt die Position bis Handelsschluss, der Zwangsverkauf vor
-  Handelsschluss greift nach einem Absturz aber NICHT (die Stop-Order verfällt am Tagesende).
+- **Neustarts benötigen eine gültige Zustandsdatei.** Mit `momentum_state.json` werden offene
+  Positionen weitergeführt; ohne/mit kaputter Datei wie bisher glattgestellt. Ein beim Absturz
+  noch laufender Kauf wird storniert bzw. vom Depot-Abgleich verkauft. Während der Bot ausfällt,
+  schützt nur die Broker-Stop-Order bis Handelsschluss. Ohne Neustart greift der Zwangsverkauf
+  vor Handelsschluss weiterhin nicht (die Stop-Order verfällt am Tagesende).
 - **Kein Float-Filter** (siehe Scanner/Backtest oben).
 - **Ein einzelner Prozess, keine Parallelisierung** -- alle beobachteten Symbole werden
   sequentiell im selben Zyklus abgefragt; bei sehr vielen gleichzeitig beobachteten Symbolen

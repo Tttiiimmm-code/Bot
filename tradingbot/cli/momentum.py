@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 
 from tradingbot.broker import Broker
 from tradingbot.config import Config
@@ -528,6 +529,7 @@ def cmd_momentum_run(
     news_filter: str = "off",
     news_model: str | None = None,
     news_provider: str = "auto",
+    state_file: str | None = "momentum_state.json",
 ):
     from tradingbot.momentum_live import LiveMomentumBot, LiveMomentumConfig
     from tradingbot.scanner import ScanCriteria
@@ -588,9 +590,14 @@ def cmd_momentum_run(
         f"Starte Live-Momentum-Bot (paper={config.paper}) -- Scanner alle {scan_interval_seconds}s, "
         f"Balken-Polling alle {poll_interval_seconds}s, max. {max_concurrent_positions} gleichzeitige "
         f"Positionen, Tages-Maximalverlust {daily_max_loss_pct:.1%}.\n"
-        "ACHTUNG: siehe README für die Einschränkungen (IEX-Feed statt voller Marktabdeckung, kein "
-        f"Zustand übersteht einen Neustart, kein Float-Filter) -- {trading_mode_warning} "
+        "ACHTUNG: siehe README für die Einschränkungen (IEX-Feed statt voller Marktabdeckung, "
+        f"kein Float-Filter) -- {trading_mode_warning} "
         "Mit Strg+C beenden.\n"
+    )
+    print(
+        f"Zustandsdatei: {state_file or 'deaktiviert'}. Offene Positionen werden nach Neustart "
+        "mit gültiger Datei weitergeführt; ohne/mit kaputter Datei wie bisher glattgestellt. "
+        "Ein beim Absturz laufender Kauf wird storniert bzw. vom Depot-Abgleich verkauft."
     )
     intel = None
     if news_intel:
@@ -606,5 +613,6 @@ def cmd_momentum_run(
         )
         mode = "Filter: Verwässerung blockiert Einstiege" if news_filter != "off" else "Schatten: nur protokollieren"
         print(f"News-Intel aktiv ({intel.provider}, Modell {intel.model}, {mode}) -> news_intel.csv")
-    bot = LiveMomentumBot(config, criteria, live_config, news_intel=intel)
+    bot = LiveMomentumBot(config, criteria, live_config, news_intel=intel,
+                          state_path=Path(state_file) if state_file is not None else None)
     bot.run_forever()

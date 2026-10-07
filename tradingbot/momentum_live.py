@@ -19,10 +19,10 @@ WICHTIGE EINSCHRÄNKUNGEN (siehe README für Details):
 - Kein WebSocket-Streaming, sondern Polling (siehe LiveMomentumConfig.
   poll_interval_seconds) -- Reaktionszeit auf ein Setup ist durch das
   Poll-Intervall nach unten begrenzt.
-- Kein Zustand übersteht einen Neustart: bei einem Absturz mit offener(n)
-  Position(en) verliert der Bot jede Kenntnis davon (kein Persistenz-
-  Layer) -- nach einem Absturz IMMER manuell im Alpaca-Dashboard prüfen,
-  ob noch offene Positionen/Orders existieren.
+- Mit Zustandsdatei (CLI: momentum_state.json) werden offene Positionen
+  nach einem Neustart weitergeführt. Ohne/mit kaputter Datei werden sie
+  wie bisher glattgestellt. Ein beim Absturz noch laufender Kauf wird
+  storniert bzw. vom Depot-Abgleich verkauft.
 - Kein Float-Filter (siehe scanner.py/momentum.py).
 - Dies ist NUR für Paper-Trading gedacht und wurde als solches entwickelt
   und getestet -- vor echtem Kapitaleinsatz eigenverantwortlich über
@@ -31,11 +31,13 @@ WICHTIGE EINSCHRÄNKUNGEN (siehe README für Details):
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, time as dt_time, timedelta, timezone
+from datetime import date, datetime, time as dt_time, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -46,8 +48,8 @@ from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, OrderStatus, TimeInForce
-from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest, StopOrderRequest
+from alpaca.trading.enums import OrderSide, OrderStatus, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import GetOrdersRequest, LimitOrderRequest, MarketOrderRequest, StopOrderRequest
 
 from tradingbot.broker import _CALENDAR_DAYS_PER_TRADING_DAY, _filter_regular_session
 from tradingbot.config import Config
@@ -307,8 +309,11 @@ class LiveMomentumBot:
         trading_client: TradingClient | None = None,
         data_client: StockHistoricalDataClient | None = None,
         news_intel: NewsIntel | None = None,
+        state_path: Path | None = None,
     ):
         self.config = config
+        self.state_path = state_path
+        self._state_loaded = False
         # Optional: LLM-Einschätzung neuer Kandidaten (tradingbot/news_intel.py);
         # im Schattenmodus nur Protokoll, im Filtermodus Einstiegs-Veto bei Verwässerung.
         self.news_intel = news_intel
@@ -331,6 +336,192 @@ class LiveMomentumBot:
         # -- solange eine davon offen ist, wird für das Symbol nichts
         # nachgelegt (sonst doppelter Verkauf, bevor der erste gefüllt ist).
         self._unmanaged_sell_orders: dict[str, str] = {}
+
+    @staticmethod
+    def _exit_snapshot(event: ExitSignal) -> dict:
+        return {"reason": event.reason.value, "time": event.time.isoformat(),
+                "reference_price": event.reference_price, "shares": event.shares}
+
+    @staticmethod
+    def _restore_exit(snap: dict) -> ExitSignal:
+        return ExitSignal(ExitReason(snap["reason"]), pd.Timestamp(snap["time"]),
+                          snap["reference_price"], snap["shares"])
+
+    def _save_state(self) -> None:
+        """Speichert atomar; ein Schreibfehler darf den Handel nicht abbrechen."""
+        if self.state_path is None:
+            return
+        # Vor dem erfolgreichen Einlesen niemals die bestehende Datei mit
+        # dem noch leeren Speicher überschreiben (z.B. bei Lesefehlern).
+        if not self._state_loaded and not self._orphans_checked:
+            return
+        try:
+            symbols = {}
+            for symbol, state in self._symbols.items():
+                if not state.engine.in_position:
+                    continue
+                symbols[symbol] = {
+                    "engine": state.engine.position_snapshot(),
+                    "rel_vol_reference": state.rel_vol_reference.tolist(),
+                    "daily_sma": state.daily_sma,
+                    "session_open": state.session_open.isoformat(),
+                    "trend_ok": state.trend_ok, "cum_volume": state.cum_volume,
+                    "last_close": state.last_close,
+                    "last_bar_time": state.last_bar_time.isoformat() if state.last_bar_time is not None else None,
+                    "pending_exit": {"order_id": str(state.pending_exit.order_id),
+                                     "event": self._exit_snapshot(state.pending_exit.event)}
+                                    if state.pending_exit is not None else None,
+                    "deferred_exits": [self._exit_snapshot(e) for e in state.deferred_exits],
+                    "carried_over": state.carried_over,
+                    "broker_stop_order_id": str(state.broker_stop_order_id)
+                                            if state.broker_stop_order_id is not None else None,
+                }
+            payload = {
+                "version": 1, "saved_at": datetime.now(timezone.utc).isoformat(),
+                "trading_day": self._trading_day.isoformat() if self._trading_day is not None else None,
+                "halted": self._halted, "flatten_triggered_today": self._flatten_triggered_today,
+                "day_start_equity": self._day_start_equity,
+                "unmanaged_sell_orders": {s: str(o) for s, o in self._unmanaged_sell_orders.items()},
+                "symbols": symbols,
+            }
+            tmp = self.state_path.with_name(self.state_path.name + ".tmp")
+            tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            tmp.replace(self.state_path)
+        except Exception:
+            logger.exception("Momentum-Zustand konnte nicht gespeichert werden (%s).", self.state_path)
+
+    def _load_state(self) -> None:
+        """Liest und baut zuerst vollständig auf, bevor der Speicher ersetzt wird."""
+        payload = json.loads(self.state_path.read_text(encoding="utf-8"))
+        if payload["version"] != 1:
+            raise ValueError("Unbekannte Version der Momentum-Zustandsdatei.")
+        trading_day = date.fromisoformat(payload["trading_day"]) if payload["trading_day"] is not None else None
+        symbols = {}
+        for symbol, snap in payload["symbols"].items():
+            engine = MomentumEngine(
+                flagpole_min_gain_pct=self.live_config.flagpole_min_gain_pct,
+                flagpole_max_bars=self.live_config.flagpole_max_bars,
+                min_pullback_bars=self.live_config.min_pullback_bars,
+                max_pullback_bars=self.live_config.max_pullback_bars,
+                max_pullback_retrace_pct=self.live_config.max_pullback_retrace_pct,
+                reward_risk_ratio=self.live_config.reward_risk_ratio,
+                extension_multiplier=self.live_config.extension_multiplier,
+                min_relative_volume=self.live_config.min_relative_volume,
+                weakness_exit=self.live_config.weakness_exit,
+            )
+            engine.restore_position(snap["engine"])
+            pending = snap["pending_exit"]
+            session_open = datetime.fromisoformat(snap["session_open"])
+            last_bar_time = pd.Timestamp(snap["last_bar_time"]) if snap["last_bar_time"] is not None else None
+            if session_open.tzinfo is None or (last_bar_time is not None and last_bar_time.tzinfo is None):
+                raise ValueError("Zeitstempel in der Zustandsdatei benötigen eine Zeitzone.")
+            symbols[symbol] = _SymbolState(
+                engine=engine, rel_vol_reference=np.asarray(snap["rel_vol_reference"], dtype=float),
+                daily_sma=snap["daily_sma"], session_open=session_open.astimezone(ZoneInfo("America/New_York")),
+                trend_ok=snap["trend_ok"], cum_volume=snap["cum_volume"], last_close=snap["last_close"],
+                last_bar_time=last_bar_time.tz_convert("America/New_York") if last_bar_time is not None else None,
+                pending_exit=_PendingExit(pending["order_id"], self._restore_exit(pending["event"])) if pending else None,
+                deferred_exits=[self._restore_exit(e) for e in snap["deferred_exits"]],
+                carried_over=snap["carried_over"], broker_stop_order_id=snap["broker_stop_order_id"],
+            )
+        halted = payload["halted"]
+        flatten_triggered_today = payload["flatten_triggered_today"]
+        day_start_equity = payload["day_start_equity"]
+        unmanaged_sell_orders = dict(payload["unmanaged_sell_orders"])
+        self._symbols = symbols
+        self._trading_day = trading_day
+        self._halted = halted
+        self._flatten_triggered_today = flatten_triggered_today
+        self._day_start_equity = day_start_equity
+        self._unmanaged_sell_orders = unmanaged_sell_orders
+        self._state_loaded = True
+
+    def _restore_state(self) -> None:
+        """Übernimmt gespeicherte Positionen und gleicht sie mit dem Papierdepot ab."""
+        if self.state_path is None:
+            self._close_orphaned_positions()
+            return
+        if not self._state_loaded:
+            try:
+                self._load_state()
+            except FileNotFoundError:
+                self._close_orphaned_positions()
+                return
+            except Exception:
+                logger.critical("Momentum-Zustandsdatei unlesbar/kaputt (%s).", self.state_path, exc_info=True)
+                try:
+                    self.state_path.replace(self.state_path.with_name(self.state_path.name + ".corrupt"))
+                except OSError:
+                    logger.exception("Kaputte Zustandsdatei konnte nicht umbenannt werden.")
+                self._close_orphaned_positions()
+                return
+        try:
+            # Nach einem API-Fehler bleibt der bereits geladene und ggf.
+            # abgeglichene Speicher erhalten; Fills nie zweimal verbuchen.
+            known_ids = set(self._unmanaged_sell_orders.values())
+            for state in self._symbols.values():
+                if state.broker_stop_order_id is not None:
+                    known_ids.add(str(state.broker_stop_order_id))
+                if state.pending_exit is not None:
+                    known_ids.add(str(state.pending_exit.order_id))
+            orders = self.trading_client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN, limit=500))
+            open_orders = {str(order.id): order for order in orders}
+            for order in orders:
+                if str(order.id) not in known_ids:
+                    logger.critical("Unbekannte offene Order beim Neustart storniert: %s (id=%s).", order.symbol, order.id)
+                    self.trading_client.cancel_order_by_id(order.id)
+
+            for symbol, state in self._symbols.items():
+                if state.engine.in_position:
+                    self._check_broker_stop(symbol, state)
+            positions = self.trading_client.get_all_positions()
+            quantities = {p.symbol: int(float(p.qty)) for p in positions}
+            for symbol, state in self._symbols.items():
+                if state.pending_exit is not None:
+                    continue
+                qty = max(0, quantities.get(symbol, 0))
+                if state.engine.in_position and qty < state.engine.shares_open:
+                    diff = state.engine.shares_open - qty
+                    logger.critical("%s: %s Stück außerhalb des Bots verkauft -- Depot-Abgleich beim Neustart.", symbol, diff)
+                    fully_closed = state.engine.record_exit(diff, state.last_close, is_target_partial=False)
+                    if fully_closed:
+                        self._clear_stale_deferred_exits(symbol, state)
+                    self._save_state()
+                    if not self._cancel_broker_stop(symbol, state):
+                        raise RuntimeError("Stop-Stornierung beim Wiederherstellen noch nicht bestätigt.")
+                # Auch nach abgebrochenem Abgleich/erneutem Neustart eine
+                # noch zu große Stop-Order ersetzen, ohne erneut zu buchen.
+                stop = open_orders.get(str(state.broker_stop_order_id))
+                if stop is not None and (not state.engine.in_position or int(float(stop.qty)) != state.engine.shares_open):
+                    if not self._cancel_broker_stop(symbol, state):
+                        raise RuntimeError("Stop-Stornierung beim Wiederherstellen noch nicht bestätigt.")
+                self._ensure_broker_stop(symbol, state)
+
+            if not self._symbols:
+                self._close_orphaned_positions()
+                if not self._orphans_checked:
+                    return
+            else:
+                for position in positions:
+                    state = self._symbols.get(position.symbol)
+                    if state is not None and (state.engine.in_position or state.pending_exit is not None):
+                        continue
+                    # Bereits laufende Depot-Verkäufe verfolgt der normale
+                    # Abgleich weiter, ohne eine zweite Order zu senden.
+                    if position.symbol in self._unmanaged_sell_orders:
+                        continue
+                    try:
+                        order = self.trading_client.close_position(position.symbol)
+                        self._unmanaged_sell_orders[position.symbol] = str(order.id)
+                        self._save_state()
+                    except Exception:
+                        logger.exception("Unbekannte Position %s konnte beim Neustart nicht geschlossen werden.", position.symbol)
+            self._orphans_checked = True
+            logger.warning("Zustand geladen: %d Position(en) übernommen (%s).",
+                           sum(s.engine.in_position for s in self._symbols.values()), ", ".join(sorted(self._symbols)))
+            self._save_state()
+        except Exception:
+            logger.exception("Zustandsabgleich fehlgeschlagen, nächster Versuch im nächsten Zyklus.")
 
     def _close_orphaned_positions(self) -> None:
         """Einmalig beim Start: Positionen, die schon im Depot liegen (z.B.
@@ -390,6 +581,7 @@ class LiveMomentumBot:
                     MarketOrderRequest(symbol=symbol, qty=excess, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
                 )
                 self._unmanaged_sell_orders[symbol] = order.id
+                self._save_state()
                 logger.critical(
                     "%s: %s Stück im Depot, davon nur %s vom Bot verwaltet -- verkaufe %s unverwaltete Stück (id=%s).",
                     symbol,
@@ -482,115 +674,120 @@ class LiveMomentumBot:
         gedacht, analog zu Scanner.scan()s reference_time-Parameter, damit
         Tageswechsel/Sitzungsgrenzen/Flatten-Cutoff deterministisch
         durchgespielt werden können."""
-        now = now if now is not None else datetime.now(timezone.utc)
-        if not self._orphans_checked:
-            self._close_orphaned_positions()
-        session = latest_trading_session(self.trading_client, now)
-        if session.date != self._trading_day:
-            self._start_new_day(session, now)
+        try:
+            now = now if now is not None else datetime.now(timezone.utc)
+            if not self._orphans_checked:
+                self._restore_state()
+                if self.state_path is not None and not self._orphans_checked:
+                    return
+            session = latest_trading_session(self.trading_client, now)
+            if session.date != self._trading_day:
+                self._start_new_day(session, now)
 
-        # Ausstehende Verkäufe IMMER zuerst prüfen -- unabhängig von
-        # Pause-/Flatten-Zustand UND unabhängig davon, ob `now` gerade
-        # innerhalb der Handelssitzung liegt: eine kurz vor Sitzungsende
-        # platzierte (z.B. Flatten-)Order darf nicht dadurch unbeobachtet
-        # bleiben, dass der nächste Zyklus schon als "außerhalb der
-        # Sitzung" gilt und vorher zurückkehrt.
-        self._resolve_pending_exits()
+            # Ausstehende Verkäufe IMMER zuerst prüfen -- unabhängig von
+            # Pause-/Flatten-Zustand UND unabhängig davon, ob `now` gerade
+            # innerhalb der Handelssitzung liegt: eine kurz vor Sitzungsende
+            # platzierte (z.B. Flatten-)Order darf nicht dadurch unbeobachtet
+            # bleiben, dass der nächste Zyklus schon als "außerhalb der
+            # Sitzung" gilt und vorher zurückkehrt.
+            self._resolve_pending_exits()
 
-        now_et = now.astimezone(ZoneInfo("America/New_York"))
-        session_open_et = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
-        session_close_et = session.close.replace(tzinfo=ZoneInfo("America/New_York"))
+            now_et = now.astimezone(ZoneInfo("America/New_York"))
+            session_open_et = session.open.replace(tzinfo=ZoneInfo("America/New_York"))
+            session_close_et = session.close.replace(tzinfo=ZoneInfo("America/New_York"))
 
-        if now_et < session_open_et:
-            logger.debug("Vor Sitzungsbeginn (%s), überspringe Zyklus.", session.date)
-            return
+            if now_et < session_open_et:
+                logger.debug("Vor Sitzungsbeginn (%s), überspringe Zyklus.", session.date)
+                return
 
-        # Nur während der Sitzung: nach Handelsschluss würde eine Market-
-        # Order erst zur nächsten Eröffnung ausgeführt und jeder weitere
-        # Zyklus sähe den Bestand unverändert.
-        if now_et < session_close_et:
-            self._sell_unmanaged_shares()
+            # Nur während der Sitzung: nach Handelsschluss würde eine Market-
+            # Order erst zur nächsten Eröffnung ausgeführt und jeder weitere
+            # Zyklus sähe den Bestand unverändert.
+            if now_et < session_close_et:
+                self._sell_unmanaged_shares()
 
-        # WICHTIG: dieser Zweig muss VOR jedem "now_et >= session_close_et
-        # -> überspringen"-Check kommen (den gab es hier früher separat) --
-        # sonst könnte ein grobes --poll-interval-seconds (>=
-        # --flatten-minutes-before-close * 60) das gesamte Cutoff-Fenster
-        # zwischen zwei Zyklen überspringen (ein Zyklus kurz VOR dem
-        # Cutoff, der nächste schon NACH Sitzungsende) und offene
-        # Positionen blieben bis zum nächsten Handelstag ungeschlossen
-        # liegen -- genau das "kein Overnight-Halten"-Versprechen würde
-        # damit gebrochen. flatten_cutoff_et <= session_close_et gilt
-        # immer (flatten_minutes_before_close >= 0), das Fenster "nach
-        # Sitzungsende" ist also automatisch mit abgedeckt.
-        flatten_cutoff_et = session_close_et - timedelta(minutes=self.live_config.flatten_minutes_before_close)
-        if now_et >= flatten_cutoff_et:
-            if not self._flatten_triggered_today:
-                logger.info(
-                    "Sitzungsende nähert sich (Cutoff %s ET) -- schließe alle offenen Positionen.",
-                    flatten_cutoff_et.time(),
-                )
-                self._flatten_triggered_today = True
-            # Jeden Zyklus erneut aufrufen (idempotent), nicht nur beim
-            # ersten Überschreiten des Cutoffs -- sonst bliebe eine zum
-            # Cutoff-Zeitpunkt noch offene (pending_exit) Order, die sich
-            # erst DANACH in einen Teil-Fill auflöst, für den Rest der
-            # Sitzung unbewacht. _flatten_triggered_today steuert nur die
-            # einmalige Log-Meldung oben, nicht den eigentlichen
-            # Glattstellungsversuch.
-            self._flatten_all(now)
-            return
-
-        if self._halted:
-            # Wie beim Flatten-Cutoff oben: JEDEN Zyklus erneut aufrufen
-            # statt nur einmal beim Auslösen -- ein Symbol mit einer zum
-            # Halte-Zeitpunkt noch offenen (pending_exit) Order wird von
-            # _flatten_all() dort bewusst übersprungen (keine zweite,
-            # konkurrierende Verkaufs-Order) -- löst sich diese Order
-            # später (via _resolve_pending_exits() oben) in einen
-            # Teil-Fill auf, bleibt ohne diesen wiederholten Aufruf die
-            # verbleibende Restmenge für den Rest des pausierten
-            # Handelstags komplett unbewacht (der Circuit-Breaker soll
-            # ausnahmslos ALLE Positionen schließen). _flatten_all() ist
-            # idempotent -- bereits geschlossene bzw. noch mit einer
-            # eigenen offenen Order wartende Symbole werden dort selbst
-            # wieder übersprungen.
-            self._flatten_all(now)
-            return
-
-        account = self.trading_client.get_account()
-        equity = float(account.equity)
-        if self._day_start_equity is None:
-            self._day_start_equity = equity
-            logger.info("Start-Eigenkapital für %s: %.2f", session.date, equity)
-        elif self._day_start_equity > 0:
-            drawdown_pct = (self._day_start_equity - equity) / self._day_start_equity
-            if drawdown_pct >= self.live_config.daily_max_loss_pct:
-                logger.critical(
-                    "Tages-Maximalverlust erreicht: %.2f%% >= %.2f%% (Start=%.2f, aktuell=%.2f) -- "
-                    "schließe alle offenen Positionen und pausiere für den Rest des Handelstags.",
-                    drawdown_pct * 100,
-                    self.live_config.daily_max_loss_pct * 100,
-                    self._day_start_equity,
-                    equity,
-                )
-                self._halted = True
+            # WICHTIG: dieser Zweig muss VOR jedem "now_et >= session_close_et
+            # -> überspringen"-Check kommen (den gab es hier früher separat) --
+            # sonst könnte ein grobes --poll-interval-seconds (>=
+            # --flatten-minutes-before-close * 60) das gesamte Cutoff-Fenster
+            # zwischen zwei Zyklen überspringen (ein Zyklus kurz VOR dem
+            # Cutoff, der nächste schon NACH Sitzungsende) und offene
+            # Positionen blieben bis zum nächsten Handelstag ungeschlossen
+            # liegen -- genau das "kein Overnight-Halten"-Versprechen würde
+            # damit gebrochen. flatten_cutoff_et <= session_close_et gilt
+            # immer (flatten_minutes_before_close >= 0), das Fenster "nach
+            # Sitzungsende" ist also automatisch mit abgedeckt.
+            flatten_cutoff_et = session_close_et - timedelta(minutes=self.live_config.flatten_minutes_before_close)
+            if now_et >= flatten_cutoff_et:
+                if not self._flatten_triggered_today:
+                    logger.info(
+                        "Sitzungsende nähert sich (Cutoff %s ET) -- schließe alle offenen Positionen.",
+                        flatten_cutoff_et.time(),
+                    )
+                    self._flatten_triggered_today = True
+                # Jeden Zyklus erneut aufrufen (idempotent), nicht nur beim
+                # ersten Überschreiten des Cutoffs -- sonst bliebe eine zum
+                # Cutoff-Zeitpunkt noch offene (pending_exit) Order, die sich
+                # erst DANACH in einen Teil-Fill auflöst, für den Rest der
+                # Sitzung unbewacht. _flatten_triggered_today steuert nur die
+                # einmalige Log-Meldung oben, nicht den eigentlichen
+                # Glattstellungsversuch.
                 self._flatten_all(now)
                 return
 
-        # Bereits beobachtete Symbole (inkl. offener Positionen) ZUERST
-        # verarbeiten, erst DANACH scannen: der Kontextaufbau für neue
-        # Kandidaten (mehrere Monate Minutendaten je Symbol) kann viele
-        # Sekunden dauern -- Stops/Ausstiege offener Positionen dürfen nicht
-        # so lange warten. Neu aufgenommene Symbole werden direkt im
-        # Anschluss an den Scan noch im selben Zyklus verarbeitet.
-        already_tracked = set(self._symbols)
-        self._process_symbols(already_tracked, now)
+            if self._halted:
+                # Wie beim Flatten-Cutoff oben: JEDEN Zyklus erneut aufrufen
+                # statt nur einmal beim Auslösen -- ein Symbol mit einer zum
+                # Halte-Zeitpunkt noch offenen (pending_exit) Order wird von
+                # _flatten_all() dort bewusst übersprungen (keine zweite,
+                # konkurrierende Verkaufs-Order) -- löst sich diese Order
+                # später (via _resolve_pending_exits() oben) in einen
+                # Teil-Fill auf, bleibt ohne diesen wiederholten Aufruf die
+                # verbleibende Restmenge für den Rest des pausierten
+                # Handelstags komplett unbewacht (der Circuit-Breaker soll
+                # ausnahmslos ALLE Positionen schließen). _flatten_all() ist
+                # idempotent -- bereits geschlossene bzw. noch mit einer
+                # eigenen offenen Order wartende Symbole werden dort selbst
+                # wieder übersprungen.
+                self._flatten_all(now)
+                return
 
-        if self._last_scan_time is None or (now - self._last_scan_time) >= timedelta(
-            seconds=self.live_config.scan_interval_seconds
-        ):
-            self._rescan(now, session)
-            self._process_symbols(set(self._symbols) - already_tracked, now)
+            account = self.trading_client.get_account()
+            equity = float(account.equity)
+            if self._day_start_equity is None:
+                self._day_start_equity = equity
+                logger.info("Start-Eigenkapital für %s: %.2f", session.date, equity)
+            elif self._day_start_equity > 0:
+                drawdown_pct = (self._day_start_equity - equity) / self._day_start_equity
+                if drawdown_pct >= self.live_config.daily_max_loss_pct:
+                    logger.critical(
+                        "Tages-Maximalverlust erreicht: %.2f%% >= %.2f%% (Start=%.2f, aktuell=%.2f) -- "
+                        "schließe alle offenen Positionen und pausiere für den Rest des Handelstags.",
+                        drawdown_pct * 100,
+                        self.live_config.daily_max_loss_pct * 100,
+                        self._day_start_equity,
+                        equity,
+                    )
+                    self._halted = True
+                    self._flatten_all(now)
+                    return
+
+            # Bereits beobachtete Symbole (inkl. offener Positionen) ZUERST
+            # verarbeiten, erst DANACH scannen: der Kontextaufbau für neue
+            # Kandidaten (mehrere Monate Minutendaten je Symbol) kann viele
+            # Sekunden dauern -- Stops/Ausstiege offener Positionen dürfen nicht
+            # so lange warten. Neu aufgenommene Symbole werden direkt im
+            # Anschluss an den Scan noch im selben Zyklus verarbeitet.
+            already_tracked = set(self._symbols)
+            self._process_symbols(already_tracked, now)
+
+            if self._last_scan_time is None or (now - self._last_scan_time) >= timedelta(
+                seconds=self.live_config.scan_interval_seconds
+            ):
+                self._rescan(now, session)
+                self._process_symbols(set(self._symbols) - already_tracked, now)
+        finally:
+            self._save_state()
 
     def _process_symbols(self, symbols: set[str], now: datetime) -> None:
         for symbol, state in list(self._symbols.items()):
@@ -997,6 +1194,7 @@ class LiveMomentumBot:
                 filled.status,
             )
         state.engine.record_entry(shares_filled, fill_price, event.time)
+        self._save_state()
         logger.info(
             "Kauf gefüllt: %s %s Stück @ %.2f (Muster=%s, Stop=%.2f, Ziel=%.2f)",
             symbol,
@@ -1071,6 +1269,7 @@ class LiveMomentumBot:
             )
             return
         state.broker_stop_order_id = order.id
+        self._save_state()
         logger.info(
             "Stop-Order bei Alpaca hinterlegt: %s %s Stück @ Stop %.4f (id=%s)",
             symbol,
@@ -1093,6 +1292,7 @@ class LiveMomentumBot:
         # deshalb NICHT auf Breakeven anheben (siehe record_exit()-
         # Docstring).
         fully_closed = state.engine.record_exit(filled_qty, fill_price, is_target_partial=False)
+        self._save_state()
         logger.warning(
             "Stop-Order bei Alpaca für %s ausgelöst: %s Stück @ %.4f verkauft%s",
             symbol,
@@ -1113,6 +1313,7 @@ class LiveMomentumBot:
             return
         state.broker_stop_order_id = None
         self._record_broker_stop_fill(symbol, state, order)
+        self._save_state()
 
     def _cancel_broker_stop(self, symbol: str, state: _SymbolState) -> bool:
         """Storniert die Broker-Stop-Order vor einem eigenen Verkauf und
@@ -1138,6 +1339,7 @@ class LiveMomentumBot:
             return False
         state.broker_stop_order_id = None
         self._record_broker_stop_fill(symbol, state, order)
+        self._save_state()
         return True
 
     def _clear_stale_deferred_exits(self, symbol: str, state: _SymbolState) -> None:
@@ -1201,6 +1403,7 @@ class LiveMomentumBot:
         fully_closed = state.engine.record_exit(
             filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
         )
+        self._save_state()
         logger.critical(
             "Verkaufs-Order für %s (Status=%s) vor Abbruch teilweise gefüllt: %s Stück @ %.2f nachträglich verbucht.",
             symbol,
@@ -1257,6 +1460,9 @@ class LiveMomentumBot:
         order = self.trading_client.submit_order(
             MarketOrderRequest(symbol=symbol, qty=event.shares, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
         )
+        if self.state_path is not None:
+            state.pending_exit = _PendingExit(order_id=order.id, event=event)
+            self._save_state()
         # Einstieg/Stop/Ziel HIER loggen (vor record_exit() weiter unten,
         # das die Position ggf. schließt und diese Werte damit ungültig
         # macht) -- macht den Ausstiegsgrund nachvollziehbar (z.B. "Kurs
@@ -1293,6 +1499,7 @@ class LiveMomentumBot:
                 order.id,
             )
             state.pending_exit = _PendingExit(order_id=order.id, event=event)
+            self._save_state()
             return
 
         if filled is not None and filled.status == OrderStatus.FILLED:
@@ -1301,6 +1508,9 @@ class LiveMomentumBot:
             fully_closed = state.engine.record_exit(
                 filled_qty, fill_price, is_target_partial=(event.reason == ExitReason.TARGET)
             )
+            if self.state_path is not None:
+                state.pending_exit = None
+            self._save_state()
             logger.info(
                 "Verkauf gefüllt: %s %s Stück @ %.2f (Grund=%s)%s",
                 symbol,
@@ -1332,12 +1542,15 @@ class LiveMomentumBot:
                 self.live_config.order_fill_timeout_seconds,
             )
             state.pending_exit = _PendingExit(order_id=order.id, event=event)
+            self._save_state()
             return
 
         # Endzustand OHNE (vollständigen) Fill (CANCELED/REJECTED/EXPIRED)
         # -- anders als bei einer Kauf-Order wird NIE stillschweigend
         # aufgegeben: die Engine hält die Position weiterhin für offen,
         # reales Risiko bliebe sonst unbewacht.
+        if self.state_path is not None:
+            state.pending_exit = None
         retry_event = self._reconcile_terminal_exit_order(symbol, state, filled, event)
         if retry_event is None:
             return
@@ -1404,6 +1617,7 @@ class LiveMomentumBot:
                     " -- Position vollständig geschlossen" if fully_closed else " -- Teilverkauf",
                 )
                 state.pending_exit = None
+                self._save_state()
                 if fully_closed:
                     self._clear_stale_deferred_exits(symbol, state)
             elif order.status in (OrderStatus.CANCELED, OrderStatus.REJECTED, OrderStatus.EXPIRED):

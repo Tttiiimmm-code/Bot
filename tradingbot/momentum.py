@@ -347,6 +347,34 @@ class MomentumEngine:
     def avg_bar_range(self) -> float:
         return self._avg_bar_range
 
+    def position_snapshot(self) -> dict:
+        """Liefert den JSON-fähigen Zustand einer offenen Position."""
+        if not self.in_position:
+            raise RuntimeError("Positions-Schnappschuss nur mit offener Position erlaubt.")
+        fields = (
+            "entry_price", "pattern", "shares_total", "shares_closed", "stop_price",
+            "target_price", "breakeven", "avg_bar_range", "last_close", "prev_high", "prev_low",
+        )
+        snap = {name: getattr(self, f"_{name}") for name in fields}
+        snap["entry_time"] = self._entry_time.isoformat() if self._entry_time is not None else None
+        return snap
+
+    def restore_position(self, snap: dict) -> None:
+        """Übernimmt eine offene Position in eine freie Engine."""
+        if self.state != "SEARCHING" or self._pending_breakout is not None:
+            raise RuntimeError("Wiederherstellung nur in SEARCHING ohne offenes BreakoutEvent erlaubt.")
+        if not snap["shares_total"] - snap["shares_closed"] > 0:
+            raise ValueError("Wiederhergestellte Position muss eine positive Restmenge haben.")
+        fields = (
+            "entry_price", "pattern", "shares_total", "shares_closed", "stop_price",
+            "target_price", "breakeven", "avg_bar_range", "last_close", "prev_high", "prev_low",
+        )
+        values = {name: snap[name] for name in fields}
+        values["entry_time"] = pd.Timestamp(snap["entry_time"]) if snap["entry_time"] is not None else None
+        for name, value in values.items():
+            setattr(self, f"_{name}", value)
+        self.state = "IN_POSITION"
+
     def process_bar(
         self,
         time: pd.Timestamp,

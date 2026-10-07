@@ -164,6 +164,32 @@ def test_run_command_rejects_symbol_flag(monkeypatch):
         main_module.main()
 
 
+@pytest.mark.parametrize("argv,expected", [
+    ([], "momentum_state.json"),
+    (["--state-file", "eigener_zustand.json"], "eigener_zustand.json"),
+    (["--no-state-file"], None),
+])
+def test_momentum_run_state_file_option_reaches_bot(monkeypatch, argv, expected):
+    from pathlib import Path
+    import main as main_module
+    import tradingbot.momentum_live as momentum_live
+
+    monkeypatch.setattr("sys.argv", ["main.py", "momentum-run", *argv])
+    monkeypatch.setattr(main_module.Config, "from_env", classmethod(lambda cls: _make_config("AAPL")))
+    seen = []
+
+    class FakeBot:
+        def __init__(self, config, criteria, live_config, *, news_intel, state_path):
+            seen.append(state_path)
+
+        def run_forever(self):
+            pass
+
+    monkeypatch.setattr(momentum_live, "LiveMomentumBot", FakeBot)
+    main_module.main()
+    assert seen == [Path(expected) if expected is not None else None]
+
+
 def test_momentum_run_command_rejects_symbol_flag(monkeypatch):
     """Wie test_run_command_rejects_symbol_flag: momentum-run durchsucht den
     ganzen Markt (wie scan) und kennt --symbol daher bewusst nicht."""
@@ -333,7 +359,7 @@ def test_momentum_run_allows_live_trading_with_flag(monkeypatch):
     started = []
 
     class FakeBot:
-        def __init__(self, config, criteria, live_config, news_intel=None):
+        def __init__(self, config, criteria, live_config, news_intel=None, state_path=None):
             started.append(config.paper)
 
         def run_forever(self):
@@ -356,7 +382,7 @@ def test_momentum_run_broker_stop_flag(monkeypatch, argv, expected):
     seen = []
 
     class FakeBot:
-        def __init__(self, config, criteria, live_config, news_intel=None):
+        def __init__(self, config, criteria, live_config, news_intel=None, state_path=None):
             seen.append(live_config.broker_stop_orders)
 
         def run_forever(self):
@@ -510,7 +536,7 @@ def test_momentum_run_passes_news_intel_only_when_enabled(monkeypatch, tmp_path)
     seen = []
 
     class FakeBot:
-        def __init__(self, config, criteria, live_config, news_intel=None):
+        def __init__(self, config, criteria, live_config, news_intel=None, state_path=None):
             seen.append(news_intel)
 
         def run_forever(self):

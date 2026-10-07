@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 import numpy as np
+import json
 import pandas as pd
 import pytest
 
@@ -13,6 +14,63 @@ from tradingbot.momentum import (
     run_momentum_backtest,
     run_momentum_backtest_multi,
 )
+
+
+@pytest.mark.parametrize("weakness_exit", ["red_candle", "new_low", "none"])
+@pytest.mark.parametrize("after_partial", [False, True])
+def test_position_snapshot_restores_identical_events(weakness_exit, after_partial):
+    original = _entered_engine(weakness_exit)
+    if after_partial:
+        original.record_exit(50, original.target_price, is_target_partial=True)
+    restored = _live_like_engine(weakness_exit=weakness_exit)
+    restored.restore_position(json.loads(json.dumps(original.position_snapshot())))
+    assert restored.position_snapshot() == original.position_snapshot()
+    for minute, bar in enumerate([(10.1, 11.1, 10.05, 11.0), (10.1, 10.2, 9.9, 10.0)], start=36):
+        args = (pd.Timestamp(f"2024-01-10 09:{minute}", tz="America/New_York"), *bar, 1000)
+        kwargs = dict(in_window=True, relative_volume=5.0, daily_trend_ok=True)
+        events = original.process_bar(*args, **kwargs)
+        assert restored.process_bar(*args, **kwargs) == events
+        for event in events:
+            for engine in (original, restored):
+                engine.record_exit(event.shares, event.reference_price, is_target_partial=event.reason == ExitReason.TARGET)
+        assert restored.in_position == original.in_position
+        assert restored.shares_open == original.shares_open
+        if original.in_position:
+            assert restored.position_snapshot() == original.position_snapshot()
+            assert restored.stop_price == restored.entry_price
+
+
+@pytest.mark.parametrize("state,pending", [("IN_POSITION", False), ("PULLBACK", False), ("SEARCHING", True)])
+def test_restore_position_rejects_busy_engine(state, pending):
+    engine = _make_engine()
+    engine.state = state
+    if pending:
+        engine._pending_breakout = BreakoutEvent("BULL_FLAG", pd.Timestamp("2024-01-10"), 10, 9, 1)
+    with pytest.raises(RuntimeError):
+        engine.restore_position(_entered_engine("none").position_snapshot())
+
+
+def test_position_snapshot_requires_open_position():
+    with pytest.raises(RuntimeError):
+        _make_engine().position_snapshot()
+
+
+@pytest.mark.parametrize("closed", [100, 101])
+def test_restore_position_rejects_nonpositive_remaining_shares(closed):
+    snap = _entered_engine("none").position_snapshot()
+    snap["shares_closed"] = closed
+    engine = _make_engine()
+    with pytest.raises(ValueError):
+        engine.restore_position(snap)
+    assert engine.state == "SEARCHING"
+
+
+def test_position_snapshot_json_preserves_infinity_and_optional_time():
+    snap = _entered_engine("none").position_snapshot()
+    snap.update(prev_high=float("inf"), prev_low=float("-inf"), entry_time=None)
+    engine = _make_engine()
+    engine.restore_position(json.loads(json.dumps(snap)))
+    assert engine.position_snapshot() == snap
 
 
 def _minute_index(day: date, n: int) -> pd.DatetimeIndex:

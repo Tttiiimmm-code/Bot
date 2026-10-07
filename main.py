@@ -253,6 +253,7 @@ def main():
                 news_filter=args.news_filter,
                 news_model=args.news_model,
                 news_provider=args.news_provider,
+                state_file=args.state_file,
             )
         elif args.command == "momentum-report":
             cmd_momentum_report(config, args.days)

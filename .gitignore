@@ -8,6 +8,8 @@ venv/
 data_cache/
 *.env
 overnight_state.json
+momentum_state.json
+momentum_state.json.corrupt
 overnight_trades.csv
 forward_trades.csv
 forward_orb.csv

@@ -432,6 +432,14 @@ def build_parser() -> argparse.ArgumentParser:
         "echte (Paper-)Orders. Läuft bis Strg+C (siehe README für Einschränkungen).",
     )
     momentum_run_parser.add_argument(
+        "--state-file", default="momentum_state.json",
+        help="Zustandsdatei für Neustarts (Standard: momentum_state.json).",
+    )
+    momentum_run_parser.add_argument(
+        "--no-state-file", action="store_const", const=None, dest="state_file",
+        help="Zustand nicht speichern; offene Positionen beim Neustart wie bisher glattstellen.",
+    )
+    momentum_run_parser.add_argument(
         "--min-price", type=_positive_float, default=1.0, help="Untere Preisgrenze in Dollar (Standard: 1.0).",
     )
     momentum_run_parser.add_argument(

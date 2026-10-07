@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from datetime import date, datetime, time as dt_time, timezone
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -145,6 +147,7 @@ class FakeTradingClient:
         # Abweichende Stückzahl je Symbol (Standard "100").
         self.position_qty: dict[str, str] = {}
         self.close_all_calls: list[bool] = []
+        self.close_position_calls: list[str] = []
         self.fail_positions_query = False
         # Wenn gesetzt: cancel_order_by_id() lässt eine Kauf-Order zunächst
         # PENDING_CANCEL (0 gefüllt); erst die ZWEITE Abfrage danach zeigt
@@ -161,6 +164,20 @@ class FakeTradingClient:
         self.close_all_calls.append(cancel_orders)
         self.positions = []
         return []
+
+    def get_orders(self, request):
+        assert request.status.value == "open"
+        assert request.limit == 500
+        terminal = (OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED, OrderStatus.EXPIRED)
+        return [order for order in self.orders.values() if order.status not in terminal]
+
+    def close_position(self, symbol):
+        self.close_position_calls.append(symbol)
+        order = FakeOrder(f"close-{symbol}", symbol, float(self.position_qty.get(symbol, "100")), OrderSide.SELL)
+        order.status = OrderStatus.FILLED
+        self.orders[order.id] = order
+        self.positions.remove(symbol)
+        return order
 
     def get_calendar(self, request):
         return self._calendar_entries
@@ -308,7 +325,7 @@ def _entered_engine(
     return engine
 
 
-def _make_bot(data_client, trading_client, scanner, live_config=None) -> LiveMomentumBot:
+def _make_bot(data_client, trading_client, scanner, live_config=None, state_path=None) -> LiveMomentumBot:
     return LiveMomentumBot(
         make_config(),
         ScanCriteria(),
@@ -316,12 +333,421 @@ def _make_bot(data_client, trading_client, scanner, live_config=None) -> LiveMom
         scanner=scanner,
         trading_client=trading_client,
         data_client=data_client,
+        state_path=state_path,
     )
 
 
 # ---------------------------------------------------------------------------
 # _validate_live_config
 # ---------------------------------------------------------------------------
+
+
+def _saved_position(tmp_path):
+    """Echter Einstiegszyklus; der Fake-Depotbestand wird passend nachgeführt."""
+    path = tmp_path / "momentum_state.json"
+    client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.20)
+    bot = _make_bot(_make_data_client(), client, FakeScanner([_make_candidate("AAPL")]), state_path=path)
+    bot.run_once(now=_et(9, 36))
+    client.positions = ["AAPL"]
+    client.position_qty["AAPL"] = "77"
+    return bot, client, path
+
+
+def _restarted_bot(client, path, data_client=None):
+    return _make_bot(data_client or FakeDataClient({}), client, FakeScanner([]), state_path=path)
+
+
+def test_state_file_contains_filled_position_and_stop(tmp_path):
+    bot, client, path = _saved_position(tmp_path)
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["version"] == 1
+    assert saved["trading_day"] == TODAY.isoformat()
+    assert datetime.fromisoformat(saved["saved_at"]).tzinfo is not None
+    assert set(saved["symbols"]) == {"AAPL"}
+    state = saved["symbols"]["AAPL"]
+    assert state["engine"]["shares_total"] == 77
+    assert state["engine"]["stop_price"] == pytest.approx(11.30)
+    assert state["broker_stop_order_id"] == client.stop_orders[0].id
+    assert not path.with_name(path.name + ".tmp").exists()
+    bot._symbols["WATCH"] = _SymbolState(_make_engine(bot.live_config), np.array([1.0]), None, _et(9, 30))
+    bot._save_state()
+    assert "WATCH" not in json.loads(path.read_text())["symbols"]
+
+
+def test_restart_preserves_position_stop_and_executes_later_stop(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    stop_id = client.stop_orders[0].id
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert client.close_all_calls == []
+    assert stop_id not in client.canceled_order_ids
+    state = bot._symbols["AAPL"]
+    assert state.engine.position_snapshot() == original._symbols["AAPL"].engine.position_snapshot()
+    assert state.last_bar_time == original._symbols["AAPL"].last_bar_time
+    assert str(state.last_bar_time.tzinfo) == "America/New_York"
+    assert str(state.session_open.tzinfo) == "America/New_York"
+    bot.data_client = _make_data_client(extra_today_bars=[
+        {"open": 12.2, "high": 12.3, "low": 11.0, "close": 11.2, "volume": 100},
+    ])
+    # Auch ein verpasster Ausstiegsbalken muss real verkauft werden.
+    bot.run_once(now=_et(9, 45))
+    sells = [o for o in client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(sells) == 1
+    assert sells[0].qty == 77
+    assert not state.engine.in_position
+
+
+def test_restart_failed_broker_stop_still_executes_missed_software_stop(tmp_path, caplog):
+    original, client, path = _saved_position(tmp_path)
+    state = original._symbols["AAPL"]
+    assert state.last_close > state.engine.stop_price
+    # Der alte Stop ist verfallen; jeder Versuch eines neuen Stops scheitert.
+    client.stop_orders[0].status = OrderStatus.EXPIRED
+    client.fail_stop_submit = True
+    data_client = _make_data_client(extra_today_bars=[
+        {"open": 12.2, "high": 12.3, "low": 11.0, "close": 11.2, "volume": 100},
+    ])
+    bot = _restarted_bot(client, path, data_client)
+
+    bot.run_once(now=_et(9, 45))
+
+    assert "konnte nicht angelegt werden" in caplog.text
+    assert bot._orphans_checked
+    sells = [order for order in client.submitted_orders if order.side == OrderSide.SELL]
+    assert len(sells) == 1
+    assert sells[0].qty == 77
+    assert not bot._symbols["AAPL"].engine.in_position
+
+
+def test_save_state_skips_flat_engine_with_pending_exit(tmp_path, caplog):
+    bot, _, path = _saved_position(tmp_path)
+    flat_engine = _entered_engine(bot.live_config)
+    flat_engine.record_exit(flat_engine.shares_open, 10.0, is_target_partial=False)
+    bot._symbols["MSFT"] = _SymbolState(
+        engine=flat_engine, rel_vol_reference=np.array([1.0]), daily_sma=None,
+        session_open=_et(9, 30),
+        pending_exit=_PendingExit("alter-verkauf", ExitSignal(ExitReason.STOP, pd.Timestamp(_et(9, 37)), 10.0, 10)),
+    )
+    # Die offene Position muss trotz des flachen Symbols aktualisiert werden.
+    bot._symbols["AAPL"].engine.record_exit(7, 12.2, is_target_partial=False)
+
+    bot._save_state()
+
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert set(saved["symbols"]) == {"AAPL"}
+    assert saved["symbols"]["AAPL"]["engine"]["shares_closed"] == 7
+    assert "konnte nicht gespeichert werden" not in caplog.text
+
+
+def test_restart_records_broker_stop_filled_during_downtime(tmp_path):
+    _, client, path = _saved_position(tmp_path)
+    client.trigger_stop(client.stop_orders[0], 11.2)
+    client.positions = []
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert not bot._symbols["AAPL"].engine.in_position
+    assert len(client.submitted_orders) == 1
+    assert client.close_all_calls == []
+    assert json.loads(path.read_text())["symbols"] == {}
+
+
+@pytest.mark.parametrize("remaining", [30, 0])
+def test_restart_reconciles_smaller_position_and_replaces_stop(tmp_path, remaining):
+    _, client, path = _saved_position(tmp_path)
+    old_stop = client.stop_orders[0]
+    client.position_qty["AAPL"] = str(remaining)
+    if not remaining:
+        client.positions = []
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    state = bot._symbols["AAPL"]
+    assert state.engine.shares_open == remaining
+    assert state.engine.in_position == bool(remaining)
+    assert old_stop.id in client.canceled_order_ids
+    if remaining:
+        assert client.open_stop_orders()[0].qty == remaining
+        assert state.engine.stop_price == pytest.approx(11.30)
+    else:
+        assert client.open_stop_orders() == []
+    assert len(client.submitted_orders) == 1
+
+
+def test_restart_resolves_saved_pending_exit_without_duplicate_sell(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    state = original._symbols["AAPL"]
+    client.auto_fill = False
+    event = ExitSignal(ExitReason.TARGET, pd.Timestamp(_et(9, 37)), 14.0, 38)
+    original._submit_exit("AAPL", state, event)
+    order = client.orders[state.pending_exit.order_id]
+    order.status = OrderStatus.FILLED
+    order.filled_qty = 38
+    order.filled_avg_price = 14.0
+    client.position_qty["AAPL"] = "39"
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 38))
+    state = bot._symbols["AAPL"]
+    assert state.pending_exit is None
+    assert state.engine.shares_open == 39
+    assert state.engine.stop_price == pytest.approx(12.2)
+    assert len(client.submitted_orders) == 2
+    assert json.loads(path.read_text())["symbols"]["AAPL"]["pending_exit"] is None
+
+
+def test_restart_cancels_unknown_buy_order(tmp_path):
+    _, client, path = _saved_position(tmp_path)
+    unknown = FakeOrder("unknown-buy", "MSFT", 5, OrderSide.BUY)
+    client.orders[unknown.id] = unknown
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert client.canceled_order_ids == [unknown.id]
+    assert client.close_all_calls == []
+
+
+@pytest.mark.parametrize("contents", ['{kaputt', '{"version": 2}', '{"version": 1}'])
+def test_corrupt_state_file_is_renamed_and_positions_closed(tmp_path, contents, caplog):
+    path = tmp_path / "momentum_state.json"
+    path.write_text(contents, encoding="utf-8")
+    client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    client.positions = ["AAPL"]
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert path.with_name(path.name + ".corrupt").read_text(encoding="utf-8") == contents
+    assert client.close_all_calls == [True]
+    assert "unlesbar/kaputt" in caplog.text
+    assert bot._orphans_checked
+
+
+def test_missing_state_file_uses_existing_orphan_cleanup(tmp_path):
+    client = FakeTradingClient([FakeCalendarEntry(TODAY)])
+    client.positions = ["AAPL"]
+    bot = _restarted_bot(client, tmp_path / "state.json")
+    bot.run_once(now=_et(9, 37))
+    assert client.close_all_calls == [True]
+
+
+def test_restart_preserves_same_day_halt_equity_and_flatten_flag(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    original._symbols.clear()
+    client.positions = []
+    original._halted = True
+    original._flatten_triggered_today = True
+    original._day_start_equity = 123456.0
+    original._save_state()
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert bot._halted
+    assert bot._flatten_triggered_today
+    assert bot._day_start_equity == 123456.0
+    assert client.get_account_calls == 2  # Nur der ursprüngliche Einstiegszyklus.
+
+
+def test_restart_with_previous_day_position_flattens_and_resets_day(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    original._trading_day = DAY_MINUS_1
+    original._halted = True
+    original._day_start_equity = 123456.0
+    original._save_state()
+    bot = _restarted_bot(client, path)
+    # Vor Sitzungsbeginn kein zusätzlicher Depot-Abgleich der Fake-Position.
+    bot.run_once(now=_et(9, 29))
+    assert bot._trading_day == TODAY
+    assert not bot._halted
+    assert bot._day_start_equity is None
+    assert "AAPL" not in bot._symbols
+    sells = [o for o in client.submitted_orders if o.side == OrderSide.SELL]
+    assert len(sells) == 1 and sells[0].qty == 77
+
+
+def test_state_write_failure_does_not_stop_trading(tmp_path, caplog):
+    client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.2)
+    bot = _make_bot(_make_data_client(), client, FakeScanner([_make_candidate("AAPL")]),
+                    state_path=tmp_path / "fehlt" / "state.json")
+    bot.run_once(now=_et(9, 36))
+    assert bot._symbols["AAPL"].engine.in_position
+    assert len(client.stop_orders) == 1
+    assert "konnte nicht gespeichert werden" in caplog.text
+
+
+def test_state_roundtrip_preserves_pending_and_deferred_exits(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    state = original._symbols["AAPL"]
+    events = [ExitSignal(reason, pd.Timestamp(_et(9, 37)), 12.34, 3) for reason in ExitReason]
+    state.pending_exit = _PendingExit("pending", events[0])
+    state.deferred_exits = events[1:]
+    state.carried_over = True
+    original._unmanaged_sell_orders = {"MSFT": "unmanaged"}
+    original._save_state()
+    bot = _restarted_bot(client, path)
+    bot._load_state()
+    loaded = bot._symbols["AAPL"]
+    assert loaded.pending_exit == state.pending_exit
+    assert loaded.deferred_exits == state.deferred_exits
+    assert loaded.carried_over
+    assert loaded.daily_sma == state.daily_sma
+    assert loaded.trend_ok == state.trend_ok
+    assert loaded.cum_volume == state.cum_volume
+    assert loaded.last_close == state.last_close
+    np.testing.assert_array_equal(loaded.rel_vol_reference, state.rel_vol_reference)
+    assert bot._unmanaged_sell_orders == original._unmanaged_sell_orders
+
+
+def test_restore_api_failure_retries_without_rebuilding_or_trading(tmp_path, monkeypatch):
+    _, client, path = _saved_position(tmp_path)
+    client.trigger_stop(client.stop_orders[0], 11.2)
+    client.positions = []
+    client.fail_positions_query = True
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    state = bot._symbols["AAPL"]
+    assert not state.engine.in_position
+    assert not bot._orphans_checked
+    assert bot.scanner.scan_calls == 0
+    monkeypatch.setattr(bot, "_load_state", lambda: pytest.fail("Zustand darf nicht zweimal geladen werden"))
+    client.fail_positions_query = False
+    bot.run_once(now=_et(9, 38))
+    assert bot._orphans_checked
+    assert bot._symbols["AAPL"] is state
+    assert len(client.submitted_orders) == 1
+
+
+def test_restore_closes_only_unknown_position(tmp_path):
+    _, client, path = _saved_position(tmp_path)
+    client.positions.append("MSFT")
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert client.close_position_calls == ["MSFT"]
+    assert client.close_all_calls == []
+    assert bot._symbols["AAPL"].engine.shares_open == 77
+
+
+def test_empty_saved_state_closes_all_unknown_positions(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    original._symbols.clear()
+    original._save_state()
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert client.close_all_calls == [True]
+
+
+def test_pending_exit_saved_before_waiting_for_fill(tmp_path, monkeypatch):
+    bot, client, path = _saved_position(tmp_path)
+    state = bot._symbols["AAPL"]
+    event = ExitSignal(ExitReason.TARGET, pd.Timestamp(_et(9, 37)), 14.0, 38)
+    original_wait = bot._wait_for_fill
+
+    def check_saved(order_id, timeout):
+        if client.orders[order_id].stop_price is None:
+            snap = json.loads(path.read_text())["symbols"]["AAPL"]
+            assert snap["pending_exit"]["order_id"] == order_id
+            assert snap["engine"]["shares_closed"] == 0
+        return original_wait(order_id, timeout)
+
+    monkeypatch.setattr(bot, "_wait_for_fill", check_saved)
+    bot._submit_exit("AAPL", state, event)
+    snap = json.loads(path.read_text())["symbols"]["AAPL"]
+    assert snap["pending_exit"] is None
+    assert snap["engine"]["shares_closed"] == 38
+
+
+def test_run_once_saves_state_in_finally_on_exception(tmp_path, monkeypatch):
+    bot, client, path = _saved_position(tmp_path)
+    bot._day_start_equity = 123456.0
+
+    def fail_calendar(request):
+        raise RuntimeError("Kalender vorübergehend nicht verfügbar")
+
+    monkeypatch.setattr(client, "get_calendar", fail_calendar)
+    with pytest.raises(RuntimeError):
+        bot.run_once(now=_et(9, 37))
+    assert json.loads(path.read_text())["day_start_equity"] == 123456.0
+
+
+@pytest.mark.parametrize("restart_again", [False, True])
+def test_restore_retries_stop_resize_without_recording_reduction_twice(tmp_path, monkeypatch, restart_again):
+    _, client, path = _saved_position(tmp_path)
+    client.position_qty["AAPL"] = "30"
+    stop_id = client.stop_orders[0].id
+    cancel = client.cancel_order_by_id
+
+    def fail_cancel(order_id):
+        raise RuntimeError("Stornierung vorübergehend nicht erreichbar")
+
+    monkeypatch.setattr(client, "cancel_order_by_id", fail_cancel)
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert not bot._orphans_checked
+    assert bot._symbols["AAPL"].engine.shares_open == 30
+    assert bot.scanner.scan_calls == 0
+    monkeypatch.setattr(client, "cancel_order_by_id", cancel)
+    if restart_again:
+        bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 38))
+    assert bot._orphans_checked
+    assert bot._symbols["AAPL"].engine.shares_open == 30
+    assert stop_id in client.canceled_order_ids
+    assert [o.qty for o in client.open_stop_orders()] == [30]
+
+
+def test_restore_retries_failed_stop_submission_without_blocking_trading(tmp_path):
+    _, client, path = _saved_position(tmp_path)
+    client.position_qty["AAPL"] = "30"
+    client.fail_stop_submit = True
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert bot._orphans_checked
+    assert bot.scanner.scan_calls == 1
+    client.fail_stop_submit = False
+    bot.run_once(now=_et(9, 38))
+    assert bot._orphans_checked
+    assert bot._symbols["AAPL"].engine.shares_open == 30
+    assert [o.qty for o in client.open_stop_orders()] == [30]
+
+
+def test_restore_preserves_known_unmanaged_sell_order(tmp_path):
+    original, client, path = _saved_position(tmp_path)
+    order = FakeOrder("unmanaged-sell", "MSFT", 10, OrderSide.SELL)
+    client.orders[order.id] = order
+    client.positions.append("MSFT")
+    client.position_qty["MSFT"] = "10"
+    original._unmanaged_sell_orders["MSFT"] = order.id
+    original._save_state()
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert order.id not in client.canceled_order_ids
+    assert client.close_position_calls == []
+    assert len(client.submitted_orders) == 1
+    assert bot._unmanaged_sell_orders == {"MSFT": order.id}
+
+
+def test_restore_excess_shares_are_sold_by_existing_reconciliation(tmp_path):
+    _, client, path = _saved_position(tmp_path)
+    client.position_qty["AAPL"] = "90"
+    bot = _restarted_bot(client, path)
+    bot.run_once(now=_et(9, 37))
+    assert bot._symbols["AAPL"].engine.shares_open == 77
+    assert client.submitted_orders[-1].side == OrderSide.SELL
+    assert client.submitted_orders[-1].qty == 13
+    assert json.loads(path.read_text())["unmanaged_sell_orders"]["AAPL"] == client.submitted_orders[-1].id
+
+
+def test_entry_is_saved_before_broker_stop_submission(tmp_path, monkeypatch):
+    path = tmp_path / "state.json"
+    client = FakeTradingClient([FakeCalendarEntry(TODAY)], fill_price=12.2)
+    bot = _make_bot(_make_data_client(), client, FakeScanner([_make_candidate("AAPL")]), state_path=path)
+    submit = client.submit_order
+    checked = []
+
+    def check_saved(request):
+        if getattr(request, "stop_price", None) is not None:
+            saved = json.loads(path.read_text())["symbols"]["AAPL"]
+            assert saved["engine"]["shares_total"] == 77
+            assert saved["broker_stop_order_id"] is None
+            checked.append(True)
+        return submit(request)
+
+    monkeypatch.setattr(client, "submit_order", check_saved)
+    bot.run_once(now=_et(9, 36))
+    assert checked == [True]
 
 
 def test_validate_live_config_rejects_swapped_trading_window():
