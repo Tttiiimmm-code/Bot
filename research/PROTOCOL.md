@@ -4431,3 +4431,34 @@ Real muss eine Schlussauktions-Order bis 15:50 ET stehen, dann ist der Schluss n
 Stunde "am Tief" kauft, kauft zu einem anderen Kurs. Alle Zahlen dieser Runde sind dadurch eher zu optimistisch;
 das Ergebnis "nicht bestanden" ist davon nicht betroffen. Ein sauberer Test braucht Minuten-/5-Minuten-Daten der
 letzten und ersten Stunde für das ganze Universum (lokal nicht vorhanden).
+
+# Runde 152: Dynamischer Kauf in der letzten Stunde, dynamischer Verkauf in der ersten Stunde (Nutzer, Vorab, 2026-10-09)
+
+Nutzer: "Kann man Kauf und Verkauf dynamisch gestalten, dass der Bot selbst entscheidet in diesem Zeitfenster?"
+Folgetest zu Runde 151 (brutto +3..6 bp/Nacht für Schluss nahe Tagestief, aber Blick in die Zukunft: Signal aus dem
+Schlusskurs). Hier ohne Blick in die Zukunft: Entscheidungen nur aus abgeschlossenen 5-Minuten-Balken.
+Daten (neu, Alpaca SIP 5-Minuten-Balken der regulären Sitzung, Schlüssel des Copilot-Kontos, Download nach 22:00 MESZ):
+je Tag t die Symbole des Universums; gespeichert je Balken: Kurse plus bis dahin laufendes Tageshoch/-tief und VWAP.
+Tagesschluss (Schlussauktion) und Eröffnung (Eröffnungsauktion) aus dem Alpaca-Tagespanel.
+Universum je Tag t (Informationen bis Schluss t-1): Kurs > 5 $, Top 500 nach Ø-Dollar-Umsatz 20 Tage.
+Kosten: Auktions-Order 0 bp + SEC 0,28 bp auf Verkäufe; Order im laufenden Handel 3 bp je Seite (Spanne/Schlupf)
++ SEC 0,28 bp auf Verkäufe. Ausführung im laufenden Handel zum Schluss des auslösenden Balkens.
+Lage in der Tagesspanne bis dahin: Lage = (Kurs - Tief bis dahin) / (Hoch bis dahin - Tief bis dahin).
+Kauf (Fenster: Balken, die 15:05 bis 15:50 ET schließen; je Aktie und Tag höchstens ein Kauf):
+- K1 fest: Balken bis 15:50; Lage <= 0,10 -> Kauf zum offiziellen Schluss (Schlussauktion, Order bis 15:50).
+- K2 Tief mit Umkehr: erster Balken, dessen Schluss über dem Hoch des Vorbalkens liegt, wobei der Vorbalken ein neues
+  Tagestief markiert hat oder sein Tief höchstens 0,25 % über dem Tagestief bis dahin lag -> Kauf zum Balkenschluss.
+- K3 unter VWAP: erster Balken mit Schluss <= VWAP bis dahin x (1 - 1,5 %) UND Schluss > Schluss des Vorbalkens
+  -> Kauf zum Balkenschluss.
+Verkauf am nächsten Handelstag:
+- V1 Eröffnungsauktion (offizielle Eröffnung).
+- V2 fest 10:30 (Schluss des Balkens 10:25-10:30).
+- V3 dynamisch: Stop, sobald ein Balken ab 9:35 unter dem Tief des ersten 5-Minuten-Balkens (9:30-9:35) schließt
+  (Verkauf zu diesem Balkenschluss), sonst 10:30.
+Raster 3 x 3 = 9 Varianten. Portfolio je Nacht: alle Käufe gleichgewichtet mit vollem Kapital (mindestens 5, sonst
+Cash 0 %). Fehlt ein benötigter Balken (Handelsaussetzung, Delisting), entfällt der Trade (wird gezählt).
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2026-09 Rendite p.a. > SPY halten UND t der monatlichen Überrendite ggü.
+SPY >= 2,54 (Bonferroni 9, einseitig) UND Überrendite in beiden Hälften (2016-2020, 2021-2026) > 0.
+Info (nicht gewertet): brutto je Trade, Trefferquote, Ø Zahl Käufe je Nacht, Vergleich K1 mit Runde 151 (Wirkung
+des Blicks in die Zukunft), Ergebnis bei 1 und 5 bp je Seite für Orders im laufenden Handel.
+Skripte research/scripts/r152_fetch.py (Download), r152.py (Auswertung), Ausgabe r152_output.txt.
