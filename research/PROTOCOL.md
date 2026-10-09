@@ -4386,3 +4386,29 @@ Dass NVDA/TSLA nachts SPY schlagen, ist Rückschaufehler (Auswahl nach späterem
 S2 (Nacht long + Tag short) -12,7..+9,0 % p.a., S3 (Tag short) -12,3..-22,6 % p.a.
 Fazit: Auch bei Einzelaktien entsteht viel Rendite über Nacht, aber der Tag ist im Mittel positiv; Halten der
 ganzen Aktie ist in allen 7 Fällen am besten. Leerverkauf am Tag verliert in allen 7 Fällen deutlich.
+
+# Runde 151: Kauf am Tagestief kurz vor Schluss, Verkauf in der ersten Stunde (Nutzer-These, Vorab, 2026-10-09)
+
+Nutzer: "Eine Aktie in der letzten Stunde vor Schluss kaufen, die auf ihrem Tagestief oder nahe daran ist, und in der
+ersten Stunde nach Eröffnung verkaufen -- bringt das nichts, egal welche Aktie?" Verwandt (bekannt): IBS-Regeln auf
+SPY/QQQ (Runde 12), Indizes (52), 24 Märkte (105) -- stark bis ~2015, danach weg; aber immer mit Haltedauer bis Tage,
+nie Einzelaktien im Querschnitt mit Ausstieg am nächsten Morgen. Runden 149/150: Nacht im Mittel positiv.
+
+Daten: Alpaca-Tagespanel data_cache/universe/daily (open/high/low/close/volume, split-bereinigt, ohne Dividenden,
+inkl. delisteter) und erster 5-Minuten-Balken 9:30-9:35 (data_cache/universe/opening, nur Teilmenge der Symbole),
+2016-01 bis 2026-09.
+Umsetzung der These mit Tagesdaten: "am/nahe Tagestief in der letzten Stunde" = Schluss im unteren Teil der
+Tagesspanne, IBS_t = (Schluss - Tief) / (Hoch - Tief) <= Schwelle (Hoch > Tief); Kauf zum Schlusskurs t
+(Schlussauktion). Ausstieg in der ersten Stunde: (a) Eröffnung t+1 (9:30), (b) Schluss des 5-Minuten-Balkens 9:35
+(nur Signale mit vorhandenem Balken, Abdeckung wird berichtet). 10:30 ist mit lokalen Daten NICHT prüfbar.
+Universum je Tag t (nur Informationen bis Schluss t): Kurs > 5 $, Top 500 bzw. Top 1.500 nach Ø-Dollar-Umsatz 20 Tage.
+Raster: Schwelle {0,05; 0,10; 0,20} x Universum {500, 1.500} x Ausstieg {9:30, 9:35} = 12 Konfigurationen.
+Portfolio: je Nacht alle Signal-Aktien gleichgewichtet mit vollem Kapital (mindestens 5 Signale, sonst Cash 0 %).
+Kosten 5 bp je Seite (Hauptkriterium; Info 2 und 10 bp).
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2026-09 Rendite p.a. > SPY halten UND t der monatlichen Überrendite ggü.
+SPY >= 2,64 (Bonferroni 12, einseitig) UND Überrendite in beiden Hälften (2016-2020, 2021-2026) > 0.
+Info (nicht gewertet): (1) Brutto: Ø Nacht-Rendite der Signal-Aktien minus Ø aller Aktien des Universums in derselben
+Nacht (sagt "am Tief" eine höhere Nachtrendite voraus?), t über Nächte. (2) "Egal welche Aktie": je Aktie mit >= 50
+Signalen (Schwelle 0,10, Top 1.500, Ausstieg 9:30) Ø netto bei 5 bp je Seite; Anzahl positiv, Anzahl mit t >= 2 und
+mit Bonferroni-Hürde (0,05 / Zahl der Aktien), Erwartung bei reinem Zufall dazu.
+Skript research/scripts/r151.py, Ausgabe r151_output.txt.
