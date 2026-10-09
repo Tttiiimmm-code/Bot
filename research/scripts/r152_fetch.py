@@ -1,6 +1,7 @@
 """Runde 152, Download: Alpaca-SIP-5-Minuten-Balken für das Top-500-Universum (2016-01..2026-09).
 
-Gespeichert je Monat (data_cache/r152/YYYY-MM.pkl) nur die Balken der letzten Stunde (Start 15:00-15:55 ET) und
+Gespeichert je Monat (data_cache/r152/YYYY-MM.pkl) nur die Balken der letzten Stunde (Start 14:55-15:55 ET; 14:55 als
+Vorbalken für K2/K3) und
 der ersten Stunde (Start 9:30-10:25 ET), jeweils mit laufendem Tageshoch/-tief und VWAP bis einschließlich Balken.
 Fortsetzbar (fertige Monate werden übersprungen). Schlüssel: copilot.env (nicht das Momentum-Konto).
 
@@ -20,7 +21,7 @@ U = Path("data_cache/universe/daily")
 OUT = Path("data_cache/r152")
 START, END = pd.Timestamp("2016-01-01"), pd.Timestamp("2026-09-30")
 CHUNK = 100
-KEEP = [(15, m) for m in range(0, 60, 5)] + [(9, m) for m in range(30, 60, 5)] + [(10, m) for m in range(0, 30, 5)]
+KEEP = [(14, 55)] + [(15, m) for m in range(0, 60, 5)] + [(9, m) for m in range(30, 60, 5)] + [(10, m) for m in range(0, 30, 5)]
 
 
 def universe_by_month() -> dict[pd.Period, list[str]]:
