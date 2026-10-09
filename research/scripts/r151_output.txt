@@ -1,0 +1,38 @@
+Runde 151 -- 14562 Symbole, 2696 Tage (2016-01-04 bis 2026-09-23)
+
+SPY halten 2016-2026-09: +15.0% p.a.
+
+Teil B -- Konfigurationen (5 bp je Seite; bestanden: > SPY, t >= 2,64, beide Hälften > 0)
+  IBS <= 0.05  Top  500  Ausstieg 9:30:   +1.3% p.a., t ggü. SPY -1.75, Hälften -10.7% / -16.3%, Ø  29.5 Signale/Nacht, Nächte investiert 89% [2 bp +15.9%, 10 bp -19.1%] -> nicht bestanden
+  IBS <= 0.05  Top  500  Ausstieg 9:35:   -4.8% p.a., t ggü. SPY -3.08, Hälften -17.8% / -21.5%, Ø  25.7 Signale/Nacht, Nächte investiert 78% [2 bp  +7.2%, 10 bp -21.9%], Abdeckung 9:35 85% -> nicht bestanden
+  IBS <= 0.05  Top 1500  Ausstieg 9:30:   -0.7% p.a., t ggü. SPY -2.65, Hälften -11.9% / -18.9%, Ø  91.7 Signale/Nacht, Nächte investiert 99% [2 bp +15.4%, 10 bp -22.7%] -> nicht bestanden
+  IBS <= 0.05  Top 1500  Ausstieg 9:35:   -3.9% p.a., t ggü. SPY -3.27, Hälften -14.8% / -22.5%, Ø  58.4 Signale/Nacht, Nächte investiert 95% [2 bp +10.9%, 10 bp -24.3%], Abdeckung 9:35 63% -> nicht bestanden
+  IBS <= 0.10  Top  500  Ausstieg 9:30:   -4.6% p.a., t ggü. SPY -2.63, Hälften -15.9% / -22.9%, Ø  55.9 Signale/Nacht, Nächte investiert 98% [2 bp +10.5%, 10 bp -25.5%] -> nicht bestanden
+  IBS <= 0.10  Top  500  Ausstieg 9:35:  -11.7% p.a., t ggü. SPY -4.68, Hälften -23.2% / -29.8%, Ø  48.6 Signale/Nacht, Nächte investiert 94% [2 bp  +1.8%, 10 bp -30.3%], Abdeckung 9:35 87% -> nicht bestanden
+  IBS <= 0.10  Top 1500  Ausstieg 9:30:   -3.0% p.a., t ggü. SPY -3.53, Hälften -15.1% / -20.6%, Ø 171.5 Signale/Nacht, Nächte investiert 99% [2 bp +12.7%, 10 bp -24.5%] -> nicht bestanden
+  IBS <= 0.10  Top 1500  Ausstieg 9:35:   -6.8% p.a., t ggü. SPY -4.15, Hälften -18.9% / -24.4%, Ø 111.7 Signale/Nacht, Nächte investiert 99% [2 bp  +8.2%, 10 bp -27.3%], Abdeckung 9:35 65% -> nicht bestanden
+  IBS <= 0.20  Top  500  Ausstieg 9:30:   -6.1% p.a., t ggü. SPY -3.47, Hälften -18.0% / -23.8%, Ø 105.6 Signale/Nacht, Nächte investiert 99% [2 bp  +9.1%, 10 bp -26.9%] -> nicht bestanden
+  IBS <= 0.20  Top  500  Ausstieg 9:35:  -13.2% p.a., t ggü. SPY -5.90, Hälften -26.3% / -29.8%, Ø  92.2 Signale/Nacht, Nächte investiert 99% [2 bp  +0.9%, 10 bp -32.4%], Abdeckung 9:35 87% -> nicht bestanden
+  IBS <= 0.20  Top 1500  Ausstieg 9:30:   -6.4% p.a., t ggü. SPY -4.73, Hälften -18.4% / -24.0%, Ø 321.2 Signale/Nacht, Nächte investiert 99% [2 bp  +8.8%, 10 bp -27.1%] -> nicht bestanden
+  IBS <= 0.20  Top 1500  Ausstieg 9:35:  -10.6% p.a., t ggü. SPY -5.48, Hälften -24.0% / -27.0%, Ø 210.7 Signale/Nacht, Nächte investiert 99% [2 bp  +3.9%, 10 bp -30.4%], Abdeckung 9:35 66% -> nicht bestanden
+
+Info 1 -- brutto: Ø Nacht (Schluss -> 9:30) der Signal-Aktien minus Ø aller Aktien des Universums
+  IBS <= 0.05 Top  500: Signal-Aktien Ø +11.02 bp/Nacht, Universum Ø  +4.35 bp, Differenz  +5.64 bp (t +2.79); 2016-20  +6.75, 2021-26  +4.71 bp
+  IBS <= 0.05 Top 1500: Signal-Aktien Ø +10.15 bp/Nacht, Universum Ø  +4.34 bp, Differenz  +5.80 bp (t +3.33); 2016-20  +6.78, 2021-26  +4.94 bp
+  IBS <= 0.10 Top  500: Signal-Aktien Ø  +8.52 bp/Nacht, Universum Ø  +4.35 bp, Differenz  +3.94 bp (t +2.07); 2016-20  +5.23, 2021-26  +2.83 bp
+  IBS <= 0.10 Top 1500: Signal-Aktien Ø  +9.15 bp/Nacht, Universum Ø  +4.34 bp, Differenz  +4.81 bp (t +3.13); 2016-20  +5.35, 2021-26  +4.35 bp
+  IBS <= 0.20 Top  500: Signal-Aktien Ø  +7.83 bp/Nacht, Universum Ø  +4.35 bp, Differenz  +3.39 bp (t +2.13); 2016-20  +4.33, 2021-26  +2.58 bp
+  IBS <= 0.20 Top 1500: Signal-Aktien Ø  +7.68 bp/Nacht, Universum Ø  +4.34 bp, Differenz  +3.31 bp (t +2.74); 2016-20  +3.86, 2021-26  +2.84 bp
+
+Info 2 -- 'egal welche Aktie': IBS <= 0,10, Top 1.500, Ausstieg 9:30, 5 bp je Seite, >= 50 Signale
+  Aktien mit >= 50 Signalen: 2138; Ø netto > 0: 832 (39%); t >= 2: 56 (bei reinem Zufall ~49); t >= Bonferroni-Hürde 4.07: 1
+  Höchste t (Kandidaten nur zur Info, keine Bestätigung):
+    MBT     138 Signale, Ø   +60.0 bp, t +4.32
+    EXE     304 Signale, Ø   +59.2 bp, t +3.58
+    KLAC    285 Signale, Ø   +33.3 bp, t +3.34
+    RYAAY   272 Signale, Ø   +38.4 bp, t +3.26
+    MSOS     55 Signale, Ø   +60.0 bp, t +3.13
+    HMY      53 Signale, Ø  +103.7 bp, t +3.12
+    FUTU    188 Signale, Ø   +70.9 bp, t +3.09
+    TSM     334 Signale, Ø   +25.8 bp, t +3.07
+  Median über alle Aktien: Ø -2.8 bp je Trade netto

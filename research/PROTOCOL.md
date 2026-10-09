@@ -4412,3 +4412,22 @@ Nacht (sagt "am Tief" eine höhere Nachtrendite voraus?), t über Nächte. (2) "
 Signalen (Schwelle 0,10, Top 1.500, Ausstieg 9:30) Ø netto bei 5 bp je Seite; Anzahl positiv, Anzahl mit t >= 2 und
 mit Bonferroni-Hürde (0,05 / Zahl der Aktien), Erwartung bei reinem Zufall dazu.
 Skript research/scripts/r151.py, Ausgabe r151_output.txt.
+
+## Ergebnis Runde 151 (2026-10-09, research/scripts/r151.py, Ausgabe r151_output.txt)
+
+Hauptkriterium (5 bp je Seite, 2016-01..2026-09, SPY +15,0 % p.a.): alle 12 Konfigurationen NICHT BESTANDEN
+(+1,3 bis -13,2 % p.a., t ggü. SPY -1,75 bis -5,90; Ausstieg 9:35 durchweg schlechter als 9:30).
+Info 1 (brutto): Der Effekt existiert -- Aktien mit Schluss nahe Tagestief steigen über Nacht stärker als das
+Universum: Signal-Aktien +7,7 bis +11,0 bp/Nacht vs. Universum +4,3 bp; Differenz +3,3 bis +5,8 bp (t 2,1-3,3),
+in beiden Hälften positiv (2016-20 +3,9..+6,8; 2021-26 +2,6..+4,9 bp). Bei 2 bp je Seite +0,9..+15,9 % p.a. (~SPY),
+bei 10 bp -19..-32 %.
+Info 2 ("egal welche Aktie"): 2.138 Aktien mit >= 50 Signalen, 39 % netto positiv, Median -2,8 bp je Trade;
+t >= 2 bei 56 (Zufallserwartung ~49); Bonferroni (t >= 4,07): 1 (MBT, Russland-ADR, 2022 ausgesetzt --
+Datenartefakt wahrscheinlich). Keine einzelne Aktie zeigt einen belastbaren Effekt.
+NACHTRÄGLICH, nur Info (r151_info_auction.py): mit Auktionskosten (nur SEC 0,28 bp) +19,4..+26,6 % p.a.,
+größter Verlust -12..-23 % (SPY -34 %), aber t ggü. SPY nur 0,6-1,65 und 3-7 Jahre unter SPY.
+WICHTIGER VORBEHALT (Blick in die Zukunft): Signal (IBS) nutzt den Schlusskurs und kauft zu genau diesem Kurs.
+Real muss eine Schlussauktions-Order bis 15:50 ET stehen, dann ist der Schluss noch unbekannt; wer in der letzten
+Stunde "am Tief" kauft, kauft zu einem anderen Kurs. Alle Zahlen dieser Runde sind dadurch eher zu optimistisch;
+das Ergebnis "nicht bestanden" ist davon nicht betroffen. Ein sauberer Test braucht Minuten-/5-Minuten-Daten der
+letzten und ersten Stunde für das ganze Universum (lokal nicht vorhanden).
