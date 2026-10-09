@@ -81,6 +81,17 @@ class ForwardConfig:
 
 # ------------------------------------------------------------ Daten
 
+class DukascopyUnavailable(RuntimeError):
+    """dukascopy-node hat eine leere Datei geschrieben: der Datenserver liefert nichts (seit 2026-10-09
+    AWS-Bot-Schutz mit HTTP 202 "challenge"; dukascopy-node meldet das nicht als Fehler)."""
+
+
+# Dukascopy-Strategien: ab dem letzten erfassten Tag nachholen, damit ein mehrtägiger Datenausfall
+# keine Trades kostet (nicht nur die letzten lookback_days)
+DUKASCOPY_STRATEGIES = ("nikkei_night", "gotobi", "gotobi_eurjpy")
+CATCH_UP_BUFFER_DAYS = 5
+
+
 def fetch_minutes(instrument: str, side: str, start: date, end: date, base: Path) -> Path:
     """Lädt Dukascopy-Minutenkerzen [start, end) als CSV und gibt den Pfad zurück."""
     npx = shutil.which("npx")
@@ -94,6 +105,10 @@ def fetch_minutes(instrument: str, side: str, start: date, end: date, base: Path
     path = base / f"{name}.csv"
     if not path.exists():
         raise RuntimeError(f"dukascopy-node hat keine Datei erzeugt: {path}")
+    if path.stat().st_size == 0:
+        path.unlink()
+        raise DukascopyUnavailable(f"Dukascopy lieferte keine Daten für {instrument} {side} {start} bis {end} "
+                                   "(leere Datei: Datenserver blockt oder fällt aus)")
     return path
 
 
@@ -290,25 +305,57 @@ def summarize(path: Path) -> str:
 
 # ------------------------------------------------------------ Lauf
 
+def dukascopy_start(cfg: ForwardConfig, today: date) -> date:
+    """Beginn des Minutendaten-Abrufs: die letzten lookback_days, bei einer Lücke aber ab dem ältesten
+    "letzten erfassten Tag" der Dukascopy-Strategien (minus Puffer) -- nie vor first_day - Puffer."""
+    floor = cfg.first_day - timedelta(days=CATCH_UP_BUFFER_DAYS)
+    start = today - timedelta(days=cfg.lookback_days)
+    rows = read_ledger(cfg.ledger)
+    for strat in DUKASCOPY_STRATEGIES:
+        dates = [r["date"] for r in rows if r["strategy"] == strat]
+        last = date.fromisoformat(max(dates)) if dates else cfg.first_day
+        start = min(start, last - timedelta(days=CATCH_UP_BUFFER_DAYS))
+    return max(floor, start)
+
+
 def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None = None) -> str:
+    """Jede Strategie einzeln: fällt eine Datenquelle aus (z.B. Dukascopy), werden die übrigen trotzdem
+    gespeichert. Danach Fehler, damit der Timer-Lauf als fehlgeschlagen gilt und der Wächter meldet."""
     today = today or datetime.now(timezone.utc).date()
     now = now or pd.Timestamp.now(tz="UTC")
     start = max(cfg.first_day - timedelta(days=5), today - timedelta(days=cfg.lookback_days))
+    dk_start = dukascopy_start(cfg, today)
     end = today + timedelta(days=1)
-    nk = load_open_prices(fetch_minutes("jpnidxjpy", "bid", start, end, cfg.data_dir))
-    fx_bid = load_open_prices(fetch_minutes("usdjpy", "bid", start, end, cfg.data_dir))
-    fx_ask = load_open_prices(fetch_minutes("usdjpy", "ask", start, end, cfg.data_dir))
-    rows = nikkei_trades(nk, cfg.first_day, today, cfg.nikkei_cost_per_side, cfg.jpy_rate, now)
-    rows += gotobi_trades(fx_bid, fx_ask, cfg.first_day, today, cfg.gotobi_commission, now)
-    ej_bid = load_open_prices(fetch_minutes("eurjpy", "bid", start, end, cfg.data_dir))
-    ej_ask = load_open_prices(fetch_minutes("eurjpy", "ask", start, end, cfg.data_dir))
-    rows += gotobi_trades(ej_bid, ej_ask, cfg.first_day, today, cfg.gotobi_commission, now,
-                          strategy="gotobi_eurjpy")
-    bond = fetch_daily_yahoo(cfg.bond_symbol, min(start, cfg.first_day - timedelta(days=40)), end)
-    rows += bond_month_end_trades(bond, cfg.first_day, today, cfg.bond_cost_per_trade, cfg.tbill_rate, today)
+    yahoo_start = min(start, cfg.first_day - timedelta(days=40))
+
+    def minutes(instrument: str, side: str) -> pd.Series:
+        return load_open_prices(fetch_minutes(instrument, side, dk_start, end, cfg.data_dir))
+
+    jobs = {
+        "nikkei_night": lambda: nikkei_trades(minutes("jpnidxjpy", "bid"), cfg.first_day, today,
+                                              cfg.nikkei_cost_per_side, cfg.jpy_rate, now),
+        "gotobi": lambda: gotobi_trades(minutes("usdjpy", "bid"), minutes("usdjpy", "ask"), cfg.first_day,
+                                        today, cfg.gotobi_commission, now),
+        "gotobi_eurjpy": lambda: gotobi_trades(minutes("eurjpy", "bid"), minutes("eurjpy", "ask"), cfg.first_day,
+                                               today, cfg.gotobi_commission, now, strategy="gotobi_eurjpy"),
+        "bond_month_end": lambda: bond_month_end_trades(fetch_daily_yahoo(cfg.bond_symbol, yahoo_start, end),
+                                                        cfg.first_day, today, cfg.bond_cost_per_trade,
+                                                        cfg.tbill_rate, today),
+    }
     for sym in ("SPY", "QQQ"):
-        px = fetch_daily_yahoo(sym, min(start, cfg.first_day - timedelta(days=40)), end)
-        rows += mid_month_trades(px, cfg.first_day, today, cfg.mid_month_cost, today, f"mid_month_{sym.lower()}")
+        jobs[f"mid_month_{sym.lower()}"] = (lambda sym=sym: mid_month_trades(
+            fetch_daily_yahoo(sym, yahoo_start, end), cfg.first_day, today, cfg.mid_month_cost, today,
+            f"mid_month_{sym.lower()}"))
+    rows, failed = [], []
+    for name, job in jobs.items():
+        try:
+            rows += job()
+        except Exception as exc:  # noqa: BLE001 -- eine Datenquelle darf die anderen nicht blockieren
+            logger.error("%s: %s", name, exc)
+            failed.append(f"{name}: {exc}")
     new = update_ledger(cfg.ledger, rows)
-    logger.info("Vorwärtstest: %d Trades berechnet, %d neu.", len(rows), new)
+    logger.info("Vorwärtstest: %d Trades berechnet, %d neu (Abruf Dukascopy ab %s).", len(rows), new, dk_start)
+    if failed:
+        raise RuntimeError(f"Vorwärtstest unvollständig ({len(failed)} von {len(jobs)} Strategien ohne Daten, "
+                           "übrige gespeichert; verpasste Tage holt der nächste Lauf nach): " + "; ".join(failed))
     return summarize(cfg.ledger)

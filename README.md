@@ -588,7 +588,10 @@ python main.py forward-report   # Auswertung von forward_trades.csv
 - Sendet **keine Orders** und braucht keine Keys; nur Node.js (`npx dukascopy-node`).
 - Erfasst Trades ab `--start` (Standard 2026-09-28). Jeder Lauf ist idempotent (gleicher
   Tag wird ersetzt) -- einmal täglich reicht, verpasste Tage holt der nächste Lauf nach
-  (bis `--lookback-days` zurück).
+  (mindestens `--lookback-days` zurück; nach einem längeren Ausfall ab dem letzten erfassten Tag).
+- Fällt eine Datenquelle aus, laufen die übrigen Strategien weiter; der Lauf endet trotzdem mit Fehler, damit
+  der Wächter meldet. Seit 2026-10-09 beantwortet Dukascopy automatisierte Abrufe mit einem AWS-Bot-Schutz
+  (HTTP 202 "challenge"); `dukascopy-node` schreibt dann leere Dateien, die jetzt als Ausfall erkannt werden.
 - Kosten wie im Backtest: Nikkei 0,5 bp je Seite (Handel in den Auktionen) + JPY-Zins je
   Nacht, Gotobi Kauf zum Ask/Verkauf zum Bid + 0,35 bp Kommission je Seite.
 - Japanische Börsenfeiertage stehen fest in `tradingbot/forward_test.py`

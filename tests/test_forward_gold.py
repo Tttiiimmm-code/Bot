@@ -46,3 +46,13 @@ def test_status_family2(tmp_path):
     rows = {r["name"]: r for r in fs.status(tmp_path, date(2026, 10, 7))}
     g = rows["gold_breakout"]
     assert g["n"] == 1 and g["mean"] == pytest.approx(1.99) and g["t_crit"] == 2.0
+
+
+def test_month_frame_on_first_day_of_month_needs_no_download(tmp_path, monkeypatch):
+    """Am Monatsersten ist der Zeitraum des neuen Monats leer -- kein Abruf (sonst gälte die leere
+    Antwort seit der Erkennung leerer Downloads als Datenausfall)."""
+    from tradingbot import forward_test as ft
+
+    monkeypatch.setattr(ft, "fetch_minutes", lambda *a, **k: pytest.fail("kein Abruf erwartet"))
+    df = fg._month_frame("bid", 2026, 11, tmp_path, date(2026, 11, 1))
+    assert df.empty and list(df.columns) == ["open", "high", "low", "close"]

@@ -129,6 +129,10 @@ def _month_frame(side: str, y: int, m: int, cache: Path, today: date) -> pd.Data
     f = cache / f"xauusd_{side}_{y}-{m:02d}.csv"
     if complete and f.exists():
         df = pd.read_csv(f)
+    elif start >= min(end, today):
+        # Monatserster: für den neuen Monat gibt es noch keine Minuten (leerer Zeitraum ist kein Ausfall)
+        return pd.DataFrame(columns=["open", "high", "low", "close"],
+                            index=pd.DatetimeIndex([], tz="UTC"), dtype=float)
     else:
         path = fetch_minutes("xauusd", side, start, min(end, today), cache / "tmp")
         df = pd.read_csv(path)
