@@ -4301,3 +4301,38 @@ Absturz: von 11 je zulässigen Coins 8 mit > 88 % Verlust vom Hoch (MEME -97 %, 
 DOGE -92 %, PEPE -91 %, WIF -89 %, SHIB -89 %); auch etablierte Memecoins sind ohne Rug Pull fast Totalverluste.
 Delistete Memecoins fehlen (nur aktive Paare) -> echte Ergebnisse eher schlechter.
 Fazit: keine Memecoin-Strategie schlägt SPY verlässlich; Ergebnis hängt an 1-2 Hype-Jahren; BTC war besser.
+
+# Runde 149: "Märkte steigen über Nacht und fallen tagsüber" (Nutzer-These, Vorab, 2026-10-09)
+
+Nutzer-These wörtlich: "Märkte steigen über Nacht und sinken am Tag." Bereits bekannt (offen benannt): Familie E
+(Runde 2) hat die NACHT-Seite der ETFs 2016-2025 gesehen (alle 16 Varianten nach Kosten positiv, aber unter SPY
+halten); Runde 7 die Nacht-Seite 2001-2015; Runde 113 nur Mediane im Aktien-Querschnitt relativ zum Universum.
+Die TAG-Seite der ETFs und die Kombination Nacht long + Tag short wurden noch nie berechnet.
+
+Daten:
+- ETFs SPY (ab 1993-01), QQQ (1999-03), IWM (2000-05), DIA (1998-01): Yahoo-Tageswerte (open, close, dividend),
+  bis 2025-09-19 aus data_cache/yahoo (*_full.pkl), danach bis 2026-10-08 frisch geladen (eigener Cache).
+- Einzelaktien: Alpaca-Tagespanel data_cache/universe/daily (split-bereinigt, ohne Dividenden, inkl. delisteter),
+  2016-01 bis 2026-09; Universum je Tag: Kurs > 5 $, Top 500 nach Ø-Dollar-Umsatz der 20 Vortage, gleichgewichtet.
+  Ohne Dividenden fällt der Ex-Tag-Abschlag in die Nacht -> Nachtrendite der Aktien leicht zu niedrig (konservativ
+  gegen die These, wird berichtet).
+- Nacht_t = (Open_t + Dividende am Ex-Tag t) / Close_t-1 - 1; Tag_t = Close_t / Open_t - 1.
+
+Teil A -- gilt die These? (5 "Märkte": SPY, QQQ, IWM, DIA, Aktien-Top-500)
+- Zeiträume ETFs: P1 Beginn..2007, P2 2008-2015, P3 2016..2026-10-08. Aktien: 2016-2020 und 2021-2026-09.
+- These für einen Markt BESTÄTIGT, wenn im Gesamtzeitraum Ø Nacht > 0 mit t >= 2,58 UND Ø Tag < 0 mit t <= -2,58
+  (Bonferroni 5 Märkte x 2 Aussagen, einseitig 0,05/10) UND in jedem Teilzeitraum Ø Nacht > 0 und Ø Tag < 0.
+  Sonst "teilweise" (nur eine Hälfte erfüllt) oder "widerlegt".
+
+Teil B -- schlägt eine Umsetzung nach Kosten SPY halten? (je ETF, K = 3 Strategien x 4 ETFs = 12)
+- S1 Nur Nacht long: Kauf zum Schluss, Verkauf zur Eröffnung (2 Seiten je Tag).
+- S2 Nacht long + Tag short: zur Eröffnung Long verkaufen und gleich viel leer verkaufen, zum Schluss eindecken und
+  wieder kaufen (4 Seiten je Tag). Kein Leerverkauf über Nacht -> keine Leihgebühr, kein Gap-Risiko auf der Short-Seite.
+- S3 Nur Tag short (2 Seiten je Tag).
+- Kosten 1 bp je Seite + SEC-Gebühr 0,28 bp auf Verkäufe (wie Familie E), volles Kapital, kein Hebel, Cash 0 %.
+- Benchmark: SPY halten (dividendenbereinigt, adjclose).
+- BESTANDEN, wenn im Hauptzeitraum 2008-01..2026-10-08 Rendite p.a. > SPY UND t der monatlichen Überrendite ggü.
+  SPY >= 2,64 (Bonferroni 12, einseitig) UND im Einordnungszeitraum Beginn..2007 Überrendite ggü. SPY > 0.
+- Info (nicht gewertet): Aktien-Top-500 gleichgewichtet mit S1/S2 bei 2 bp und 10 bp je Seite (vs. SPY);
+  Jahresübersicht Ø Nacht/Tag je Markt.
+Skript research/scripts/r149.py, Ausgabe r149_output.txt.
