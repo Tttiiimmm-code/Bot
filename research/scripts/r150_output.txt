@@ -1,0 +1,103 @@
+Runde 150 -- Nacht/Tag bei den Magnificent 7 (Rückschaufehler: Auswahl nach späterem Erfolg)
+
+Teil A -- bestätigt: gesamt Nacht t >= 2,69 und Tag t <= -2,69, Vorzeichen in jedem Teilzeitraum
+AAPL (ab 1993-01-05, Eröffnung = Vortagesschluss an 4.2% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  bis 2007    3777 Tage  Nacht Ø +13.02 bp (t +4.08)  Tag Ø  -0.20 bp (t -0.04)
+  2008-2015   2015 Tage  Nacht Ø +12.44 bp (t +4.23)  Tag Ø  -3.11 bp (t -0.79)
+  2016-2026   2707 Tage  Nacht Ø  +1.01 bp (t +0.45)  Tag Ø +10.52 bp (t +3.88)
+  gesamt      8499 Tage  Nacht Ø  +9.06 bp (t +5.22)  Tag Ø  +2.52 bp (t +1.07)
+MSFT (ab 1993-01-05, Eröffnung = Vortagesschluss an 3.6% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  bis 2007    3777 Tage  Nacht Ø  +5.18 bp (t +2.86)  Tag Ø  +4.36 bp (t +1.48)
+  2008-2015   2015 Tage  Nacht Ø  +1.09 bp (t +0.47)  Tag Ø  +3.72 bp (t +1.14)
+  2016-2026   2707 Tage  Nacht Ø  +6.82 bp (t +3.24)  Tag Ø  +3.46 bp (t +1.36)
+  gesamt      8499 Tage  Nacht Ø  +4.73 bp (t +4.00)  Tag Ø  +3.92 bp (t +2.27)
+AMZN (ab 1997-05-16, Eröffnung = Vortagesschluss an 1.4% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  bis 2007    2673 Tage  Nacht Ø  +7.93 bp (t +1.54)  Tag Ø +18.62 bp (t +2.29)
+  2008-2015   2015 Tage  Nacht Ø  +2.47 bp (t +0.70)  Tag Ø +10.89 bp (t +2.29)
+  2016-2026   2707 Tage  Nacht Ø +10.29 bp (t +3.79)  Tag Ø  -0.55 bp (t -0.18)
+  gesamt      7395 Tage  Nacht Ø  +7.31 bp (t +3.15)  Tag Ø  +9.50 bp (t +2.79)
+GOOGL (ab 2004-08-20, Eröffnung = Vortagesschluss an 0.8% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  bis 2007     847 Tage  Nacht Ø +25.65 bp (t +5.51)  Tag Ø  -0.37 bp (t -0.06)
+  2008-2015   2015 Tage  Nacht Ø  +9.34 bp (t +3.39)  Tag Ø  -3.44 bp (t -1.03)
+  2016-2026   2707 Tage  Nacht Ø  +4.02 bp (t +1.72)  Tag Ø  +5.85 bp (t +2.15)
+  gesamt      5569 Tage  Nacht Ø  +9.23 bp (t +5.52)  Tag Ø  +1.55 bp (t +0.77)
+META (ab 2012-05-21, Eröffnung = Vortagesschluss an 1.1% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  2008-2015    910 Tage  Nacht Ø +19.47 bp (t +3.26)  Tag Ø  -4.78 bp (t -0.71)
+  2016-2026   2707 Tage  Nacht Ø  +4.94 bp (t +1.46)  Tag Ø  +5.29 bp (t +1.59)
+  gesamt      3617 Tage  Nacht Ø  +8.59 bp (t +2.92)  Tag Ø  +2.76 bp (t +0.92)
+NVDA (ab 1999-01-25, Eröffnung = Vortagesschluss an 2.9% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  bis 2007    2248 Tage  Nacht Ø +23.23 bp (t +4.37)  Tag Ø  +2.03 bp (t +0.23)
+  2008-2015   2015 Tage  Nacht Ø  +3.67 bp (t +0.98)  Tag Ø  +1.37 bp (t +0.23)
+  2016-2026   2707 Tage  Nacht Ø +18.49 bp (t +5.09)  Tag Ø  +7.20 bp (t +1.53)
+  gesamt      6970 Tage  Nacht Ø +15.73 bp (t +6.36)  Tag Ø  +3.84 bp (t +1.02)
+TSLA (ab 2010-06-30, Eröffnung = Vortagesschluss an 1.3% der Tage): TEILWEISE (Nacht erfüllt, Tag nicht erfüllt)
+  2008-2015   1387 Tage  Nacht Ø +25.70 bp (t +4.84)  Tag Ø  -2.87 bp (t -0.37)
+  2016-2026   2707 Tage  Nacht Ø +12.91 bp (t +3.00)  Tag Ø  +5.50 bp (t +0.98)
+  gesamt      4094 Tage  Nacht Ø +17.24 bp (t +5.12)  Tag Ø  +2.66 bp (t +0.58)
+
+Teil B -- gegen SPY halten (bestanden: Haupt 2008/Börsengang-2026 > SPY, t >= 2,82, Einordnung bis 2007 > 0)
+AAPL (Halten AAPL im Hauptzeitraum +24.1% p.a.):
+  S1 Nacht long                  +7.4% p.a. (SPY +11.3%, Halten +24.1%), t ggü. SPY -0.60, Einordnung bis 2007  +14.2% p.a. -> nicht bestanden
+  S2 Nacht long + Tag short     -12.7% p.a. (SPY +11.3%, Halten +24.1%), t ggü. SPY -2.51, Einordnung bis 2007   -3.0% p.a. -> nicht bestanden
+  S3 Tag short                  -18.7% p.a. (SPY +11.3%, Halten +24.1%), t ggü. SPY -3.99, Einordnung bis 2007  -24.1% p.a. -> nicht bestanden
+MSFT (Halten MSFT im Hauptzeitraum +17.5% p.a.):
+  S1 Nacht long                  +3.9% p.a. (SPY +11.3%, Halten +17.5%), t ggü. SPY -1.76, Einordnung bis 2007   -4.4% p.a. -> nicht bestanden
+  S2 Nacht long + Tag short     -12.5% p.a. (SPY +11.3%, Halten +17.5%), t ggü. SPY -2.95, Einordnung bis 2007  -24.3% p.a. -> nicht bestanden
+  S3 Tag short                  -15.8% p.a. (SPY +11.3%, Halten +17.5%), t ggü. SPY -3.88, Einordnung bis 2007  -29.1% p.a. -> nicht bestanden
+AMZN (Halten AMZN im Hauptzeitraum +23.8% p.a.):
+  S1 Nacht long                  +9.4% p.a. (SPY +11.3%, Halten +23.8%), t ggü. SPY +0.01, Einordnung bis 2007   -1.3% p.a. -> nicht bestanden
+  S2 Nacht long + Tag short     -11.3% p.a. (SPY +11.3%, Halten +23.8%), t ggü. SPY -1.64, Einordnung bis 2007  -57.4% p.a. -> nicht bestanden
+  S3 Tag short                  -19.0% p.a. (SPY +11.3%, Halten +23.8%), t ggü. SPY -3.73, Einordnung bis 2007  -60.0% p.a. -> nicht bestanden
+GOOGL (Halten GOOGL im Hauptzeitraum +17.4% p.a.):
+  S1 Nacht long                  +8.6% p.a. (SPY +11.3%, Halten +17.4%), t ggü. SPY -0.46, Einordnung bis 2007  +65.0% p.a. -> nicht bestanden
+  S2 Nacht long + Tag short      -4.8% p.a. (SPY +11.3%, Halten +17.4%), t ggü. SPY -1.76, Einordnung bis 2007  +50.3% p.a. -> nicht bestanden
+  S3 Tag short                  -12.3% p.a. (SPY +11.3%, Halten +17.4%), t ggü. SPY -3.26, Einordnung bis 2007  -19.4% p.a. -> nicht bestanden
+META (Halten META im Hauptzeitraum +22.8% p.a.):
+  S1 Nacht long                 +12.7% p.a. (SPY +15.2%, Halten +22.8%), t ggü. SPY +0.10, Einordnung bis 2007 entfällt -> nicht bestanden
+  S2 Nacht long + Tag short      -4.8% p.a. (SPY +15.2%, Halten +22.8%), t ggü. SPY -1.06, Einordnung bis 2007 entfällt -> nicht bestanden
+  S3 Tag short                  -15.5% p.a. (SPY +15.2%, Halten +22.8%), t ggü. SPY -3.16, Einordnung bis 2007 entfällt -> nicht bestanden
+NVDA (Halten NVDA im Hauptzeitraum +35.5% p.a.):
+  S1 Nacht long                 +23.1% p.a. (SPY +11.3%, Halten +35.5%), t ggü. SPY +2.12, Einordnung bis 2007  +52.7% p.a. -> nicht bestanden
+  S2 Nacht long + Tag short      -4.8% p.a. (SPY +11.3%, Halten +35.5%), t ggü. SPY -0.57, Einordnung bis 2007   +8.0% p.a. -> nicht bestanden
+  S3 Tag short                  -22.6% p.a. (SPY +11.3%, Halten +35.5%), t ggü. SPY -3.00, Einordnung bis 2007  -32.2% p.a. -> nicht bestanden
+TSLA (Halten TSLA im Hauptzeitraum +40.0% p.a.):
+  S1 Nacht long                 +37.5% p.a. (SPY +15.1%, Halten +40.0%), t ggü. SPY +2.36, Einordnung bis 2007 entfällt -> nicht bestanden
+  S2 Nacht long + Tag short      +9.0% p.a. (SPY +15.1%, Halten +40.0%), t ggü. SPY +0.69, Einordnung bis 2007 entfällt -> nicht bestanden
+  S3 Tag short                  -20.7% p.a. (SPY +15.1%, Halten +40.0%), t ggü. SPY -2.49, Einordnung bis 2007 entfällt -> nicht bestanden
+
+Jahre (Ø bp je Tag, Nacht / Tag)
+  Jahr            AAPL           MSFT           AMZN          GOOGL           META           NVDA           TSLA
+  1993    -12.0/  -9.9    +0.2/  -0.5                                                                           
+  1994     +4.6/ +11.7    +6.8/ +11.2                                                                           
+  1995    +16.6/ -20.6   +11.8/  +4.9                                                                           
+  1996    +40.4/ -51.0   +10.8/ +15.9                                                                           
+  1997    +23.3/ -33.4   +11.7/  +8.3   +22.5/ +55.4                                                            
+  1998    +15.8/ +37.1    +1.7/ +31.8   +38.8/ +73.2                                                            
+  1999    +24.8/ +18.4   +28.5/  -4.7   +63.3/ -25.7                                 +69.1/ -21.4               
+  2000     -2.5/ -29.5    -6.0/ -27.7   -42.1/  +0.8                                 +28.7/ +14.0               
+  2001    -11.0/ +35.2    -8.1/ +29.0   +54.3/ -43.4                                 -20.9/ +96.2               
+  2002    -20.1/  +7.8    -3.8/  -2.4   -20.9/ +54.3                                 +12.4/ -63.1               
+  2003     +4.0/ +14.8   +15.8/ -11.4    -0.5/ +45.0                                 +36.4/  +0.2               
+  2004     +9.9/ +37.2    +6.4/  -2.4    -7.1/  +3.8   +41.7/ +33.6                  +30.1/ -22.1               
+  2005    +25.3/  +9.7    +0.1/  -0.1   -14.3/ +19.4   +31.0/  +2.1                  +18.5/  +1.7               
+  2006    +34.1/ -24.5    -1.7/  +8.4   -16.4/ +12.2   +22.6/ -15.9                  +10.1/ +22.5               
+  2007    +41.6/  -5.0    +3.1/  +5.6   +15.7/ +22.4   +17.3/  +0.1                  +26.4/  -9.5               
+  2008     -6.7/ -18.7    -2.8/ -16.1   -32.9/ +19.6    -1.1/ -25.0                  -20.4/ -21.7               
+  2009    +17.7/ +20.4    +3.2/ +17.9   +12.0/ +30.5   +10.9/ +18.6                  +10.2/ +29.8               
+  2010    +22.3/  -3.9    +4.0/  -5.6    -1.4/ +15.6   +11.9/ -12.2                   +2.6/  -6.4   +58.7/ -38.4
+  2011    +11.1/  -0.6    -4.2/  +3.4    -0.7/  +2.0    +7.9/  -2.9                  +12.2/  -9.6   +13.0/  -5.4
+  2012    +21.3/  -8.2    +4.9/  -1.9    +0.9/ +15.9    +3.7/  +1.0   +19.6/ -35.3   +10.1/ -12.2   +23.0/ -10.6
+  2013    +14.1/  -9.4    +0.4/ +15.4   +14.0/  +5.8   +11.7/  +7.3   +32.2/  +0.3    +0.7/ +11.9   +62.6/  +5.9
+  2014     +8.9/  +5.6    +6.4/  +4.1    -2.5/  -5.4   +12.8/ -14.2   +16.5/  +0.4    +7.4/  +3.4   +17.6/  +2.6
+  2015    +10.9/ -10.2    -3.0/ +12.7   +30.7/  +3.0   +16.9/  -0.0    +9.7/  +3.6    +6.8/ +15.7    -4.5/ +11.2
+  2016     -3.6/  +9.4    +0.6/  +6.0    +7.7/  -1.7    +6.7/  -5.0    +8.8/  -3.3   +27.1/ +23.2   +10.6/ -11.6
+  2017     +7.9/  +8.4    +9.5/  +4.5   +18.4/  +0.1    +8.0/  +3.8    +9.8/  +7.8   +27.0/  -0.1   +11.5/  +6.0
+  2018     +1.9/  -2.6   +16.5/  -7.3   +23.7/ -10.8    +4.8/  -3.3   -10.7/  +2.0    +5.2/ -14.0    +1.2/  +8.2
+  2019     +7.8/ +18.7   +14.0/  +4.8    +5.5/  +3.7    +1.7/  +9.2   +13.1/  +6.3   +15.8/ +10.1    -3.2/ +17.0
+  2020    +12.4/ +15.4    +8.7/  +8.4   +19.8/  +5.6    +2.6/ +10.8    +2.7/ +12.4   +22.9/ +14.7   +70.1/ +29.9
+  2021     +4.3/  +8.8    +7.0/ +10.6    +6.9/  -4.7   +12.6/  +8.5    +7.5/  +2.4   +28.4/  +7.9   +17.4/  +4.7
+  2022    -13.6/  +3.9    -6.1/  -4.4    -6.8/ -15.4    -9.5/  -7.2   -36.1/  +3.4   -24.6/  +4.8    +4.2/ -36.7
+  2023     -2.1/ +18.9   +10.3/  +9.4    +9.6/ +16.3    -3.2/ +23.4   +18.6/ +27.7   +24.3/ +29.4    +6.7/ +27.5
+  2024     -0.1/ +12.1    +6.9/  -1.2   +13.8/  +2.5    +8.1/  +5.9   +19.0/  +4.0   +43.1/  +2.0   +20.6/  +5.7
+  2025     -4.5/ +10.4    +3.4/  +3.9   +10.1/  -5.1   +15.3/  +7.3   +14.0/  -5.8   +12.9/  +5.7    +6.6/  +5.7
+  2026     +0.3/ +12.9    +3.4/  +3.2    +2.6/  +4.8    -4.6/ +12.5    +8.3/  -0.0   +21.9/  -8.1    -9.3/  +3.6

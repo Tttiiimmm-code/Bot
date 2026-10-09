@@ -4372,3 +4372,17 @@ BESTANDEN, wenn im Hauptzeitraum 2008-01 (bzw. ab Börsengang) bis 2026-10-08 Re
 monatlichen Überrendite ggü. SPY >= 2,82 UND Einordnung bis 2007 Überrendite > 0 (entfällt für META, TSLA: keine
 Daten vor 2008, gekennzeichnet). Zusätzlich berichtet (nicht gewertet): Rendite gegenüber Halten derselben Aktie.
 Skript research/scripts/r150.py, Ausgabe r150_output.txt.
+
+## Ergebnis Runde 150 (2026-10-09, research/scripts/r150.py, Ausgabe r150_output.txt)
+
+Teil A -- wie bei den Indizes nur zur Hälfte richtig (alle 7 "TEILWEISE"): Nacht gesamt klar positiv (AAPL +9,1 bp,
+t 5,2; MSFT +4,7, t 4,0; AMZN +7,3, t 3,2; GOOGL +9,2, t 5,5; META +8,6, t 2,9; NVDA +15,7, t 6,4; TSLA +17,2, t 5,1),
+aber der Tag ist bei KEINER Aktie negativ (gesamt +1,6 bis +9,5 bp; MSFT t 2,3, AMZN t 2,8 sogar signifikant positiv).
+Nicht stabil: AAPL 2016-2026 Nacht +1,0 bp / Tag +10,5 bp (t 3,9) -- umgekehrt zur These; AMZN bis 2015 Tag > Nacht.
+Teil B -- 21/21 NICHT BESTANDEN. Nur nachts halten (2008/Börsengang-2026): AAPL +7,4 % p.a., MSFT +3,9 %, AMZN +9,4 %,
+GOOGL +8,6 %, META +12,7 %, NVDA +23,1 % (t ggü. SPY 2,12), TSLA +37,5 % (t 2,36) -- jeweils WEIT unter Halten der
+Aktie selbst (AAPL +24,1 %, MSFT +17,5 %, AMZN +23,8 %, GOOGL +17,4 %, META +22,8 %, NVDA +35,5 %, TSLA +40,0 %).
+Dass NVDA/TSLA nachts SPY schlagen, ist Rückschaufehler (Auswahl nach späterem Erfolg), und t < 2,82.
+S2 (Nacht long + Tag short) -12,7..+9,0 % p.a., S3 (Tag short) -12,3..-22,6 % p.a.
+Fazit: Auch bei Einzelaktien entsteht viel Rendite über Nacht, aber der Tag ist im Mittel positiv; Halten der
+ganzen Aktie ist in allen 7 Fällen am besten. Leerverkauf am Tag verliert in allen 7 Fällen deutlich.
