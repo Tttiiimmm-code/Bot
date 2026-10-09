@@ -4336,3 +4336,20 @@ Teil B -- schlägt eine Umsetzung nach Kosten SPY halten? (je ETF, K = 3 Strateg
 - Info (nicht gewertet): Aktien-Top-500 gleichgewichtet mit S1/S2 bei 2 bp und 10 bp je Seite (vs. SPY);
   Jahresübersicht Ø Nacht/Tag je Markt.
 Skript research/scripts/r149.py, Ausgabe r149_output.txt.
+
+## Ergebnis Runde 149 (2026-10-09, research/scripts/r149.py, Ausgabe r149_output.txt)
+
+Teil A -- These nur zur HÄLFTE richtig (alle 5 Märkte "TEILWEISE"):
+- Über Nacht steigen die Märkte: Ø Nacht SPY +4,0 bp (t 5,6, 1993-2026), QQQ +5,6 (t 5,2), IWM +5,4 (t 5,2),
+  DIA +3,1 (t 3,9), Aktien-Top-500 +4,4 (t 3,0, 2016-2026); Vorzeichen in allen Teilzeiträumen positiv.
+- Tagsüber FALLEN sie NICHT: Ø Tag SPY +0,7 bp (t 0,7), QQQ 0,0, IWM -1,0 (t -0,6), DIA +1,0, Aktien +0,6; seit 2008
+  bei allen ETFs positiv (SPY 2016-2026 +2,3 bp). Negativ war der Tag nur bis 2007 (v.a. 2000-2002, Dotcom-Crash).
+- Jahre: Nacht in 2008 und 2022 negativ (Bärenmärkte), Tag schwankt um 0 (2018 und 2022 negativ, 2023 stark positiv).
+Teil B -- keine Umsetzung schlägt SPY halten (Haupt 2008-2026, SPY +11,3 % p.a.):
+- S1 Nacht long: SPY +1,5 %, QQQ +5,0 %, IWM +5,2 %, DIA +0,8 % p.a. (t -2,1..-3,9).
+- S2 Nacht long + Tag short: -2,2 bis -9,6 % p.a.; S3 Tag short: -7,1 bis -12,6 % p.a. -> alle 12 NICHT BESTANDEN.
+- Info Aktien Top-500 (2016-2026, SPY +16,0 %): S1 -0,5 % p.a. bei 2 bp/Seite, -33,5 % bei 10 bp; S2 -12,7 / -61,1 %.
+Fazit: Der Großteil der Rendite entsteht über Nacht, aber der Tag ist im Mittel nicht negativ, sondern um 0 bis
+leicht positiv. Wer nur nachts hält, verpasst die (kleine) Tagesrendite und zahlt täglich Kosten; wer tagsüber
+leerverkauft, verliert. Durchgehendes Halten ist besser. Hinweis Daten: Yahoo-Eröffnung = Vortagesschluss an
+1-2 % der Tage (veraltete Opens, v.a. früh) -> Nacht dort 0, eher konservativ.
