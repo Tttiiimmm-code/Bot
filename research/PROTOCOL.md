@@ -4353,3 +4353,22 @@ Fazit: Der Großteil der Rendite entsteht über Nacht, aber der Tag ist im Mitte
 leicht positiv. Wer nur nachts hält, verpasst die (kleine) Tagesrendite und zahlt täglich Kosten; wer tagsüber
 leerverkauft, verliert. Durchgehendes Halten ist besser. Hinweis Daten: Yahoo-Eröffnung = Vortagesschluss an
 1-2 % der Tage (veraltete Opens, v.a. früh) -> Nacht dort 0, eher konservativ.
+
+# Runde 150: Nacht/Tag bei großen Einzelaktien (Magnificent 7) (Nutzer-Frage, Vorab, 2026-10-09)
+
+Nutzer: "Und wenn du auf Einzelaktien schaust, z.B. Meta, Google oder Nvidia." Feste Gruppe statt Einzelauswahl:
+AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA (Magnificent 7). RÜCKSCHAUFEHLER ausdrücklich: die Gruppe ist nach ihrem
+späteren Erfolg ausgewählt -> "Halten" schlägt SPY schon durch die Auswahl; Vergleich daher zusätzlich mit Halten
+derselben Aktie. Bekannt aus Runde 149: Indizes/Top-500 steigen über Nacht, tagsüber Ø um 0.
+Daten: Yahoo-Tageswerte (open, close split-bereinigt, dividend, adjclose) ab Börsengang bzw. 1993 bis 2026-10-08,
+eigener Cache. Nacht_t = (Open_t + Dividende am Ex-Tag) / Close_t-1 - 1; Tag_t = Close_t / Open_t - 1. Die Nacht
+enthält die Reaktionen auf Quartalszahlen (nach Börsenschluss gemeldet) -- wird nicht herausgerechnet.
+Teil A -- These je Aktie: BESTÄTIGT, wenn gesamt Ø Nacht > 0 mit t >= 2,69 UND Ø Tag < 0 mit t <= -2,69
+(Bonferroni 7 x 2 = 14, einseitig) UND in jedem verfügbaren Teilzeitraum (bis 2007, 2008-2015, 2016-2026) Ø Nacht > 0
+und Ø Tag < 0; sonst TEILWEISE/WIDERLEGT.
+Teil B -- Strategien je Aktie wie Runde 149 (S1 Nacht long, S2 Nacht long + Tag short, S3 Tag short), Kosten 1 bp je
+Seite + SEC 0,28 bp auf Verkäufe, volles Kapital, kein Hebel. K = 7 x 3 = 21 -> Hürde t >= 2,82.
+BESTANDEN, wenn im Hauptzeitraum 2008-01 (bzw. ab Börsengang) bis 2026-10-08 Rendite p.a. > SPY halten UND t der
+monatlichen Überrendite ggü. SPY >= 2,82 UND Einordnung bis 2007 Überrendite > 0 (entfällt für META, TSLA: keine
+Daten vor 2008, gekennzeichnet). Zusätzlich berichtet (nicht gewertet): Rendite gegenüber Halten derselben Aktie.
+Skript research/scripts/r150.py, Ausgabe r150_output.txt.
