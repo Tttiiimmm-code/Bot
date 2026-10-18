@@ -4462,3 +4462,58 @@ SPY >= 2,54 (Bonferroni 9, einseitig) UND Überrendite in beiden Hälften (2016-
 Info (nicht gewertet): brutto je Trade, Trefferquote, Ø Zahl Käufe je Nacht, Vergleich K1 mit Runde 151 (Wirkung
 des Blicks in die Zukunft), Ergebnis bei 1 und 5 bp je Seite für Orders im laufenden Handel.
 Skripte research/scripts/r152_fetch.py (Download), r152.py (Auswertung), Ausgabe r152_output.txt.
+
+# Runde 153: Nachbau fremder EA "Maren asia_bruch_kontinuation_XAUUSD_15min_be_trail" (Nutzer, Vorab, 2026-10-18)
+
+Quelle: Ordner fremdeBots (Nutzer), Quant_Champion.zip, Quelltext .mq5 + forward_champion.set. Behauptung des Autors:
+MT5-Tester 09/2023-09/2026 853 Trades, Trefferquote 66,7 %, PF 1,40, +3,04 %/Woche, Max-DD 21 %; auf 2023-2025
+optimiert. Durchsicht des Codes: EXIT_MODE fest "TRAIL" -> kein festes Ziel (RR=4 aus der .set wirkt nicht); H4-
+Trendfilter wird berechnet, aber nicht verwendet; höchstens ein Signal je Tag. Verwandt: Runde 20 (Gold-Asien-Ausbruch
+per Stop-Einstieg, nicht bestanden), 110/124 (Sitzungs-Range-Raster, nicht bestanden). Neu hier: Einstieg erst nach
+M15-Schluss außerhalb der Range, weiter Stop, 70 % Teilgewinn bei 1R, Einstand, ATR-Nachlauf ab 2R.
+Daten: Dukascopy XAUUSD M1 Geld (data_cache/dukascopy/xau, 2008-01..2025-09-19) und Brief (xau_ask); fehlende Seite
+über den mittleren Spread ergänzt (wie r102.load); flache Kerzen (O=H=L=C) entfernt. M15-Kerzen aus M1-Geld (UTC).
+Regeln genau wie der EA mit forward_champion.set (übrige Eingaben Standard: BeAtR 1, TrailAtR 2, TrailAtr 2,5):
+- Server-Tag = 17:00 New York bis 17:00 New York (übliche MT5-Serverzeit UTC+2/+3). Asien-Range = Hoch/Tief der
+  M15-Kerzen des Server-Tages mit Beginn 00:00-06:45 UTC.
+- Signal: erste M15-Kerze des Server-Tages mit Beginn >= 07:00 UTC, deren Schluss über dem Range-Hoch (long) bzw.
+  unter dem Range-Tief (short) liegt, sofern keine frühere Kerze ab 07:00 außerhalb geschlossen hat. Sa/So kein Handel.
+- Einstieg zum Eröffnungskurs der ersten M1-Kerze nach Kerzenschluss (long Brief, short Geld).
+- Stop-Abstand sd = 2 x max(|Schluss - Range-Mitte|, 0,5 x ATR14(M15)); ATR wie im EA (Wilder, 42 Kerzen Anlauf,
+  Signalkerze). Kein Ziel.
+- Management je M1-Kerze (long Geld-, short Briefkurse): zuerst Stop mit dem Stand der Vorminute (Kurslücke ->
+  Eröffnungskurs); danach Teilziel: erreicht der Kurs +1R, werden 70 % zu +1R geschlossen und der Stop auf den
+  Einstiegskurs gesetzt; ab +2R Nachlauf-Stop = bester Kurs - 2,5 x ATR14(M15, letzte geschlossene Kerze), nur in
+  Gewinnrichtung. Neue Stops gelten ab der Folgeminute. Ab 21:00 UTC Schließung zur ersten Minute (auch, wenn der
+  Einstieg nach 21:00 lag; der EA schließt dann sofort wieder).
+- Kosten: echter Spread aus Geld/Brief + Kommission 0,5 bp auf den Nominalwert je Runde; kein Swap (Intraday).
+- Größe wie EA: 1 % Risiko je Trade auf das aktuelle Kapital (Kapital x (1 + 0,01 x R netto) je Trade).
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2025-09 Rendite p.a. > SPY halten (Yahoo, inkl. Dividenden) UND t der
+monatlichen Überrendite ggü. SPY >= 2,0 (eine These) UND Einordnungszeitraum 2008-2015 Überrendite ggü. SPY > 0.
+Info (nicht gewertet): Ø R, Trefferquote je Position und je Teilschluss (wie MT5 zählt), PF, Max-DD; Zeitraum
+09/2023-09/2026 wie der Autor (Geld ab 2025-09-20 = Brief - mittlerer Spread); Risiko 2 %/3 %; Gold halten.
+Skript research/scripts/r153.py, Ausgabe r153_output.txt.
+
+# Runde 154: Nachbau fremder Bot "Kerzenmuster-Jaeger" (Python/MT5) (Nutzer, Vorab, 2026-10-18)
+
+Quelle: Ordner fremdeBots, Kerzenmuster.zip (bot.py, config.py, patterns.py). Der Autor meldet selbst: alle 16 Muster
+zusammen PF 1,03 ohne Spread; danach im selben Datensatz die 5 besten Muster ausgewählt (Bearish Engulfing, Piercing
+Line, Shooting Star, Inverted Hammer, Evening Star). Kerzenmuster wurden im Protokoll noch nicht getestet.
+Daten: Dukascopy M1 Geld + Brief EURUSD, GBPUSD, USDJPY (fx, fx_ask; fehlender Brief über mittleren Spread), XAUUSD
+(xau, xau_ask), 2008-01..2025-09; flache Kerzen entfernt; M5 aus M1-Geld.
+Regeln genau wie bot.py/config.py:
+- Muster-Geometrie aus patterns.py unverändert (Schwellen aus config.py, TREND_LOOKBACK 10), geprüft wird je
+  geschlossener Kerze auf M1 und M5; erstes passendes der 5 freigegebenen Muster in der Reihenfolge von patterns.py.
+- Einstieg zum Eröffnungskurs der nächsten M1-Kerze (BUY Brief, SELL Geld); Stop 0,5 %, Ziel 1,0 % vom Einstieg;
+  Stop und Ziel in derselben Minute -> Stop; Kurslücke -> Eröffnungskurs. Keine Zeitbegrenzung.
+- Höchstens eine Position je Symbol (über beide Zeitrahmen), höchstens 3 gesamt; bei gleichzeitigen Signalen gilt die
+  Reihenfolge der Schleife im Bot (EURUSD, GBPUSD, USDJPY, XAUUSD; je Symbol erst M1, dann M5).
+- Größe: 1 % Risiko je Trade auf das Kapital bei Einstieg (Nominal = 200 % des Kapitals je Position).
+- Kosten: echter Spread + Kommission 0,5 bp Nominal je Runde + Finanzierung 2,5 % p.a. auf den Nominalwert je
+  Rollover (17:00 New York), mittwochs dreifach, für long und short (pauschal, Zinsdifferenz nicht modelliert).
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2025-09 Rendite p.a. > SPY halten UND t der monatlichen Überrendite ggü. SPY
+>= 2,0 (eine These: der Bot wie geliefert) UND Einordnungszeitraum 2008-2015 Überrendite > 0.
+Info (nicht gewertet): Ø R, Trefferquote, PF, Haltezeit; jedes der 16 Muster einzeln (alle Signale ohne
+Positionsgrenzen, je Markt und Zeitrahmen gepoolt, Ø R netto, t über Trades; Hürde zur Einordnung Bonferroni 16
+einseitig t >= 2,73), getrennt 2008-2015 / 2016-2025.
+Skript research/scripts/r154.py, Ausgabe r154_output.txt.
