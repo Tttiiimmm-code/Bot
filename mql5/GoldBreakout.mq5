@@ -164,8 +164,20 @@ void PlaceOrder()
          Print("GoldBreakout: Kauf fehlgeschlagen ", trade.ResultRetcode(), " ", trade.ResultRetcodeDescription());
       return;
      }
+   // Ablauf zusätzlich beim Broker hinterlegen: läuft MT5 nicht (PC aus), verfällt die Order trotzdem nach
+   // ExpiryHours ab Stundenbeginn wie im Backtest. Ohne Broker-Unterstützung bleibt nur die eigene Löschung (OnTimer).
+   ENUM_ORDER_TYPE_TIME timeType = ORDER_TIME_GTC;
+   datetime expiration = 0;
+   if((SymbolInfoInteger(_Symbol, SYMBOL_EXPIRATION_MODE) & SYMBOL_EXPIRATION_SPECIFIED) != 0)
+     {
+      datetime now = TimeCurrent();
+      timeType = ORDER_TIME_SPECIFIED;
+      expiration = now - (now % 3600) + ExpiryHours * 3600;
+     }
+   else
+      Print("GoldBreakout: Broker erlaubt keine Ablaufzeit -- Order verfällt nur, solange MT5 läuft");
    if(!trade.BuyStop(lots, price, _Symbol, NormalizeDouble(price - sl, digits), NormalizeDouble(price + tp, digits),
-                     ORDER_TIME_GTC, 0, comment))
+                     timeType, expiration, comment))
       Print("GoldBreakout: BuyStop fehlgeschlagen ", trade.ResultRetcode(), " ", trade.ResultRetcodeDescription());
    else
       PrintFormat("GoldBreakout: BuyStop %.2f Lots @ %.3f (SL %.2f, TP %.2f)", lots, price, sl, tp);
