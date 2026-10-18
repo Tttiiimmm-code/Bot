@@ -1,0 +1,13 @@
+[Unit]
+Description=VNC des MT5-Bildschirms -- nur 127.0.0.1 (Zugriff per SSH-Tunnel)
+After=mt5-display.service
+Requires=mt5-display.service
+
+[Service]
+User=mt5
+ExecStart=/usr/bin/x11vnc -display :99 -localhost -rfbport 5900 -nopw -forever -shared -quiet
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

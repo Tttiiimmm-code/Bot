@@ -17,7 +17,8 @@ from zoneinfo import ZoneInfo
 from tradingbot.state_io import load_state, save_state
 
 BERLIN = ZoneInfo("Europe/Berlin")
-SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled", "pelosi-bot"]
+SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled", "pelosi-bot",
+            "mt5-display", "mt5"]
 ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi", "backup-data",
             "intraday-backup"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
 STATE = Path("data_cache") / "health_state.json"

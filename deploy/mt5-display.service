@@ -1,0 +1,12 @@
+[Unit]
+Description=Virtueller Bildschirm :99 für MetaTrader 5 (Wine)
+After=network-online.target
+
+[Service]
+User=mt5
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1280x900x24 -nolisten tcp
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

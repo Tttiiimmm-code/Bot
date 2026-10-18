@@ -1,0 +1,12 @@
+[Unit]
+Description=noVNC (Browser) für den MT5-Bildschirm -- nur 127.0.0.1:6080 (Zugriff per SSH-Tunnel)
+After=mt5-vnc.service
+
+[Service]
+User=mt5
+ExecStart=/usr/bin/websockify --web /usr/share/novnc 127.0.0.1:6080 127.0.0.1:5900
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=MetaTrader 5 (Wine, portabel) mit GoldBreakout-EA -- OANDA-Demo
+After=mt5-display.service network-online.target
+Requires=mt5-display.service
+
+[Service]
+User=mt5
+Environment=HOME=/home/mt5 DISPLAY=:99 WINEPREFIX=/home/mt5/.wine WINEDEBUG=-all
+WorkingDirectory=/home/mt5/.wine/drive_c/MT5
+ExecStart=/opt/wine-stable/bin/wine /home/mt5/.wine/drive_c/MT5/terminal64.exe /portable
+ExecStopPost=/opt/wine-stable/bin/wineserver -k
+Restart=always
+RestartSec=30
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target
