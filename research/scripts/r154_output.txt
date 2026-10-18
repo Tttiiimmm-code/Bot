@@ -1,0 +1,66 @@
+  EURUSD: 6493173 Minuten, mittlerer Spread 4.0054e-05
+EURUSD: Bot-Kandidaten 1009386 (44 s)
+  GBPUSD: 6487011 Minuten, mittlerer Spread 0.00011992
+GBPUSD: Bot-Kandidaten 1109780 (82 s)
+  USDJPY: 6462918 Minuten, mittlerer Spread 0.0049973
+USDJPY: Bot-Kandidaten 1048259 (117 s)
+  XAUUSD: 6272502 Minuten, mittlerer Spread 0.36609
+XAUUSD: Bot-Kandidaten 1049588 (144 s)
+
+Bot-Trades nach Positionsgrenzen: 11717 von 4217013 Kandidaten
+
+=== HAUPTERGEBNIS (Bot wie geliefert, 1 % Risiko je Trade)
+  Kerzen-Bot Haupt 2016-01..2025-09: -45.4% p.a. vs SPY +14.8%, Überrendite Ø -5.76%/Monat, t -6.27, Max-DD (Monat) -99.7%
+  Kerzen-Bot Einordnung 2008-2015: -49.1% p.a. vs SPY  +6.5%, Überrendite Ø -5.42%/Monat, t -4.33, Max-DD (Monat) -99.6%
+  -> NICHT BESTANDEN
+
+=== Info: Bot-Trades (R netto; brutto = vor Kommission und Finanzierung, Spread enthalten)
+  2008-2015: n  6609  Ø R -0.072  t -4.17  Treffer 32.0%  PF 0.90  | brutto Ø -0.044 R | Haltezeit Median 10.9 h | Ø Rollover 1.33
+      EURUSD M1: n  1304  Ø R -0.053  Treffer 33%
+      EURUSD M5: n   222  Ø R -0.182  Treffer 28%
+      GBPUSD M1: n  1322  Ø R -0.052  Treffer 33%
+      GBPUSD M5: n   168  Ø R +0.075  Treffer 37%
+      USDJPY M1: n  1311  Ø R -0.027  Treffer 34%
+      USDJPY M5: n   223  Ø R +0.080  Treffer 37%
+      XAUUSD M1: n  1824  Ø R -0.141  Treffer 29%
+      XAUUSD M5: n   235  Ø R -0.151  Treffer 29%
+      Bearish Engulfing : n  3116  Ø R -0.049
+      Evening Star      : n   378  Ø R -0.211
+      Shooting Star     : n  1495  Ø R -0.048
+      Inverted Hammer   : n   861  Ø R -0.042
+      Piercing Line     : n   759  Ø R -0.180
+  2016-2025: n  5108  Ø R -0.106  t -5.44  Treffer 31.1%  PF 0.85  | brutto Ø -0.067 R | Haltezeit Median 20.5 h | Ø Rollover 2.08
+      EURUSD M1: n   843  Ø R -0.090  Treffer 32%
+      EURUSD M5: n   118  Ø R +0.066  Treffer 37%
+      GBPUSD M1: n  1119  Ø R -0.071  Treffer 32%
+      GBPUSD M5: n   125  Ø R -0.184  Treffer 29%
+      USDJPY M1: n  1076  Ø R -0.099  Treffer 32%
+      USDJPY M5: n   125  Ø R +0.012  Treffer 35%
+      XAUUSD M1: n  1488  Ø R -0.157  Treffer 29%
+      XAUUSD M5: n   214  Ø R -0.141  Treffer 29%
+      Bearish Engulfing : n  2583  Ø R -0.134
+      Evening Star      : n   268  Ø R -0.096
+      Shooting Star     : n  1091  Ø R -0.090
+      Inverted Hammer   : n   622  Ø R -0.106
+      Piercing Line     : n   544  Ø R -0.006
+
+=== Info: jedes der 16 Muster einzeln (alle Signale, ohne Positionsgrenzen; Trades überlappen -> t überzeichnet; Hürde Bonferroni 16: t >= 2,73)
+  Muster                n 08-15     Ø R      t |  n 16-25     Ø R      t  brutto
+  Bullish Engulfing      870223  -0.079 -52.98 |  1147474  -0.036 -27.40  +0.015
+  Bearish Engulfing      892681  -0.034 -22.84 |  1182617  -0.101 -79.19  -0.050
+  Morning Star           134607  -0.092 -24.07 |   187079  -0.033 -10.19  +0.019
+  Evening Star           133627  -0.037  -9.59 |   186353  -0.097 -30.08  -0.045
+  Hammer                 333219  -0.061 -25.14 |   375823  -0.036 -15.74  +0.015
+  Hanging Man            346367  -0.062 -25.76 |   387471  -0.101 -45.13  -0.050
+  Shooting Star          299094  -0.059 -22.98 |   399895  -0.103 -46.90  -0.053
+  Inverted Hammer        304617  -0.068 -26.62 |   399434  -0.035 -15.66  +0.016
+  Bullish Pin Bar        536563  -0.066 -34.33 |   601729  -0.035 -19.14  +0.016
+  Bearish Pin Bar        474306  -0.059 -28.82 |   632461  -0.104 -59.54  -0.054
+  Piercing Line          227983  -0.082 -28.04 |   297568  -0.033 -12.59  +0.019
+  Dark Cloud Cover       234635  -0.033 -11.30 |   303885  -0.107 -42.29  -0.056
+  Three White Soldiers    11671  -0.075  -5.81 |    18841  -0.055  -5.40  -0.004
+  Three Black Crows       12993  -0.047  -3.82 |    22146  -0.115 -12.29  -0.062
+  Bullish Harami         258914  -0.070 -25.31 |   351234  -0.036 -15.26  +0.014
+  Bearish Harami         247345  -0.058 -20.32 |   329321  -0.102 -41.91  -0.051
+
+Laufzeit 161 s

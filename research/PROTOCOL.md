@@ -4532,3 +4532,16 @@ Deutung: Die behaupteten Zahlen sind mit dem gelieferten Code auf echten Dukasco
 selbst im (optimierten) Autor-Zeitraum knapp Null. Gleiches Bild wie Runde 20/110/124: Asien-Range-Ausbruch bei
 Gold hat nach Kosten keinen Vorteil. Die MT5-Zählweise (Teilschluss als eigener Trade) bläht Trade-Zahl und
 Trefferquote auf (Positionen 46-51 %, Deals 52-56 %).
+
+## Ergebnis Runde 154 (2026-10-18, research/scripts/r154.py, Ausgabe r154_output.txt)
+
+Muster-Geometrie vorab gegen patterns.py geprüft (0 Abweichungen, 180.000 Kerzen). 4,2 Mio. Bot-Kandidaten,
+11.717 Trades nach Positionsgrenzen (1 je Symbol, 3 gesamt).
+- Haupt 2016-01..2025-09: -45,4 % p.a. vs SPY +14,8 % (t -6,27), Max-DD -99,7 %; Einordnung 2008-2015: -49,1 % p.a.
+  (t -4,33) -> NICHT BESTANDEN.
+- Je Trade: 2016-2025 Ø -0,106 R netto (t -5,44), PF 0,85, Treffer 31 % (Ziel 2R); schon brutto -0,067 R.
+  2008-2015 Ø -0,072 R, PF 0,90. Alle 5 freigegebenen Muster in beiden Zeiträumen negativ.
+- Info alle 16 Muster einzeln: alle 16 in beiden Zeiträumen netto negativ, keines erreicht die Hürde. Brutto sind
+  die Kaufmuster leicht positiv (+0,015 R), die Verkaufsmuster negativ (-0,05 R) -- das ist die Marktdrift
+  (Gold/USD-Trend), kein Mustereffekt.
+Deutung: Kerzenmuster auf M1/M5 haben keinen Vorteil; die vom Autor ausgewählten 5 Muster waren Zufallsauswahl.
