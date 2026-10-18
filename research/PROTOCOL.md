@@ -4517,3 +4517,18 @@ Info (nicht gewertet): Ø R, Trefferquote, PF, Haltezeit; jedes der 16 Muster ei
 Positionsgrenzen, je Markt und Zeitrahmen gepoolt, Ø R netto, t über Trades; Hürde zur Einordnung Bonferroni 16
 einseitig t >= 2,73), getrennt 2008-2015 / 2016-2025.
 Skript research/scripts/r154.py, Ausgabe r154_output.txt.
+
+## Ergebnis Runde 153 (2026-10-18, research/scripts/r153.py, Ausgabe r153_output.txt)
+
+6,63 Mio. XAUUSD-Minuten 2008-01..2026-09; 4.638 Trades (fast jeder Handelstag ein Signal).
+- Haupt 2016-01..2025-09 bei 1 % Risiko: -15,2 % p.a. vs SPY +14,8 %, Überrendite -2,56 %/Monat (t -4,81),
+  Max-DD (Monatsbasis) -83 %. Einordnung 2008-2015: -8,9 % p.a. vs SPY +6,5 % (t -2,03) -> NICHT BESTANDEN.
+- Je Position: 2016-2025 Ø -0,063 R netto (t -3,78), Treffer 46 %, PF 0,84; 2008-2015 Ø -0,034 R (t -1,72), PF 0,92.
+  Teilziel 1R nur in 27-32 % der Trades erreicht. Nur 3 von 19 Jahren mit Ø R > 0 (2013, 2024, 2026 bis 09).
+- Info Autor-Zeitraum 09/2023-09/2026: Ø +0,020 R (t 0,70), PF 1,06 (Deals 913, Treffer 56 %, PF 1,07); bei 1 %
+  Risiko x1,13 in 3 Jahren = +0,08 %/Woche statt behaupteter +3,04 %/Woche (Autor: PF 1,40, Treffer 66,7 %).
+  Höheres Risiko verschlechtert nur (2 %: -29 % p.a., 3 %: -42 % p.a. im Hauptzeitraum). Gold halten 2016-2025 +14,2 %.
+Deutung: Die behaupteten Zahlen sind mit dem gelieferten Code auf echten Dukascopy-Minuten nicht nachvollziehbar;
+selbst im (optimierten) Autor-Zeitraum knapp Null. Gleiches Bild wie Runde 20/110/124: Asien-Range-Ausbruch bei
+Gold hat nach Kosten keinen Vorteil. Die MT5-Zählweise (Teilschluss als eigener Trade) bläht Trade-Zahl und
+Trefferquote auf (Positionen 46-51 %, Deals 52-56 %).

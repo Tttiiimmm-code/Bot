@@ -1,0 +1,29 @@
+XAUUSD M1: 6631131 Minuten, mittlerer Spread 0.366; je Jahr 2008:359k 2009:356k 2010:361k 2011:358k 2012:358k 2013:346k 2014:347k 2015:351k 2016:353k 2017:350k 2018:352k 2019:349k 2020:354k 2021:353k 2022:354k 2023:352k 2024:355k 2025:354k 2026:259k
+Signale/Trades gesamt 4638 (24 s)
+
+=== HAUPTERGEBNIS (1 % Risiko je Trade wie der EA)
+  Maren Haupt 2016-01..2025-09: -15.2% p.a. vs SPY +14.8%, Überrendite Ø -2.56%/Monat, t -4.81, Max-DD (Monat) -82.7%
+  Maren Einordnung 2008-2015:  -8.9% p.a. vs SPY  +6.5%, Überrendite Ø -1.34%/Monat, t -2.03, Max-DD (Monat) -58.3%
+  -> NICHT BESTANDEN
+
+=== Info: Trade-Statistik je Position (R netto)
+  2008-2015              n  1999  Ø R -0.034  t -1.72  Treffer 47.0%  PF 0.92  Teilziel erreicht 32%  long 51%  | Deals 2636, Treffer 53.2%, PF 0.92
+  2016-2025              n  2405  Ø R -0.063  t -3.78  Treffer 46.0%  PF 0.84  Teilziel erreicht 27%  long 52%  | Deals 3049, Treffer 51.9%, PF 0.85
+  Autor 09/2023-09/2026  n   735  Ø R +0.020  t +0.70  Treffer 51.3%  PF 1.06  Teilziel erreicht 24%  long 56%  | Deals 913, Treffer 56.4%, PF 1.07
+
+=== Info: Autor-Zeitraum 09/2023-09/2026 (Geld ab 2025-09-20 = Brief - mittlerer Spread)
+  Risiko 1%: Endkapital x1.13, Ø +0.08%/Woche, Max-DD (Trades) -12.3%
+  Risiko 2%: Endkapital x1.23, Ø +0.13%/Woche, Max-DD (Trades) -24.0%
+
+=== Info: andere Risikostufen (Haupt/Einordnung)
+  Risiko 2% Haupt 2016-01..2025-09: -29.3% p.a. vs SPY +14.8%, Überrendite Ø -3.86%/Monat, t -5.03, Max-DD (Monat) -97.4%
+  Risiko 2% Einordnung 2008-2015: -18.6% p.a. vs SPY  +6.5%, Überrendite Ø -2.05%/Monat, t -2.13, Max-DD (Monat) -84.7%
+  Risiko 3% Haupt 2016-01..2025-09: -42.0% p.a. vs SPY +14.8%, Überrendite Ø -5.17%/Monat, t -5.00, Max-DD (Monat) -99.7%
+  Risiko 3% Einordnung 2008-2015: -28.6% p.a. vs SPY  +6.5%, Überrendite Ø -2.76%/Monat, t -2.12, Max-DD (Monat) -95.1%
+  Gold halten 2008-2015: +3.1% p.a.
+  Gold halten 2016-2025: +14.2% p.a.
+
+=== Info: je Jahr (Ø R, n)
+  2008 -0.07 (256) | 2009 -0.05 (252) | 2010 -0.12 (255) | 2011 -0.01 (252) | 2012 -0.06 (253) | 2013 +0.09 (243) | 2014 -0.08 (240) | 2015 +0.04 (248) | 2016 -0.05 (243) | 2017 -0.09 (246) | 2018 -0.01 (246) | 2019 -0.09 (252) | 2020 -0.07 (247) | 2021 -0.14 (251) | 2022 -0.03 (252) | 2023 -0.13 (249) | 2024 +0.01 (246) | 2025 -0.03 (232) | 2026 +0.10 (175)
+
+Laufzeit 24 s
