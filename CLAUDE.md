@@ -34,8 +34,10 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
 
 Nutzer (2026-10-18): "ab jetzt soll im Vault immer mitgeschrieben werden, wenn es neue Infos gibt, er ist unser
 2. Gehirn und dient als Datensammlung". **Verbindliche Anleitung: Vault-Notiz `01 Projekt/Dokumentationsregeln.md`
-(vor dem ersten Schreiben einer Sitzung lesen), Vorlagen in `_vorlagen/`.** Kurzfassung -- in **jeder** Sitzung,
-sobald es neue Infos gibt (nicht erst am Ende):
+(vor dem ersten Schreiben einer Sitzung lesen), Vorlagen in `_vorlagen/`.** Umfang: **nur was die Tradingbots, ihre
+Strategien, Vorwärtstests, Forschung, Konten und Datenquellen betrifft** -- keine Claude-Code-/Werkzeug-Einstellungen
+oder PC-Kleinkram (außer es betrifft einen Bot/Test direkt). Kurzfassung -- in **jeder** Sitzung, sobald es solche
+neuen Infos gibt (nicht erst am Ende):
 - `08 Logbuch/JJJJ-MM-TT.md` anlegen bzw. ergänzen: was getan, Ergebnisse mit Zahlen, Entscheidungen des Nutzers,
   neue Probleme, Commits. Kurz, sachlich, mit `[[Links]]` auf die betroffenen Notizen.
 - Betroffene Fachnotizen aktualisieren (Bots, Vorwärtstests, Betrieb, Daten, Termine/offene Aufgaben, Zeitleiste,
