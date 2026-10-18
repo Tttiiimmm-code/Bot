@@ -33,7 +33,8 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
 ## Obsidian-Vault (2. Gehirn, `C:\Users\Nutzer\Trading-Bot-Vault`)
 
 Nutzer (2026-10-18): "ab jetzt soll im Vault immer mitgeschrieben werden, wenn es neue Infos gibt, er ist unser
-2. Gehirn und dient als Datensammlung". **Verbindliche Anleitung: Vault-Notiz `01 Projekt/Dokumentationsregeln.md`
+2. Gehirn und dient als Datensammlung". **Sitzungsbeginn: `00 Kontext.md` im Vault lesen** (Momentaufnahme: was
+läuft, offene Entscheidungen, nächste Rundennummer, wo nachschlagen). **Verbindliche Anleitung: Vault-Notiz `01 Projekt/Dokumentationsregeln.md`
 (vor dem ersten Schreiben einer Sitzung lesen), Vorlagen in `_vorlagen/`.** Umfang: **nur was die Tradingbots, ihre
 Strategien, Vorwärtstests, Forschung, Konten und Datenquellen betrifft** -- keine Claude-Code-/Werkzeug-Einstellungen
 oder PC-Kleinkram (außer es betrifft einen Bot/Test direkt). Kurzfassung -- in **jeder** Sitzung, sobald es solche
@@ -43,7 +44,9 @@ neuen Infos gibt (nicht erst am Ende):
 - Betroffene Fachnotizen aktualisieren (Bots, Vorwärtstests, Betrieb, Daten, Termine/offene Aufgaben, Zeitleiste,
   Erkenntnisse); neue Themen als neue Notiz im passenden Ordner, verlinkt von `00 Start.md` oder einer Übersicht.
 - Nach jeder Forschungsrunde: `python -I <vault>/_werkzeug/vault_gen.py <worktree>/research/PROTOCOL.md <vault>`
-  (Urteile unklarer Runden im `OVERRIDE` des Skripts eintragen), danach Links prüfen (keine kaputten `[[...]]`).
+  (Urteile unklarer Runden im `OVERRIDE` des Skripts eintragen), danach `python -I <vault>/_werkzeug/linkcheck.py <vault>`.
+- Am Ende: `00 Kontext.md` (`stand` + geänderte Zeilen) aktualisieren. Kurz halten, ein Ort pro Fakt, Kopfzeilen
+  `typ`/`status`/`stand` pflegen (Regel 9 der Dokumentationsregeln).
 - Keine Schlüssel/Passwörter, keine Emojis; Deutsch.
 
 ## Laufende Vorwärtstests und Bots
