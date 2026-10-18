@@ -1,0 +1,15 @@
+[Unit]
+Description=Yahoo-Intraday-Sicherung (USDJPY, EURJPY, Nikkei-/Gold-Future) während der Dukascopy-Sperre -- nur Daten
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tradingbot
+WorkingDirectory=/home/tradingbot/Bot
+ExecStart=/home/tradingbot/Bot/.venv/bin/python main.py intraday-backup
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/tradingbot/Bot

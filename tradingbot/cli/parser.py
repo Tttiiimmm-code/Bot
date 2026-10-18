@@ -699,6 +699,9 @@ def build_parser() -> argparse.ArgumentParser:
     pbot.add_argument("--check", action="store_true", help="Nur Konto und Stand anzeigen, nichts handeln.")
     fpel = subparsers.add_parser("forward-pelosi", help="Vorwärtstest pelosi_copy (Kongress-Meldungen, Runde 141; Papier).")
     fpel.add_argument("--notify-env", default="", help="Datei mit NTFY_TOPIC: neue Pelosi-Käufe aufs Handy.")
+    subparsers.add_parser(
+        "intraday-backup", help="Yahoo-Intraday-Kurse (USDJPY, EURJPY, Nikkei-/Gold-Future) sichern -- Ersatz-"
+                                "Aufzeichnung während der Dukascopy-Sperre, keine Auswertung.")
     mcheck = subparsers.add_parser(
         "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
     mcheck.add_argument("--env-file", default=".env", help="Konto des Momentum-Bots (nur lesend).")

@@ -18,7 +18,8 @@ from tradingbot.state_io import load_state, save_state
 
 BERLIN = ZoneInfo("Europe/Berlin")
 SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled", "pelosi-bot"]
-ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi", "backup-data"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
+ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi", "backup-data",
+            "intraday-backup"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
 STATE = Path("data_cache") / "health_state.json"
 LIQ_DIR = Path("data_cache") / "liquidations"
 SUMMARY_AT = (8, 30)                                    # tägliche Meldung (deutsche Zeit)

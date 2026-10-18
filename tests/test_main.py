@@ -556,7 +556,8 @@ def test_forward_command_table_matches_parser():
     choices = next(a for a in parser._actions if a.dest == "command").choices
     assert set(forward.COMMANDS) <= set(choices)
     assert {"forward-run", "forward-report", "health", "gold-live", "forward-gold", "pelosi-bot", "forward-pelosi",
-            "momentum-checkpoint", "forward-status", "forward-stocks", "forward-stocks-report"} == set(forward.COMMANDS)
+            "momentum-checkpoint", "forward-status", "forward-stocks", "forward-stocks-report",
+            "intraday-backup"} == set(forward.COMMANDS)
 
 
 def test_forward_command_dispatches_without_momentum_env(monkeypatch):

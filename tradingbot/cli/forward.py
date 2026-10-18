@@ -93,6 +93,12 @@ def cmd_forward_pelosi(args):
     print(forward_pelosi.run(notifier=notifier))
 
 
+def cmd_intraday_backup(args):
+    from tradingbot import intraday_backup
+
+    print(intraday_backup.run())
+
+
 def cmd_momentum_checkpoint(args):
     from datetime import datetime as _dt, timezone as _tz
 
@@ -141,6 +147,7 @@ COMMANDS = {
     "forward-gold": cmd_forward_gold,
     "pelosi-bot": cmd_pelosi_bot,
     "forward-pelosi": cmd_forward_pelosi,
+    "intraday-backup": cmd_intraday_backup,
     "momentum-checkpoint": cmd_momentum_checkpoint,
     "forward-status": cmd_forward_status,
     "forward-stocks": cmd_forward_stocks,

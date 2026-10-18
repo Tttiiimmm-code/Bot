@@ -1,0 +1,9 @@
+[Unit]
+Description=Yahoo-Intraday-Sicherung täglich (1-Minuten-Kerzen reichen bei Yahoo nur ~7 Tage zurück)
+
+[Timer]
+OnCalendar=*-*-* 21:15:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
