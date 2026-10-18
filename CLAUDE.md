@@ -28,7 +28,19 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
    Thesen), Einordnungszeitraum ebenfalls positiv. Nachträgliche Varianten nur "zur Info", nie als Ergebnis.
 4. Arbeiten in einem temporären Worktree im Scratchpad (`git worktree add <scratchpad>/wt_ideas research/ideas`),
    danach `git worktree remove`.
-5. Was bereits getestet wurde, steht im Protokoll -- vor einer neuen Runde dort suchen (über 140 Runden).
+5. Was bereits getestet wurde, steht im Protokoll -- vor einer neuen Runde dort suchen (über 150 Runden).
+
+## Obsidian-Vault (2. Gehirn, `C:\Users\Nutzer\Trading-Bot-Vault`)
+
+Nutzer (2026-10-18): "ab jetzt soll im Vault immer mitgeschrieben werden, wenn es neue Infos gibt, er ist unser
+2. Gehirn und dient als Datensammlung". Daher in **jeder** Sitzung, sobald es neue Infos gibt (nicht erst am Ende):
+- `08 Logbuch/JJJJ-MM-TT.md` anlegen bzw. ergänzen: was getan, Ergebnisse mit Zahlen, Entscheidungen des Nutzers,
+  neue Probleme, Commits. Kurz, sachlich, mit `[[Links]]` auf die betroffenen Notizen.
+- Betroffene Fachnotizen aktualisieren (Bots, Vorwärtstests, Betrieb, Daten, Termine/offene Aufgaben, Zeitleiste,
+  Erkenntnisse); neue Themen als neue Notiz im passenden Ordner, verlinkt von `00 Start.md` oder einer Übersicht.
+- Nach jeder Forschungsrunde: `python -I <vault>/_werkzeug/vault_gen.py <worktree>/research/PROTOCOL.md <vault>`
+  (Urteile unklarer Runden im `OVERRIDE` des Skripts eintragen), danach Links prüfen (keine kaputten `[[...]]`).
+- Keine Schlüssel/Passwörter, keine Emojis; Deutsch.
 
 ## Laufende Vorwärtstests und Bots
 
