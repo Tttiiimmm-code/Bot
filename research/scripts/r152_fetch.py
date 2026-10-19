@@ -24,28 +24,76 @@ CHUNK = 100
 KEEP = [(14, 55)] + [(15, m) for m in range(0, 60, 5)] + [(9, m) for m in range(30, 60, 5)] + [(10, m) for m in range(0, 30, 5)]
 
 
-def universe_by_month() -> dict[pd.Period, list[str]]:
-    """Top 500 nach Ø-Dollar-Umsatz (20 Tage, Kurs > 5 $), Informationen bis Schluss t-1 -> Symbole je Monat
-    (Einstiegstage) plus Vortag des Monats (Ausstieg am Monatsersten)."""
-    Cs, Vs = [], []
-    for p in sorted(U.glob("batch_*.pkl")):
+UCACHE = Path("data_cache/r152_universe.pkl")
+
+
+def _batch(p: Path) -> pd.DataFrame:
+    x = pd.read_pickle(p)
+    if not len(x):
+        return pd.DataFrame()
+    d = pd.to_datetime(x.index.get_level_values("timestamp").tz_convert("America/New_York").date)
+    return pd.DataFrame({"symbol": x.index.get_level_values("symbol"), "date": d, "open": x["open"].to_numpy(),
+                         "close": x["close"].to_numpy(), "volume": x["volume"].to_numpy()}).drop_duplicates(["date", "symbol"])
+
+
+def daily_universe(paths=None, top: int = 500, cache: bool = True) -> tuple[pd.DatetimeIndex, pd.DataFrame]:
+    """Top 500 nach Ø-Dollar-Umsatz (20 Tage, Kurs > 5 $), Informationen bis Schluss t-1 -> (alle Handelstage,
+    Tabelle date/symbol). Speicherschonend: Batch für Batch, je Tag nur die bisher besten `top` Werte behalten
+    (ein Wert unter den globalen Top 500 ist auch unter den Top 500 seines Batches). Symbole kommen in genau einem
+    Batch vor (geprüft), Ergebnis gleich der früheren Gesamttabelle (Vergleich auf Teilmenge in r152_fetch --check)."""
+    if cache and paths is None and UCACHE.exists():
+        return pd.read_pickle(UCACHE)
+    paths = list(paths) if paths is not None else sorted(U.glob("batch_*.pkl"))
+    dates = set()
+    for p in paths:
         x = pd.read_pickle(p)
-        if not len(x):
+        if len(x):
+            dates.update(x.index.get_level_values("timestamp").tz_convert("America/New_York").date)
+        del x
+    idx = pd.DatetimeIndex(sorted(pd.Timestamp(d) for d in dates))
+    keep = top + 20                                                       # Puffer für Gleichstände am Rand
+    best_v = np.full((len(idx), keep), -np.inf)
+    best_s = np.full((len(idx), keep), -1, dtype=np.int64)
+    names: list[str] = []
+    for p in paths:
+        df = _batch(p)
+        if not len(df):
             continue
-        d = pd.to_datetime(x.index.get_level_values("timestamp").tz_convert("America/New_York").date)
-        df = pd.DataFrame({"symbol": x.index.get_level_values("symbol"), "date": d,
-                           "close": x["close"].to_numpy(), "volume": x["volume"].to_numpy()}).drop_duplicates(["date", "symbol"])
-        Cs.append(df.pivot(index="date", columns="symbol", values="close").astype(np.float32))
-        Vs.append(df.pivot(index="date", columns="symbol", values="volume").astype(np.float32))
-    C, V = pd.concat(Cs, axis=1).sort_index(), pd.concat(Vs, axis=1).sort_index()
-    C, V = C.loc[:, ~C.columns.duplicated()], V.loc[:, ~V.columns.duplicated()][C.loc[:, ~C.columns.duplicated()].columns]
-    dv = (C * V).rolling(20, min_periods=15).mean()
-    rank = dv.where(C > 5).rank(axis=1, ascending=False).shift(1)       # Auswahl am Schluss t-1
-    univ = rank <= 500
+        C = df.pivot(index="date", columns="symbol", values="close").astype(np.float32).reindex(idx)
+        V = df.pivot(index="date", columns="symbol", values="volume").astype(np.float32).reindex(idx)[C.columns]
+        dv = (C * V).rolling(20, min_periods=15).mean().where(C > 5).to_numpy(np.float64, copy=True)
+        dv[np.isnan(dv)] = -np.inf
+        ids = np.arange(len(names), len(names) + dv.shape[1])
+        names.extend(C.columns)
+        allv = np.hstack([best_v, dv])
+        alls = np.hstack([best_s, np.broadcast_to(ids, dv.shape)])
+        k = np.argpartition(-allv, keep - 1, axis=1)[:, :keep]
+        best_v, best_s = np.take_along_axis(allv, k, 1), np.take_along_axis(alls, k, 1)
+        del df, C, V, dv, allv, alls
+    names_a = np.array(names, dtype=object)
+    v = best_v[:-1]
+    sel = np.zeros(v.shape, dtype=bool)
+    for i in range(0, len(v), 100):                                       # Rang wie pandas rank(method="average")
+        w = v[i:i + 100]
+        gt = (w[:, None, :] > w[:, :, None]).sum(2)
+        eq = (w[:, None, :] == w[:, :, None]).sum(2)
+        sel[i:i + 100] = np.isfinite(w) & (gt + (eq + 1) / 2 <= top)
+    r, c = np.nonzero(sel)                                                # Auswahl am Schluss t-1 -> gilt für Tag t
+    univ = pd.DataFrame({"date": idx[r + 1], "symbol": names_a[best_s[:-1][r, c]]})
+    univ = univ.sort_values(["date", "symbol"], ignore_index=True)
+    if cache and paths == sorted(U.glob("batch_*.pkl")):
+        pd.to_pickle((idx, univ), UCACHE)
+    return idx, univ
+
+
+def universe_by_month(paths=None) -> dict[pd.Period, list[str]]:
+    """Symbole je Monat (Einstiegstage) plus Vortag des Monats (Ausstieg am Monatsersten)."""
+    _, univ = daily_universe(paths, cache=paths is None)
+    by_day = univ[(univ["date"] >= START) & (univ["date"] <= END)].groupby("date")["symbol"].apply(set)
     out: dict[pd.Period, set] = {}
-    days = univ.index[(univ.index >= START) & (univ.index <= END)]
+    days = by_day.index
     for i, d in enumerate(days):
-        syms = set(univ.columns[univ.loc[d].to_numpy()])
+        syms = by_day.iloc[i]
         out.setdefault(d.to_period("M"), set()).update(syms)
         nxt = days[i + 1] if i + 1 < len(days) else None
         if nxt is not None and nxt.to_period("M") != d.to_period("M"):      # Ausstieg am nächsten Monatsersten

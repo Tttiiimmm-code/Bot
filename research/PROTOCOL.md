@@ -4462,6 +4462,11 @@ SPY >= 2,54 (Bonferroni 9, einseitig) UND Überrendite in beiden Hälften (2016-
 Info (nicht gewertet): brutto je Trade, Trefferquote, Ø Zahl Käufe je Nacht, Vergleich K1 mit Runde 151 (Wirkung
 des Blicks in die Zukunft), Ergebnis bei 1 und 5 bp je Seite für Orders im laufenden Handel.
 Skripte research/scripts/r152_fetch.py (Download), r152.py (Auswertung), Ausgabe r152_output.txt.
+Durchführung (2026-10-19, vor jedem Ergebnis): Universums-Berechnung brach am Speicher ab -> speicherschonend
+neu (r152_fetch.daily_universe: Batch für Batch, je Tag die besten 520 Werte, Rang wie pandas "average"); auf 15
+Batches identisch zur alten Gesamttabelle in allen 129 Monaten (inkl. Gleichstand CRY 2016-06), Ergebnis in
+data_cache/r152_universe.pkl; r152.py nutzt dieselbe Funktion (vorher eigene float64-Rechnung, gleiche Regel).
+Download teils vor 22:00 MESZ (bis 15:15 MESZ, vor US-Eröffnung), Rest ab 22:05. Regeln unverändert.
 
 # Runde 153: Nachbau fremder EA "Maren asia_bruch_kontinuation_XAUUSD_15min_be_trail" (Nutzer, Vorab, 2026-10-18)
 

@@ -6,6 +6,7 @@ PYTHONPATH=<worktree> python <worktree>/research/scripts/r152.py
 from __future__ import annotations
 
 import itertools
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -26,26 +27,22 @@ def tstat(x) -> float:
 
 
 def daily():
-    """Offizieller Schluss/Eröffnung je (Symbol, Tag), nächster Handelstag, Top-500-Universum (Info bis t-1)."""
+    """Offizieller Schluss/Eröffnung je (Symbol, Tag), nächster Handelstag, Top-500-Universum (Info bis t-1).
+    Universum speicherschonend aus r152_fetch.daily_universe (gleiche Auswahl wie die frühere Gesamttabelle)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from r152_fetch import _batch, daily_universe
+
+    dates, univ = daily_universe()
+    syms = set(univ["symbol"])
     rows = []
     for p in sorted(U.glob("batch_*.pkl")):
-        x = pd.read_pickle(p)
-        if not len(x):
-            continue
-        d = pd.to_datetime(x.index.get_level_values("timestamp").tz_convert("America/New_York").date)
-        rows.append(pd.DataFrame({"symbol": x.index.get_level_values("symbol"), "date": d, "open": x["open"].to_numpy(),
-                                  "close": x["close"].to_numpy(), "volume": x["volume"].to_numpy()}))
-    df = pd.concat(rows).drop_duplicates(["date", "symbol"])
-    C = df.pivot(index="date", columns="symbol", values="close").sort_index()
-    V = df.pivot(index="date", columns="symbol", values="volume").reindex_like(C)
-    O = df.pivot(index="date", columns="symbol", values="open").reindex_like(C)
-    rank = ((C * V).rolling(20, min_periods=15).mean().where(C > 5)).rank(axis=1, ascending=False).shift(1)
-    univ = (rank <= 500).stack()
-    univ = univ[univ].index.to_frame(index=False, name=["date", "symbol"])
-    dates = C.index
+        df = _batch(p)
+        if len(df):
+            rows.append(df[df["symbol"].isin(syms)][["date", "symbol", "open", "close"]])
+    df = pd.concat(rows, ignore_index=True)
     nxt = pd.Series(list(dates[1:]) + [pd.NaT], index=dates)
-    close = C.stack().rename("close_t").reset_index().rename(columns={"level_1": "symbol"})
-    open_ = O.stack().rename("open_next").reset_index().rename(columns={"level_1": "symbol"})
+    close = df.dropna(subset=["close"])[["date", "symbol", "close"]].rename(columns={"close": "close_t"})
+    open_ = df.dropna(subset=["open"])[["date", "symbol", "open"]].rename(columns={"open": "open_next"})
     return univ, nxt, close, open_
 
 
