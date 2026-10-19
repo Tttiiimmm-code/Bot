@@ -85,6 +85,8 @@ neuen Infos gibt (nicht erst am Ende):
 - `pd.to_datetime(unit="ms")` behält ms-Auflösung -> `.as_unit("ns").asi8` vor Vergleichen mit ns-Werten.
 - Stop-Einstiege nie mit H1-Kerzen simulieren (zählt Tiefs vor dem Ausbruch) -- immer M1.
 - Yahoo vergibt alte Ticker neu ("FB" ist nicht Meta): bekannte Umbenennungen abbilden (FB->META, SQ->XYZ).
+- Alpaca ebenso: AMTD-5-Minuten-Balken 2016-20 ~60x Tagespanel (heute AMTD IDEAL, andere Bereinigung). Bei
+  gemischten Quellen Tagesschluss gegen letzten Intraday-Balken prüfen (Runde 152).
 - SEC EDGAR: max. 10 Anfragen/s (sonst 10 Minuten Sperre), Range-Header wird ignoriert -> nur `*.hdr.sgml` laden,
   gedrosselt. `company_tickers.json` kennt nur heutige Ticker (Survivorship benennen).
 - House-Meldungen: `disclosures-clerk.house.gov/public_disc/financial-pdfs/YYYYFD.zip` (+ PTR-PDFs), Senat:
