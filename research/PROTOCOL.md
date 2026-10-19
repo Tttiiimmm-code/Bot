@@ -4466,7 +4466,7 @@ Durchführung (2026-10-19, vor jedem Ergebnis): Universums-Berechnung brach am S
 neu (r152_fetch.daily_universe: Batch für Batch, je Tag die besten 520 Werte, Rang wie pandas "average"); auf 15
 Batches identisch zur alten Gesamttabelle in allen 129 Monaten (inkl. Gleichstand CRY 2016-06), Ergebnis in
 data_cache/r152_universe.pkl; r152.py nutzt dieselbe Funktion (vorher eigene float64-Rechnung, gleiche Regel).
-Download teils vor 22:00 MESZ (bis 15:15 MESZ, vor US-Eröffnung), Rest ab 22:05. Regeln unverändert.
+Download ab 11:30 MESZ durchgehend (Nutzer: "Wegen dem Copilot musst du nicht unterbrechen"). Regeln unverändert.
 
 # Runde 153: Nachbau fremder EA "Maren asia_bruch_kontinuation_XAUUSD_15min_be_trail" (Nutzer, Vorab, 2026-10-18)
 
