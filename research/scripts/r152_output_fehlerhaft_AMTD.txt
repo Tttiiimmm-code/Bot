@@ -1,0 +1,16 @@
+Runde 152 -- 521115 Einstiegssignale (K1 142723, K2 318060, K3 60332), Monate mit Balken: 129
+
+SPY halten 2016-2026-09: +16.0% p.a.
+
+Hauptkriterium (laufender Handel 3 bp je Seite; bestanden: > SPY, t >= 2,54, beide Hälften > 0)
+  K1 x V1:  +10.3% p.a., t ggü. SPY -1.16, Hälften  -6.5% /  -5.1% | brutto Ø   +3.3 bp je Trade, Treffer 54%, Ø  53.3 Käufe/Nacht, Nächte investiert 98%, ohne Ausstiegskurs 79 [1 bp +10.3%, 5 bp +10.3%] -> nicht bestanden
+  K1 x V2:  +76.3% p.a., t ggü. SPY +3.14, Hälften +170.8% /  +0.2% | brutto Ø  +29.8 bp je Trade, Treffer 52%, Ø  53.2 Käufe/Nacht, Nächte investiert 98%, ohne Ausstiegskurs 357 [1 bp +85.2%, 5 bp +67.8%] -> BESTANDEN
+  K1 x V3:  +73.1% p.a., t ggü. SPY +3.06, Hälften +160.3% /  +0.1% | brutto Ø  +28.5 bp je Trade, Treffer 50%, Ø  53.2 Käufe/Nacht, Nächte investiert 98%, ohne Ausstiegskurs 357 [1 bp +81.9%, 5 bp +64.8%] -> BESTANDEN
+  K2 x V1:   +8.2% p.a., t ggü. SPY -1.05, Hälften +18.6% / -26.2% | brutto Ø   +6.9 bp je Trade, Treffer 53%, Ø 118.6 Käufe/Nacht, Nächte investiert 100%, ohne Ausstiegskurs 166 [1 bp +13.7%, 5 bp  +2.8%] -> nicht bestanden
+  K2 x V2:  -12.7% p.a., t ggü. SPY -7.27, Hälften -28.7% / -28.7% | brutto Ø   +0.6 bp je Trade, Treffer 52%, Ø 118.4 Käufe/Nacht, Nächte investiert 100%, ohne Ausstiegskurs 680 [1 bp  -3.4%, 5 bp -21.0%] -> nicht bestanden
+  K2 x V3:  -14.5% p.a., t ggü. SPY -7.44, Hälften -31.2% / -29.9% | brutto Ø   -0.4 bp je Trade, Treffer 50%, Ø 118.4 Käufe/Nacht, Nächte investiert 100%, ohne Ausstiegskurs 680 [1 bp  -5.4%, 5 bp -22.7%] -> nicht bestanden
+  K3 x V1:  -15.4% p.a., t ggü. SPY -3.42, Hälften -41.6% / -21.8% | brutto Ø  -13.6 bp je Trade, Treffer 50%, Ø  22.8 Käufe/Nacht, Nächte investiert 80%, ohne Ausstiegskurs 21 [1 bp -11.9%, 5 bp -18.7%] -> nicht bestanden
+  K3 x V2:  -21.2% p.a., t ggü. SPY -3.90, Hälften -30.5% / -42.5% | brutto Ø  -12.3 bp je Trade, Treffer 49%, Ø  22.8 Käufe/Nacht, Nächte investiert 80%, ohne Ausstiegskurs 152 [1 bp -14.6%, 5 bp -27.4%] -> nicht bestanden
+  K3 x V3:  -19.6% p.a., t ggü. SPY -4.11, Hälften -35.3% / -35.9% | brutto Ø  -17.0 bp je Trade, Treffer 47%, Ø  22.8 Käufe/Nacht, Nächte investiert 80%, ohne Ausstiegskurs 152 [1 bp -12.8%, 5 bp -25.9%] -> nicht bestanden
+
+Info: K1 x V1 brutto Ø +3.28 bp je Trade (Signal 15:50 statt Schlusskurs; Runde 151 IBS <= 0,10 Top 500 mit Schlusskurs-Signal brutto Ø +8,52 bp je Nacht)

@@ -70,20 +70,25 @@ def entries_exits(m: pd.DataFrame):
     stop = morning[morning["close"] < morning["l1"]].groupby(["symbol", "date"])["close"].first()
     ex = pd.DataFrame({"v2": last})
     ex["v3"] = stop.reindex(ex.index).fillna(ex["v2"])
-    return ent, ex.reset_index()
+    # Gegenprobe Tagespanel <-> 5-Minuten-Balken (Datenfehler, z. B. neu vergebenes Kürzel AMTD mit anderer Bereinigung)
+    chk = pd.DataFrame({"c_last": m[t == 955].set_index(["symbol", "date"])["close"],
+                        "o_first": m[t == 570].set_index(["symbol", "date"])["open"]})
+    return ent, ex.reset_index(), chk.reset_index()
 
 
 def main():
     univ, nxt, close, open_ = daily()
-    ents, exs = [], []
+    ents, exs, chks = [], [], []
     for p in sorted(BARS.glob("*.pkl")):
         m = pd.read_pickle(p)
         if len(m):
-            e, x = entries_exits(m)
+            e, x, c = entries_exits(m)
             ents.append(e)
             exs.append(x)
+            chks.append(c)
     ent = pd.concat(ents).drop_duplicates(["symbol", "date", "k"])
     ex = pd.concat(exs).drop_duplicates(["symbol", "date"])
+    chk = pd.concat(chks).drop_duplicates(["symbol", "date"])
     ent = ent.merge(univ, on=["date", "symbol"])                       # nur Top-500 des Tages
     ent = ent[(ent["date"] >= START) & (ent["date"] <= END)]
     ent["next"] = ent["date"].map(nxt)
@@ -91,6 +96,14 @@ def main():
     ent["entry"] = ent["entry"].fillna(ent["close_t"]).where(ent["k"] != "K1", ent["close_t"])
     ent = ent.merge(open_.rename(columns={"date": "next"}), on=["next", "symbol"], how="left")
     ent = ent.merge(ex.rename(columns={"date": "next"}), on=["next", "symbol"], how="left")
+    # Korrektur nach Sichtung (2026-10-19): Trades mit unstimmigen Kursquellen (> 10 % Abstand Tagesschluss zu
+    # 15:55-Balken am Einstiegstag oder Tageseröffnung zu 9:30-Balken am Ausstiegstag) entfallen
+    ent = ent.merge(chk[["symbol", "date", "c_last"]], on=["date", "symbol"], how="left")
+    ent = ent.merge(chk[["symbol", "date", "o_first"]].rename(columns={"date": "next"}), on=["next", "symbol"], how="left")
+    bad = ((ent["close_t"] / ent["c_last"] - 1).abs() > 0.10) | ((ent["open_next"] / ent["o_first"] - 1).abs() > 0.10)
+    print(f"Korrektur: {int(bad.sum())} Signale mit unstimmigen Kursquellen entfernt, Symbole: "
+          f"{', '.join(ent.loc[bad, 'symbol'].value_counts().head(10).index)}")
+    ent = ent[~bad]
     print(f"Runde 152 -- {len(ent)} Einstiegssignale (K1 {int((ent['k'] == 'K1').sum())}, K2 {int((ent['k'] == 'K2').sum())}, "
           f"K3 {int((ent['k'] == 'K3').sum())}), Monate mit Balken: {len(ents)}\n")
     spy = pd.read_pickle(SPY)

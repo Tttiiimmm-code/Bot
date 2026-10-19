@@ -4467,6 +4467,13 @@ neu (r152_fetch.daily_universe: Batch für Batch, je Tag die besten 520 Werte, R
 Batches identisch zur alten Gesamttabelle in allen 129 Monaten (inkl. Gleichstand CRY 2016-06), Ergebnis in
 data_cache/r152_universe.pkl; r152.py nutzt dieselbe Funktion (vorher eigene float64-Rechnung, gleiche Regel).
 Download ab 11:30 MESZ durchgehend (Nutzer: "Wegen dem Copilot musst du nicht unterbrechen"). Regeln unverändert.
+Erster Lauf (2026-10-19, Ausgabe nicht gewertet): K1 x V2 +76,3 % p.a. t 3,14 und K1 x V3 +73,1 % t 3,06 formal
+"bestanden", aber Hälften +171 % / +0,2 %, Median brutto +4,7 bp, ohne |Trade| > 20 % nur +1,8 bp -> Sichtung:
+Kürzel AMTD (TD Ameritrade bis 2020, heute AMTD IDEAL) hat in den 5-Minuten-Balken eine andere Bereinigung (~60x,
+Schluss 215 $ vs 15:55-Balken 12.917 $), jeder AMTD-Kauf zählte +500 % (Kappung). DATENFEHLER, kein Ergebnis.
+Korrektur (festgelegt vor dem korrigierten Lauf): Signal entfällt, wenn Tagesschluss und 15:55-Balken-Schluss am
+Einstiegstag oder Tageseröffnung und 9:30-Balken-Eröffnung am Ausstiegstag um > 10 % abweichen; Anzahl wird
+ausgegeben. Bewertet wird nur der korrigierte Lauf (r152_output.txt).
 
 # Runde 153: Nachbau fremder EA "Maren asia_bruch_kontinuation_XAUUSD_15min_be_trail" (Nutzer, Vorab, 2026-10-18)
 
