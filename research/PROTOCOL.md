@@ -4751,3 +4751,13 @@ BESTANDEN, wenn 2020-01..2026-08 Rendite p.a. > SPY halten UND t der monatlichen
 Info (nicht gewertet): BTC halten; Grid ohne Neustart (einmaliger Start); 20 und 100 Intervalle; Spanne 0,9-1,11;
 Gewinn aus abgeschlossenen Grid-Runden vs Kursverlust der gehaltenen BTC.
 Skript research/scripts/r159.py, Ausgabe r159_output.txt.
+
+## Ergebnis Runde 159 (2026-10-20): NICHT BESTANDEN
+
+Erster Lauf ungültig (Programmfehler: Zeitstempel in ms statt ns -> nie Neustart), vor der Wertung behoben.
+- Grid 50, 0,80-1,25, Neustart 30 Tage (gewertet): +7,9 % p.a. vs SPY +15,5 %, t -0,45, Hälften -6,5 % / -8,5 %,
+  Max-DD -50,1 %, 12.149 Grid-Verkäufe.
+- Info: BTC halten +38,2 % p.a. (Max-DD -73 %); ohne Neustart +3,3 % (Grid verlässt 2020 nach oben die Spanne, danach
+  nur USDT); 20 Intervalle +10,0 %; 100 Intervalle +3,5 %; Spanne 0,90-1,11 -4,3 % (Gebühren).
+Lehre: Ein Spot-Grid ist ein Verkauf von Schwankung: es gibt den Trend her (verkauft im Anstieg) und trägt den Absturz
+voll mit (kauft bis zur Untergrenze nach) -- schlechter als BTC halten und als SPY.

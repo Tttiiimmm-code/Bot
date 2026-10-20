@@ -1,0 +1,11 @@
+Runde 159 -- Spot-Grid BTC/USDT, 3,504,075 Minuten 2020-01-01 bis 2026-08-31
+
+Hauptkriterium (50 Intervalle, 0,80-1,25 x Kurs, Neustart alle 30 Tage, 0,05 % je Füllung):
+  Grid 50:  +7.9% p.a. vs SPY +15.5%, t -0.45, Hälften  -6.5% /  -8.5%, Max-DD (Monat) -50.1%, Grid-Verkäufe 12,149 -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  BTC halten: +38.2% p.a., Max-DD -73.0%
+  Grid 50 ohne Neustart:  +3.3% p.a. vs SPY +15.5%, t -1.95, Hälften  -0.1% / -22.4%, Max-DD (Monat) -1.9%, Grid-Verkäufe 1,158 (Info)
+  Grid 20: +10.0% p.a. vs SPY +15.5%, t -0.24, Hälften  -4.6% /  -6.3%, Max-DD (Monat) -48.9%, Grid-Verkäufe 1,939 (Info)
+  Grid 100:  +3.5% p.a. vs SPY +15.5%, t -0.90, Hälften -12.0% / -11.9%, Max-DD (Monat) -54.9%, Grid-Verkäufe 47,395 (Info)
+  Grid 50, Spanne 0,90-1,11:  -4.3% p.a. vs SPY +15.5%, t -1.64, Hälften -18.0% / -21.4%, Max-DD (Monat) -57.8%, Grid-Verkäufe 37,376 (Info)
