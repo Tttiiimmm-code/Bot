@@ -4919,3 +4919,26 @@ BESTANDEN, wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen 
 Info (nicht gewertet): Ø Tagesrendite SPY im Neumond- vs Vollmond-Fenster mit t (Welch); dasselbe für BTC (Binance
 täglich 2018-2026).
 Skript research/scripts/r166.py, Ausgabe r166_output.txt.
+
+## Ergebnis Runde 166 (2026-10-20): NICHT BESTANDEN
+
+- Neumond-Fenster (gewertet): Haupt +6,5 % p.a. vs SPY +15,1 %, t -2,24; Einordnung 1994-2015 +8,3 % vs +8,9 %.
+- Info: SPY je Tag 1994-2015 Neumond +6,4 bp vs Vollmond +1,8 bp (t 1,42); 2016-2026 +5,0 vs +7,4 bp (t -0,55);
+  BTC 2018-2026 +13,3 vs +9,6 bp (t 0,31). Mondalter geprüft (bekannte Neumonde 2024-01-11, 2025-06-25: 0,15 / 29,07).
+Lehre: Schwacher Effekt vor der Veröffentlichung, danach umgekehrt -- Zufall.
+
+# Runde 167: BTC-Zyklusindikatoren Mayer Multiple, Pi-Cycle-Top, Hash Ribbons (Vorab, 2026-10-20)
+
+Populäre BTC-Signale (Trace Mayer; Philip Swift "Pi Cycle Top"; Charles Edwards "Hash Ribbons"); im Protokoll nicht
+getestet. Daten: Yahoo BTC-USD täglich (ab 2014-09), Hashrate blockchain.com (Tageswerte).
+Regeln (Signal zum Tagesschluss UTC, Position ab diesem Schluss, 10 bp je Wechsel, flach = T-Bills):
+- A Mayer Multiple (Kurs / SMA200): flach -> long, wenn MM < 1,0; long -> flach, wenn MM > 2,4; Start flach.
+- B Pi-Cycle-Top: long -> flach, wenn SMA111 über 2 x SMA350 kreuzt; flach -> long, wenn Kurs < SMA1400 (200-Wochen-
+  Linie); Start long.
+- C Hash Ribbons: flach während Kapitulation (SMA30 der Hashrate < SMA60); long ab Kaufsignal (SMA30 kreuzt über SMA60
+  UND SMA10 des Kurses > SMA20); Start long.
+Maßstab ist BTC halten (die Regeln sind meist in BTC investiert): BESTANDEN (je Regel), wenn 2016-01..2026-08 Rendite
+p.a. > BTC halten UND > SPY UND t der monatlichen Überrendite ggü. BTC halten >= 2,13 (Bonferroni 3) UND Überrendite
+ggü. BTC in beiden Hälften (2016-2020, 2021-2026/08) > 0.
+Info (nicht gewertet): Max-DD je Regel vs BTC; Zahl der Signale; Vergleich mit SPY.
+Skript research/scripts/r167.py, Ausgabe r167_output.txt.

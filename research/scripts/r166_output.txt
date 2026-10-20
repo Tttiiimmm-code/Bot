@@ -1,0 +1,11 @@
+Runde 166 -- Mondzyklus
+
+Hauptkriterium (SPY im Neumond-Fenster ±7 Tage, sonst T-Bills):
+  Haupt 2016-01..2026-08:  +6.5% p.a. vs SPY +15.1%, t -2.24, in SPY 50%
+  Einordnung 1994-2015:  +8.3% p.a. vs SPY  +8.9%, t -0.47, in SPY 50%
+  -> NICHT BESTANDEN
+
+Info (nicht gewertet): Ø Tagesrendite Neumond- vs Vollmond-Fenster
+  SPY 1994-2015: Neumond +6.43 bp, Vollmond +1.81 bp, t +1.42
+  SPY 2016-2026: Neumond +5.03 bp, Vollmond +7.39 bp, t -0.55
+  BTC 2018-2026: Neumond +13.29 bp, Vollmond +9.61 bp, t +0.31
