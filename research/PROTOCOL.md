@@ -4894,3 +4894,14 @@ BESTANDEN (je Regel), wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der m
 (Bonferroni 4, einseitig) UND Einordnung 2006-2015 Überrendite > 0.
 Info (nicht gewertet): je Regel nur SPY; Anteil Zeit investiert; Kauf-und-Halten der 15 ETFs gleich gewichtet.
 Skript research/scripts/r165.py, Ausgabe r165_output.txt.
+
+## Ergebnis Runde 165 (2026-10-20): NICHT BESTANDEN (alle 4 Regeln)
+
+15 ETFs gleich gewichtet, flach = T-Bills (Haupt 2016-01..2026-08 / Einordnung 2006-2015; SPY +15,1 % / +7,2 %):
+- M MACD + EMA200 (32 % investiert): +5,3 % (t -2,44) / +3,5 %.
+- H Heikin-Ashi grün (56 %): +7,3 % (t -2,25) / -2,5 %.
+- S Stochastik + EMA200 (20 %): +4,7 % (t -2,62) / +2,0 %.
+- T TTM Squeeze (6 %): +2,5 % (t -2,83) / -0,2 %.
+Info: 15 ETFs halten +12,4 % / +6,1 %; nur SPY je Regel +2,9 % bis +8,3 %.
+Lehre: Die populären Indikator-Strategien sind meist nicht investiert und verlieren gegen Halten deutlich; Heikin-Ashi
+ist 2006-2015 sogar absolut negativ.

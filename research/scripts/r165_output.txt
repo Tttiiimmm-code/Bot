@@ -1,0 +1,32 @@
+Runde 165 -- TradingView-Klassiker auf 15 ETFs (SPY ab 2000, QQQ ab 2000, IWM ab 2000, DIA ab 2000, EFA ab 2001, EEM ab 2003, TLT ab 2002, IEF ab 2002, GLD ab 2004, SLV ab 2006, XLE ab 2000, XLF ab 2000, XLK ab 2000, VNQ ab 2004, DBC ab 2006)
+
+Hauptkriterium je Regel (15 ETFs gleich gewichtet, flach = T-Bills, Hürde t >= 2,24):
+  M MACD(12,26,9) + EMA200 (Ø investiert 32%): -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08:  +5.3% p.a. vs SPY +15.1%, t -2.44, Max-DD (Monat) -3.9%
+    Einordnung 2006-2015:  +3.5% p.a. vs SPY  +7.2%, t -1.06, Max-DD (Monat) -3.6%
+  H Heikin-Ashi grün (Ø investiert 56%): -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08:  +7.3% p.a. vs SPY +15.1%, t -2.25, Max-DD (Monat) -8.6%
+    Einordnung 2006-2015:  -2.5% p.a. vs SPY  +7.2%, t -3.01, Max-DD (Monat) -40.8%
+  S Stochastik(14,3,3) + EMA200 (Ø investiert 20%): -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08:  +4.7% p.a. vs SPY +15.1%, t -2.62, Max-DD (Monat) -5.2%
+    Einordnung 2006-2015:  +2.0% p.a. vs SPY  +7.2%, t -1.41, Max-DD (Monat) -12.7%
+  T TTM Squeeze (Ø investiert 6%): -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08:  +2.5% p.a. vs SPY +15.1%, t -2.83, Max-DD (Monat) -1.0%
+    Einordnung 2006-2015:  -0.2% p.a. vs SPY  +7.2%, t -1.79, Max-DD (Monat) -8.0%
+
+Info (nicht gewertet):
+  15 ETFs gleich gewichtet halten: (Info)
+    Haupt 2016-01..2026-08: +12.4% p.a. vs SPY +15.1%, t -1.49, Max-DD (Monat) -18.6%
+    Einordnung 2006-2015:  +6.1% p.a. vs SPY  +7.2%, t -0.66, Max-DD (Monat) -40.4%
+  nur SPY, MACD(12,26,9) + EMA200: (Info)
+    Haupt 2016-01..2026-08:  +6.2% p.a. vs SPY +15.1%, t -2.22, Max-DD (Monat) -10.9%
+    Einordnung 2006-2015:  +3.3% p.a. vs SPY  +7.2%, t -1.07, Max-DD (Monat) -13.7%
+  nur SPY, Heikin-Ashi grün: (Info)
+    Haupt 2016-01..2026-08:  +8.3% p.a. vs SPY +15.1%, t -1.87, Max-DD (Monat) -21.3%
+    Einordnung 2006-2015:  -3.6% p.a. vs SPY  +7.2%, t -3.26, Max-DD (Monat) -51.9%
+  nur SPY, Stochastik(14,3,3) + EMA200: (Info)
+    Haupt 2016-01..2026-08:  +5.4% p.a. vs SPY +15.1%, t -2.35, Max-DD (Monat) -8.8%
+    Einordnung 2006-2015:  +3.8% p.a. vs SPY  +7.2%, t -0.92, Max-DD (Monat) -4.2%
+  nur SPY, TTM Squeeze: (Info)
+    Haupt 2016-01..2026-08:  +2.9% p.a. vs SPY +15.1%, t -2.71, Max-DD (Monat) -2.7%
+    Einordnung 2006-2015:  -0.8% p.a. vs SPY  +7.2%, t -1.90, Max-DD (Monat) -10.5%
