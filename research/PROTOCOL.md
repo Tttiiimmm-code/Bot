@@ -4731,3 +4731,23 @@ Skript research/scripts/r158.py, Ausgabe r158_output.txt.
 - Info: 1 Woche +11,2 % / Einordnung +0,0 % (t -3,44); 13 Wochen +11,4 % / +6,6 %; über 13-Wochen-Schnitt +10,5 % /
   +6,2 %. Keine Variante vor SPY, Drawdown kaum besser.
 Lehre: Die populäre "Net Liquidity"-Kurve erklärt im Nachhinein, sagt aber nichts voraus.
+
+# Runde 159: Spot-Grid-Bot (Pionex/Binance-Stil) auf BTC/USDT (Vorab, 2026-10-20)
+
+Sehr verbreiteter Privatanleger-Bot ("verdient an jeder Schwankung"); im Protokoll noch nicht getestet (Runde 111
+Krypto-Raster ohne Grid). Daten: Binance BTCUSDT 1m (data_cache/btc_1m, 2020-01..2026-09).
+Regeln (übliche Standardeinstellung, vorab fest):
+- Geometrisches Grid mit 50 Intervallen zwischen 0,80 x und 1,25 x Startkurs (Schritt ~0,9 %); je Intervall gleicher
+  USDT-Betrag. Start: Intervalle über dem Kurs halten BTC (zum Startkurs gekauft) mit Verkauf an der Oberkante,
+  Intervalle darunter (und das mit dem Kurs) halten USDT mit Kauf an der Unterkante; jede Füllung setzt die
+  Gegenorder im selben Intervall.
+- Kurspfad je Minute: Eröffnung -> Tief -> Hoch -> Schluss (bei Schluss >= Eröffnung), sonst Eröffnung -> Hoch -> Tief
+  -> Schluss; Füllung zum Grid-Preis. Gebühr 0,05 % je Füllung (Pionex), kein Schlupf.
+- Neustart alle 30 Tage (Zeitpunkt fest, unabhängig vom Kurs): alles zum Schlusskurs in USDT (Gebühr), neues Grid um
+  den aktuellen Kurs. Ungenutzte USDT ohne Zins.
+- Bewertung täglich (USDT + BTC x Schluss), Monatsrenditen.
+BESTANDEN, wenn 2020-01..2026-08 Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften
+(2020-2022, 2023-2026/08) Überrendite > 0.
+Info (nicht gewertet): BTC halten; Grid ohne Neustart (einmaliger Start); 20 und 100 Intervalle; Spanne 0,9-1,11;
+Gewinn aus abgeschlossenen Grid-Runden vs Kursverlust der gehaltenen BTC.
+Skript research/scripts/r159.py, Ausgabe r159_output.txt.
