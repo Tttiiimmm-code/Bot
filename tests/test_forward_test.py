@@ -123,55 +123,46 @@ def test_mid_month_uses_9th_to_15th_trading_day_and_skips_unfinished():
     assert r["net_bp"] == round((r["exit_price"] / r["entry_price"] - 1 - 2e-4) * 1e4, 3)
 
 
-# ------------------------------------------------------------ Datenausfall (Dukascopy-Bot-Schutz, 2026-10-09)
+# ------------------------------------------------------------ Yahoo statt Dukascopy (2026-10-20)
 
 
-def test_empty_dukascopy_download_raises_and_is_removed(tmp_path, monkeypatch):
-    """Regression: dukascopy-node schreibt bei HTTP 202 (Bot-Schutz) eine leere Datei ohne Fehler -- früher
-    brach danach pd.read_csv mit EmptyDataError ab, jetzt klare Meldung und keine leere Datei im Cache."""
+def _write_bars(path, points: dict[str, float]):
+    """1-Minuten-Kerzen aus {'YYYY-MM-DD HH:MM' (Tokio): Kurs} als Yahoo-Aufzeichnung."""
+    ts = [int(pd.Timestamp(k, tz="Asia/Tokyo").timestamp()) for k in points]
+    v = list(points.values())
+    pd.DataFrame({"ts": ts, "open": v, "high": v, "low": v, "close": v, "volume": 0}).to_csv(path, index=False)
+
+
+def test_gotobi_charges_spread_on_mid_prices():
+    mid = series({"2026-10-09 05:00": 150.0, "2026-10-09 09:55": 150.3})
+    row = gotobi_trades(mid, mid, date(2026, 10, 9), date(2026, 10, 9), 0.35e-4, NOW, spread=1.07e-4)[0]
+    assert row["net_bp"] == pytest.approx((150.3 / 150.0 - 1) * 1e4 - 0.7 - 1.07, abs=1e-3)
+
+
+def test_run_uses_yahoo_from_cutover_and_keeps_dukascopy_rows(tmp_path, monkeypatch):
+    """Zeilen vor YAHOO_FROM (Dukascopy) bleiben unverändert; ab dann Yahoo-Mittelkurse + Spanne; Nikkei aus dem
+    verketteten Future. Fehlt die Aufzeichnung teilweise, wird trotzdem mit den gespeicherten Kursen gerechnet."""
     from tradingbot import forward_test as ft
 
-    monkeypatch.setattr(ft.shutil, "which", lambda name: "npx")
-
-    def fake_run(cmd, **kw):
-        name = cmd[cmd.index("-fn") + 1]
-        (tmp_path / f"{name}.csv").write_text("", encoding="utf-8")
-
-    monkeypatch.setattr(ft.subprocess, "run", fake_run)
-    with pytest.raises(ft.DukascopyUnavailable, match="keine Daten"):
-        ft.fetch_minutes("xauusd", "bid", date(2026, 10, 1), date(2026, 10, 9), tmp_path)
-    assert list(tmp_path.iterdir()) == []
-
-
-def test_run_keeps_other_strategies_when_dukascopy_fails(tmp_path, monkeypatch):
-    from tradingbot import forward_test as ft
-
-    def blocked(*a, **k):
-        raise ft.DukascopyUnavailable("Dukascopy lieferte keine Daten")
-
-    def row(strategy, d):
-        return {"strategy": strategy, "date": d, "entry_time": d, "entry_price": 1.0, "exit_time": d,
-                "exit_price": 1.0, "net_bp": 0.0}
-
-    monkeypatch.setattr(ft, "fetch_minutes", blocked)
+    old = {"strategy": "gotobi", "date": "2026-10-05", "entry_time": "x", "entry_price": 1.0, "exit_time": "x",
+           "exit_price": 1.0, "net_bp": -0.003}
+    ledger = tmp_path / "f.csv"
+    update_ledger(ledger, [old])
+    _write_bars(tmp_path / "usdjpy_1m.csv", {"2026-10-05 05:00": 1.0, "2026-10-05 09:55": 2.0,     # vor Umstellung
+                                             "2026-10-09 05:00": 150.0, "2026-10-09 09:55": 150.3})
+    _write_bars(tmp_path / "eurjpy_1m.csv", {"2026-10-09 05:00": 170.0, "2026-10-09 09:55": 170.0})
+    _write_bars(tmp_path / "niy_NIYZ26_1m.csv", {"2026-10-07 08:45": 49900.0, "2026-10-07 15:45": 50000.0,
+                                                 "2026-10-08 08:45": 50100.0, "2026-10-08 15:45": 50200.0,
+                                                 "2026-10-09 08:45": 50150.0, "2026-10-09 15:45": 50150.0})
     monkeypatch.setattr(ft, "fetch_daily_yahoo", lambda *a, **k: pd.Series(dtype=float))
-    monkeypatch.setattr(ft, "bond_month_end_trades", lambda *a, **k: [row("bond_month_end", "2026-09-30")])
-    monkeypatch.setattr(ft, "mid_month_trades", lambda *a, **k: [row(a[-1], "2026-09-21")])
-    cfg = ft.ForwardConfig(first_day=date(2026, 9, 28), ledger=tmp_path / "f.csv", data_dir=tmp_path)
-    with pytest.raises(RuntimeError, match="3 von 6 Strategien") as err:
-        ft.run(cfg, today=date(2026, 10, 9), now=pd.Timestamp("2026-10-09 06:00", tz="UTC"))
-    assert "nikkei_night" in str(err.value) and "gotobi_eurjpy" in str(err.value)
-    assert {r["strategy"] for r in read_ledger(cfg.ledger)} == {"bond_month_end", "mid_month_spy", "mid_month_qqq"}
 
+    def refresh(base):
+        raise RuntimeError("Yahoo kurz weg")
 
-def test_dukascopy_start_catches_up_after_long_outage(tmp_path):
-    """Nach einem Ausfall über lookback_days hinaus ab dem ältesten letzten erfassten Tag nachholen."""
-    from tradingbot import forward_test as ft
-
-    cfg = ft.ForwardConfig(first_day=date(2026, 9, 28), ledger=tmp_path / "f.csv", lookback_days=10)
-    update_ledger(cfg.ledger, [
-        {"strategy": s, "date": "2026-10-08", "entry_time": "", "entry_price": 1, "exit_time": "", "exit_price": 1,
-         "net_bp": 0} for s in ("nikkei_night", "gotobi", "gotobi_eurjpy")])
-    assert ft.dukascopy_start(cfg, date(2026, 10, 12)) == date(2026, 10, 2)    # normal: letzte 10 Tage
-    assert ft.dukascopy_start(cfg, date(2026, 11, 20)) == date(2026, 10, 3)    # 6 Wochen Ausfall: ab 8.10. - 5
-    assert ft.dukascopy_start(cfg, date(2026, 9, 29)) == date(2026, 9, 23)     # nie vor first_day - 5
+    cfg = ft.ForwardConfig(first_day=date(2026, 9, 28), ledger=ledger, yahoo_dir=tmp_path)
+    ft.run(cfg, today=date(2026, 10, 9), now=pd.Timestamp("2026-10-09 06:00", tz="UTC"), refresh=refresh)
+    rows = {(r["strategy"], r["date"]): r for r in read_ledger(ledger)}
+    assert float(rows[("gotobi", "2026-10-05")]["net_bp"]) == -0.003
+    assert float(rows[("gotobi", "2026-10-09")]["net_bp"]) == pytest.approx(20 - 0.7 - 1.07, abs=1e-3)
+    assert float(rows[("gotobi_eurjpy", "2026-10-09")]["net_bp"]) == pytest.approx(-0.7 - 1.66, abs=1e-3)
+    assert {d for s, d in rows if s == "nikkei_night"} == {"2026-10-08", "2026-10-09"}

@@ -5,10 +5,15 @@ Regeln: Zu Beginn jeder Stunde (UTC), wenn flach und keine Order offen: Buy-Stop
 letzten 48 abgeschlossenen H1-Kerzen (Füllung zum Briefkurs), gültig 12 Stunden; Stop 2 ATR, Ziel 4 ATR ab Füllung;
 nur long. ATR14 (Wilder) auf H1-Geldkursen. Keine neuen Orders Fr ab 20:00 UTC, offene Orders Fr 20:55 gelöscht.
 Ausstieg auf Geldkurs; Stop vor Ziel in derselben Minute; Kurslücke -> Eröffnungskurs; Einstiegsminute: nur Stop.
-Swap 6,3 % p.a. auf den Positionswert je gehaltenem Tag.
+Swap 6,3 % p.a. auf den Positionswert je gehaltenem Tag (CFD).
 
-Kurse: Dukascopy XAUUSD M1 Geld/Brief, abgeschlossene Monate werden zwischengespeichert. Der Lauf rechnet jedes Mal
-ab first_day - 14 Tagen (Vorlauf für Level und ATR) neu und schreibt alle abgeschlossenen Trades (idempotent).
+Kurse (seit 2026-10-20; Dukascopy blockt seit 2026-10-09, Nutzer: nicht weiter versuchen): CME-Gold-Future von Yahoo,
+Einzelkontrakte verkettet (intraday_backup.continuous, Wechsel am 20. des Vormonats der Lieferung), 1-Minuten-Kerzen,
+ältere Lücken mit 5-Minuten-Kerzen. Mittelkurs +- halbe Spanne (2,04 bp = Dukascopy-Mittel Aug/Sep 2026) als
+Brief/Geld. Im Future steckt die Finanzierung schon (Abstand zum Spot schrumpfte Aug/Sep 2026 um 4,3 % p.a.) ->
+Swap 6,3 % - 4,3 % = 2,0 % p.a. Abgleich mit Dukascopy Aug/Sep 2026: 9 statt 10 Trades, gleiche Ergebnisse je Trade
+(research/PROTOCOL.md, Eintrag vom 2026-10-20). Der Lauf rechnet jedes Mal ab first_day - 14 Tagen (Vorlauf für
+Level und ATR) neu und schreibt alle abgeschlossenen Trades (idempotent).
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ import csv
 import logging
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -26,7 +31,8 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 FIELDS = ["entry_time", "exit_time", "entry", "exit", "risk", "r", "swap_r", "r_net"]
-SWAP_RATE = 0.063
+SWAP_RATE = 0.063            # CFD-Swap (OANDA, Backtest)
+FUTURES_CARRY = 0.043        # im Future-Kurs enthaltene Finanzierung
 EXPECTED_R = 0.165
 
 
@@ -34,7 +40,9 @@ EXPECTED_R = 0.165
 class GoldConfig:
     first_day: date = date(2026, 10, 5)
     ledger: Path = Path("forward_gold.csv")
-    cache: Path = Path("data_cache") / "forward" / "gold"
+    yahoo_dir: Path = Path("data_cache") / "yahoo_intraday"
+    swap_rate: float = SWAP_RATE - FUTURES_CARRY
+    spread: float = 2.04e-4
     n_lvl: int = 48
     expiry_h: int = 12
     sl_atr: float = 2.0
@@ -113,48 +121,20 @@ def simulate(m: pd.DataFrame, cfg: GoldConfig) -> list[dict]:
     for tr_ in trades:
         te, tx = t[tr_["e"]], t[tr_["x"]]
         days = (tx - te).total_seconds() / 86400
-        swap_r = SWAP_RATE * days / 365 * tr_["entry"] / tr_["risk"]
+        swap_r = cfg.swap_rate * days / 365 * tr_["entry"] / tr_["risk"]
         out.append({"entry_time": te.isoformat(), "exit_time": tx.isoformat(), "entry": round(tr_["entry"], 3),
                     "exit": round(tr_["exit"], 3), "risk": round(tr_["risk"], 3), "r": round(tr_["r"], 4),
                     "swap_r": round(swap_r, 4), "r_net": round(tr_["r"] - swap_r, 4)})
     return out
 
 
-def _month_frame(side: str, y: int, m: int, cache: Path, today: date) -> pd.DataFrame:
-    from tradingbot.forward_test import fetch_minutes
+def load_minutes(cfg: GoldConfig, now: pd.Timestamp) -> pd.DataFrame:
+    from tradingbot import intraday_backup
 
-    start = date(y, m, 1)
-    end = (start + timedelta(days=32)).replace(day=1)
-    complete = end <= today
-    f = cache / f"xauusd_{side}_{y}-{m:02d}.csv"
-    if complete and f.exists():
-        df = pd.read_csv(f)
-    elif start >= min(end, today):
-        # Monatserster: für den neuen Monat gibt es noch keine Minuten (leerer Zeitraum ist kein Ausfall)
-        return pd.DataFrame(columns=["open", "high", "low", "close"],
-                            index=pd.DatetimeIndex([], tz="UTC"), dtype=float)
-    else:
-        path = fetch_minutes("xauusd", side, start, min(end, today), cache / "tmp")
-        df = pd.read_csv(path)
-        if complete:
-            cache.mkdir(parents=True, exist_ok=True)
-            df.to_csv(f, index=False)
-        path.unlink(missing_ok=True)
-    df.index = pd.to_datetime(df.pop("timestamp"), unit="ms", utc=True)
-    return df[["open", "high", "low", "close"]].astype(float)
-
-
-def load_minutes(cfg: GoldConfig, today: date) -> pd.DataFrame:
-    start = cfg.first_day - timedelta(days=cfg.warmup_days)
-    months, d = [], start.replace(day=1)
-    while d <= today:
-        months.append((d.year, d.month))
-        d = (d + timedelta(days=32)).replace(day=1)
-    bid = pd.concat(_month_frame("bid", y, m, cfg.cache, today) for y, m in months)
-    ask = pd.concat(_month_frame("ask", y, m, cfg.cache, today) for y, m in months)
-    bid, ask = (x[~x.index.duplicated()] for x in (bid, ask))
-    lo = pd.Timestamp(start, tz="UTC")
-    return prepare(bid[bid.index >= lo], ask[ask.index >= lo])
+    start = pd.Timestamp(cfg.first_day - timedelta(days=cfg.warmup_days), tz="UTC")
+    mid = intraday_backup.continuous("gc", start, now, cfg.yahoo_dir)
+    h = cfg.spread / 2
+    return prepare(mid * (1 - h), mid * (1 + h))
 
 
 def write_ledger(path: Path, trades: list[dict], first_day: date) -> int:
@@ -186,9 +166,15 @@ def summarize(path: Path) -> str:
             f"{sum(x > 0 for x in r) / len(r):.0%}, Summe {sum(r):+.1f} R, t {t:.2f}")
 
 
-def run(cfg: GoldConfig, today: date | None = None) -> str:
-    today = today or datetime.now(timezone.utc).date()
-    m = load_minutes(cfg, today)
+def run(cfg: GoldConfig, now: pd.Timestamp | None = None, refresh=None) -> str:
+    from tradingbot import intraday_backup
+
+    now = now or pd.Timestamp.now(tz="UTC")
+    try:
+        logger.info((refresh or intraday_backup.run)(cfg.yahoo_dir))
+    except Exception as exc:  # noqa: BLE001 -- dann mit den bereits gespeicherten Kursen rechnen
+        logger.warning("Yahoo-Aufzeichnung unvollständig: %s", exc)
+    m = load_minutes(cfg, now)
     new = write_ledger(cfg.ledger, simulate(m, cfg), cfg.first_day)
     logger.info("gold_breakout: Minuten bis %s, %d neue Trades.", m.index[-1] if len(m) else "-", new)
     return summarize(cfg.ledger)

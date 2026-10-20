@@ -660,8 +660,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     forward_parser = subparsers.add_parser(
         "forward-run",
-        help="Vorwärtstest ohne Broker: Nikkei-Nachteffekt und Gotobi (USD/JPY) aus Dukascopy-Minutendaten "
-        "(braucht Node.js/npx). Schreibt forward_trades.csv, sendet keine Orders.",
+        help="Vorwärtstest ohne Broker: Nikkei-Nachteffekt und Gotobi (USD/JPY, EUR/JPY) aus Yahoo-Intraday-Kursen "
+        "(ab 2026-10-08; vorher Dukascopy). Schreibt forward_trades.csv, sendet keine Orders.",
     )
     forward_parser.add_argument("--start", type=date.fromisoformat, default=date(2026, 9, 28),
                                 help="Erster Tag des Vorwärtstests (Standard: 2026-09-28); frühere Trades zählen nicht.")
@@ -700,8 +700,8 @@ def build_parser() -> argparse.ArgumentParser:
     fpel = subparsers.add_parser("forward-pelosi", help="Vorwärtstest pelosi_copy (Kongress-Meldungen, Runde 141; Papier).")
     fpel.add_argument("--notify-env", default="", help="Datei mit NTFY_TOPIC: neue Pelosi-Käufe aufs Handy.")
     subparsers.add_parser(
-        "intraday-backup", help="Yahoo-Intraday-Kurse (USDJPY, EURJPY, Nikkei-/Gold-Future) sichern -- Ersatz-"
-                                "Aufzeichnung während der Dukascopy-Sperre, keine Auswertung.")
+        "intraday-backup", help="Yahoo-Intraday-Kurse (USDJPY, EURJPY, Nikkei-/Gold-Future inkl. Einzelkontrakte) "
+                                "sichern -- Datenquelle von forward-run und forward-gold.")
     mcheck = subparsers.add_parser(
         "momentum-checkpoint", help="Prüfpunkte 100/150 Trades des Momentum-Vorwärtstests (Meldung je einmal).")
     mcheck.add_argument("--env-file", default=".env", help="Konto des Momentum-Bots (nur lesend).")

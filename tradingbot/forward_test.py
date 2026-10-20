@@ -3,11 +3,12 @@ siehe research/PROTOCOL.md (Branch research/ideas) Runden 46-49 und 53:
 
 - nikkei_night: Nikkei 225 long vom Schluss der OSE-Tagessitzung (15:45 JST,
   vor 2024-11-05 15:15) bis zur Eröffnung am nächsten Handelstag (08:45 JST).
-  Kurse: Dukascopy-CFD jpnidxjpy (Bid). Kosten 0,5 bp je Seite (Handel in den
-  Auktionen) + JPY-Zins/360 je Kalendernacht (Future-Carry).
+  Kurse: bis 2026-10-07 Dukascopy-CFD jpnidxjpy (Bid), ab 2026-10-08 CME-Future NIY (Yahoo, Einzelkontrakte
+  verkettet). Kosten 0,5 bp je Seite (Handel in den Auktionen) + JPY-Zins/360 je Kalendernacht (Future-Carry).
 - gotobi: USD/JPY long von 05:00 bis 09:55 JST an Gotobi-Tagen (5., 10., 15.,
   20., 25. und Monatsletzter; Wochenende -> vorheriger Freitag). Kauf zum
-  Dukascopy-ASK, Verkauf zum BID, zusätzlich 0,35 bp Kommission je Seite.
+  ASK, Verkauf zum BID (bis 2026-10-07 Dukascopy; ab 2026-10-08 Yahoo-Mittelkurse + feste Spanne), zusätzlich
+  0,35 bp Kommission je Seite.
 - gotobi_eurjpy: dieselbe Regel für EUR/JPY (Runde 85).
 - bond_month_end: US-Staatsanleihen 7-10 J. (IEF, Yahoo-Tagesschlüsse) long vom
   Schluss des 4.-letzten bis zum Schluss des letzten Handelstags jedes Monats
@@ -17,9 +18,8 @@ siehe research/PROTOCOL.md (Branch research/ideas) Runden 46-49 und 53:
   jedes Monats (Runde 122, NICHT bestanden -- nur Beobachtung, ob die Monatsmitte-Auffälligkeit der Indizes
   weiterbesteht); 2 bp Round-Trip.
 
-Es werden keine Orders gesendet. Jeder Lauf lädt die letzten Tage Minutendaten
-per `npx dukascopy-node`, berechnet die Trades und schreibt sie in eine
-CSV (idempotent: gleiche Strategie + Datum wird ersetzt). Trades vor
+Es werden keine Orders gesendet. Jeder Lauf aktualisiert die Yahoo-Intraday-Aufzeichnung (intraday_backup),
+berechnet die Trades und schreibt sie in eine CSV (idempotent: gleiche Strategie + Datum wird ersetzt). Trades vor
 `first_day` werden nicht erfasst, damit die Auswertung ein echter Vorwärtstest
 bleibt.
 """
@@ -30,8 +30,6 @@ import calendar
 import csv
 import logging
 import math
-import shutil
-import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -48,8 +46,8 @@ EXPECTED_BP = {"nikkei_night": 4.21, "gotobi": 1.00, "gotobi_eurjpy": 1.84, "bon
                # Runde 122 (nicht bestanden, Beobachtung): Monatsmitte, Bestätigung 2018-21 US500/USTEC-CFD
                "mid_month_spy": 5.4, "mid_month_qqq": 33.7}
 OSE_CLOSE_CHANGE = date(2024, 11, 5)
-# Börsenfreie Tage in Japan (Nationalfeiertage + Jahreswechsel). Der Dukascopy-CFD
-# notiert auch an diesen Tagen, die OSE-Futures nicht -> für nikkei_night
+# Börsenfreie Tage in Japan (Nationalfeiertage + Jahreswechsel). CFD und CME-Future
+# notieren auch an diesen Tagen, die OSE-Futures nicht -> für nikkei_night
 # übersprungen (Position läuft über den Feiertag). Jährlich ergänzen
 # (Quelle: JPX-Handelskalender).
 JP_MARKET_HOLIDAYS = {
@@ -68,7 +66,7 @@ JP_MARKET_HOLIDAYS = {
 class ForwardConfig:
     first_day: date
     ledger: Path = Path("forward_trades.csv")
-    data_dir: Path = Path("data_cache") / "forward"
+    yahoo_dir: Path = Path("data_cache") / "yahoo_intraday"
     lookback_days: int = 10
     nikkei_cost_per_side: float = 0.5e-4
     jpy_rate: float = 0.0075  # p.a., für den Future-Carry
@@ -81,35 +79,13 @@ class ForwardConfig:
 
 # ------------------------------------------------------------ Daten
 
-class DukascopyUnavailable(RuntimeError):
-    """dukascopy-node hat eine leere Datei geschrieben: der Datenserver liefert nichts (seit 2026-10-09
-    AWS-Bot-Schutz mit HTTP 202 "challenge"; dukascopy-node meldet das nicht als Fehler)."""
-
-
-# Dukascopy-Strategien: ab dem letzten erfassten Tag nachholen, damit ein mehrtägiger Datenausfall
-# keine Trades kostet (nicht nur die letzten lookback_days)
-DUKASCOPY_STRATEGIES = ("nikkei_night", "gotobi", "gotobi_eurjpy")
-CATCH_UP_BUFFER_DAYS = 5
-
-
-def fetch_minutes(instrument: str, side: str, start: date, end: date, base: Path) -> Path:
-    """Lädt Dukascopy-Minutenkerzen [start, end) als CSV und gibt den Pfad zurück."""
-    npx = shutil.which("npx")
-    if npx is None:
-        raise RuntimeError("npx nicht gefunden -- Node.js installieren (für dukascopy-node).")
-    base.mkdir(parents=True, exist_ok=True)
-    name = f"{instrument}_{side}_{start}_{end}"
-    cmd = [npx, "--yes", "dukascopy-node", "-i", instrument, "-from", str(start), "-to", str(end),
-           "-t", "m1", "-p", side, "-f", "csv", "-dir", str(base), "-fn", name]
-    subprocess.run(cmd, check=True, capture_output=True, timeout=1800)
-    path = base / f"{name}.csv"
-    if not path.exists():
-        raise RuntimeError(f"dukascopy-node hat keine Datei erzeugt: {path}")
-    if path.stat().st_size == 0:
-        path.unlink()
-        raise DukascopyUnavailable(f"Dukascopy lieferte keine Daten für {instrument} {side} {start} bis {end} "
-                                   "(leere Datei: Datenserver blockt oder fällt aus)")
-    return path
+# Datenquelle: bis Ausstiegstag 2026-10-07 Dukascopy (Zeilen im Ledger bleiben unverändert), ab 2026-10-08 Yahoo
+# (Dukascopy blockt seit 2026-10-09; Nutzer 2026-10-20: nicht weiter versuchen). Yahoo liefert Mittelkurse ->
+# Gotobi zahlt die mittlere Dukascopy-Spanne um 05:00/09:55 JST an Gotobi-Tagen 2023-25 (je halbe Spanne bei Kauf
+# und Verkauf). Abgleich und Begründung: research/PROTOCOL.md, Eintrag vom 2026-10-20.
+YAHOO_FROM = date(2026, 10, 8)
+YAHOO_STRATEGIES = ("nikkei_night", "gotobi", "gotobi_eurjpy")
+GOTOBI_SPREAD = {"gotobi": 1.07e-4, "gotobi_eurjpy": 1.66e-4}
 
 
 def fetch_daily_yahoo(symbol: str, start: date, end: date) -> pd.Series:
@@ -125,13 +101,6 @@ def fetch_daily_yahoo(symbol: str, start: date, end: date) -> pd.Series:
     idx = pd.to_datetime(res["timestamp"], unit="s", utc=True).tz_convert("America/New_York").date
     s = pd.Series(res["indicators"]["adjclose"][0]["adjclose"], index=idx, dtype=float).dropna()
     return s[~s.index.duplicated(keep="last")].sort_index()
-
-
-def load_open_prices(path: Path) -> pd.Series:
-    """Minuten-Open als Serie mit UTC-Zeitindex."""
-    df = pd.read_csv(path)
-    s = pd.Series(df["open"].to_numpy(float), index=pd.to_datetime(df["timestamp"], unit="ms", utc=True))
-    return s[~s.index.duplicated()].sort_index()
 
 
 def price_at(series: pd.Series, ts: pd.Timestamp, tolerance_min: int = 5) -> float | None:
@@ -190,7 +159,8 @@ def nikkei_trades(bid: pd.Series, start: date, end: date, cost_per_side: float, 
 
 
 def gotobi_trades(bid: pd.Series, ask: pd.Series, start: date, end: date, commission: float,
-                  now: pd.Timestamp, strategy: str = "gotobi") -> list[dict]:
+                  now: pd.Timestamp, strategy: str = "gotobi", spread: float = 0.0) -> list[dict]:
+    """spread: zusätzliche Kosten je Trade, wenn bid/ask Mittelkurse sind (Yahoo)."""
     rows = []
     for d in sorted(gotobi_days(start.year, end.year)):
         exit_ts = _tokyo(d, 9, 55)
@@ -201,7 +171,7 @@ def gotobi_trades(bid: pd.Series, ask: pd.Series, start: date, end: date, commis
         if buy is None or sell is None:
             logger.warning("%s %s: keine Kurse um 05:00/09:55 JST (Feiertag/Datenlücke).", strategy, d)
             continue
-        net = sell / buy - 1 - 2 * commission
+        net = sell / buy - 1 - 2 * commission - spread
         rows.append({"strategy": strategy, "date": d.isoformat(), "entry_time": entry_ts.isoformat(),
                      "entry_price": buy, "exit_time": exit_ts.isoformat(), "exit_price": sell,
                      "net_bp": round(net * 1e4, 3)})
@@ -305,39 +275,37 @@ def summarize(path: Path) -> str:
 
 # ------------------------------------------------------------ Lauf
 
-def dukascopy_start(cfg: ForwardConfig, today: date) -> date:
-    """Beginn des Minutendaten-Abrufs: die letzten lookback_days, bei einer Lücke aber ab dem ältesten
-    "letzten erfassten Tag" der Dukascopy-Strategien (minus Puffer) -- nie vor first_day - Puffer."""
-    floor = cfg.first_day - timedelta(days=CATCH_UP_BUFFER_DAYS)
-    start = today - timedelta(days=cfg.lookback_days)
-    rows = read_ledger(cfg.ledger)
-    for strat in DUKASCOPY_STRATEGIES:
-        dates = [r["date"] for r in rows if r["strategy"] == strat]
-        last = date.fromisoformat(max(dates)) if dates else cfg.first_day
-        start = min(start, last - timedelta(days=CATCH_UP_BUFFER_DAYS))
-    return max(floor, start)
+def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None = None, refresh=None) -> str:
+    """Jede Strategie einzeln: fällt eine Datenquelle aus, werden die übrigen trotzdem gespeichert. Danach Fehler,
+    damit der Timer-Lauf als fehlgeschlagen gilt und der Wächter meldet. Minutenstrategien rechnen jedes Mal ab
+    YAHOO_FROM aus der laufenden Yahoo-Aufzeichnung (vorher aktualisiert); ältere Ledger-Zeilen bleiben."""
+    from tradingbot import intraday_backup
 
-
-def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None = None) -> str:
-    """Jede Strategie einzeln: fällt eine Datenquelle aus (z.B. Dukascopy), werden die übrigen trotzdem
-    gespeichert. Danach Fehler, damit der Timer-Lauf als fehlgeschlagen gilt und der Wächter meldet."""
     today = today or datetime.now(timezone.utc).date()
     now = now or pd.Timestamp.now(tz="UTC")
     start = max(cfg.first_day - timedelta(days=5), today - timedelta(days=cfg.lookback_days))
-    dk_start = dukascopy_start(cfg, today)
     end = today + timedelta(days=1)
     yahoo_start = min(start, cfg.first_day - timedelta(days=40))
+    m_start = max(cfg.first_day, YAHOO_FROM)
+    try:
+        logger.info((refresh or intraday_backup.run)(cfg.yahoo_dir))
+    except Exception as exc:  # noqa: BLE001 -- dann mit den bereits gespeicherten Kursen rechnen
+        logger.warning("Yahoo-Aufzeichnung unvollständig: %s", exc)
 
-    def minutes(instrument: str, side: str) -> pd.Series:
-        return load_open_prices(fetch_minutes(instrument, side, dk_start, end, cfg.data_dir))
+    def fx(name: str) -> pd.Series:
+        return intraday_backup.load_bars(name, cfg.yahoo_dir)["open"]
 
+    def gotobi(name: str, strategy: str) -> list[dict]:
+        s = fx(name)
+        return gotobi_trades(s, s, m_start, today, cfg.gotobi_commission, now, strategy, GOTOBI_SPREAD[strategy])
+
+    nk_from = pd.Timestamp(m_start - timedelta(days=10), tz="UTC")
     jobs = {
-        "nikkei_night": lambda: nikkei_trades(minutes("jpnidxjpy", "bid"), cfg.first_day, today,
-                                              cfg.nikkei_cost_per_side, cfg.jpy_rate, now),
-        "gotobi": lambda: gotobi_trades(minutes("usdjpy", "bid"), minutes("usdjpy", "ask"), cfg.first_day,
-                                        today, cfg.gotobi_commission, now),
-        "gotobi_eurjpy": lambda: gotobi_trades(minutes("eurjpy", "bid"), minutes("eurjpy", "ask"), cfg.first_day,
-                                               today, cfg.gotobi_commission, now, strategy="gotobi_eurjpy"),
+        "nikkei_night": lambda: nikkei_trades(
+            intraday_backup.continuous("niy", nk_from, now + pd.Timedelta(days=1), cfg.yahoo_dir)["open"],
+            m_start, today, cfg.nikkei_cost_per_side, cfg.jpy_rate, now),
+        "gotobi": lambda: gotobi("usdjpy", "gotobi"),
+        "gotobi_eurjpy": lambda: gotobi("eurjpy", "gotobi_eurjpy"),
         "bond_month_end": lambda: bond_month_end_trades(fetch_daily_yahoo(cfg.bond_symbol, yahoo_start, end),
                                                         cfg.first_day, today, cfg.bond_cost_per_trade,
                                                         cfg.tbill_rate, today),
@@ -354,7 +322,7 @@ def run(cfg: ForwardConfig, today: date | None = None, now: pd.Timestamp | None 
             logger.error("%s: %s", name, exc)
             failed.append(f"{name}: {exc}")
     new = update_ledger(cfg.ledger, rows)
-    logger.info("Vorwärtstest: %d Trades berechnet, %d neu (Abruf Dukascopy ab %s).", len(rows), new, dk_start)
+    logger.info("Vorwärtstest: %d Trades berechnet, %d neu (Minutenkurse Yahoo ab %s).", len(rows), new, m_start)
     if failed:
         raise RuntimeError(f"Vorwärtstest unvollständig ({len(failed)} von {len(jobs)} Strategien ohne Daten, "
                            "übrige gespeichert; verpasste Tage holt der nächste Lauf nach): " + "; ".join(failed))

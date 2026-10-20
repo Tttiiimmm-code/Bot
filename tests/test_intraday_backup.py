@@ -50,3 +50,41 @@ def test_run_sichert_rest_und_meldet_fehler(tmp_path):
         ib.run(tmp_path, fetcher)
     assert (tmp_path / "usdjpy_5m.csv").exists() and (tmp_path / "gc_1m.csv").exists()
     assert not (tmp_path / "niy_1m.csv").exists()
+
+
+def _bars(path, start, n, price, freq="min"):
+    idx = pd.date_range(start, periods=n, freq=freq, tz="UTC")
+    p = [price] * n
+    pd.DataFrame({"ts": idx.as_unit("s").asi8, "open": p, "high": p, "low": p, "close": p, "volume": 0}).to_csv(
+        path, index=False)
+
+
+def test_contracts_roll_on_fixed_dates():
+    now = pd.Timestamp("2026-10-20", tz="UTC")
+    assert ib.contracts_to_record("gc", now) == ["GCZ26", "GCG27"]
+    assert ib.contracts_to_record("niy", now) == ["NIYZ26", "NIYH27"]
+    assert ib.contracts_to_record("gc", pd.Timestamp("2026-11-20", tz="UTC")) == ["GCG27", "GCJ27"]
+    assert ib.contracts_to_record("niy", pd.Timestamp("2026-12-01", tz="UTC")) == ["NIYH27", "NIYM27"]
+
+
+def test_load_bars_fills_only_uncovered_5m_windows(tmp_path):
+    _bars(tmp_path / "x_1m.csv", "2026-10-10 10:00", 3, 1.0)                 # 10:00-10:02
+    _bars(tmp_path / "x_5m.csv", "2026-10-10 09:50", 4, 2.0, freq="5min")    # 09:50, 09:55, 10:00, 10:05
+    b = ib.load_bars("x", tmp_path)
+    assert [t.strftime("%H:%M") for t in b.index] == ["09:50", "09:55", "10:00", "10:01", "10:02", "10:05"]
+    assert b.loc["2026-10-10 10:00", "close"].item() == 1.0
+
+
+def test_continuous_adjusts_older_contract_by_ratio_at_roll(tmp_path):
+    """Gold-Wechsel 20.11.: Dezember 100 -> Februar 101; ältere Kurse x 1,01, kein Sprung in der Reihe."""
+    _bars(tmp_path / "gc_GCZ26_1m.csv", "2026-11-19 23:58", 3, 100.0)       # bis 20.11. 00:00
+    _bars(tmp_path / "gc_GCG27_1m.csv", "2026-11-19 23:58", 5, 101.0)
+    c = ib.continuous("gc", pd.Timestamp("2026-11-19", tz="UTC"), pd.Timestamp("2026-11-21", tz="UTC"), tmp_path)
+    assert c["close"].tolist() == pytest.approx([101.0] * 5)
+
+
+def test_continuous_without_common_price_at_roll_is_error(tmp_path):
+    _bars(tmp_path / "gc_GCZ26_1m.csv", "2026-11-19 23:58", 2, 100.0)
+    _bars(tmp_path / "gc_GCG27_1m.csv", "2026-11-20 00:05", 2, 101.0)
+    with pytest.raises(RuntimeError, match="kein gemeinsamer Kurs"):
+        ib.continuous("gc", pd.Timestamp("2026-11-19", tz="UTC"), pd.Timestamp("2026-11-21", tz="UTC"), tmp_path)

@@ -48,11 +48,15 @@ def test_status_family2(tmp_path):
     assert g["n"] == 1 and g["mean"] == pytest.approx(1.99) and g["t_crit"] == 2.0
 
 
-def test_month_frame_on_first_day_of_month_needs_no_download(tmp_path, monkeypatch):
-    """Am Monatsersten ist der Zeitraum des neuen Monats leer -- kein Abruf (sonst gälte die leere
-    Antwort seit der Erkennung leerer Downloads als Datenausfall)."""
-    from tradingbot import forward_test as ft
-
-    monkeypatch.setattr(ft, "fetch_minutes", lambda *a, **k: pytest.fail("kein Abruf erwartet"))
-    df = fg._month_frame("bid", 2026, 11, tmp_path, date(2026, 11, 1))
-    assert df.empty and list(df.columns) == ["open", "high", "low", "close"]
+def test_load_minutes_from_yahoo_futures_with_spread(tmp_path):
+    """Gold-Kurse aus dem verketteten Future (Yahoo), Brief/Geld = Mittel +- halbe Spanne; Swap ohne Future-Carry."""
+    idx = pd.date_range("2026-10-01 00:00", periods=5, freq="min", tz="UTC")
+    c = [4000.0, 4001.0, 4002.0, 4003.0, 4004.0]
+    pd.DataFrame({"ts": idx.as_unit("s").asi8, "open": c, "high": [x + 1 for x in c], "low": [x - 1 for x in c],
+                  "close": c, "volume": 0}).to_csv(tmp_path / "gc_GCZ26_1m.csv", index=False)
+    cfg = fg.GoldConfig(first_day=date(2026, 10, 5), yahoo_dir=tmp_path)
+    m = fg.load_minutes(cfg, pd.Timestamp("2026-10-02", tz="UTC"))
+    assert len(m) == 5
+    assert m["aclose"].iloc[0] / m["bclose"].iloc[0] - 1 == pytest.approx(2.04e-4, rel=1e-3)
+    assert (m["aclose"].iloc[0] + m["bclose"].iloc[0]) / 2 == pytest.approx(4000.0)
+    assert cfg.swap_rate == pytest.approx(0.020)
