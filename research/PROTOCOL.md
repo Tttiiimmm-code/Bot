@@ -4778,3 +4778,11 @@ Zeitraum: 2017-01..2026-08 (10 Ereignisse, Januar 2017-2026); Hälften Januar 20
 BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND Überrendite in beiden Hälften > 0.
 Info (nicht gewertet): Überrendite je Ereignis; schwächstes Zwanzigstel; Einstieg Auswahltag; Ausstieg Mitte Januar.
 Skript research/scripts/r160.py, Ausgabe r160_output.txt.
+
+## Ergebnis Runde 160 (2026-10-20): NICHT BESTANDEN
+
+- Zehntel (gewertet): +17,3 % p.a. vs SPY +15,4 %, t +0,75, Hälften +1,7 % / +2,1 %. Je Januar (Korb brutto / SPY):
+  2017 +1,0/+0,6; 2018 +1,5/+5,5; 2019 +17,7/+9,6; 2020 -1,8/-0,4; 2021 +5,2/-0,6; 2022 -6,4/-5,7; 2023 +34,5/+6,6;
+  2024 -6,8/+1,5; 2025 +1,0/+0,1; 2026 -4,1/+0,2 -> Ø +2,4 Punkte, aber nur 5 von 10 besser; 2023 trägt fast alles.
+- Info: Zwanzigstel +18,9 % (t 0,98); Einstieg am Auswahltag +15,5 % (t 0,21); Ausstieg Mitte Januar +18,2 % (t 1,53).
+Lehre: Richtung wie in der Literatur, aber zu wenige und zu ungleiche Ereignisse; kein belastbarer Vorteil.
