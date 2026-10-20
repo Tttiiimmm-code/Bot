@@ -4850,3 +4850,18 @@ Skript research/scripts/r163.py, Ausgabe r163_output.txt.
 - Info: nur Trend 10 Monate +8,9 % / +10,6 %.
 Lehre: Typischer Veröffentlichungs-Effekt: vorher gut (zwei lange Bärenmärkte), danach kostet die Regel Rendite
 (2020: Arbeitslosigkeit steigt erst nach dem Crash -> zu spät raus, Erholung verpasst).
+
+# Runde 164: "Dogs of the Dow" (Vorab, 2026-10-20)
+
+Klassiker (O'Higgins 1991): jedes Jahr die 10 Dow-Werte mit der höchsten Dividendenrendite gleichgewichtet kaufen und
+ein Jahr halten. Im Protokoll nicht getestet.
+Daten: Dow-Zusammensetzung je Stichtag aus Wikipedia ("Historical components", Stände 2015-03-19 bis 2026-06-29);
+Kurse und Dividenden von Yahoo (Schlusskurs split- und spin-off-bereinigt, Dividenden-Ereignisse, adjclose für die
+Gesamtrendite); Walgreens (WBA, 2025 delistet, bei Yahoo nicht mehr vorhanden) aus Alpaca (Tageskurse + dividends.pkl).
+Regeln: Auswahl am letzten Handelstag des Jahres unter den 30 Mitgliedern dieses Tages: Rendite = Summe der Dividenden
+mit Ex-Tag in den 12 Monaten davor / Schlusskurs; die 10 höchsten zum Schluss kaufen, gleichgewichtet, 12 Monate halten
+(Gesamtrendite, kein Umschichten im Jahr; Indexänderungen im Jahr ignoriert). Kosten 5 bp je Seite auf den Umschlag.
+Erste Auswahl Ende 2016 (Dividenden ab 2016), Zeitraum 2017-01..2026-08; Hälften 2017-2021 und 2022-2026/08.
+BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften Überrendite > 0.
+Info (nicht gewertet): Vergleich mit DIA; "Small Dogs" (5 billigste der 10); Top 5 nach Rendite.
+Skript research/scripts/r164.py, Ausgabe r164_output.txt.
