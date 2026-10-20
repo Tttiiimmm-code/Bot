@@ -1,0 +1,11 @@
+Runde 163 -- Growth-Trend Timing, SPY-Monate 1993-02 bis 2026-10
+
+Hauptkriterium (raus, wenn Trend UND Arbeitsmarkt schwach):
+  Growth-Trend: -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08: +12.9% p.a. vs SPY +15.1%, t -1.79, in SPY 96%, Wechsel 8, Max-DD (Monat) -23.9% (SPY -23.9%)
+    Einordnung 1994-2015: +12.1% p.a. vs SPY  +8.9%, t +1.36, in SPY 84%, Wechsel 10, Max-DD (Monat) -23.8% (SPY -50.8%)
+
+Info (nicht gewertet):
+  nur Trend (10 Monate): (Info)
+    Haupt 2016-01..2026-08:  +8.9% p.a. vs SPY +15.1%, t -1.95, in SPY 83%, Wechsel 22, Max-DD (Monat) -21.5% (SPY -23.9%)
+    Einordnung 1994-2015: +10.6% p.a. vs SPY  +8.9%, t +0.44, in SPY 75%, Wechsel 24, Max-DD (Monat) -16.7% (SPY -50.8%)

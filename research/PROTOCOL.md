@@ -4842,3 +4842,11 @@ BESTANDEN, wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen 
 1994-2015 Überrendite > 0.
 Info (nicht gewertet): nur Trendfilter (10 Monate); Anteil Zeit in SPY, Max-DD.
 Skript research/scripts/r163.py, Ausgabe r163_output.txt.
+
+## Ergebnis Runde 163 (2026-10-20): NICHT BESTANDEN
+
+- Growth-Trend (gewertet): Haupt (nach Veröffentlichung) +12,9 % p.a. vs SPY +15,1 %, t -1,79 (96 % in SPY, 8 Wechsel,
+  Max-DD gleich); Einordnung 1994-2015 +12,1 % vs +8,9 % (t 1,36, Max-DD -24 % vs -51 %).
+- Info: nur Trend 10 Monate +8,9 % / +10,6 %.
+Lehre: Typischer Veröffentlichungs-Effekt: vorher gut (zwei lange Bärenmärkte), danach kostet die Regel Rendite
+(2020: Arbeitslosigkeit steigt erst nach dem Crash -> zu spät raus, Erholung verpasst).
