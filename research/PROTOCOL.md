@@ -4952,3 +4952,19 @@ BTC halten 2016-01..2026-08 +62,6 % p.a. (Max-DD -74,5 %), SPY +15,1 %.
   Stichprobe; zu wenige Ereignisse für eine Aussage.
 - C Hash Ribbons: +18,3 % (t -2,60), 41 % investiert, 28 Wechsel.
 Lehre: Gegen BTC halten bringt keiner einen belastbaren Mehrwert; Pi-Cycle wäre nur als Beobachtung interessant (n=1).
+
+# Runde 168: Prämie vor Quartalszahlen (Frazzini & Lamont 2007; Barber et al. 2013) (Vorab, 2026-10-20)
+
+These: Aktien steigen in den Tagen vor und am Tag erwarteter Quartalszahlen überdurchschnittlich (Aufmerksamkeit,
+Risikoprämie). Runde 114 testete nur die Reaktion danach. Daten: SEC 8-K Item 2.02 (data_cache/edgar/8k, wie Runde 114:
+Annahme vor 9:30 New York -> Ereignistag = Meldetag, sonst nächster Handelstag; CIK->Kürzel wie Runde 114), Alpaca-
+Tagespanel, Universum Top 500 (Runde 152) mit Kurs > 5 $ am Einstieg.
+Regeln: erwarteter Termin = letzter Ereignistag + 63 Handelstage; Kauf zum Schluss 5 Handelstage vor dem erwarteten
+Termin, sofern seither kein neues Ereignis; Verkauf zum Schluss des tatsächlichen Ereignistags, wenn dieser bis 10
+Handelstage nach dem erwarteten Termin liegt, sonst zum Schluss am erwarteten Termin + 10. Portfolio täglich
+gleichgewichtet über offene Positionen, bei weniger als 10 offenen Positionen SPY; 10 bp je Seite für Aktien.
+Zeitraum 2016-07..2026-08; Hälften 2016-2020 und 2021-2026/08.
+BESTANDEN, wenn Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND beide Hälften > 0.
+Info (nicht gewertet): Ø Überrendite je Trade ggü. gleichgewichtetem Universum; nur bis Vortag des Ereignisses
+(ohne Reaktion); Einstieg 10 Tage vorher.
+Skript research/scripts/r168.py, Ausgabe r168_output.txt.
