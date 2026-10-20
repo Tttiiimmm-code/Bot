@@ -4828,3 +4828,17 @@ Skript research/scripts/r162.py, Ausgabe r162_output.txt.
 - Info: Verhältnis < 0,95 +11,3 % / +4,4 %; 2x SPY bei Contango +21,3 % (t 1,67) / +11,8 % (t 1,25), Max-DD -53 % /
   -55 % (nachträglich, Hebel-Thema wie Runden 38/140, nicht gewertet).
 Lehre: Die VIX-Kurve senkt Drawdowns, kostet aber über Fehlsignale mehr Rendite als sie spart.
+
+# Runde 163: "Growth-Trend Timing" (Philosophical Economics 2016) (Vorab, 2026-10-20)
+
+Veröffentlicht 2016 ("Growth and Trend: A Simple, Powerful Technique for Timing the Stock Market"): Trendfilter nur
+bei schwacher Wirtschaft anwenden. Im Protokoll nicht getestet (reine Trendfilter: Runden 5, 23, 38, 123). Seit der
+Veröffentlichung echter Nachtest.
+Daten: SPY inkl. Dividenden (Monatsende), FRED UNRATE (Wert für Monat m erscheint Anfang m+1 -> am Ende von m ist m-1
+bekannt), DTB3.
+Regel je Monatsende: SPY (Gesamtrendite-Kurs) < 10-Monats-Schnitt UND Arbeitslosenquote (zuletzt bekannt) >
+12-Monats-Schnitt -> nächster Monat T-Bills, sonst SPY; 2 bp je Wechsel.
+BESTANDEN, wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND Einordnung
+1994-2015 Überrendite > 0.
+Info (nicht gewertet): nur Trendfilter (10 Monate); Anteil Zeit in SPY, Max-DD.
+Skript research/scripts/r163.py, Ausgabe r163_output.txt.
