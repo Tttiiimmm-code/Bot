@@ -4649,3 +4649,27 @@ Skript research/scripts/r155.py, Ausgabe r155_output.txt.
   (~0,5 $ je Unze) fressen bei 4,50 $ Stop ~11 % R je Trade, brutto bleibt nichts.
 Lehre: "Smart Money"/ICT-Konzepte (FVG, Order Block, Killzone) zeigen hier keinen Vorteil; Autor-Backtests prüfen,
 ob sie mit den eigenen Parametern überhaupt möglich sind.
+
+# Runde 156: Spin-offs kaufen und 24 Monate halten (Vorab, 2026-10-20)
+
+Nutzer: "Du kannst so lange, so viele Runden durchgehen, bis dir nichts mehr einfällt". These (Cusatis, Miles &
+Woolridge 1993; McConnell & Ovtchinnikov 2004): abgespaltene Firmen werden anfangs von Index-/Großanlegern zwangsweise
+verkauft und steigen danach 1-3 Jahre stärker als der Markt. Neuere Arbeiten gemischt (CBS 2000-2022 +28,5 % über 36
+Monate; Aalto USA 2010-2022 kein Vorteil). Im Protokoll noch nicht getestet (verwandt nur Runde 32 Indexänderungen,
+Runde 76 IPO-Lockups).
+Daten: SEC-Volltextsuche (efts.sec.gov) Formular 10-12B (inkl. /A) 2015-01..2025-06, erste Meldung je CIK; Kürzel aus
+der SEC-Anzeige, sonst aus dem Dateinamen des ersten 10-Q/10-K (kürzel-JJJJMMTT.htm, deckt übernommene/delistete Firmen
+ab); Kurse Alpaca-Tagespanel (split-bereinigt, inkl. delisteter Titel) + Dividenden (dividends.pkl, auf Splits danach
+umgerechnet).
+Regeln:
+- Spin-off = Kürzel beginnt im Panel 0..365 Tage nach der ersten 10-12B-Meldung zu handeln (vorher keine Kurse ->
+  schließt neu vergebene Kürzel und bestehende Aktien aus); Kurs beim Einstieg >= 5 $.
+- Einstieg zum Schlusskurs des letzten Handelstags des Monats der Erstnotiz; gehalten in den 24 Folgemonaten.
+- Portfolio: monatlich gleichgewichtet über alle gehaltenen Spin-offs (Rendite inkl. Dividenden; endet die Notiz,
+  Rendite bis zum letzten Kurs, danach Cash). Weniger als 5 Titel -> Cash 0 %. Kosten 10 bp je Seite auf den Umschlag.
+- Zeitraum: Monate 2016-01..2026-08; Hälften 2016-2020 und 2021-2026/08.
+BESTANDEN, wenn Rendite p.a. > SPY halten (inkl. Dividenden) UND t der monatlichen Überrendite >= 2,0 (eine These) UND
+Überrendite in beiden Hälften > 0.
+Info (nicht gewertet): Haltedauer 12 und 36 Monate; Einstieg zum ersten Schlusskurs; Zahl der Spin-offs, Anteil ohne
+gefundenes Kürzel (Überlebensfehler benennen); Monate in Cash.
+Skripte research/scripts/r156_fetch.py, r156.py, Ausgabe r156_output.txt.
