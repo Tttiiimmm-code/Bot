@@ -4942,3 +4942,13 @@ p.a. > BTC halten UND > SPY UND t der monatlichen Überrendite ggü. BTC halten 
 ggü. BTC in beiden Hälften (2016-2020, 2021-2026/08) > 0.
 Info (nicht gewertet): Max-DD je Regel vs BTC; Zahl der Signale; Vergleich mit SPY.
 Skript research/scripts/r167.py, Ausgabe r167_output.txt.
+
+## Ergebnis Runde 167 (2026-10-20): NICHT BESTANDEN (alle 3)
+
+BTC halten 2016-01..2026-08 +62,6 % p.a. (Max-DD -74,5 %), SPY +15,1 %.
+- A Mayer Multiple: +55,2 % (t ggü. BTC -0,72), 88 % investiert, 6 Wechsel.
+- B Pi-Cycle-Top/200-Wochen-Linie: +103,7 % (t +1,04; Hälften +75,6 / +22,9 Punkte), Max-DD -49 %, nur 4 Wechsel
+  (Ausstiege Dez 2017 und Apr 2021). Indikator 2019 an den Tops 2013/2017 entworfen -> nur 2021 außerhalb der
+  Stichprobe; zu wenige Ereignisse für eine Aussage.
+- C Hash Ribbons: +18,3 % (t -2,60), 41 % investiert, 28 Wechsel.
+Lehre: Gegen BTC halten bringt keiner einen belastbaren Mehrwert; Pi-Cycle wäre nur als Beobachtung interessant (n=1).

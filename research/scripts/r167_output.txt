@@ -1,0 +1,6 @@
+Runde 167 -- BTC-Zyklusindikatoren, BTC-USD ab 2014-09-16; BTC halten 2016-01..2026-08 +62.6% p.a. (Max-DD -74.5%), SPY +15.1%
+
+Hauptkriterium je Regel (Maßstab BTC halten, Hürde t >= 2,13):
+  A Mayer Multiple (<1 kaufen, >2,4 verkaufen): +55.2% p.a. vs BTC +62.6%, t ggü. BTC -0.72, Hälften -18.1% /  -1.8%, Max-DD -72.7%, investiert 88%, Wechsel 6 -> NICHT BESTANDEN
+  B Pi-Cycle-Top (raus), unter 200-Wochen-Linie (rein): +103.7% p.a. vs BTC +62.6%, t ggü. BTC +1.04, Hälften +75.6% / +22.9%, Max-DD -49.4%, investiert 68%, Wechsel 4 -> NICHT BESTANDEN
+  C Hash Ribbons (raus bei Kapitulation, rein beim Kaufsignal): +18.3% p.a. vs BTC +62.6%, t ggü. BTC -2.60, Hälften -91.9% / -17.0%, Max-DD -63.4%, investiert 41%, Wechsel 28 -> NICHT BESTANDEN
