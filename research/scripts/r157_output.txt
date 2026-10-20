@@ -1,0 +1,10 @@
+Runde 157 -- Dividenden-Erstausschüttungen: 376 Fälle (Kandidaten-Kürzel 8397)
+Fälle je Jahr: {2018: 90, 2019: 55, 2020: 35, 2021: 51, 2022: 37, 2023: 38, 2024: 28, 2025: 42}
+
+Hauptkriterium (Einstieg Monatsende des Ex-Tags, 12 Monate, 10 bp je Seite):
+  12 Monate:  +5.0% p.a. vs SPY +14.1%, t -1.95, Hälften  -9.5% /  -8.7%, Max-DD -38.8%, Ø 43 Titel, Cash-Monate 1 -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  6 Monate:  +3.2% p.a. vs SPY +14.1%, t -2.54, Hälften  -8.9% / -12.6%, Max-DD -39.3%, Ø 22 Titel, Cash-Monate 3 (Info)
+  24 Monate:  +8.2% p.a. vs SPY +14.1%, t -1.38, Hälften  -5.2% /  -6.3%, Max-DD -30.3%, Ø 82 Titel, Cash-Monate 1 (Info)
+  12 Monate, Kurs >= 10 $ und Umsatz >= 10 Mio. $ (185 Fälle):  +3.9% p.a. vs SPY +14.1%, t -1.92, Hälften  -6.8% / -12.8%, Max-DD -40.1%, Ø 21 Titel, Cash-Monate 1 (Info)

@@ -4701,3 +4701,11 @@ Regeln:
 BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften Überrendite > 0.
 Info (nicht gewertet): 6 und 24 Monate; nur Titel mit Kurs >= 10 $ und Umsatz >= 10 Mio. $; Zahl der Fälle je Jahr.
 Skript research/scripts/r157.py, Ausgabe r157_output.txt.
+
+## Ergebnis Runde 157 (2026-10-20): NICHT BESTANDEN
+
+376 Erstausschüttungen 2018-2025 (28-90 je Jahr), Ø 43 Titel im Portfolio.
+- 12 Monate (gewertet): +5,0 % p.a. vs SPY +14,1 %, t -1,95, Hälften -9,5 % / -8,7 %, Max-DD -38,8 %.
+- Info: 6 Monate +3,2 % (t -2,54), 24 Monate +8,2 % (t -1,38), nur >= 10 $ und >= 10 Mio. $ Umsatz (185 Fälle)
+  +3,9 % (t -1,92). Vorbehalt: Panel ohne ETF-Kennung, einzelne Fonds unter den Fällen möglich.
+Lehre: Erstausschütter liegen seit 2018 eher hinter dem Markt; die Unterreaktion von 1995 ist nicht mehr da.
