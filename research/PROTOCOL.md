@@ -4635,3 +4635,17 @@ BESTANDEN, wenn im Hauptzeitraum 2016-01..2025-09 Rendite p.a. > SPY halten (ink
 Info (nicht gewertet): Trades, Treffer, Ø R, PF, Max-DD, long/short; Autor-Zeitraum Jan-Jul 2026 mit 0,01 Lot auf
 10.000 $ (Geld ab 2025-09-20 = Brief - mittlerer Spread); Anteil Zeit mit hängender Limit-Order.
 Skript research/scripts/r155.py, Ausgabe r155_output.txt.
+
+## Ergebnis Runde 155 (2026-10-20): NICHT BESTANDEN
+
+- Wie veröffentlicht: nur 27 Trades 2008-2026 (alle 2008), 2008 Ø -0,18 R, PF 0,55. Grund: Limit-Orders laufen
+  unbegrenzt (ORDER_TIME_GTC) und zählen gegen MaxTrades=1 -> Buy-Limit 830,80 $ vom 2009-01-20 wurde nie gefüllt und
+  blockiert den EA seit 2009 (99,9 % der Zeit hängende Order). Haupt 2016-2025: 0 Trades, +0,0 % p.a. vs SPY +14,8 %,
+  t -3,08; Einordnung -0,6 % vs +6,5 %.
+- Info Autor-Zeitraum: frischer Start ab Nov 2025 (wie ein Testerlauf), Jan-Jul 2026 mit 0,01 Lot auf 10.000 $:
+  -136,88 $ = -1,4 % bei 71 Trades (Autor: +48,7 % bei 64 Trades -- mit Stop 4,50 $/Ziel 6,75 $ ohnehin unmöglich).
+- Info, NACHTRÄGLICHE Variante (nicht gewertet): Order wird mit ihrer FVG-Zone gelöscht -> 9.835 Trades, Ø -0,09 R
+  (2008-15 t -7,8; 2016-25 t -8,0), PF 0,7, -40 % p.a. bei 1 % Risiko. Auch repariert kein Vorteil: Spread + Kommission
+  (~0,5 $ je Unze) fressen bei 4,50 $ Stop ~11 % R je Trade, brutto bleibt nichts.
+Lehre: "Smart Money"/ICT-Konzepte (FVG, Order Block, Killzone) zeigen hier keinen Vorteil; Autor-Backtests prüfen,
+ob sie mit den eigenen Parametern überhaupt möglich sind.

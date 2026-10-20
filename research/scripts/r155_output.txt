@@ -1,0 +1,32 @@
+Runde 155 -- FvgGold (Fair Value Gap + Order Block), XAUUSD M1 6,631,131 Minuten, mittlerer Spread 0.366 $
+
+Trades gesamt 27; Ticks mit hängender Limit-Order 99.9%
+
+Hauptkriterium (1 % Risiko je Trade, R = G/V / 4,50 $):
+  FvgGold Haupt 2016-01..2025-09:  +0.0% p.a. vs SPY +14.8%, Überrendite Ø -1.25%/Monat, t -3.08, Max-DD (Monat) 0.0%
+  FvgGold Einordnung 2008-2015:  -0.6% p.a. vs SPY  +6.5%, Überrendite Ø -0.69%/Monat, t -1.38, Max-DD (Monat) -8.5%
+  -> NICHT BESTANDEN
+
+Info je Zeitraum (R netto je Trade):
+  2008-2015            n    27  Ø R -0.182  t -1.11  Treffer 14.8%  PF 0.55
+    long  n     5  Ø R -0.068  t -0.16  Treffer 20.0%  PF 0.81
+    short n    22  Ø R -0.207  t -1.15  Treffer 13.6%  PF 0.50
+  2016-2025/09         n 0
+    long  n 0
+    short n 0
+  Autor Jan-Jul 2026   n 0
+    long  n 0
+    short n 0
+Info: hängende Order am Datenende: Richtung +1, Limit 830.80 $, gesetzt 2009-01-20 14:00, letzter Kurs 4285.13 $
+
+Info Autor-Zeitraum Jan-Jul 2026, 0,01 Lot (1 Unze) auf 10.000 $: +0.00 $ = +0.00% bei 0 Trades (Autor: +48,7 % bei 64 Trades)
+Info frischer Start (Tester ab ~Nov 2025), Jan-Jul 2026, 0,01 Lot: -136.88 $ = -1.37% bei 71 Trades, Treffer 21%
+
+NACHTRÄGLICHE VARIANTE (nur Info, nicht gewertet): Limit-Order wird gelöscht, sobald ihre FVG-Zone verfällt
+  Trades 9835, Ticks mit hängender Order 16.3%
+  Variante Haupt 2016-01..2025-09: -39.6% p.a. vs SPY +14.8%, Überrendite Ø -5.23%/Monat, t -7.75, Max-DD (Monat) -99.2%
+  Variante Einordnung 2008-2015: -39.8% p.a. vs SPY  +6.5%, Überrendite Ø -4.67%/Monat, t -6.58, Max-DD (Monat) -98.2%
+  2008-2015            n  4059  Ø R -0.097  t -7.82  Treffer 14.2%  PF 0.69
+  2016-2025/09         n  5145  Ø R -0.092  t -8.03  Treffer 15.7%  PF 0.72
+  Jan-Jul 2026         n   378  Ø R -0.150  t -2.36  Treffer 31.5%  PF 0.76
+Info: Ø G/V je Trade -0.817 $ je Unze netto; Laufzeit 28 s
