@@ -4786,3 +4786,17 @@ Skript research/scripts/r160.py, Ausgabe r160_output.txt.
   2024 -6,8/+1,5; 2025 +1,0/+0,1; 2026 -4,1/+0,2 -> Ø +2,4 Punkte, aber nur 5 von 10 besser; 2023 trägt fast alles.
 - Info: Zwanzigstel +18,9 % (t 0,98); Einstieg am Auswahltag +15,5 % (t 0,21); Ausstieg Mitte Januar +18,2 % (t 1,53).
 Lehre: Richtung wie in der Literatur, aber zu wenige und zu ungleiche Ereignisse; kein belastbarer Vorteil.
+
+# Runde 161: DCA-Bot mit Safety Orders (3Commas-Stil) auf BTC/USDT (Vorab, 2026-10-20)
+
+Zweiter Klassiker der Krypto-Bot-Plattformen (3Commas, Pionex "Martingale", Bitget); im Protokoll noch nicht getestet.
+Daten wie Runde 159 (Binance BTCUSDT 1m 2020-01..2026-08), Kurspfad je Minute wie Runde 159.
+Regeln (3Commas-Standard, vorab fest): Deal startet sofort (auch direkt nach dem vorigen) mit Basis-Order 10 USDT zum
+Kurs; Safety Orders bei -1 %, -2 %, -3 %, -4 %, -5 % vom Einstiegskurs (Abstand 1 %, Schrittfaktor 1) mit 20, 40, 80,
+160, 320 USDT (Volumenfaktor 2) -> Kapital je Deal 630 USDT; Take-Profit +1 % über dem Durchschnittskurs aller
+Käufe, kein Stop-Loss (Standard), keine Laufzeitgrenze. Gebühr 0,1 % je Füllung. Kapital 630 USDT, nicht investierter
+Teil ohne Zins. Bewertung täglich, Monatsrenditen.
+BESTANDEN, wenn 2020-01..2026-08 Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften
+(2020-2022, 2023-2026/08) > 0.
+Info (nicht gewertet): BTC halten; Zahl der Deals, längster offener Deal, größter Buchverlust; Take-Profit 2 %.
+Skript research/scripts/r161.py, Ausgabe r161_output.txt.
