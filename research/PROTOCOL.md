@@ -4598,3 +4598,40 @@ Bekannte Unterschiede: (1) Yahoo-FX notiert sonntags erst ab 23:00 UTC -> Gotobi
 So 20:00 UTC) entfallen (~14 % der Gotobi-Tage; Dukascopy zeigte dort einen stehenden Kurs, real nicht handelbar).
 (2) Nikkei-Future statt CFD: Dividendenabschläge (März/September) belasten nicht mehr. (3) Mittel + feste Spanne
 statt echter Geld/Brief-Kurse. Bei der Auswertung 2027-10-01 / 2028-10-01 beide Abschnitte getrennt ausweisen.
+
+# Runde 155: Nachbau "FvgGold" (GitHub foeed/FvgGold-EA, MIT, Fair Value Gap + Order Block) (Vorab, 2026-10-20)
+
+Nutzer: "such weiter nach anderen Bots und Ideen zum Nachbauen". Quelle: github.com/foeed/FvgGold-EA (FvgGold.mq5 v2.01
++ FvgGold.set, 44 Sterne, auch kostenlos im MQL5 Market). "Smart Money"/ICT-Konzept (Fair Value Gaps, Order Blocks,
+Killzones) wurde im Protokoll noch nicht getestet. Behauptung des Autors: XAUUSD M15, 0,01 Lot, 10.000 $, Jan-Jul 2026
++48,7 % bei 64 Trades und 45 % Treffern -- mit den eigenen Standardwerten (Stop 4,50 $, Ziel 6,75 $ je Unze) höchstens
+64 x 6,75 $ = +4,3 % möglich, also rechnerisch unmöglich.
+Daten: Dukascopy XAUUSD M1 Geld (xau) und Brief (xau_ask) 2008-01..2025-09 (wie Runde 153: fehlende Seite über den
+mittleren Spread, flache Kerzen entfernt); M15- und H1-Kerzen aus M1-Geld (UTC).
+Regeln genau wie FvgGold.mq5 mit FvgGold.set; jede M1-Kerze gilt als ein Tick (Geld/Brief = Schlusskurse der Minute):
+- Je Tick zuerst Ausstiege/Füllungen der laufenden Minute (Hoch/Tief), dann wie OnTick: Tages-G/V, Einstand-Regel,
+  Tageslimit, Order Blocks und FVGs erkennen und bereinigen, H1-Trend, Killzone, Limit-Orders.
+- ATR14 M15 wie MT5-iATR (einfacher Durchschnitt der True Range, laufende Kerze eingeschlossen); EMA50/200 H1 wie
+  iMA mit laufender Kerze (= aktueller Geldkurs).
+- FVG: Kerzen i/i-1/i-2 (i = 3..29), Tief(i-2) > Hoch(i) bullisch, Hoch(i-2) < Tief(i) bärisch; Lücke >= 0,25 $;
+  Alter der Mittelkerze 2..20; Punktzahl = min(Lücke/ATR,1) x 30 + Körper/Spanne der Mittelkerze x 30 + 20 bei
+  Trendrichtung + (1 - Alter/20) x 10 + 10 bei Kauf unter / Verkauf über EMA50 H1 + 20 bei Order-Block-Nähe;
+  aufgenommen ab 50 Punkten; entfernt nach 20 Kerzen Alter oder wenn Geld < Mitte (bullisch) bzw. Brief > Mitte.
+- Order Block: Gegenkerze vor einer Impulskerze mit Körper >= 1,5 x ATR (Impuls in Kerze 2..54), Körper >= 0,10 $;
+  entfernt nach 50 Kerzen oder wenn Geld < Unterkante (bullisch) bzw. Brief > Oberkante. Nähe: Überlappung oder
+  Abstand <= 2,00 $.
+- Orders nur bei Trend EMA50 != EMA200 in Trendrichtung und Killzone 07-10 oder 12-21 UTC; höchstens 1 Order bzw.
+  Position (offene Limit-Orders zählen und laufen unbegrenzt, wie im EA); Buy-Limit bei Unterkante + 1,50 $, Stop
+  Unterkante - 3,00 $, Ziel 1,5 x Stop-Abstand (Sell spiegelbildlich); nur wenn der Kurs mindestens 1 Spread vom
+  Einstieg entfernt ist (Stop-Level 0). Füllung zum Limit (Kurslücke -> Eröffnungskurs); long: Brief füllt, Geld
+  schließt; Stop vor Ziel in derselben Minute, Füllminute nur Stop. Einstand: Gewinn >= 0,5 x ATR -> Stop auf
+  Einstieg + 0,02 $ (ab Folgeminute). Tageslimit: G/V der am Server-Tag (17:00 New York) geschlossenen Trades je
+  Unze <= -5,00 $ -> keine neuen Zonen/Orders (laufende Orders/Positionen bleiben).
+- Kosten: echter Spread + Kommission 0,5 bp je Runde; Swap long 6,3 % p.a. auf den Einstiegswert je gehaltenem Tag,
+  short 0.
+- Größe: 1 % Risiko je Trade auf das aktuelle Kapital (R = G/V / 4,50 $), wie Runde 153.
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2025-09 Rendite p.a. > SPY halten (inkl. Dividenden) UND t der monatlichen
+Überrendite ggü. SPY >= 2,0 (eine These) UND Einordnungszeitraum 2008-2015 Überrendite ggü. SPY > 0.
+Info (nicht gewertet): Trades, Treffer, Ø R, PF, Max-DD, long/short; Autor-Zeitraum Jan-Jul 2026 mit 0,01 Lot auf
+10.000 $ (Geld ab 2025-09-20 = Brief - mittlerer Spread); Anteil Zeit mit hängender Limit-Order.
+Skript research/scripts/r155.py, Ausgabe r155_output.txt.
