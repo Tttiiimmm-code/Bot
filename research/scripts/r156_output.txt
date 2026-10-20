@@ -1,0 +1,18 @@
+Runde 156 -- Spin-offs: 257 Firmen mit 10-12B, 101 Spin-offs im Panel (>= 5 $), 153 ohne passendes Kürzel/Notiz (nicht handelbar, kein Kürzel oder nie gelistet)
+
+Erstnotizen je Jahr: {2016: 12, 2017: 9, 2018: 13, 2019: 9, 2020: 8, 2021: 12, 2022: 12, 2023: 12, 2024: 9, 2025: 5}
+
+Hauptkriterium (Einstieg Monatsende der Erstnotiz, 24 Monate, 10 bp je Seite):
+  24 Monate: +13.8% p.a. vs SPY +15.1%, t +0.20, Hälften  -5.5% /  +2.6%, Max-DD -44.5%, Ø 20 Titel, Cash-Monate 10 -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  12 Monate: +20.4% p.a. vs SPY +15.1%, t +1.01, Hälften  -2.2% / +12.4%, Max-DD -39.8%, Ø 11 Titel, Cash-Monate 18 (Info)
+  36 Monate:  +8.1% p.a. vs SPY +15.1%, t -0.77, Hälften  -8.9% /  -5.2%, Max-DD -51.2%, Ø 29 Titel, Cash-Monate 10 (Info)
+  24 Monate, Einstieg erster Schluss: +15.1% p.a. vs SPY +15.1%, t +0.39, Hälften  -1.8% /  +1.7%, Max-DD -47.0%, Ø 21 Titel, Cash-Monate 9 (Info)
+  Rendite im Monat der Erstnotiz (ab erstem Schluss): Ø +4.22%, Median +0.90%
+
+NACHTRÄGLICH (nur Info): Erstnotiz bis 1.100 Tage nach der ersten 10-12B-Meldung
+Runde 156 -- Spin-offs: 257 Firmen mit 10-12B, 106 Spin-offs im Panel (>= 5 $), 147 ohne passendes Kürzel/Notiz (nicht handelbar, kein Kürzel oder nie gelistet)
+
+Erstnotizen je Jahr: {2016: 13, 2017: 10, 2018: 13, 2019: 9, 2020: 8, 2021: 13, 2022: 12, 2023: 13, 2024: 9, 2025: 5, 2026: 1}
+  24 Monate, Fenster 1100 Tage: +12.0% p.a. vs SPY +15.1%, t -0.11, Hälften  -9.1% /  +2.5%, Max-DD -45.1%, Ø 20 Titel, Cash-Monate 7 (Info)

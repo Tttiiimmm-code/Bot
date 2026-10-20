@@ -4673,3 +4673,15 @@ BESTANDEN, wenn Rendite p.a. > SPY halten (inkl. Dividenden) UND t der monatlich
 Info (nicht gewertet): Haltedauer 12 und 36 Monate; Einstieg zum ersten Schlusskurs; Zahl der Spin-offs, Anteil ohne
 gefundenes Kürzel (Überlebensfehler benennen); Monate in Cash.
 Skripte research/scripts/r156_fetch.py, r156.py, Ausgabe r156_output.txt.
+
+## Ergebnis Runde 156 (2026-10-20): NICHT BESTANDEN
+
+257 Firmen mit 10-12B, 101 Spin-offs im Panel (>= 5 $; 9-13 je Jahr, Ø 20 Titel im Portfolio, 10 Cash-Monate).
+- 24 Monate (gewertet): +13,8 % p.a. vs SPY +15,1 %, t +0,20, Hälften -5,5 % / +2,6 %, Max-DD -44,5 %.
+- Info: 12 Monate +20,4 % (t 1,01; Hälften -2,2 % / +12,4 %), 36 Monate +8,1 % (t -0,77), Einstieg erster Schluss
+  +15,1 % (t 0,39); Monat der Erstnotiz Ø +4,2 % / Median +0,9 % (wenige Ausreißer). Fenster 1.100 Tage (nachträglich)
+  +12,0 %, t -0,11.
+- Überlebensfehler benannt: unter 69 Meldern ohne Kürzel ~15 echte Spin-offs, die heute fehlen, in beide Richtungen
+  (übernommen: Baxalta, Versum, CSRA, Vistana, Parkway; insolvent: LSC, Quorum, Venator, Mallinckrodt); der Rest
+  Kleinstfirmen/nicht gelistete Vehikel.
+Lehre: Der klassische Spin-off-Effekt ist in den USA seit 2016 nicht mehr nachweisbar (wie Aalto 2010-2022).
