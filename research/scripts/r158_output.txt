@@ -1,0 +1,17 @@
+Runde 158 -- Fed Net Liquidity, 2002-12-18 bis 2026-10-14, zuletzt 5.87 Bio. $
+
+Hauptkriterium (Veränderung über 4 Wochen > 0 -> SPY, sonst T-Bills):
+  chg4: -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08: +11.1% p.a. vs SPY +15.1%, t -1.21, in SPY 51%, Wechsel 130, Max-DD -33.6% (SPY -33.7%)
+    Einordnung 2003-2015:  +8.2% p.a. vs SPY  +8.8%, t -0.38, in SPY 64%, Wechsel 172, Max-DD -46.5% (SPY -55.2%)
+
+Info (nicht gewertet):
+  chg1: (Info)
+    Haupt 2016-01..2026-08: +11.2% p.a. vs SPY +15.1%, t -1.23, in SPY 53%, Wechsel 258, Max-DD -25.7% (SPY -33.7%)
+    Einordnung 2003-2015:  +0.0% p.a. vs SPY  +8.8%, t -3.44, in SPY 54%, Wechsel 400, Max-DD -50.5% (SPY -55.2%)
+  chg13: (Info)
+    Haupt 2016-01..2026-08: +11.4% p.a. vs SPY +15.1%, t -1.19, in SPY 47%, Wechsel 66, Max-DD -33.7% (SPY -33.7%)
+    Einordnung 2003-2015:  +6.6% p.a. vs SPY  +8.8%, t -0.95, in SPY 73%, Wechsel 148, Max-DD -47.6% (SPY -55.2%)
+  ma13: (Info)
+    Haupt 2016-01..2026-08: +10.5% p.a. vs SPY +15.1%, t -1.40, in SPY 48%, Wechsel 110, Max-DD -26.7% (SPY -33.7%)
+    Einordnung 2003-2015:  +6.2% p.a. vs SPY  +8.8%, t -1.24, in SPY 70%, Wechsel 166, Max-DD -50.8% (SPY -55.2%)

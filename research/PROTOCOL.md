@@ -4723,3 +4723,11 @@ BESTANDEN, wenn im Hauptzeitraum 2016-01..2026-08 Rendite p.a. > SPY halten UND 
 Einordnungszeitraum 2003-2015 Überrendite > 0.
 Info (nicht gewertet): Veränderung über 1 und 13 Wochen; Liquidität über ihrem 13-Wochen-Schnitt; Anteil Zeit in SPY.
 Skript research/scripts/r158.py, Ausgabe r158_output.txt.
+
+## Ergebnis Runde 158 (2026-10-20): NICHT BESTANDEN
+
+- 4 Wochen (gewertet): Haupt +11,1 % p.a. vs SPY +15,1 %, t -1,21 (51 % der Zeit in SPY, 130 Wechsel, Max-DD -33,6 %
+  wie SPY); Einordnung 2003-2015 +8,2 % vs +8,8 % (t -0,38).
+- Info: 1 Woche +11,2 % / Einordnung +0,0 % (t -3,44); 13 Wochen +11,4 % / +6,6 %; über 13-Wochen-Schnitt +10,5 % /
+  +6,2 %. Keine Variante vor SPY, Drawdown kaum besser.
+Lehre: Die populäre "Net Liquidity"-Kurve erklärt im Nachhinein, sagt aber nichts voraus.
