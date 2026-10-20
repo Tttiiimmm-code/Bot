@@ -4977,3 +4977,15 @@ Skript research/scripts/r168.py, Ausgabe r168_output.txt.
 - Info: nur bis Vortag +9,5 % (je Trade +0,11 %, t 2,2); 10 Tage +8,8 % (+0,18 %, t 2,3).
 Lehre: Eine kleine Prämie vor Zahlen ist messbar, aber kleiner als die Handelskosten; gleichgewichtete Einzelaktien
 liegen seit 2016 ohnehin hinter dem kapitalgewichteten SPY.
+
+# Runde 169: Put/Call-Verhältnis als Kontra-Signal für SPY (Vorab, 2026-10-20)
+
+Verbreiteter Stimmungsindikator: niedriges Put/Call (Sorglosigkeit) -> raus, hohes (Angst) -> rein. Im Protokoll nicht
+getestet. AAII-Umfrage nicht abrufbar (Bot-Schutz, nicht umgangen). Daten: CBOE equitypc.csv/totalpc.csv, nur
+2006-11..2019-10 öffentlich -> kein Zeitraum nach 2019 (Einschränkung).
+Regel: z = (SMA10 des Aktien-Put/Call - Mittel 252 Tage) / Standardabweichung 252 Tage am Vortagesschluss; z < -1 ->
+T-Bills, sonst SPY; 2 bp je Wechsel.
+BESTANDEN, wenn 2008-01..2019-09 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND beide Hälften
+(2008-2013, 2014-2019/09) Überrendite > 0.
+Info (nicht gewertet): Gesamt-Put/Call; Schwelle z < -1,5; Zusatz "z > +1,5 -> 1,5x SPY".
+Skript research/scripts/r169.py, Ausgabe r169_output.txt.
