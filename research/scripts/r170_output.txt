@@ -1,0 +1,7 @@
+Runde 170 -- marktweite Insiderkäufe, 64,951 Käufe, Breite Ø 282 Firmen/20 Tage
+
+Hauptkriterium (z > 1,5 -> 20 Tage 1,5x SPY):
+  z > 1,5: +14.0% p.a. vs SPY +15.2%, t -0.26, Hälften  -0.7% /  -1.7%, Signale 16, Tage mit Hebel 14%, SPY je Tag mit Hebel -0.5 bp vs sonst +7.4 bp -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  z > 1,0: +15.8% p.a. vs SPY +15.2%, t +0.66, Hälften  +0.3% /  +0.8%, Signale 32, Tage mit Hebel 28%, SPY je Tag mit Hebel +5.6 bp vs sonst +6.6 bp (Info)

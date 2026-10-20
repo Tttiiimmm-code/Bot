@@ -5009,3 +5009,10 @@ BESTANDEN, wenn 2016-10..2025-09 Rendite p.a. > SPY UND t der monatlichen Überr
 (2016-2020, 2021-2025/09) > 0.
 Info (nicht gewertet): Zahl der Signale; Schwelle z > 1; SPY-Rendite der 20 Tage nach Signal vs sonst.
 Skript research/scripts/r170.py, Ausgabe r170_output.txt.
+
+## Ergebnis Runde 170 (2026-10-20): NICHT BESTANDEN
+
+- z > 1,5 (gewertet): +14,0 % p.a. vs SPY +15,2 %, t -0,26, Hälften -0,7 / -1,7 Punkte; 16 Signale, 14 % der Tage mit
+  Hebel; SPY je Tag nach Signal -0,5 bp vs sonst +7,4 bp.
+- Info: z > 1,0 +15,8 % (t 0,66), 32 Signale.
+Lehre: Breite Insiderkäufe kommen mitten in fallenden Märkten ("fallendes Messer") -- kein brauchbares Timing.
