@@ -4709,3 +4709,17 @@ Skript research/scripts/r157.py, Ausgabe r157_output.txt.
 - Info: 6 Monate +3,2 % (t -2,54), 24 Monate +8,2 % (t -1,38), nur >= 10 $ und >= 10 Mio. $ Umsatz (185 Fälle)
   +3,9 % (t -1,92). Vorbehalt: Panel ohne ETF-Kennung, einzelne Fonds unter den Fällen möglich.
 Lehre: Erstausschütter liegen seit 2018 eher hinter dem Markt; die Unterreaktion von 1995 ist nicht mehr da.
+
+# Runde 158: "Fed Net Liquidity" als SPY-Zeitsignal (Vorab, 2026-10-20)
+
+Populäre These (seit 2022 auf Twitter/YouTube): Aktien folgen der Netto-Liquidität der Fed = Bilanzsumme (WALCL)
+- Konto des Finanzministeriums (WTREGEN) - Reverse Repos (RRPONTSYD). Im Protokoll noch nicht getestet (verwandt:
+Runde 59 Makro-Termine, Runde 123 taktische Aufteilung).
+Daten: FRED WALCL, WTREGEN (wöchentlich, Stand Mittwoch, veröffentlicht Donnerstag 16:30 ET), RRPONTSYD (täglich, Wert
+vom Mittwoch), DTB3 (T-Bill); SPY inkl. Dividenden (wie Runde 153).
+Regel: Netto-Liquidität je Mittwoch; Signal = Veränderung über 4 Wochen > 0 -> SPY, sonst T-Bills (DTB3). Umschichten
+zum Schlusskurs am Freitag nach der Veröffentlichung (gilt ab Montag); Kosten 2 bp je Wechsel.
+BESTANDEN, wenn im Hauptzeitraum 2016-01..2026-08 Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND
+Einordnungszeitraum 2003-2015 Überrendite > 0.
+Info (nicht gewertet): Veränderung über 1 und 13 Wochen; Liquidität über ihrem 13-Wochen-Schnitt; Anteil Zeit in SPY.
+Skript research/scripts/r158.py, Ausgabe r158_output.txt.
