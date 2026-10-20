@@ -4996,3 +4996,16 @@ Skript research/scripts/r169.py, Ausgabe r169_output.txt.
   20 % der Zeit außerhalb SPY.
 - Info: Gesamt-Put/Call +6,3 %; z < -1,5 +7,4 %; mit 1,5x bei Angst +8,0 % (t -0,26). Daten enden 2019.
 Lehre: Sorglosigkeit laut Put/Call ist kein Verkaufssignal; die Ausstiege kosten Rendite.
+
+# Runde 170: Marktweite Insiderkäufe als SPY-Hebelsignal (Lakonishok & Lee 2001) (Vorab, 2026-10-20)
+
+These: Breite Insiderkäufe über viele Firmen (z. B. März 2020) gehen Marktanstiegen voraus. Bisher nur je Aktie getestet
+(Runden 11, 115). Daten: SEC-Insiderkäufe (Code P, Officer/Director, >= 25.000 $, data_cache/edgar/insider_purchases.pkl,
+2015-10..2025-09, Meldedatum).
+Regel: Breite = Zahl verschiedener Firmen mit Käufen in den letzten 20 Handelstagen (bis Vortag); z gegenüber Mittel
+und Streuung der letzten 252 Handelstage. z > +1,5 -> die nächsten 20 Handelstage 1,5x SPY (Kredit T-Bill + 0,5 %),
+sonst 1x SPY; 2 bp je Wechsel des Hebels.
+BESTANDEN, wenn 2016-10..2025-09 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND beide Hälften
+(2016-2020, 2021-2025/09) > 0.
+Info (nicht gewertet): Zahl der Signale; Schwelle z > 1; SPY-Rendite der 20 Tage nach Signal vs sonst.
+Skript research/scripts/r170.py, Ausgabe r170_output.txt.
