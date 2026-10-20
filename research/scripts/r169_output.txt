@@ -1,0 +1,9 @@
+Runde 169 -- Put/Call als Kontra-Signal (CBOE, 2006-11..2019-10)
+
+Hauptkriterium (Aktien-Put/Call, z < -1 -> T-Bills):
+  equity z<-1:  +6.8% p.a. vs SPY  +8.4%, t -1.16, Hälften  -3.0% /  -0.2%, außerhalb SPY 20% -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  total z<-1:  +6.3% p.a. vs SPY  +8.4%, t -1.04, Hälften  -3.0% /  -1.1%, außerhalb SPY 20% (Info)
+  equity z<-1,5:  +7.4% p.a. vs SPY  +8.4%, t -1.14, Hälften  -1.4% /  -0.7%, außerhalb SPY 10% (Info)
+  equity z<-1, z>+1,5 -> 1,5x:  +8.0% p.a. vs SPY  +8.4%, t -0.26, Hälften  -1.9% /  +1.2%, außerhalb SPY 20% (Info)

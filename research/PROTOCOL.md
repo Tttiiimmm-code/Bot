@@ -4989,3 +4989,10 @@ BESTANDEN, wenn 2008-01..2019-09 Rendite p.a. > SPY UND t der monatlichen Überr
 (2008-2013, 2014-2019/09) Überrendite > 0.
 Info (nicht gewertet): Gesamt-Put/Call; Schwelle z < -1,5; Zusatz "z > +1,5 -> 1,5x SPY".
 Skript research/scripts/r169.py, Ausgabe r169_output.txt.
+
+## Ergebnis Runde 169 (2026-10-20): NICHT BESTANDEN
+
+- Aktien-Put/Call z < -1 (gewertet): +6,8 % p.a. vs SPY +8,4 % (2008-2019/09), t -1,16, Hälften -3,0 / -0,2 Punkte,
+  20 % der Zeit außerhalb SPY.
+- Info: Gesamt-Put/Call +6,3 %; z < -1,5 +7,4 %; mit 1,5x bei Angst +8,0 % (t -0,26). Daten enden 2019.
+Lehre: Sorglosigkeit laut Put/Call ist kein Verkaufssignal; die Ausstiege kosten Rendite.
