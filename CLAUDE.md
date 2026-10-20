@@ -56,8 +56,10 @@ neuen Infos gibt (nicht erst am Ende):
 - VPS-Dienste: momentum, overnight (Dry-Run seit 2026-10-02), liq-recorder, copilot-gui, copilot-watch, pelosi-bot.
   Timer: forward-test, forward-stocks, forward-status, forward-gold, forward-pelosi, momentum-checkpoint, health,
   backup-data. Konten: `.env` (Momentum), `overnight.env` (Overnight-Dry-Run + Pelosi-Bot), `copilot.env`.
-- MT5-EA `mql5/GoldBreakout.mq5` läuft auf dem PC des Nutzers (OANDA-Demo). Kompilieren:
-  `MetaEditor64.exe /compile:"..." /log:"..."`.
+- MT5-EA `mql5/GoldBreakout.mq5` läuft seit 2026-10-20 auf dem VPS (MT5 unter Wine, Dienste `mt5-display`/`mt5`,
+  Benutzer `mt5`, `C:\MT5`, Logs UTF-16 in `logs/` und `MQL5/logs/`; Ansicht per `MT5 VPS anzeigen.bat`), OANDA-Demo.
+  PC-MT5 stillgelegt (Algo-Handel aus) -- nie beide gleichzeitig. Kompilieren am PC:
+  `MetaEditor64.exe /compile:"..." /log:"..."`, `.ex5` nach `/home/mt5/.wine/drive_c/MT5/MQL5/Experts/` kopieren.
 
 ## VPS
 
