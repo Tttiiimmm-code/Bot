@@ -4873,3 +4873,24 @@ Skript research/scripts/r164.py, Ausgabe r164_output.txt.
 - Info: Small Dogs +7,9 % (t -1,58); Top 5 +10,4 % (t -0,82).
 Lehre: Hohe Dividendenrendite im Dow markiert seit 2017 vor allem Firmen im Abstieg (VZ, WBA, INTC, MMM); die Regel
 liegt sogar hinter dem Dow selbst.
+
+# Runde 165: TradingView-Klassiker MACD+EMA200, Heikin-Ashi, Stochastik, TTM Squeeze auf ETFs (Vorab, 2026-10-20)
+
+Die vier meistgezeigten Indikator-Strategien (TradingView/YouTube), im Protokoll noch nicht getestet (getestet: RSI(2),
+Bollinger, Donchian, Keltner, Super Trend, Ichimoku). Standardeinstellungen, nur long, sonst T-Bills (DTB3).
+Daten: Yahoo Tageskerzen (OHLC mit adjclose/close bereinigt) für SPY, QQQ, IWM, DIA, EFA, EEM, TLT, IEF, GLD, SLV,
+XLE, XLF, XLK, VNQ, DBC; je ETF ab Datenbeginn + 200 Tage Vorlauf.
+Regeln (Signal zum Schluss, Position ab diesem Schluss, 2 bp je Wechsel):
+- M MACD(12,26,9) kreuzt über die Signallinie UND Schluss > EMA200 -> long; raus, wenn MACD unter die Signallinie kreuzt.
+- H Heikin-Ashi: long, solange die HA-Kerze grün ist (HA-Schluss > HA-Eröffnung), sonst flach.
+- S Stochastik(14,3,3): %K kreuzt über %D bei %K < 20 UND Schluss > EMA200 -> long; raus, wenn %K unter %D kreuzt bei
+  %K > 80.
+- T TTM Squeeze (LazyBear): Squeeze an, wenn Bollinger(20; 2) innerhalb Keltner(20; 1,5 x ATR20); Auslöser = erster Tag
+  ohne Squeeze nach >= 1 Squeeze-Tag; long, wenn Momentum (lineare Regression 20 von Schluss - Mittel aus
+  Donchian-Mitte 20 und SMA20) > 0; raus, sobald das Momentum gegenüber dem Vortag fällt.
+- Portfolio je Regel: 15 ETFs gleich gewichtet (je 1/N verfügbarer ETFs, monatlich neu gewichtet), flacher Anteil in
+  T-Bills.
+BESTANDEN (je Regel), wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,24
+(Bonferroni 4, einseitig) UND Einordnung 2006-2015 Überrendite > 0.
+Info (nicht gewertet): je Regel nur SPY; Anteil Zeit investiert; Kauf-und-Halten der 15 ETFs gleich gewichtet.
+Skript research/scripts/r165.py, Ausgabe r165_output.txt.
