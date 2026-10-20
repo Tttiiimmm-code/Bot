@@ -53,6 +53,9 @@ neuen Infos gibt (nicht erst am Ende):
 
 - `tradingbot/forward_status.py`: gemeinsame Regel K=11 (Auswertung 2027-10-01 / 2028-10-01), eigene Familien
   `gold_breakout` (2028-10-01) und `pelosi_copy` (2029-10-01). Ein bindender Blick, nicht vorher entscheiden.
+- Minuten-Vorwärtstests (nikkei_night, gotobi, gotobi_eurjpy ab 2026-10-08, gold_breakout) rechnen aus Yahoo
+  (`intraday_backup`: 1m, Lücken 5m, Gold-/Nikkei-Einzelkontrakte verkettet). Dukascopy für Vorwärtstests aufgegeben
+  (Nutzer 2026-10-20); Kontraktwechsel Gold 20. des Vormonats der Lieferung, Nikkei 1. des Verfallsmonats.
 - VPS-Dienste: momentum, overnight (Dry-Run seit 2026-10-02), liq-recorder, copilot-gui, copilot-watch, pelosi-bot.
   Timer: forward-test, forward-stocks, forward-status, forward-gold, forward-pelosi, momentum-checkpoint, health,
   backup-data. Konten: `.env` (Momentum), `overnight.env` (Overnight-Dry-Run + Pelosi-Bot), `copilot.env`.
