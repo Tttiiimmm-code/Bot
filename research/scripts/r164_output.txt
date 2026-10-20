@@ -1,0 +1,18 @@
+Runde 164 -- Dogs of the Dow (Yahoo, WBA aus Alpaca)
+
+Hauptkriterium (10 höchste Dividendenrenditen, jährlich, 5 bp je Seite):
+  Dogs 10:  +9.9% p.a. vs SPY +15.4% (DIA +12.9%), t -1.30, Hälften -10.9% /  +0.2%, Max-DD (Monat) -25.9% -> NICHT BESTANDEN
+    2017: VZ PFE CVX KO CAT IBM XOM CSCO DD PG
+    2018: GE VZ IBM XOM PFE CVX MRK KO PG CSCO
+    2019: IBM XOM VZ CVX KO PFE PG CSCO MMM DWDP
+    2020: XOM IBM CVX VZ DOW PFE MMM WBA KO CSCO
+    2021: CVX IBM DOW WBA VZ MMM CSCO MRK KO JPM
+    2022: DOW VZ IBM CVX WBA MRK MMM AMGN KO INTC
+    2023: VZ DOW INTC WBA MMM IBM CSCO CVX JPM AMGN
+    2024: WBA VZ MMM DOW IBM CVX KO CSCO JNJ AMGN
+    2025: VZ CVX AMGN JNJ MRK KO IBM CSCO MMM PG
+    2026: VZ CVX MRK KO PG AMGN HD UNH NKE JNJ
+
+Info (nicht gewertet):
+  Small Dogs (5 billigste der 10):  +7.9% p.a. vs SPY +15.4% (DIA +12.9%), t -1.58, Hälften  -6.8% /  -8.1%, Max-DD (Monat) -27.4% (Info)
+  Top 5 nach Rendite: +10.4% p.a. vs SPY +15.4% (DIA +12.9%), t -0.82, Hälften -12.1% /  +2.9%, Max-DD (Monat) -31.5% (Info)

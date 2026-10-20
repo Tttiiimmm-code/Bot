@@ -4865,3 +4865,11 @@ Erste Auswahl Ende 2016 (Dividenden ab 2016), Zeitraum 2017-01..2026-08; Hälfte
 BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften Überrendite > 0.
 Info (nicht gewertet): Vergleich mit DIA; "Small Dogs" (5 billigste der 10); Top 5 nach Rendite.
 Skript research/scripts/r164.py, Ausgabe r164_output.txt.
+
+## Ergebnis Runde 164 (2026-10-20): NICHT BESTANDEN
+
+- Dogs 10 (gewertet): +9,9 % p.a. vs SPY +15,4 % (DIA +12,9 %), t -1,30, Hälften -10,9 % / +0,2 %, Max-DD -25,9 %.
+  Auswahl plausibel (z. B. 2018 mit GE, 2020-2024 mit WBA; Daten ohne Überlebensfehler).
+- Info: Small Dogs +7,9 % (t -1,58); Top 5 +10,4 % (t -0,82).
+Lehre: Hohe Dividendenrendite im Dow markiert seit 2017 vor allem Firmen im Abstieg (VZ, WBA, INTC, MMM); die Regel
+liegt sogar hinter dem Dow selbst.
