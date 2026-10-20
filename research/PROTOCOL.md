@@ -4808,3 +4808,15 @@ Skript research/scripts/r161.py, Ausgabe r161_output.txt.
 - Info: TP 2 % +18,2 % (t 0,48; Hälften +15,0 % / -7,7 %). BTC halten +38,2 % (Runde 159).
 Lehre: Ein DCA-Bot ist ein halber, verzögerter BTC-Kauf mit Martingale-Nachkäufen; im Abschwung hängt er jahrelang
 fest. Er erreicht weder BTC halten noch belastbar SPY.
+
+# Runde 162: VIX-Terminstruktur als SPY-Zeitsignal (Vorab, 2026-10-20)
+
+Verbreitete Crash-Schutz-Regel: Aktien nur halten, wenn die VIX-Kurve in Contango ist (VIX < VIX3M); Backwardation =
+Stress -> raus. Bisher nur für Short-Vola (Runde 9/Neubewertung 2026-10-03), nicht als SPY-Signal getestet.
+Daten: Yahoo ^VIX, ^VIX3M (Tagesschluss, ab 2007-12), SPY inkl. Dividenden, FRED DTB3.
+Regel: VIX < VIX3M am Vortagesschluss -> SPY, sonst T-Bills; Wechsel zum Schluss, 2 bp je Wechsel.
+BESTANDEN, wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND Einordnung
+2008-2015 Überrendite > 0.
+Info (nicht gewertet): Verhältnis VIX/VIX3M < 0,95; 2x SPY (Kreditzins T-Bill + 0,5 %) bei Contango, sonst T-Bills;
+Anteil Zeit in SPY, Max-DD.
+Skript research/scripts/r162.py, Ausgabe r162_output.txt.
