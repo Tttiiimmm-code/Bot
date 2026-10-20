@@ -4800,3 +4800,11 @@ BESTANDEN, wenn 2020-01..2026-08 Rendite p.a. > SPY halten UND t der monatlichen
 (2020-2022, 2023-2026/08) > 0.
 Info (nicht gewertet): BTC halten; Zahl der Deals, längster offener Deal, größter Buchverlust; Take-Profit 2 %.
 Skript research/scripts/r161.py, Ausgabe r161_output.txt.
+
+## Ergebnis Runde 161 (2026-10-20): NICHT BESTANDEN
+
+- TP 1 % (gewertet): +16,4 % p.a. vs SPY +15,5 %, t +0,27, Hälften +12,8 % / -9,1 %, Max-DD (Monat) -28,2 %, 1.630
+  Deals, längster Deal 845 Tage, größter Buchverlust -48,7 % des Kapitals.
+- Info: TP 2 % +18,2 % (t 0,48; Hälften +15,0 % / -7,7 %). BTC halten +38,2 % (Runde 159).
+Lehre: Ein DCA-Bot ist ein halber, verzögerter BTC-Kauf mit Martingale-Nachkäufen; im Abschwung hängt er jahrelang
+fest. Er erreicht weder BTC halten noch belastbar SPY.

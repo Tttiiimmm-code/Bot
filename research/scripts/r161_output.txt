@@ -1,0 +1,7 @@
+Runde 161 -- DCA-Bot (3Commas-Standard) BTC/USDT, Kapital 630 USDT je Deal
+
+Hauptkriterium (TP 1 %, 5 Safety Orders 1-5 %, Volumenfaktor 2, 0,1 % Gebühr):
+  TP 1 %: +16.4% p.a. vs SPY +15.5%, t +0.27, Hälften +12.8% /  -9.1%, Max-DD (Monat) -28.2%, Deals 1,630, längster Deal 845 Tage, größter Buchverlust -48.7% -> NICHT BESTANDEN
+
+Info (nicht gewertet):
+  TP 2 %: +18.2% p.a. vs SPY +15.5%, t +0.48, Hälften +15.0% /  -7.7%, Max-DD (Monat) -27.4%, Deals 489, längster Deal 845 Tage, größter Buchverlust -47.6% (Info)
