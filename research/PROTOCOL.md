@@ -4761,3 +4761,20 @@ Erster Lauf ungültig (Programmfehler: Zeitstempel in ms statt ns -> nie Neustar
   nur USDT); 20 Intervalle +10,0 %; 100 Intervalle +3,5 %; Spanne 0,90-1,11 -4,3 % (Gebühren).
 Lehre: Ein Spot-Grid ist ein Verkauf von Schwankung: es gibt den Trend her (verkauft im Anstieg) und trägt den Absturz
 voll mit (kauft bis zur Untergrenze nach) -- schlechter als BTC halten und als SPY.
+
+# Runde 160: Steuerverlust-Umkehr -- Jahresverlierer Ende Dezember kaufen, Ende Januar verkaufen (Vorab, 2026-10-20)
+
+These (Roll 1983; Reinganum 1983; Grinblatt & Moskowitz 2004): Verlierer des Jahres werden bis Mitte Dezember aus
+Steuergründen verkauft und erholen sich ab Ende Dezember bis in den Januar. Bisher nur Index-Januar-Effekt getestet
+(Runde 25, IWM statt SPY), nicht der Querschnitt der Verlierer.
+Daten: Alpaca-Tagespanel, Universum Top 500 nach Ø-Dollar-Umsatz (Runde 152, data_cache/r152_universe.pkl); SPY wie
+Runde 153.
+Regeln: Auswahltag = letzter Handelstag <= 15. Dezember; Verlierer = schwächstes Zehntel (50 Titel) der Top 500 am
+Auswahltag nach Rendite seit dem letzten Schlusskurs des Vorjahres, Kurs >= 5 $. Kauf gleichgewichtet zum Schluss des
+viertletzten Dezember-Handelstags, Verkauf zum Schluss des letzten Januar-Handelstags (Kauf und Halten, Notiz-Ende ->
+letzter Kurs). Übrige Zeit SPY. Kosten 10 bp je Seite für die Verlierer, 2 bp je SPY-Wechsel; Dividenden der Verlierer
+nicht gerechnet (gegen die Strategie).
+Zeitraum: 2017-01..2026-08 (10 Ereignisse, Januar 2017-2026); Hälften Januar 2017-2021 und 2022-2026.
+BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND Überrendite in beiden Hälften > 0.
+Info (nicht gewertet): Überrendite je Ereignis; schwächstes Zwanzigstel; Einstieg Auswahltag; Ausstieg Mitte Januar.
+Skript research/scripts/r160.py, Ausgabe r160_output.txt.
