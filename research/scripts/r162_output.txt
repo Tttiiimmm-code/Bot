@@ -1,0 +1,14 @@
+Runde 162 -- VIX/VIX3M ab 2007-01-03, Backwardation an 11.0% der Tage
+
+Hauptkriterium (VIX < VIX3M am Vortag -> SPY, sonst T-Bills):
+  Contango: -> NICHT BESTANDEN
+    Haupt 2016-01..2026-08: +12.7% p.a. vs SPY +15.1%, t -1.10, in SPY 92%, Wechsel 128, Max-DD -29.2% (SPY -33.7%)
+    Einordnung 2008-2015:  +7.3% p.a. vs SPY  +6.5%, t +0.11, in SPY 86%, Wechsel 138, Max-DD -31.4% (SPY -51.9%)
+
+Info (nicht gewertet):
+  VIX/VIX3M < 0,95: (Info)
+    Haupt 2016-01..2026-08: +11.3% p.a. vs SPY +15.1%, t -1.26, in SPY 80%, Wechsel 216, Max-DD -27.3% (SPY -33.7%)
+    Einordnung 2008-2015:  +4.4% p.a. vs SPY  +6.5%, t -0.57, in SPY 71%, Wechsel 175, Max-DD -25.7% (SPY -51.9%)
+  2x SPY bei Contango: (Info)
+    Haupt 2016-01..2026-08: +21.3% p.a. vs SPY +15.1%, t +1.67, in SPY 92%, Wechsel 128, Max-DD -52.6% (SPY -33.7%)
+    Einordnung 2008-2015: +11.8% p.a. vs SPY  +6.5%, t +1.25, in SPY 86%, Wechsel 138, Max-DD -55.2% (SPY -51.9%)
