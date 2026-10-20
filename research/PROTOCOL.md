@@ -4475,6 +4475,24 @@ Korrektur (festgelegt vor dem korrigierten Lauf): Signal entfällt, wenn Tagessc
 Einstiegstag oder Tageseröffnung und 9:30-Balken-Eröffnung am Ausstiegstag um > 10 % abweichen; Anzahl wird
 ausgegeben. Bewertet wird nur der korrigierte Lauf (r152_output.txt).
 
+## Ergebnis Runde 152 (2026-10-20): NICHT BESTANDEN (alle 9 Varianten)
+
+Korrektur entfernte 612 von 521.115 Signalen (u. a. DXJ, AMTD, ETHA, KNDI, SOXL). SPY 2016-2026-09 +16,0 % p.a.
+| Variante | p.a. | t ggü. SPY | Hälften Überrendite | brutto je Trade |
+|---|---|---|---|---|
+| K1 x V1 (Auktion/Auktion) | +10,4 % | -1,14 | -6,3 % / -5,1 % | +3,3 bp |
+| K1 x V2 | -3,2 % | -3,29 | -21,2 % / -17,6 % | +1,7 bp |
+| K1 x V3 | -5,0 % | -3,77 | -24,8 % / -17,7 % | +0,3 bp |
+| K2 x V1 | -4,6 % | -5,10 | -20,6 % / -20,6 % | +0,2 bp |
+| K2 x V2 / V3 | -12,6 % / -14,4 % | -7,25 / -7,44 | alle < -28 % | +0,6 / -0,4 bp |
+| K3 x V1 | +0,8 % | -1,79 | -22,1 % / -9,1 % | -4,3 bp |
+| K3 x V2 / V3 | -21,0 % / -19,4 % | -3,85 / -4,06 | alle < -29 % | -12,3 / -17,0 bp |
+
+Lehre: Ohne Blick in die Zukunft (Signal 15:50 statt Schlusskurs) schrumpft der Brutto-Vorteil von Runde 151
+(+8,5 bp) auf +3,3 bp; dynamischer Kauf (Umkehr am Tief, unter VWAP) und dynamischer Verkauf (Stop, 10:30)
+verschlechtern nur. Selbst kostenlos über Auktionen (K1 x V1) unter SPY. Die Nacht-Idee ist damit erledigt.
+Datenfalle: Alpaca-Kürzel neu vergeben (AMTD) -> Intraday-Bereinigung weicht vom Tagespanel ab.
+
 # Runde 153: Nachbau fremder EA "Maren asia_bruch_kontinuation_XAUUSD_15min_be_trail" (Nutzer, Vorab, 2026-10-18)
 
 Quelle: Ordner fremdeBots (Nutzer), Quant_Champion.zip, Quelltext .mq5 + forward_champion.set. Behauptung des Autors:
