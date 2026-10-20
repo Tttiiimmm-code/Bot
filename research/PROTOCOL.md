@@ -4968,3 +4968,12 @@ BESTANDEN, wenn Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND
 Info (nicht gewertet): Ø Überrendite je Trade ggü. gleichgewichtetem Universum; nur bis Vortag des Ereignisses
 (ohne Reaktion); Einstieg 10 Tage vorher.
 Skript research/scripts/r168.py, Ausgabe r168_output.txt.
+
+## Ergebnis Runde 168 (2026-10-20): NICHT BESTANDEN
+
+- 5 Tage mit Reaktion (gewertet): +10,9 % p.a. vs SPY +15,5 %, t -0,77, Hälften -4,5 / -4,5 Punkte; 11.227 Trades,
+  Ø 47 offen, 53 % der Tage in Aktien. Je Trade +0,12 % ggü. gleichgewichtetem Universum (brutto, t 1,6) -- kleiner als
+  die Kosten (0,2 % je Runde).
+- Info: nur bis Vortag +9,5 % (je Trade +0,11 %, t 2,2); 10 Tage +8,8 % (+0,18 %, t 2,3).
+Lehre: Eine kleine Prämie vor Zahlen ist messbar, aber kleiner als die Handelskosten; gleichgewichtete Einzelaktien
+liegen seit 2016 ohnehin hinter dem kapitalgewichteten SPY.
