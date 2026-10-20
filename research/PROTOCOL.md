@@ -4905,3 +4905,17 @@ Skript research/scripts/r165.py, Ausgabe r165_output.txt.
 Info: 15 ETFs halten +12,4 % / +6,1 %; nur SPY je Regel +2,9 % bis +8,3 %.
 Lehre: Die populären Indikator-Strategien sind meist nicht investiert und verlieren gegen Halten deutlich; Heikin-Ashi
 ist 2006-2015 sogar absolut negativ.
+
+# Runde 166: Mondzyklus (Dichev & Janes 2003) auf SPY und BTC (Vorab, 2026-10-20)
+
+These (Dichev & Janes 2003; Yuan, Zheng & Zhu 2006): Renditen in den 15 Tagen um den Neumond höher als um den Vollmond;
+in Krypto-Kreisen verbreitet. Im Protokoll nicht getestet.
+Mondphase: Alter = (Zeit - Neumond 2000-01-06 18:14 UTC) mod 29,530589 Tage (Fehler < 1 Tag, für ±7-Tage-Fenster
+ausreichend). Neumond-Fenster = Alter < 7,38 oder > 22,15 Tage (±7 Tage um Neumond).
+Regel: SPY halten, wenn der Handelstag (Schluss, New York) im Neumond-Fenster liegt, sonst T-Bills; Wechsel zum Schluss
+des Vortags, 2 bp je Wechsel.
+BESTANDEN, wenn Haupt 2016-01..2026-08 Rendite p.a. > SPY UND t der monatlichen Überrendite >= 2,0 UND Einordnung
+1994-2015 Überrendite > 0.
+Info (nicht gewertet): Ø Tagesrendite SPY im Neumond- vs Vollmond-Fenster mit t (Welch); dasselbe für BTC (Binance
+täglich 2018-2026).
+Skript research/scripts/r166.py, Ausgabe r166_output.txt.
