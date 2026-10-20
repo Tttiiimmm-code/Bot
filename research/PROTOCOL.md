@@ -4685,3 +4685,19 @@ Skripte research/scripts/r156_fetch.py, r156.py, Ausgabe r156_output.txt.
   (übernommen: Baxalta, Versum, CSRA, Vistana, Parkway; insolvent: LSC, Quorum, Venator, Mallinckrodt); der Rest
   Kleinstfirmen/nicht gelistete Vehikel.
 Lehre: Der klassische Spin-off-Effekt ist in den USA seit 2016 nicht mehr nachweisbar (wie Aalto 2010-2022).
+
+# Runde 157: Dividenden-Erstausschüttung kaufen, 12 Monate halten (Vorab, 2026-10-20)
+
+These (Michaely, Thaler & Womack 1995, JF): Firmen, die erstmals eine reguläre Dividende zahlen, steigen danach ~1 Jahr
+stärker als der Markt (Unterreaktion auf das Signal). Im Protokoll noch nicht getestet.
+Daten: Alpaca-Dividenden (dividends.pkl, 2016-01..2025-12, ohne "foreign" und ohne Sonderdividenden) + Tagespanel.
+Regeln:
+- Erstausschüttung = erster regulärer Ex-Tag eines Kürzels, das vorher >= 2 Jahre im Panel notierte ohne jede
+  Dividende (deshalb Ex-Tage ab 2018-01); Kurs am Einstieg >= 5 $, Ø Dollar-Umsatz der 20 Tage vor dem Ex-Tag >= 1 Mio. $.
+- Einstieg zum Schlusskurs des letzten Handelstags im Monat des Ex-Tags; gehalten in den 12 Folgemonaten.
+- Portfolio monatlich gleichgewichtet (Rendite inkl. Dividenden, Notiz-Ende -> Rest Cash), < 5 Titel -> Cash 0 %,
+  10 bp je Seite auf den Umschlag (wie Runde 156).
+- Zeitraum: Monate 2018-02..2026-08; Hälften 2018-2021 und 2022-2026/08.
+BESTANDEN, wenn Rendite p.a. > SPY halten UND t der monatlichen Überrendite >= 2,0 UND beide Hälften Überrendite > 0.
+Info (nicht gewertet): 6 und 24 Monate; nur Titel mit Kurs >= 10 $ und Umsatz >= 10 Mio. $; Zahl der Fälle je Jahr.
+Skript research/scripts/r157.py, Ausgabe r157_output.txt.
