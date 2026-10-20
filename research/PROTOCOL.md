@@ -4575,3 +4575,26 @@ Muster-Geometrie vorab gegen patterns.py geprüft (0 Abweichungen, 180.000 Kerze
   die Kaufmuster leicht positiv (+0,015 R), die Verkaufsmuster negativ (-0,05 R) -- das ist die Marktdrift
   (Gold/USD-Trend), kein Mustereffekt.
 Deutung: Kerzenmuster auf M1/M5 haben keinen Vorteil; die vom Autor ausgewählten 5 Muster waren Zufallsauswahl.
+
+# Vorwärtstests: Datenquelle Yahoo statt Dukascopy (Nutzer-Entscheidung, 2026-10-20)
+
+Nutzer: "Wenn Dukascopy die Anfragen ablehnt und es eine Alternative gibt, dann muss es nicht weiter versucht
+werden." Dukascopy blockt seit 2026-10-09 (AWS-WAF). Regeln, Zeiten, Kosten und Auswertungstermine bleiben; nur die
+Kursquelle wechselt (Code: tradingbot/forward_test.py, forward_gold.py, intraday_backup.py, Commit ee47667).
+- nikkei_night, gotobi, gotobi_eurjpy: Ledger-Zeilen bis Ausstiegstag 2026-10-07 bleiben (Dukascopy); ab 2026-10-08
+  Yahoo-Intraday (1m, Lücken 5m). Nikkei: CME-Future NIY statt Dukascopy-CFD, Einzelkontrakte verkettet (Wechsel am
+  1. des Verfallsmonats, ältere Kurse per Verhältnis angepasst). Gotobi: Mittelkurse + feste Spanne = mittlere
+  Dukascopy-Spanne an Gotobi-Tagen 2023-25 (USD/JPY 05:00 1,70 / 09:55 0,44 bp -> 1,07 bp je Trade; EUR/JPY 2,56 /
+  0,76 -> 1,66 bp), Kommission 0,35 bp je Seite unverändert.
+- gold_breakout: ganz aus Yahoo (CME-Gold, Wechsel am 20. des Vormonats der Lieferung), Brief/Geld = Mittel +- 1,02 bp
+  (Dukascopy-Mittel Aug/Sep 2026 2,04 bp), Swap 2,0 % statt 6,3 % p.a. (Future-Abstand zum Spot schrumpfte Aug/Sep
+  um 4,3 % p.a. = enthaltene Finanzierung).
+Abgleich auf gemeinsamen Daten (vor der Umstellung, kein Ergebnis): Yahoo-FX vs Dukascopy-Mitte Median -0,4 bp (90 %
+<= 0,7 bp); Gotobi 2 Tage je Paar Yahoo ~0,5 bp besser ohne Spanne (= fehlende Spanne). Nikkei 9 Nächte 09/10:
+Korrelation 0,98, Abweichung meist 1-3 bp, Ausnahme 29.09. (-28 vs +22 bp: Dividendenabschlag Ende September im CFD,
+nicht im Future). Gold Aug/Sep 2026: Dukascopy M1 10 Trades -1,0 R, Dukascopy 5m 10 Trades -1,0 R, GC=F 5m 9 Trades
+0,0 R (gleiche Trades, ein später Trade am Datenende fehlt).
+Bekannte Unterschiede: (1) Yahoo-FX notiert sonntags erst ab 23:00 UTC -> Gotobi-Tage am Montag (Einstieg 05:00 JST =
+So 20:00 UTC) entfallen (~14 % der Gotobi-Tage; Dukascopy zeigte dort einen stehenden Kurs, real nicht handelbar).
+(2) Nikkei-Future statt CFD: Dividendenabschläge (März/September) belasten nicht mehr. (3) Mittel + feste Spanne
+statt echter Geld/Brief-Kurse. Bei der Auswertung 2027-10-01 / 2028-10-01 beide Abschnitte getrennt ausweisen.
