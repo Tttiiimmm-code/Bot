@@ -54,17 +54,17 @@ class Result:
 
 def judge(r: pd.Series, bench: pd.Series, a: str, b: str, *, label: str, k: int = 1, binding: bool = True,
           split: str | None = "mitte", einordnung: tuple[str, str] | None = None, per_year: int = 252,
-          bench_name: str = "SPY") -> Result:
+          bench_name: str = "SPY", ohne_besten_monat: bool = False) -> Result:
     """Kriterium prüfen und eine Zeile ausgeben. r/bench: Tagesrenditen (per_year=12: Monatsrenditen mit
     PeriodIndex oder DatetimeIndex). split: Datum der Hälftengrenze, "mitte" (Kalendermitte) oder None (keine
-    Hälften). einordnung: zusätzlicher Zeitraum, dessen Überrendite p.a. > 0 sein muss (mit Renditen aus r/bench)."""
+    Hälften). einordnung: zusätzlicher Zeitraum, dessen Überrendite p.a. > 0 sein muss (mit Renditen aus r/bench).
+    ohne_besten_monat: Überrendite p.a. ohne den Monat mit der größten Überrendite muss ebenfalls > 0 sein
+    (hängt der Vorteil an einem Monat?)."""
     rr, bb = r[a:b].dropna(), bench[a:b].dropna()
     idx = rr.index.intersection(bb.index)
     rr, bb = rr.loc[idx], bb.loc[idx]
-    if per_year == 12:
-        ex = rr - bb
-    else:
-        ex = monthly(rr) - monthly(bb)
+    mr, mb = (rr, bb) if per_year == 12 else (monthly(rr), monthly(bb))
+    ex = mr - mb
     res = Result(label, binding, pa(rr, per_year), pa(bb, per_year), tstat(ex), hurdle(k))
     if split is not None:
         ts = idx.to_timestamp() if isinstance(idx, pd.PeriodIndex) else idx
@@ -77,7 +77,10 @@ def judge(r: pd.Series, bench: pd.Series, a: str, b: str, *, label: str, k: int 
         ei = er.index.intersection(eb.index)
         res.parts[f"Einordnung {einordnung[0][:4]}-{einordnung[1][:4]}"] = (pa(er.loc[ei], per_year)
                                                                            - pa(eb.loc[ei], per_year))
-    res.passed = bool(res.pa > res.pa_bench and res.t >= res.hurdle and all(v > 0 for v in res.parts.values()))
+    if ohne_besten_monat:
+        rest = ex.index != ex.idxmax()
+        res.parts["ohne besten Monat"] = pa(mr[rest], 12) - pa(mb[rest], 12)
+    res.passed =bool(res.pa > res.pa_bench and res.t >= res.hurdle and all(v > 0 for v in res.parts.values()))
     parts = ", ".join(f"{n} {v:+.1%}" for n, v in res.parts.items())
     tail = f" -> {'BESTANDEN' if res.passed else 'NICHT BESTANDEN'}" if binding else " (Info)"
     print(f"  {label}: {res.pa:+6.1%} p.a. vs {bench_name} {res.pa_bench:+6.1%}, t {res.t:+.2f} (Hürde {res.hurdle:.2f})"
@@ -85,8 +88,53 @@ def judge(r: pd.Series, bench: pd.Series, a: str, b: str, *, label: str, k: int 
     return res
 
 
-def verdict(results: list[Result]) -> str:
-    """Schlusszeile: bestanden, wenn mindestens eine gewertete These besteht (Hürde enthält Bonferroni)."""
+@dataclass
+class ArmResult:
+    label: str
+    binding: bool
+    real: float
+    random: list
+    better: int
+    min_better: int
+    passed: bool = False
+
+
+def random_arm(sim, signals: pd.Series, eligible: pd.Series | None = None, *, label: str, runs: int = 25,
+               min_better: int = 23, seed: int = 0, strata=None, metric=np.mean, binding: bool = True) -> ArmResult:
+    """Zufalls-Einstiege als Vergleich: Ist das Signal besser als irgendein Einstieg im selben Marktzustand?
+    Je Lauf so viele Einstiege wie Signale je Schicht (Standard: Kalenderjahr), zufällig gezogen aus den erlaubten
+    Zeitpunkten, ausgeführt mit derselben Funktion (gleicher Stop, gleiches Ziel, gleiche Kosten).
+    Bestanden, wenn das echte Signal in mindestens min_better von runs Läufen besser ist (Standard 23 von 25).
+
+    signals, eligible: bool-Series auf demselben Index. eligible = Zeitpunkte, an denen ein Einstieg erlaubt wäre
+    (z. B. derselbe Trendfilter); muss wie das Signal nur aus abgeschlossenen Kerzen berechnet sein, sonst trägt
+    der Zufallsarm Zukunftswissen. Fehlt eligible, ist jeder Zeitpunkt erlaubt.
+    sim(entries: bool-Series) -> Ergebnisse je Trade (z. B. R netto); metric verdichtet sie (Standard Ø)."""
+    sig = signals.fillna(False).astype(bool).to_numpy()
+    elig = sig | (eligible.fillna(False).astype(bool).to_numpy() if eligible is not None else True)
+    strata = np.asarray(signals.index.year if strata is None else strata)
+    real = float(metric(np.asarray(sim(signals.fillna(False).astype(bool)), dtype=float)))
+    rng = np.random.default_rng(seed)
+    pos = np.arange(len(sig))
+    vals = []
+    for _ in range(runs):
+        pick = np.zeros(len(sig), dtype=bool)
+        for s in np.unique(strata[sig]):
+            cand = pos[(strata == s) & elig]
+            n = int((sig & (strata == s)).sum())
+            pick[rng.choice(cand, size=min(n, len(cand)), replace=False)] = True
+        vals.append(float(metric(np.asarray(sim(pd.Series(pick, index=signals.index)), dtype=float))))
+    better = int(sum(real > v for v in vals))
+    res = ArmResult(label, binding, real, vals, better, min_better, better >= min_better)
+    tail = f" -> {'BESTANDEN' if res.passed else 'NICHT BESTANDEN'}" if binding else " (Info)"
+    print(f"  {label}: Signal {real:+.3f} vs Zufall Median {np.median(vals):+.3f} ({min(vals):+.3f} bis "
+          f"{max(vals):+.3f}), besser in {better}/{runs} (nötig {min_better})" + tail)
+    return res
+
+
+def verdict(results: list) -> str:
+    """Schlusszeile: bestanden, wenn mindestens eine gewertete These besteht (Hürde enthält Bonferroni).
+    results: Result und/oder ArmResult; soll eine These beides bestehen, im Skript vorher verknüpfen."""
     binding = [r for r in results if r.binding]
     if not binding:
         raise ValueError("keine gewertete These")
@@ -110,6 +158,22 @@ def _selftest():
     assert verdict([r2, r3]) == "NICHT BESTANDEN"
     m = judge(monthly(good), monthly(bench), "2016-01", "2025-12", label="monatlich", per_year=12)
     assert m.passed and abs(m.t - r1.t) < 1e-9
+    # Vorteil nur in einem Monat -> fällt ohne besten Monat durch
+    lucky = bench.copy()
+    lucky["2020-03"] += 0.03
+    l1 = judge(lucky, bench, "2016", "2025", label="ein Monat", split=None)
+    l2 = judge(lucky, bench, "2016", "2025", label="ein Monat, ohne besten", split=None, ohne_besten_monat=True)
+    assert l1.parts == {} and l2.parts["ohne besten Monat"] <= 1e-12 and not l2.passed
+    # Zufallsarm: Signal mit echtem Vorteil vs zufällige Signale
+    fwd = bench.shift(-1).rolling(5).sum().shift(-4)                      # Rendite der 5 Tage nach dem Einstieg
+    sim = lambda e: fwd[e.to_numpy()].dropna()                           # noqa: E731
+    trend = pd.Series(rng.random(len(days)) < 0.6, index=days)
+    edge = trend & (fwd > 0) & (rng.random(len(days)) < 0.3)             # kennt die Zukunft -> muss bestehen
+    noise = trend & (rng.random(len(days)) < 0.15)
+    a1 = random_arm(sim, edge, trend, label="Vorteil")
+    a2 = random_arm(sim, noise, trend, label="Zufall")
+    assert a1.passed and a1.better == 25 and not a2.passed
+    assert verdict([r2, a2]) == "NICHT BESTANDEN" and verdict([a1]).startswith("BESTANDEN")
     print("rlib Selbsttest ok")
 
 

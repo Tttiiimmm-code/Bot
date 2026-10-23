@@ -5024,3 +5024,12 @@ Lehre: Breite Insiderkäufe kommen mitten in fallenden Märkten ("fallendes Mess
   Kontrolle: Runde 170 mit rlib nachgerechnet, identisch (+14,0 % vs +15,2 %, t -0,26, Hälften -0,7 / -1,7).
 - Ablauf über tools/runde.py (Haupt-Repo): `neu` schreibt den Vorab-Eintrag und pusht ihn, `rechnen` läuft nur,
   wenn der Vorab-Eintrag auf origin liegt, `abschluss` hängt das Ergebnis an. Kriterien und Regeln unverändert.
+
+## 2026-10-24 -- Zusatzprüfungen in rlib (Anregung Discord @tagebuchmillion, #backtesting)
+
+- `random_arm`: Zufalls-Einstiege als Vergleich -- je Lauf so viele Einstiege wie Signale je Kalenderjahr, zufällig
+  aus den erlaubten Zeitpunkten (z. B. gleicher Trendfilter, nur aus abgeschlossenen Kerzen), gleiche Ausführung;
+  bestanden bei >= 23 von 25 Läufen besser. Prüft "Signal" gegen "nur im Markt/Trend sein" (Schwachstelle bei
+  Gold-Regeln 2024-26, vgl. Runde 102 B).
+- `judge(..., ohne_besten_monat=True)`: Überrendite ohne den besten Monat muss > 0 bleiben.
+- Beides zählt nur, wenn es im Vorab-Eintrag der jeweiligen Runde als Kriterium steht; sonst nur "zur Info".
