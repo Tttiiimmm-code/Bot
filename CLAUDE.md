@@ -32,7 +32,8 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
 6. Werkzeug (seit 2026-10-24): `python tools/runde.py status | neu NNN "Titel" --vorab f.md --wt <scratchpad>/wt_ideas
    | rechnen NNN | abschluss NNN --ergebnis f.md --aufraeumen` (Vorab pushen, Rechnen erst danach, Ergebnis, Vault-
    Notizen + Linkcheck, Worktree weg). Skripte ab Runde 171 werten mit `research/scripts/rlib.py` aus (`judge`,
-   `hurdle(k)`, letzte Zeile `URTEIL: ...`), Vorlage `_vorlage.py`. Commit-Zusatzzeile über `RUNDE_COMMIT_TRAILER`.
+   `hurdle(k)`, letzte Zeile `URTEIL: ...`; optional vorab festgelegt: `random_arm` = Zufalls-Einstiege
+   23 von 25, `ohne_besten_monat=True`), Vorlage `_vorlage.py`. Commit-Zusatzzeile über `RUNDE_COMMIT_TRAILER`.
 
 ## Obsidian-Vault (2. Gehirn, `C:\Users\Nutzer\Trading-Bot-Vault`)
 
