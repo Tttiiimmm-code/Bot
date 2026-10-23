@@ -89,13 +89,12 @@ def fetch_assets(trading_client, base: Path = UNIVERSE_DIR) -> list[str]:
     path = base / "assets.pkl"
     if path.exists():
         return _data_symbols(pd.read_pickle(path))
-    from alpaca.trading.enums import AssetClass
-    from alpaca.trading.requests import GetAssetsRequest
-
-    assets = trading_client.get_all_assets(GetAssetsRequest(asset_class=AssetClass.US_EQUITY))
+    # Roh abrufen: get_all_assets prüft gegen eine feste Börsenliste und bricht bei jeder neuen Börse komplett ab
+    # (seit 2026-10-20 "TXSE"); unbekannte Börsen fallen unten ohnehin aus dem Filter.
+    assets = trading_client.get("/assets", {"asset_class": "us_equity"})
     rows = [
-        {"symbol": a.symbol, "exchange": str(getattr(a.exchange, "value", a.exchange)),
-         "status": str(getattr(a.status, "value", a.status)), "name": a.name}
+        {"symbol": a["symbol"], "exchange": str(a.get("exchange")), "status": str(a.get("status")),
+         "name": a.get("name")}
         for a in assets
     ]
     df = pd.DataFrame(rows)
