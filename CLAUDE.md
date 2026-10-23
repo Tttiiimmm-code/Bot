@@ -28,7 +28,11 @@ S&P-500-ETF** bringt. Kein Kauf fremder Bots. Antworten auf Deutsch, ehrlich, mi
    Thesen), Einordnungszeitraum ebenfalls positiv. Nachträgliche Varianten nur "zur Info", nie als Ergebnis.
 4. Arbeiten in einem temporären Worktree im Scratchpad (`git worktree add <scratchpad>/wt_ideas research/ideas`),
    danach `git worktree remove`.
-5. Was bereits getestet wurde, steht im Protokoll -- vor einer neuen Runde dort suchen (über 150 Runden).
+5. Was bereits getestet wurde, steht im Protokoll -- vor einer neuen Runde dort suchen (über 170 Runden).
+6. Werkzeug (seit 2026-10-24): `python tools/runde.py status | neu NNN "Titel" --vorab f.md --wt <scratchpad>/wt_ideas
+   | rechnen NNN | abschluss NNN --ergebnis f.md --aufraeumen` (Vorab pushen, Rechnen erst danach, Ergebnis, Vault-
+   Notizen + Linkcheck, Worktree weg). Skripte ab Runde 171 werten mit `research/scripts/rlib.py` aus (`judge`,
+   `hurdle(k)`, letzte Zeile `URTEIL: ...`), Vorlage `_vorlage.py`. Commit-Zusatzzeile über `RUNDE_COMMIT_TRAILER`.
 
 ## Obsidian-Vault (2. Gehirn, `C:\Users\Nutzer\Trading-Bot-Vault`)
 
