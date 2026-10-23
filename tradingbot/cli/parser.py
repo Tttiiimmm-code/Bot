@@ -684,6 +684,8 @@ def build_parser() -> argparse.ArgumentParser:
     health_parser = subparsers.add_parser(
         "health", help="Wächter (VPS): Dienste, Platte, Speicher, Recorder prüfen; Probleme und Tagesstatus per ntfy.")
     health_parser.add_argument("--env-file", default="copilot.env", help="Datei mit NTFY_TOPIC.")
+    health_parser.add_argument("--check", action="store_true",
+                               help="Nur Zustand ausgeben (mit letzter Fehlerzeile), nichts senden, Zustand nicht ändern.")
     fstatus = subparsers.add_parser(
         "forward-status", help="Alle Vorwärtstests nach der gemeinsamen Auswertungsregel (nur Information).")
     fstatus.add_argument("--notify", action="store_true", help="Zusätzlich per ntfy senden.")

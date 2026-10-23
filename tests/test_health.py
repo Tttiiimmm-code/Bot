@@ -46,3 +46,24 @@ def test_failed_alert_is_retried(tmp_path):
     n.send = FakeNotifier.send.__get__(n)
     health.step(n, state, t, check=lambda: ["Dienst pelosi-bot läuft nicht (failed)"])
     assert [m[0] for m in n.msgs] == ["VPS: Problem"]                  # beim nächsten Lauf nachgeholt
+
+
+def test_report_shows_last_error_line_and_pending_reboot(tmp_path):
+    log = ("Starting forward-stocks.service - Vorwärtstest...\nTraceback (most recent call last):\n"
+           "  File \"main.py\", line 271, in <module>\n"
+           "pydantic_core._pydantic_core.ValidationError: 9 validation errors for list[Asset]\n"
+           "forward-stocks.service: Main process exited, code=exited, status=1/FAILURE\n"
+           "Failed to start forward-stocks.service - Vorwärtstest...\n")
+    flag = tmp_path / "reboot-required"
+    flag.write_text("")
+    text = health.report(check=lambda: ["Letzter Lauf forward-stocks fehlgeschlagen (exit-code)"],
+                         journal=lambda unit: log, reboot_flag=flag, now=datetime(2026, 10, 23, 23, 30))
+    assert "2 Problem(e)" in text
+    assert "letzte Fehlerzeile: pydantic_core._pydantic_core.ValidationError: 9 validation errors" in text
+    assert "Neustart nötig" in text
+
+
+def test_report_all_ok(tmp_path):
+    text = health.report(check=lambda: [], journal=lambda unit: "", reboot_flag=tmp_path / "fehlt",
+                         now=datetime(2026, 10, 23, 23, 30))
+    assert "alles in Ordnung" in text

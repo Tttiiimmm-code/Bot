@@ -59,6 +59,41 @@ def problems(run=_systemctl, disk_path: str = "/", liq_dir: Path = LIQ_DIR, now:
     return out
 
 
+def _journal(unit: str) -> str:
+    return subprocess.run(["journalctl", "-u", f"{unit}.service", "-n", "60", "--no-pager", "-o", "cat"],
+                          capture_output=True, text=True, timeout=20).stdout
+
+
+def last_error(unit: str, journal=_journal) -> str:
+    """Letzte aussagekräftige Fehlerzeile eines Laufs (Ausnahme bevorzugt, systemd-Zeilen ausgelassen)."""
+    lines = [ln.strip() for ln in journal(unit).splitlines() if ln.strip()]
+    lines = [ln for ln in lines if not ln.startswith((f"{unit}.service:", "Failed to start", "Starting ", "Started "))]
+    for ln in reversed(lines):
+        name = ln.split(":", 1)[0]
+        if "Error" in name or "Exception" in name:
+            return ln[:300]
+    return lines[-1][:300] if lines else ""
+
+
+def report(check=problems, journal=_journal, reboot_flag: Path = Path("/var/run/reboot-required"),
+           now: datetime | None = None) -> str:
+    """Zustand als Text für den Sitzungsstart (`main.py health --check`): sendet nichts, ändert keinen Zustand."""
+    now = now or datetime.now(BERLIN)
+    out = []
+    for p in check():
+        out.append(f"- {p}")
+        if p.startswith("Letzter Lauf "):
+            err = last_error(p.split()[2], journal)
+            if err:
+                out.append(f"  letzte Fehlerzeile: {err}")
+    if reboot_flag.exists():
+        out.append("- Neustart nötig (Kernel/Pakete aktualisiert)")
+    head = f"VPS-Prüfung {now.astimezone(BERLIN):%Y-%m-%d %H:%M} (deutsche Zeit): "
+    if not out:
+        return head + f"alles in Ordnung ({len(SERVICES)} Dienste, {len(ONESHOTS)} Timer)."
+    return head + f"{sum(ln.startswith('- ') for ln in out)} Problem(e)\n" + "\n".join(out)
+
+
 def step(notifier, state_path: Path = STATE, now: datetime | None = None, check=problems) -> list[str]:
     """Vergleicht mit dem letzten Zustand, sendet neue Probleme / Entwarnungen und einmal täglich den Status."""
     now = now or datetime.now(BERLIN)

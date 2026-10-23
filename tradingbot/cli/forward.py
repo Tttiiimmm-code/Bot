@@ -27,6 +27,9 @@ def cmd_health(args):
     from tradingbot import health
     from tradingbot.notify import notifier_from_env
 
+    if args.check:
+        print(health.report())
+        return
     for m in health.step(notifier_from_env(args.env_file)):
         print(f"gesendet: {m}")
 
