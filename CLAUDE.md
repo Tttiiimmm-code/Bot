@@ -67,9 +67,12 @@ neuen Infos gibt (nicht erst am Ende):
 ## VPS
 
 - `ssh root@116.203.115.99`, Repo `/home/tradingbot/Bot` (User `tradingbot`), Branch `feature/forward-test`.
-- Deploy: lokal committen und pushen, dann `sudo -u tradingbot git pull`, Unit-Dateien aus `deploy/` nach
-  `/etc/systemd/system`, `systemctl daemon-reload`, Dienst neu starten. Nicht schnell hintereinander neu starten
-  (StartLimit; falls ausgelöst: `systemctl reset-failed <dienst>`).
+- Deploy: lokal committen und pushen, dann `ssh root@116.203.115.99 'bash /home/tradingbot/Bot/deploy/deploy.sh'`
+  (Pull, geänderte Units kopieren + daemon-reload, pip bei geänderter requirements.txt, Neustart nur der Dauerdienste
+  mit neuerem Code/Unit; handelnde nicht Mo-Fr 15:20-22:10 deutsche Zeit, außer `--jetzt`; am Ende `health --check`).
+  Neue Units installiert es nicht (nur Hinweis). StartLimit ausgelöst: `systemctl reset-failed <dienst>`.
+- Sitzungsstart: SessionStart-Hook (`.claude/hooks/vps_status.sh`, eingetragen in `.claude/settings.local.json`)
+  liefert `main.py health --check` vom VPS. Probleme daraus zuerst dem Nutzer melden.
 - Neue Abhängigkeiten in `requirements.txt` eintragen und auf dem VPS installieren.
 - Neue Dienste/Timer in `tradingbot/health.py` (SERVICES/ONESHOTS) und neue Datendateien in
   `deploy/backup-data.sh` und `.gitignore` aufnehmen.
