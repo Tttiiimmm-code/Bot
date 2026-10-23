@@ -1,0 +1,117 @@
+"""Gemeinsame Auswertung der Forschungsrunden (ab Runde 171), Kriterien wie CLAUDE.md / PROTOCOL.md:
+Rendite p.a. > Maßstab UND t der monatlichen Überrendite >= Hürde UND (beide Hälften und/oder Einordnungszeitraum)
+Überrendite > 0. Nachträgliche Varianten mit binding=False ("Info"), sie zählen nie fürs Urteil.
+
+Ältere Skripte bleiben unverändert (Reproduzierbarkeit); rlib übernimmt deren geprüfte Bausteine.
+Aufruf der Rundenskripte aus dem Haupt-Repo (data_cache): PYTHONPATH=<worktree> python <worktree>/research/scripts/rNNN.py
+oder `python tools/runde.py rechnen NNN`. Die letzte Zeile "URTEIL: ..." liest tools/runde.py aus.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from statistics import NormalDist
+
+import numpy as np
+import pandas as pd
+
+from r153 import spy_daily, tstat                     # noqa: F401 -- Wiederverwendung
+from r158 import fred                                 # noqa: F401
+
+
+def hurdle(k: int = 1) -> float:
+    """t-Hürde bei k Thesen: Bonferroni einseitig 5 %, mindestens 2,0 (k=3 -> 2,13, k=4 -> 2,24, k=9 -> 2,54)."""
+    return max(2.0, NormalDist().inv_cdf(1 - 0.05 / k))
+
+
+def pa(r: pd.Series, per_year: int = 252) -> float:
+    """Rendite p.a. aus Periodenrenditen (252 Handelstage, 12 Monate, 365 Krypto-Tage)."""
+    r = pd.Series(r).dropna()
+    return float((1 + r).prod() ** (per_year / len(r)) - 1) if len(r) else float("nan")
+
+
+def monthly(r: pd.Series) -> pd.Series:
+    """Tagesrenditen -> Monatsrenditen (PeriodIndex, verzinst)."""
+    r = pd.Series(r).dropna()
+    return (1 + r).groupby(r.index.to_period("M")).prod() - 1
+
+
+def switch_costs(pos: pd.Series, bp: float) -> pd.Series:
+    """Kosten je Tag aus Positionswechseln: |Δ Position| x bp (Basispunkte je Seite)."""
+    return pos.diff().abs().fillna(pos.abs()) * bp * 1e-4
+
+
+@dataclass
+class Result:
+    label: str
+    binding: bool
+    pa: float
+    pa_bench: float
+    t: float
+    hurdle: float
+    parts: dict = field(default_factory=dict)              # Teilzeitraum -> Überrendite p.a.
+    passed: bool = False
+
+
+def judge(r: pd.Series, bench: pd.Series, a: str, b: str, *, label: str, k: int = 1, binding: bool = True,
+          split: str | None = "mitte", einordnung: tuple[str, str] | None = None, per_year: int = 252,
+          bench_name: str = "SPY") -> Result:
+    """Kriterium prüfen und eine Zeile ausgeben. r/bench: Tagesrenditen (per_year=12: Monatsrenditen mit
+    PeriodIndex oder DatetimeIndex). split: Datum der Hälftengrenze, "mitte" (Kalendermitte) oder None (keine
+    Hälften). einordnung: zusätzlicher Zeitraum, dessen Überrendite p.a. > 0 sein muss (mit Renditen aus r/bench)."""
+    rr, bb = r[a:b].dropna(), bench[a:b].dropna()
+    idx = rr.index.intersection(bb.index)
+    rr, bb = rr.loc[idx], bb.loc[idx]
+    if per_year == 12:
+        ex = rr - bb
+    else:
+        ex = monthly(rr) - monthly(bb)
+    res = Result(label, binding, pa(rr, per_year), pa(bb, per_year), tstat(ex), hurdle(k))
+    if split is not None:
+        ts = idx.to_timestamp() if isinstance(idx, pd.PeriodIndex) else idx
+        cut = (ts[0] + (ts[-1] - ts[0]) / 2) if split == "mitte" else pd.Timestamp(split)
+        h1 = ts < cut
+        res.parts["1. Hälfte"] = pa(rr[h1], per_year) - pa(bb[h1], per_year)
+        res.parts["2. Hälfte"] = pa(rr[~h1], per_year) - pa(bb[~h1], per_year)
+    if einordnung is not None:
+        er, eb = r[einordnung[0]:einordnung[1]].dropna(), bench[einordnung[0]:einordnung[1]].dropna()
+        ei = er.index.intersection(eb.index)
+        res.parts[f"Einordnung {einordnung[0][:4]}-{einordnung[1][:4]}"] = (pa(er.loc[ei], per_year)
+                                                                           - pa(eb.loc[ei], per_year))
+    res.passed = bool(res.pa > res.pa_bench and res.t >= res.hurdle and all(v > 0 for v in res.parts.values()))
+    parts = ", ".join(f"{n} {v:+.1%}" for n, v in res.parts.items())
+    tail = f" -> {'BESTANDEN' if res.passed else 'NICHT BESTANDEN'}" if binding else " (Info)"
+    print(f"  {label}: {res.pa:+6.1%} p.a. vs {bench_name} {res.pa_bench:+6.1%}, t {res.t:+.2f} (Hürde {res.hurdle:.2f})"
+          + (f", {parts}" if parts else "") + tail)
+    return res
+
+
+def verdict(results: list[Result]) -> str:
+    """Schlusszeile: bestanden, wenn mindestens eine gewertete These besteht (Hürde enthält Bonferroni)."""
+    binding = [r for r in results if r.binding]
+    if not binding:
+        raise ValueError("keine gewertete These")
+    ok = [r.label for r in binding if r.passed]
+    text = "BESTANDEN (" + ", ".join(ok) + ")" if ok else "NICHT BESTANDEN"
+    print(f"\nURTEIL: {text}")
+    return text
+
+
+def _selftest():
+    days = pd.bdate_range("2016-01-01", "2025-12-31")
+    rng = np.random.default_rng(0)
+    bench = pd.Series(rng.normal(4e-4, 0.01, len(days)), index=days)
+    good = bench + rng.normal(4e-4, 0.003, len(days))
+    assert abs(hurdle(3) - 2.128) < 1e-3 and abs(hurdle(4) - 2.241) < 1e-3 and hurdle(1) == 2.0
+    r1 = judge(good, bench, "2016", "2025", label="gut", k=1)
+    r2 = judge(bench - 1e-4, bench, "2016", "2025", label="schlecht", k=1)
+    r3 = judge(good, bench, "2016", "2025", label="Info", binding=False)
+    assert r1.passed and not r2.passed and r3.passed
+    assert verdict([r1, r2, r3]).startswith("BESTANDEN (gut)")
+    assert verdict([r2, r3]) == "NICHT BESTANDEN"
+    m = judge(monthly(good), monthly(bench), "2016-01", "2025-12", label="monatlich", per_year=12)
+    assert m.passed and abs(m.t - r1.t) < 1e-9
+    print("rlib Selbsttest ok")
+
+
+if __name__ == "__main__":
+    _selftest()

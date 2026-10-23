@@ -5016,3 +5016,11 @@ Skript research/scripts/r170.py, Ausgabe r170_output.txt.
   Hebel; SPY je Tag nach Signal -0,5 bp vs sonst +7,4 bp.
 - Info: z > 1,0 +15,8 % (t 0,66), 32 Signale.
 Lehre: Breite Insiderkäufe kommen mitten in fallenden Märkten ("fallendes Messer") -- kein brauchbares Timing.
+
+## 2026-10-24 -- Werkzeug ab Runde 171
+
+- Auswertung über research/scripts/rlib.py (`judge`, `verdict`): Kriterium wie bisher (p.a. > Maßstab, t der
+  monatlichen Überrendite >= Hürde, Teilzeiträume > 0); Hürde `hurdle(k)` = Bonferroni einseitig 5 %, mindestens 2,0.
+  Kontrolle: Runde 170 mit rlib nachgerechnet, identisch (+14,0 % vs +15,2 %, t -0,26, Hälften -0,7 / -1,7).
+- Ablauf über tools/runde.py (Haupt-Repo): `neu` schreibt den Vorab-Eintrag und pusht ihn, `rechnen` läuft nur,
+  wenn der Vorab-Eintrag auf origin liegt, `abschluss` hängt das Ergebnis an. Kriterien und Regeln unverändert.
