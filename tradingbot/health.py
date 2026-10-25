@@ -20,7 +20,7 @@ BERLIN = ZoneInfo("Europe/Berlin")
 SERVICES = ["momentum", "overnight", "liq-recorder", "copilot-watch", "copilot-gui", "tailscaled", "pelosi-bot",
             "mt5-display", "mt5"]
 ONESHOTS = ["forward-test", "forward-stocks", "forward-status", "momentum-checkpoint", "forward-gold", "forward-pelosi", "backup-data",
-            "intraday-backup", "ramsuche"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
+            "intraday-backup"]           # Timer-Läufe: letzter Lauf muss erfolgreich sein
 STATE = Path("data_cache") / "health_state.json"
 LIQ_DIR = Path("data_cache") / "liquidations"
 SUMMARY_AT = (8, 30)                                    # tägliche Meldung (deutsche Zeit)

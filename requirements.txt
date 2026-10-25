@@ -8,4 +8,3 @@ python-dotenv>=1.0,<2
 websockets>=12,<18
 pytest>=8.0,<10
 pypdf>=6.0
-requests>=2.31,<3
