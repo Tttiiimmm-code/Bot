@@ -65,7 +65,8 @@ neuen Infos gibt (nicht erst am Ende):
   Timer: forward-test, forward-stocks, forward-status, forward-gold, forward-pelosi, momentum-checkpoint, health,
   backup-data, intraday-backup. Konten: `.env` (Momentum), `overnight.env` (Overnight-Dry-Run + Pelosi-Bot),
   `copilot.env`. Getrennt davon (kein Trading, nicht Teil dieses Repos): RAM-Suche, Benutzer `ramsuche`,
-  `/home/ramsuche/RamSuche`, Timer `ramsuche.timer`, Repo `Tttiiimmm-code/ramsuche` (lokal `C:\Users\Nutzer\RamSuche`).
+  `/home/ramsuche/RamSuche`, Timer `ramsuche.timer`, Oberfläche `ramsuche-gui` (127.0.0.1:8502, Tailscale-Port 8443,
+  max. 450 MB), Repo `Tttiiimmm-code/ramsuche` (lokal `C:\Users\Nutzer\RamSuche`).
 - MT5-EA `mql5/GoldBreakout.mq5` läuft seit 2026-10-20 auf dem VPS (MT5 unter Wine, Dienste `mt5-display`/`mt5`,
   Benutzer `mt5`, `C:\MT5`, Logs UTF-16 in `logs/` und `MQL5/logs/`; Ansicht per `MT5 VPS anzeigen.bat`), OANDA-Demo.
   PC-MT5 stillgelegt (Algo-Handel aus) -- nie beide gleichzeitig. Kompilieren am PC:
