@@ -1,0 +1,10 @@
+[Unit]
+Description=RAM-Suche alle 15 Minuten
+
+[Timer]
+OnCalendar=*:0/15
+RandomizedDelaySec=120
+Persistent=false
+
+[Install]
+WantedBy=timers.target

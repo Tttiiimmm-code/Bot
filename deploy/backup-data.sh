@@ -7,7 +7,7 @@ DEST=/home/tradingbot/backups
 mkdir -p "$DEST"
 FILES=""
 for f in copilot_journal.jsonl replay_journal.jsonl copilot_settings.json forward_trades.csv forward_orb.csv forward_quality.csv forward_smallvq.csv forward_gold.csv forward_pelosi.csv pelosi_bot_state.json pelosi_bot_trades.csv gold_live_trades.csv gold_live_state.json news_intel.csv \
-         momentum_state.json overnight_state.json overnight_trades.csv data_cache/liquidations data_cache/yahoo_intraday \
+         momentum_state.json overnight_state.json overnight_trades.csv data_cache/liquidations data_cache/yahoo_intraday data_cache/ramsuche \
          /home/mt5/.wine/drive_c/MT5/MQL5/Files/gold_breakout_trades.csv; do
   [ -e "$f" ] && FILES="$FILES $f"
 done
