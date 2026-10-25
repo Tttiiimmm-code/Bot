@@ -63,7 +63,9 @@ neuen Infos gibt (nicht erst am Ende):
   (Nutzer 2026-10-20); Kontraktwechsel Gold 20. des Vormonats der Lieferung, Nikkei 1. des Verfallsmonats.
 - VPS-Dienste: momentum, overnight (Dry-Run seit 2026-10-02), liq-recorder, copilot-gui, copilot-watch, pelosi-bot.
   Timer: forward-test, forward-stocks, forward-status, forward-gold, forward-pelosi, momentum-checkpoint, health,
-  backup-data. Konten: `.env` (Momentum), `overnight.env` (Overnight-Dry-Run + Pelosi-Bot), `copilot.env`.
+  backup-data, intraday-backup, ramsuche (kein Trading: DDR5-RAM-Schnäppchen auf Kleinanzeigen/eBay per ntfy,
+  `python -m ramsuche lauf|liste`, Einstellungen `ramsuche.env`). Konten: `.env` (Momentum), `overnight.env`
+  (Overnight-Dry-Run + Pelosi-Bot), `copilot.env`.
 - MT5-EA `mql5/GoldBreakout.mq5` läuft seit 2026-10-20 auf dem VPS (MT5 unter Wine, Dienste `mt5-display`/`mt5`,
   Benutzer `mt5`, `C:\MT5`, Logs UTF-16 in `logs/` und `MQL5/logs/`; Ansicht per `MT5 VPS anzeigen.bat`), OANDA-Demo.
   PC-MT5 stillgelegt (Algo-Handel aus) -- nie beide gleichzeitig. Kompilieren am PC:
